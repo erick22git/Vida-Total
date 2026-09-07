@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0f;
+  --background-2: #121218;
+  --foreground: #f5f5f7;
+  --foreground-muted: #9a9aa5;
+
+  /* module accent colors */
+  --gym: #ff6b35;
+  --gym-2: #ff3b3b;
+  --habitos: #3b82f6;
+  --outfit: #a855f7;
+  --paz-mental: #14b8a6;
+  --finanzas: #f59e0b;
+  --voz: #ec4899;
+
+  /* glass */
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-highlight: rgba(255, 255, 255, 0.1);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-gym: var(--gym);
+  --color-habitos: var(--habitos);
+  --color-outfit: var(--outfit);
+  --color-paz-mental: var(--paz-mental);
+  --color-finanzas: var(--finanzas);
+  --color-voz: var(--voz);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  background: #0a0a0f;
+}
+
+body {
+  background: linear-gradient(180deg, #0a0a0f 0%, #121218 100%);
+  color: var(--foreground);
+  font-family: var(--font-sans, ui-sans-serif), system-ui, sans-serif;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ---------- Decorative background blobs ---------- */
+.bg-blobs {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bg-blob {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(100px);
+  opacity: 0.3;
+}
+
+/* ---------- Scrollbars ---------- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ---------- Liquid glass base ---------- */
+.glass-surface {
+  background: var(--glass-bg);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 var(--glass-highlight);
+}
+
+/* ---------- Water fill wave animation ---------- */
+@keyframes wave {
+  0% {
+    transform: translateX(0) translateZ(0);
+  }
+  100% {
+    transform: translateX(-50%) translateZ(0);
+  }
+}
+
+@keyframes flame-flicker {
+  0%,
+  100% {
+    transform: scale(1) rotate(-1deg);
+  }
+  50% {
+    transform: scale(1.06) rotate(1deg);
+  }
+}
+
+/* ---------- Paz Mental: ambient breathing gradient ---------- */
+@keyframes breathing-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.breathing-bg {
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--paz-mental) 12%, transparent),
+    transparent 40%,
+    color-mix(in srgb, var(--paz-mental) 8%, transparent) 70%
+  );
+  background-size: 200% 200%;
+  animation: breathing-gradient 18s ease-in-out infinite;
+}

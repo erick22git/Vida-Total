@@ -1,0 +1,164 @@
+[
+  {
+    "id": "v-1",
+    "day": 1,
+    "title": "Respiración diafragmática",
+    "description": "La base de toda buena voz: aprende a respirar desde el diafragma en vez del pecho.",
+    "category": "resonancia",
+    "exerciseText": "Coloca una mano en el abdomen y otra en el pecho. Inhala por la nariz en 4 segundos sintiendo cómo se expande el abdomen (no el pecho), sostén 2 segundos y exhala por la boca en 6 segundos emitiendo un 'sssss' constante. Repite 8 veces.",
+    "tip": "Si tu mano en el pecho se mueve más que la del abdomen, estás respirando mal. Practica acostado boca arriba al inicio, es más fácil sentir el movimiento correcto."
+  },
+  {
+    "id": "v-2",
+    "day": 2,
+    "title": "Vocales abiertas",
+    "description": "Trabaja la apertura de mandíbula para vocales más claras y resonantes.",
+    "category": "pronunciacion",
+    "exerciseText": "Pronuncia exageradamente A-E-I-O-U abriendo bien la mandíbula en cada una, sosteniendo cada vocal 3 segundos. Luego encadénalas en una sola exhalación: 'AAA-EEE-III-OOO-UUU'. Repite 5 veces.",
+    "tip": "Muchas personas hablan con la mandíbula casi cerrada, lo que ahoga el sonido. Exagerar al practicar corrige el hábito con el tiempo."
+  },
+  {
+    "id": "v-3",
+    "day": 3,
+    "title": "Trabalenguas de consonantes",
+    "description": "Mejora la precisión articulatoria con trabalenguas clásicos.",
+    "category": "diccion",
+    "exerciseText": "Repite lentamente y luego cada vez más rápido, sin perder claridad: 'Tres tristes tigres tragaban trigo en un trigal'. Hazlo 5 veces despacio y 5 veces rápido, articulando cada consonante.",
+    "tip": "La velocidad sin claridad no sirve. Solo acelera cuando puedas pronunciar todas las consonantes limpias a velocidad lenta."
+  },
+  {
+    "id": "v-4",
+    "day": 4,
+    "title": "Resonancia en el pecho",
+    "description": "Encuentra tu resonancia grave natural para una voz más firme y con más cuerpo.",
+    "category": "resonancia",
+    "exerciseText": "Coloca la mano en el pecho y emite un 'mmmm' grave y sostenido durante 5 segundos, sintiendo la vibración bajo la mano. Repite subiendo levemente el volumen cada vez, 8 repeticiones.",
+    "tip": "No fuerces el tono hacia abajo con la garganta; deja que la vibración baje sola relajando el cuello y los hombros."
+  },
+  {
+    "id": "v-5",
+    "day": 5,
+    "title": "Proyección sin gritar",
+    "description": "Aprende a proyectar la voz usando el aire y la resonancia, no la garganta.",
+    "category": "resonancia",
+    "exerciseText": "Imagina que hablas a alguien al otro lado de una habitación grande. Di la frase 'Buenos días, es un placer estar aquí' apoyándote en el abdomen para empujar el aire, sin tensar la garganta. Repite 6 veces aumentando la distancia imaginaria.",
+    "tip": "La proyección real viene del apoyo abdominal, no del volumen de garganta. Si terminas con la garganta seca o irritada, estás gritando en vez de proyectar."
+  },
+  {
+    "id": "v-6",
+    "day": 6,
+    "title": "Consonantes explosivas P, T, K",
+    "description": "Da precisión y energía a tu habla trabajando las consonantes oclusivas.",
+    "category": "diccion",
+    "exerciseText": "Repite en staccato, marcando bien cada golpe de aire: 'Pa-Ta-Ka, Pa-Ta-Ka, Pa-Ta-Ka' 10 veces, aumentando la velocidad progresivamente sin perder definición.",
+    "tip": "Coloca la mano frente a la boca; deberías sentir un pequeño golpe de aire en cada P y T. Si no lo sientes, no estás articulando con suficiente energía."
+  },
+  {
+    "id": "v-7",
+    "day": 7,
+    "title": "Escala de tono",
+    "description": "Amplía tu rango tonal para una voz más expresiva y menos monótona.",
+    "category": "resonancia",
+    "exerciseText": "Con un 'aaah' sostenido, desliza tu voz desde el tono más grave que puedas hasta el más agudo cómodo, como una sirena, y luego regresa. Repite 6 veces suavemente.",
+    "tip": "No fuerces los extremos; el objetivo es soltura, no llegar a notas imposibles. Detente si sientes tensión en la garganta."
+  },
+  {
+    "id": "v-8",
+    "day": 8,
+    "title": "Ritmo y pausas",
+    "description": "Practica el uso de pausas para dar énfasis y claridad a tus ideas.",
+    "category": "diccion",
+    "exerciseText": "Lee en voz alta: 'Hoy [pausa] quiero hablarte [pausa] de algo importante.' Marca una pausa real de 1 segundo en cada corchete. Repite variando qué palabra enfatizas antes de la pausa.",
+    "tip": "La mayoría de las personas hablan sin pausas por nerviosismo. Una pausa bien colocada comunica más seguridad que hablar rápido."
+  },
+  {
+    "id": "v-9",
+    "day": 9,
+    "title": "Consonantes sonoras B, D, G",
+    "description": "Refuerza la claridad de las consonantes sonoras, frecuentemente arrastradas.",
+    "category": "pronunciacion",
+    "exerciseText": "Repite lentamente: 'Bota-Dato-Gato, Bota-Dato-Gato' articulando plenamente cada consonante inicial, 10 repeticiones, subiendo la velocidad de forma gradual.",
+    "tip": "Estas consonantes suelen 'comerse' al hablar rápido. Practicarlas de forma exagerada mejora la inteligibilidad general del habla."
+  },
+  {
+    "id": "v-10",
+    "day": 10,
+    "title": "Volumen controlado",
+    "description": "Practica variar el volumen de forma intencional para mantener el interés del oyente.",
+    "category": "resonancia",
+    "exerciseText": "Lee una frase corta tres veces: primero en volumen bajo (íntimo), luego en volumen normal (conversacional) y finalmente en volumen alto (proyectado), sin perder claridad en ninguna.",
+    "tip": "Un discurso con un solo volumen se vuelve monótono. Variar el volumen intencionalmente es una herramienta de énfasis, no un accidente."
+  },
+  {
+    "id": "v-11",
+    "day": 11,
+    "title": "Dicción de finales de palabra",
+    "description": "Evita 'comerte' las últimas sílabas, un error muy común al hablar rápido.",
+    "category": "pronunciacion",
+    "exerciseText": "Lee en voz alta terminando claramente cada palabra: 'Estoy comunicando con claridad total y completa.' Repite 5 veces asegurándote de pronunciar la última sílaba de cada palabra con la misma fuerza que la primera.",
+    "tip": "Grábate y escucha si las últimas sílabas se escuchan igual de claras que las primeras. Es el error de dicción más común y más fácil de corregir con práctica consciente."
+  },
+  {
+    "id": "v-12",
+    "day": 12,
+    "title": "Calentamiento labial",
+    "description": "Relaja y activa los labios para una articulación más fluida.",
+    "category": "diccion",
+    "exerciseText": "Haz vibrar los labios (como un motor, 'brrrr') durante 15 segundos, descansa y repite 4 veces. Luego di 'ma-me-mi-mo-mu' marcando bien el cierre de labios en cada 'm'.",
+    "tip": "Los labios tensos producen una articulación pobre. Este calentamiento es ideal antes de cualquier presentación importante."
+  },
+  {
+    "id": "v-13",
+    "day": 13,
+    "title": "Apoyo en frases largas",
+    "description": "Aprende a distribuir el aire para terminar frases largas sin quedarte sin aliento.",
+    "category": "resonancia",
+    "exerciseText": "Inhala profundamente y di de corrido, sin cortar: 'Quiero agradecerles a todos ustedes por acompañarme en este momento tan importante para mi carrera profesional.' Repite 5 veces buscando llegar más relajado al final cada vez.",
+    "tip": "Si te quedas sin aire a mitad de frase, inhalaste poco o hablaste demasiado rápido al inicio. Distribuye el aire pensando en llegar cómodo al final."
+  },
+  {
+    "id": "v-14",
+    "day": 14,
+    "title": "Entonación de preguntas y afirmaciones",
+    "description": "Diferencia claramente la melodía de una pregunta frente a una afirmación.",
+    "category": "pronunciacion",
+    "exerciseText": "Di la frase '¿Vienes mañana?' con entonación ascendente al final, y luego 'Vienes mañana.' con entonación descendente. Alterna 8 veces exagerando la diferencia melódica.",
+    "tip": "Una entonación plana en preguntas confunde al oyente. La melodía de la voz comunica tanto como las palabras mismas."
+  },
+  {
+    "id": "v-15",
+    "day": 15,
+    "title": "Trabalenguas de dicción compleja",
+    "description": "Reta tu articulación con un trabalenguas de mayor dificultad.",
+    "category": "diccion",
+    "exerciseText": "Practica: 'El cielo está enladrillado, ¿quién lo desenladrillará? El desenladrillador que lo desenladrille buen desenladrillador será.' Empieza muy lento, sílaba por sílaba, y ve acelerando en 5 repeticiones.",
+    "tip": "Este es uno de los trabalenguas más difíciles en español; dominarlo mejora notablemente la agilidad articulatoria general."
+  },
+  {
+    "id": "v-16",
+    "day": 16,
+    "title": "Voz de presentación",
+    "description": "Practica el tono cálido y seguro ideal para presentarte ante otros.",
+    "category": "resonancia",
+    "exerciseText": "Di en voz alta, con una sonrisa genuina en el rostro: 'Hola, mi nombre es [tu nombre] y es un gusto conocerte.' Repite 6 veces variando la energía, buscando un punto cálido pero firme.",
+    "tip": "Sonreír mientras hablas cambia físicamente la resonancia de la voz, haciéndola sonar más cálida y accesible, incluso por teléfono."
+  },
+  {
+    "id": "v-17",
+    "day": 17,
+    "title": "Control del ritmo al leer",
+    "description": "Practica leer un texto controlando conscientemente la velocidad.",
+    "category": "diccion",
+    "exerciseText": "Lee en voz alta un párrafo cualquiera de un libro o artículo durante 1 minuto, cronometrando. Cuenta las palabras leídas; el ideal conversacional está entre 130-160 palabras por minuto. Ajusta y repite.",
+    "tip": "Los nervios suelen acelerar el habla. Practicar con cronómetro te da una referencia objetiva de tu velocidad real."
+  },
+  {
+    "id": "v-18",
+    "day": 18,
+    "title": "Voz de cierre y autoridad",
+    "description": "Practica bajar el tono al final de una idea para transmitir seguridad y cierre.",
+    "category": "resonancia",
+    "exerciseText": "Di: 'Y por eso, esta es la mejor decisión que podemos tomar.' bajando ligeramente el tono en las últimas palabras, sin que suene brusco. Repite 6 veces buscando naturalidad.",
+    "tip": "Terminar las frases con tono ascendente (como pregunta) resta autoridad. Bajar el tono al cerrar una idea transmite seguridad y control."
+  }
+]

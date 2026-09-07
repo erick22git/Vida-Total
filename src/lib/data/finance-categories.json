@@ -1,0 +1,16 @@
+[
+  { "id": "gasto-comida", "name": "Comida", "icon": "UtensilsCrossed", "color": "#f97316", "type": "gasto" },
+  { "id": "gasto-transporte", "name": "Transporte", "icon": "Car", "color": "#3b82f6", "type": "gasto" },
+  { "id": "gasto-vivienda", "name": "Vivienda", "icon": "Home", "color": "#8b5cf6", "type": "gasto" },
+  { "id": "gasto-servicios", "name": "Servicios", "icon": "Zap", "color": "#eab308", "type": "gasto" },
+  { "id": "gasto-entretenimiento", "name": "Entretenimiento", "icon": "Film", "color": "#ec4899", "type": "gasto" },
+  { "id": "gasto-salud", "name": "Salud", "icon": "HeartPulse", "color": "#ef4444", "type": "gasto" },
+  { "id": "gasto-educacion", "name": "Educación", "icon": "GraduationCap", "color": "#06b6d4", "type": "gasto" },
+  { "id": "gasto-ropa", "name": "Ropa", "icon": "Shirt", "color": "#14b8a6", "type": "gasto" },
+  { "id": "gasto-otros", "name": "Otros", "icon": "MoreHorizontal", "color": "#6b7280", "type": "gasto" },
+  { "id": "ingreso-salario", "name": "Salario", "icon": "Briefcase", "color": "#22c55e", "type": "ingreso" },
+  { "id": "ingreso-freelance", "name": "Freelance", "icon": "Laptop", "color": "#10b981", "type": "ingreso" },
+  { "id": "ingreso-inversiones", "name": "Inversiones", "icon": "TrendingUp", "color": "#84cc16", "type": "ingreso" },
+  { "id": "ingreso-regalo", "name": "Regalo", "icon": "Gift", "color": "#f59e0b", "type": "ingreso" },
+  { "id": "ingreso-otros", "name": "Otros", "icon": "MoreHorizontal", "color": "#6b7280", "type": "ingreso" }
+]

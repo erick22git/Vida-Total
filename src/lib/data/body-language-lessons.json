@@ -1,0 +1,313 @@
+[
+  {
+    "id": "bl-1",
+    "day": 1,
+    "title": "Postura abierta",
+    "tip": "Mantén los brazos descruzados y el torso orientado hacia la persona con quien hablas.",
+    "illustration": "🧍",
+    "category": "postura",
+    "explanation": "La postura abierta —brazos sin cruzar, torso al frente, pies apuntando hacia el interlocutor— se percibe inconscientemente como señal de confianza y disposición a comunicarse. Cruzar los brazos, aunque sea por comodidad, se interpreta como una barrera defensiva.",
+    "example": "En una entrevista de trabajo, sentarte con la espalda recta, las manos visibles sobre la mesa y el cuerpo orientado hacia el entrevistador transmite interés genuino y seguridad, en vez de cruzar los brazos o desviar el torso hacia la puerta.",
+    "quiz": [
+      {
+        "question": "¿Qué transmite cruzar los brazos durante una conversación?",
+        "options": ["Cercanía y apertura", "Una barrera defensiva", "Máxima confianza", "Nada, es neutro"],
+        "correctIndex": 1
+      },
+      {
+        "question": "¿Hacia dónde debería apuntar tu torso al hablar con alguien?",
+        "options": ["Hacia la salida", "Hacia el interlocutor", "Hacia otro lado", "Da igual"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-2",
+    "day": 2,
+    "title": "Contacto visual equilibrado",
+    "tip": "Sostén la mirada entre 50% y 70% del tiempo de la conversación, sin fijarla de forma intimidante.",
+    "illustration": "👀",
+    "category": "contacto_visual",
+    "explanation": "El contacto visual excesivo (fijo, sin parpadeo) se percibe como agresivo o incómodo, mientras que evitarlo por completo se lee como inseguridad o deshonestidad. El punto óptimo es sostenerlo la mayor parte del tiempo, desviando la mirada brevemente de forma natural cada varios segundos.",
+    "example": "Al escuchar a alguien, mantén la mirada mientras habla y desvíala brevemente solo cuando tú piensas tu respuesta; eso se percibe como reflexión, no como desinterés.",
+    "quiz": [
+      {
+        "question": "¿Qué porcentaje aproximado de contacto visual se considera equilibrado?",
+        "options": ["10-20%", "50-70%", "100% sin parpadear", "0%, mejor evitarlo"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-3",
+    "day": 3,
+    "title": "Gestos que acompañan el discurso",
+    "tip": "Usa las manos para ilustrar tamaños, direcciones o secuencias mientras hablas, con movimientos entre la cintura y los hombros.",
+    "illustration": "🙌",
+    "category": "gestos",
+    "explanation": "Los gestos ilustrativos ayudan a la audiencia a procesar y recordar mejor la información, y hacen que el orador se vea más dinámico y seguro. Gestos por encima de la cabeza pueden parecer descontrolados; mantenerlos en la 'caja de gestos' (entre cintura y hombros, frente al cuerpo) se ve más profesional.",
+    "example": "Al decir 'esto creció en tres pasos', puedes marcar con la mano tres niveles ascendentes; al decir 'por un lado... por otro lado', puedes usar cada mano para representar cada idea.",
+    "quiz": [
+      {
+        "question": "¿Dónde es más profesional mantener los gestos con las manos?",
+        "options": ["Por encima de la cabeza", "Entre la cintura y los hombros", "Detrás de la espalda siempre", "En los bolsillos"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-4",
+    "day": 4,
+    "title": "Microexpresiones de sorpresa",
+    "tip": "Una microexpresión de sorpresa dura menos de medio segundo: cejas elevadas y ojos abiertos.",
+    "illustration": "😲",
+    "category": "microexpresiones",
+    "explanation": "Las microexpresiones son destellos involuntarios de emoción que aparecen y desaparecen en fracciones de segundo, revelando lo que alguien siente realmente antes de que pueda controlarlo conscientemente. Reconocerlas ayuda a entender mejor las reacciones genuinas de los demás.",
+    "example": "Si al proponer una idea ves un rápido levantamiento de cejas seguido de una expresión neutra forzada, es probable que la persona esté genuinamente sorprendida, aunque luego diga que 'ya lo esperaba'.",
+    "quiz": [
+      {
+        "question": "¿Cuánto dura aproximadamente una microexpresión?",
+        "options": ["Varios minutos", "Menos de medio segundo", "Todo el día", "Una hora"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-5",
+    "day": 5,
+    "title": "La sonrisa genuina (Duchenne)",
+    "tip": "Una sonrisa genuina involucra los ojos, no solo la boca; busca las 'patas de gallo'.",
+    "illustration": "😊",
+    "category": "microexpresiones",
+    "explanation": "La sonrisa genuina o 'de Duchenne' activa el músculo orbicular alrededor de los ojos, creando pequeñas arrugas. Una sonrisa social o forzada solo mueve los labios y las mejillas, dejando los ojos sin cambios, lo que se percibe —aunque sea inconscientemente— como poco auténtico.",
+    "example": "En una foto o video, compara una sonrisa donde solo se mueve la boca contra una donde también se entrecierran ligeramente los ojos: la segunda transmite calidez real.",
+    "quiz": [
+      {
+        "question": "¿Qué distingue a una sonrisa genuina de una forzada?",
+        "options": ["El tamaño de los dientes", "La activación de los ojos", "La duración exacta", "El volumen de la risa"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-6",
+    "day": 6,
+    "title": "Postura de poder antes de un reto",
+    "tip": "Antes de una situación estresante, adopta 2 minutos una postura expansiva y erguida en privado.",
+    "illustration": "🦸",
+    "category": "postura",
+    "explanation": "Adoptar posturas expansivas (de pie, manos en la cintura, pecho abierto) durante unos minutos antes de un evento estresante puede aumentar la sensación subjetiva de seguridad y reducir la percepción de ansiedad, preparándote mentalmente para el reto.",
+    "example": "Antes de entrar a una entrevista o presentación importante, párate erguido con las manos en la cintura y el pecho abierto durante 2 minutos en un lugar privado, como el baño o pasillo.",
+    "quiz": [
+      {
+        "question": "¿Qué tipo de postura se recomienda adoptar antes de un evento estresante?",
+        "options": ["Encorvada y pequeña", "Expansiva y erguida", "Sentado con brazos cruzados", "Ninguna, no importa"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-7",
+    "day": 7,
+    "title": "Espejeo (mirroring) sutil",
+    "tip": "Refleja sutil y naturalmente la postura o el ritmo de la otra persona para generar cercanía.",
+    "illustration": "🪞",
+    "category": "gestos",
+    "explanation": "El espejeo es la tendencia natural a imitar sutilmente los gestos, postura o ritmo de habla de alguien con quien conectamos. Usarlo de forma consciente y sutil —sin copiar cada movimiento— puede aumentar la sensación de rapport (conexión) en una conversación.",
+    "example": "Si la otra persona se inclina hacia adelante con interés, inclínate levemente tú también unos segundos después, de forma natural, no inmediata ni exagerada.",
+    "quiz": [
+      {
+        "question": "¿Qué es el 'espejeo' o mirroring?",
+        "options": ["Copiar exactamente cada gesto al instante", "Reflejar sutilmente postura o ritmo del otro", "Evitar todo contacto visual", "Hablar más fuerte que el otro"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-8",
+    "day": 8,
+    "title": "Manos visibles generan confianza",
+    "tip": "Mantén las manos visibles y relajadas; ocultarlas en los bolsillos puede generar desconfianza inconsciente.",
+    "illustration": "✋",
+    "category": "gestos",
+    "explanation": "Desde un punto de vista evolutivo, ver las manos de alguien comunica que no oculta nada (ni armas, literalmente hablando). Mantener las manos visibles y relajadas, en lugar de escondidas en bolsillos o detrás de la espalda, genera una sensación inconsciente de mayor confianza y transparencia.",
+    "example": "Al dar una presentación, evita meter las manos en los bolsillos del pantalón; en su lugar, déjalas relajadas a los costados o úsalas para gesticular con naturalidad.",
+    "quiz": [
+      {
+        "question": "¿Por qué mantener las manos visibles genera confianza?",
+        "options": ["Se ve más elegante", "Comunica que no ocultas nada", "Es una norma de etiqueta moderna", "No tiene ningún efecto"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-9",
+    "day": 9,
+    "title": "El asentimiento activo",
+    "tip": "Asentir lentamente mientras escuchas anima al otro a seguir hablando y muestra escucha activa.",
+    "illustration": "🙆",
+    "category": "gestos",
+    "explanation": "Asentir con la cabeza de forma lenta y ocasional mientras alguien habla comunica que estás procesando activamente lo que dice, y suele animar a la persona a extenderse y compartir más. Asentir demasiado rápido o constantemente, en cambio, puede leerse como impaciencia.",
+    "example": "Mientras un compañero te explica un problema, asiente cada pocas frases de forma pausada en lugar de quedarte inmóvil o asentir nerviosamente sin parar.",
+    "quiz": [
+      {
+        "question": "¿Qué comunica asentir lento y ocasional mientras escuchas?",
+        "options": ["Aburrimiento", "Escucha activa e interés", "Desacuerdo", "Nada en particular"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-10",
+    "day": 10,
+    "title": "Distancia personal (proxémica)",
+    "tip": "Respeta la distancia social (1.2m a 3.6m) en contextos profesionales; invadir el espacio genera incomodidad.",
+    "illustration": "📏",
+    "category": "postura",
+    "explanation": "La proxémica estudia cómo usamos el espacio físico al comunicarnos. En contextos profesionales o con conocidos, la distancia social apropiada suele estar entre 1.2 y 3.6 metros; acercarse más invade el espacio íntimo y genera incomodidad, aunque la intención sea positiva.",
+    "example": "En una reunión de trabajo, mantén una distancia cómoda al hablar con un colega; si notas que retrocede un paso, probablemente estás demasiado cerca y deberías ajustar la distancia.",
+    "quiz": [
+      {
+        "question": "¿Qué estudia la proxémica?",
+        "options": ["El tono de voz", "El uso del espacio físico en la comunicación", "Las expresiones faciales", "El vocabulario usado"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-11",
+    "day": 11,
+    "title": "Inclinación de cabeza al escuchar",
+    "tip": "Inclinar levemente la cabeza hacia un lado mientras escuchas transmite curiosidad e interés genuino.",
+    "illustration": "🤔",
+    "category": "gestos",
+    "explanation": "Una leve inclinación de cabeza durante la escucha es una señal universal de atención y curiosidad, presente incluso en otras especies. Contrasta con una cabeza rígida y recta, que puede leerse como evaluación fría o desinterés.",
+    "example": "Cuando alguien te cuenta algo importante para él, inclina levemente la cabeza hacia un lado en lugar de mantenerla completamente recta; se percibirá más empático.",
+    "quiz": [
+      {
+        "question": "¿Qué transmite inclinar levemente la cabeza al escuchar?",
+        "options": ["Curiosidad e interés", "Cansancio", "Desacuerdo total", "Nada relevante"],
+        "correctIndex": 0
+      }
+    ]
+  },
+  {
+    "id": "bl-12",
+    "day": 12,
+    "title": "Autocontacto y nerviosismo",
+    "tip": "Tocarte constantemente el cuello, cara o pelo puede delatar nerviosismo o incomodidad.",
+    "illustration": "😅",
+    "category": "microexpresiones",
+    "explanation": "Los gestos de autocontacto (tocarse el cuello, frotarse las manos, jugar con el cabello) suelen ser señales de autorregulación ante el estrés o la ansiedad. No son 'malos' en sí, pero un exceso puede comunicar inseguridad a quien observa con atención.",
+    "example": "Si notas que tocas tu cuello repetidamente durante una negociación, tómalo como una señal interna de que estás tenso, y usa una respiración profunda para regular esa sensación.",
+    "quiz": [
+      {
+        "question": "¿Qué suelen indicar los gestos repetidos de autocontacto como tocarse el cuello?",
+        "options": ["Total relajación", "Nerviosismo o autorregulación del estrés", "Alegría extrema", "Nada, es un tic sin significado"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-13",
+    "day": 13,
+    "title": "Pies como indicador de interés",
+    "tip": "Los pies de una persona suelen apuntar inconscientemente hacia donde está su verdadero interés.",
+    "illustration": "🦶",
+    "category": "postura",
+    "explanation": "A diferencia del rostro, que controlamos conscientemente, los pies rara vez se monitorean y tienden a apuntar hacia la dirección de mayor interés real de una persona: hacia la salida si quiere irse, o hacia su interlocutor si está genuinamente comprometido en la conversación.",
+    "example": "En una conversación grupal, si notas que los pies de alguien apuntan hacia la puerta mientras su torso sigue frente a ti, probablemente quiere terminar la interacción pronto.",
+    "quiz": [
+      {
+        "question": "¿Por qué los pies son un buen indicador de interés real?",
+        "options": ["Porque se controlan mucho conscientemente", "Porque rara vez se monitorean conscientemente", "Porque siempre mienten", "No son un indicador válido"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-14",
+    "day": 14,
+    "title": "Barbilla y seguridad",
+    "tip": "Mantener la barbilla en posición neutra (ni muy alta ni muy baja) transmite seguridad sin arrogancia.",
+    "illustration": "🧑",
+    "category": "postura",
+    "explanation": "Una barbilla demasiado elevada puede leerse como arrogancia o desdén, mientras que una barbilla baja y mirada hacia el suelo comunica sumisión o falta de confianza. La posición neutra, con la mirada horizontal, transmite seguridad equilibrada.",
+    "example": "Al caminar hacia el frente de una sala para presentar, mantén la barbilla paralela al piso en lugar de mirar hacia abajo por los nervios o levantarla en exceso.",
+    "quiz": [
+      {
+        "question": "¿Qué puede comunicar una barbilla constantemente baja?",
+        "options": ["Máxima seguridad", "Sumisión o falta de confianza", "Arrogancia", "Nada en particular"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-15",
+    "day": 15,
+    "title": "Sincronía en el apretón de manos",
+    "tip": "Un apretón de manos firme, ni flojo ni excesivo, con contacto visual, genera una primera impresión sólida.",
+    "illustration": "🤝",
+    "category": "gestos",
+    "explanation": "El apretón de manos sigue siendo, en muchos contextos profesionales, la primera interacción física y una fuente importante de primera impresión. Un apretón débil puede leerse como inseguridad; uno excesivamente fuerte, como intento de dominación. El punto medio, acompañado de contacto visual y una breve sonrisa, es lo más efectivo.",
+    "example": "Al saludar a un cliente nuevo, da un apretón firme de un par de segundos, mira a los ojos y sonríe brevemente, en vez de dar la mano de forma floja o mirar hacia otro lado.",
+    "quiz": [
+      {
+        "question": "¿Qué tipo de apretón de manos genera mejor impresión en general?",
+        "options": ["Muy flojo", "Excesivamente fuerte", "Firme, con contacto visual", "No dar la mano"],
+        "correctIndex": 2
+      }
+    ]
+  },
+  {
+    "id": "bl-16",
+    "day": 16,
+    "title": "Expresión de desprecio (contempt)",
+    "tip": "Una comisura de labio elevada de un solo lado es la microexpresión clásica de desprecio.",
+    "illustration": "😏",
+    "category": "microexpresiones",
+    "explanation": "El desprecio es la única emoción básica que se expresa de forma asimétrica: se eleva únicamente una comisura del labio, a menudo acompañada de un ligero entrecerrar de ojos. Es una señal a la que vale la pena prestar atención en negociaciones o conflictos, ya que suele indicar desacuerdo profundo que la persona no verbaliza.",
+    "example": "Si al proponer un acuerdo ves que la otra persona levanta brevemente solo un lado de la boca, aunque diga estar de acuerdo, probablemente tenga reservas importantes que no está expresando.",
+    "quiz": [
+      {
+        "question": "¿Qué caracteriza a la microexpresión de desprecio?",
+        "options": ["Sonrisa simétrica amplia", "Elevación de una sola comisura del labio", "Ojos muy abiertos", "Cejas fruncidas simétricas"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-17",
+    "day": 17,
+    "title": "Gesticular con propósito, no por nervios",
+    "tip": "Diferencia entre gestos que ilustran una idea y gestos repetitivos por ansiedad (como jugar con un bolígrafo).",
+    "illustration": "🖊️",
+    "category": "gestos",
+    "explanation": "No todos los gestos comunican lo mismo: los gestos ilustrativos apoyan el mensaje, mientras que los gestos autoadaptadores (jugar con un objeto, golpear el pie repetidamente) suelen ser descargas de ansiedad que distraen a la audiencia del mensaje principal.",
+    "example": "Antes de una presentación, deja el bolígrafo o el teléfono sobre la mesa en lugar de sostenerlo; así evitas jugar con él inconscientemente mientras hablas.",
+    "quiz": [
+      {
+        "question": "¿Qué tipo de gesto es 'jugar con un bolígrafo' repetidamente mientras se habla?",
+        "options": ["Un gesto ilustrativo útil", "Un gesto autoadaptador de ansiedad", "Una señal de liderazgo", "Un gesto cultural neutro"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  {
+    "id": "bl-18",
+    "day": 18,
+    "title": "Congruencia entre palabra y cuerpo",
+    "tip": "Cuando el cuerpo contradice las palabras, la gente tiende a creer más al cuerpo.",
+    "illustration": "⚖️",
+    "category": "microexpresiones",
+    "explanation": "Diversos estudios de comunicación sugieren que, ante una incongruencia entre el mensaje verbal y las señales no verbales, las personas tienden a confiar más en el lenguaje corporal que en las palabras. Por eso la congruencia entre lo que dices y cómo lo dices es clave para ser percibido como creíble.",
+    "example": "Decir 'estoy muy entusiasmado con este proyecto' con voz plana, hombros caídos y sin contacto visual generará más desconfianza que entusiasmo real en quien te escucha.",
+    "quiz": [
+      {
+        "question": "Cuando el cuerpo contradice las palabras, ¿en qué tiende a confiar más la gente?",
+        "options": ["En las palabras siempre", "En el lenguaje corporal", "En ninguno de los dos", "Depende solo del tono de voz"],
+        "correctIndex": 1
+      }
+    ]
+  }
+]
