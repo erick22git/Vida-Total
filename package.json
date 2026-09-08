@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@zxing/library": "^0.21.3",
     "date-fns": "^4.4.0",
     "framer-motion": "^13.2.0",
     "lucide-react": "^1.41.0",
@@ -23,9 +24,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }

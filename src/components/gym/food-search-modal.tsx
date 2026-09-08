@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import { Search, Plus } from "lucide-react";
 import { GlassModal } from "@/components/glass/glass-modal";
 import { GlassInput } from "@/components/glass/glass-input";
-import foodsData from "@/lib/data/foods.json";
+import { FoodPhoto } from "@/components/gym/food-photo";
+import { BASE_FOODS } from "@/lib/food-utils";
+import { categoryEmoji } from "@/lib/food-category-emoji";
 import type { Food, MealType } from "@/lib/types";
 import { useGymStore } from "@/lib/store/gymStore";
-
-const foods = foodsData as Food[];
 
 export function FoodSearchModal({
   open,
@@ -21,12 +21,15 @@ export function FoodSearchModal({
 }) {
   const [query, setQuery] = useState("");
   const addLoggedFood = useGymStore((s) => s.addLoggedFood);
+  const customFoods = useGymStore((s) => s.customFoods);
+
+  const foods = useMemo<Food[]>(() => [...customFoods, ...BASE_FOODS], [customFoods]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return foods.slice(0, 25);
     return foods.filter((f) => f.nombre.toLowerCase().includes(q)).slice(0, 40);
-  }, [query]);
+  }, [foods, query]);
 
   const mealLabel: Record<MealType, string> = {
     desayuno: "Desayuno",
@@ -63,10 +66,11 @@ export function FoodSearchModal({
             <button
               key={food.id}
               onClick={() => handleAdd(food)}
-              className="flex items-center justify-between gap-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] px-4 py-3 text-left transition-colors cursor-pointer"
+              className="flex items-center gap-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] px-4 py-3 text-left transition-colors cursor-pointer"
             >
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-white">{food.nombre}</span>
+              <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={36} emoji={categoryEmoji(food.categoria)} />
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="text-sm font-medium text-white truncate">{food.nombre}</span>
                 <span className="text-xs text-white/45">
                   {food.porcion} · {food.calorias} kcal · P{food.proteina}g C{food.carbos}g G{food.grasas}g
                 </span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Flame, ArrowLeft } from "lucide-react";
+import { Flame, ArrowLeft, Search, ScanLine, Mic, BookOpen, List } from "lucide-react";
 import Link from "next/link";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -9,6 +9,14 @@ import { MealCard } from "@/components/gym/meal-card";
 import { FoodSearchModal } from "@/components/gym/food-search-modal";
 import { useGymStore, useTodayLoggedFoods } from "@/lib/store/gymStore";
 import type { MealType } from "@/lib/types";
+
+const QUICK_ACTIONS = [
+  { key: "buscar", label: "Buscar", href: "/gym/calorias/buscar", icon: Search },
+  { key: "escaner", label: "Escáner", href: "/gym/calorias/escaner", icon: ScanLine },
+  { key: "voz", label: "Voz", href: "/gym/calorias/voz", icon: Mic },
+  { key: "recetas", label: "Recetas", href: "/gym/calorias/recetas", icon: BookOpen },
+  { key: "lista", label: "Lista", href: "/gym/calorias/lista", icon: List },
+] as const;
 
 const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snacks"];
 
@@ -48,6 +56,19 @@ export default function CaloriasPage() {
             <span className="text-xs text-white/45">de {calorieGoal} kcal</span>
           </div>
         </ProgressRing>
+      </div>
+
+      <div className="grid grid-cols-5 gap-2">
+        {QUICK_ACTIONS.map(({ key, label, href, icon: Icon }) => (
+          <Link
+            key={key}
+            href={href}
+            className="flex flex-col items-center gap-1.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] py-3 transition-colors"
+          >
+            <Icon size={17} style={{ color: "var(--gym)" }} />
+            <span className="text-[10px] text-white/60">{label}</span>
+          </Link>
+        ))}
       </div>
 
       <div className="flex flex-col gap-4">

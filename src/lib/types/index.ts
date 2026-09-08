@@ -40,18 +40,80 @@ export interface Exercise {
   imagen?: string;
 }
 
+export interface FoodPortion {
+  nombre: string; // e.g. "unidad", "taza", "100 g"
+  gramos: number;
+}
+
+export interface FoodMicronutrients {
+  vitaminaA?: number; // mcg
+  vitaminaC?: number; // mg
+  vitaminaD?: number; // mcg
+  vitaminaE?: number; // mg
+  vitaminaK?: number; // mcg
+  vitaminaB1?: number; // mg
+  vitaminaB2?: number; // mg
+  vitaminaB3?: number; // mg
+  vitaminaB6?: number; // mg
+  vitaminaB12?: number; // mcg
+  folato?: number; // mcg
+  calcio?: number; // mg
+  hierro?: number; // mg
+  magnesio?: number; // mg
+  fosforo?: number; // mg
+  potasio?: number; // mg
+  zinc?: number; // mg
+  selenio?: number; // mcg
+  cobre?: number; // mg
+  manganeso?: number; // mg
+}
+
+export const FOOD_CATEGORIES = [
+  "Frutas",
+  "Verduras",
+  "Proteínas",
+  "Lácteos",
+  "Granos",
+  "Snacks",
+  "Bebidas",
+  "Otros",
+] as const;
+export type FoodCategory = (typeof FOOD_CATEGORIES)[number];
+
 export interface Food {
   id: string;
   nombre: string;
+  marca?: string;
   categoria: string;
-  porcion: string;
+  porcion: string; // default portion label, e.g. "100 g"
+  pesoGramos?: number; // grams represented by the default porcion
   calorias: number;
   proteina: number;
   carbos: number;
   grasas: number;
+  grasasSaturadas?: number;
+  grasasTrans?: number;
+  colesterol?: number; // mg
+  sodio?: number; // mg
+  fibra?: number;
+  azucares?: number;
+  azucaresAnadidos?: number;
+  micronutrientes?: FoodMicronutrients;
+  photoUrl?: string | null;
+  barcode?: string;
+  verificado?: boolean; // predefined food from the base dataset
+  creadoPorUsuario?: boolean;
+  porciones?: FoodPortion[]; // alternate selectable units
 }
 
 export type MealType = "desayuno" | "almuerzo" | "cena" | "snacks";
+
+export const MEAL_LABELS: Record<MealType, string> = {
+  desayuno: "Desayuno",
+  almuerzo: "Almuerzo",
+  cena: "Cena",
+  snacks: "Snacks",
+};
 
 export interface LoggedFood {
   id: string;
@@ -63,6 +125,37 @@ export interface LoggedFood {
   grasas: number;
   meal: MealType;
   timestamp: number;
+  cantidad?: number;
+  porcionNombre?: string;
+  photoUrl?: string | null;
+}
+
+export interface RecipeIngredient {
+  foodId: string;
+  nombre: string;
+  cantidad: number;
+  porcionNombre: string;
+  gramos: number;
+  calorias: number;
+  proteina: number;
+  carbos: number;
+  grasas: number;
+}
+
+export interface Recipe {
+  id: string;
+  nombre: string;
+  foto?: string | null;
+  porciones: number;
+  tiempoPrepMin: number;
+  tipos: MealType[];
+  ingredientes: RecipeIngredient[];
+  instrucciones: string[];
+  totales: { calorias: number; proteina: number; carbos: number; grasas: number };
+  favorito?: boolean;
+  fuente?: "manual" | "foto" | "enlace" | "ia";
+  enlace?: string;
+  createdAt: number;
 }
 
 export interface WaterEntry {

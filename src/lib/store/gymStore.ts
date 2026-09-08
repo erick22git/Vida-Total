@@ -3,9 +3,11 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { isSameDay, differenceInCalendarDays } from "date-fns";
 import type {
   Exercise,
+  Food,
   LoggedFood,
   MealType,
   MuscleGroup,
+  Recipe,
   Routine,
   RoutineExercise,
   TrainingPlan,
@@ -33,6 +35,20 @@ interface GymState {
     food: Omit<LoggedFood, "id" | "timestamp">,
   ) => void;
   removeLoggedFood: (id: string) => void;
+
+  // ---------- Custom foods & favorites ----------
+  customFoods: Food[];
+  addCustomFood: (food: Omit<Food, "id" | "creadoPorUsuario">) => Food;
+  updateCustomFood: (id: string, patch: Partial<Food>) => void;
+  favoriteFoodIds: string[];
+  toggleFavoriteFood: (foodId: string) => void;
+
+  // ---------- Recipes ----------
+  recipes: Recipe[];
+  addRecipe: (recipe: Omit<Recipe, "id" | "createdAt">) => Recipe;
+  updateRecipe: (id: string, patch: Partial<Recipe>) => void;
+  toggleFavoriteRecipe: (id: string) => void;
+  deleteRecipe: (id: string) => void;
 
   // ---------- Water ----------
   waterGoalMl: number;
@@ -126,6 +142,45 @@ export const useGymStore = create<GymState>()(
         set((state) => ({
           loggedFoods: state.loggedFoods.filter((f) => f.id !== id),
         })),
+
+      // Custom foods & favorites
+      customFoods: [],
+      addCustomFood: (food) => {
+        const created: Food = { ...food, id: `custom-${uid()}`, creadoPorUsuario: true };
+        set((state) => ({ customFoods: [created, ...state.customFoods] }));
+        return created;
+      },
+      updateCustomFood: (id, patch) =>
+        set((state) => ({
+          customFoods: state.customFoods.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+        })),
+      favoriteFoodIds: [],
+      toggleFavoriteFood: (foodId) =>
+        set((state) => ({
+          favoriteFoodIds: state.favoriteFoodIds.includes(foodId)
+            ? state.favoriteFoodIds.filter((id) => id !== foodId)
+            : [...state.favoriteFoodIds, foodId],
+        })),
+
+      // Recipes
+      recipes: [],
+      addRecipe: (recipe) => {
+        const created: Recipe = { ...recipe, id: `recipe-${uid()}`, createdAt: Date.now() };
+        set((state) => ({ recipes: [created, ...state.recipes] }));
+        return created;
+      },
+      updateRecipe: (id, patch) =>
+        set((state) => ({
+          recipes: state.recipes.map((r) => (r.id === id ? { ...r, ...patch } : r)),
+        })),
+      toggleFavoriteRecipe: (id) =>
+        set((state) => ({
+          recipes: state.recipes.map((r) =>
+            r.id === id ? { ...r, favorito: !r.favorito } : r,
+          ),
+        })),
+      deleteRecipe: (id) =>
+        set((state) => ({ recipes: state.recipes.filter((r) => r.id !== id) })),
 
       // Water
       waterGoalMl: 2500,
@@ -463,7 +518,7 @@ export const useGymStore = create<GymState>()(
     {
       name: "vida-total-gym-store",
       storage: createJSONStorage(() => localStorage),
-      version: 2,
+      version: 3,
     },
   ),
 );
@@ -486,4 +541,18 @@ export function mealTotals(foods: LoggedFood[], meal: MealType) {
   return foods
     .filter((f) => f.meal === meal)
     .reduce((sum, f) => sum + f.calorias, 0);
+}
+
+/** Most recently logged foods, unique by foodId, newest first. */
+export function useRecentFoods(limit = 12) {
+  const loggedFoods = useGymStore((s) => s.loggedFoods);
+  const seen = new Set<string>();
+  const recent: LoggedFood[] = [];
+  for (const f of [...loggedFoods].sort((a, b) => b.timestamp - a.timestamp)) {
+    if (seen.has(f.foodId)) continue;
+    seen.add(f.foodId);
+    recent.push(f);
+    if (recent.length >= limit) break;
+  }
+  return recent;
 }
