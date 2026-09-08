@@ -58,7 +58,7 @@ export function generateAiRecipe(freeText: string): Omit<Recipe, "id" | "created
 
   const nombre = ingredientes.length > 0 ? `${ingredientes.map((i) => i.nombre).slice(0, 3).join(" con ")}` : "Receta con IA";
 
-  const tipos: MealType[] = totales.calorias > 500 ? ["almuerzo", "cena"] : ["desayuno", "snacks"];
+  const tipos: MealType[] = totales.calorias > 500 ? ["almuerzo", "cena"] : ["desayuno", "snack1"];
 
   const instrucciones =
     ingredientes.length > 0

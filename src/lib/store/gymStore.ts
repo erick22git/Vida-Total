@@ -4,12 +4,15 @@ import { isSameDay, differenceInCalendarDays } from "date-fns";
 import type {
   Exercise,
   Food,
+  FoodPortion,
   LoggedFood,
+  MealTemplate,
   MealType,
   MuscleGroup,
   Recipe,
   Routine,
   RoutineExercise,
+  TrackableNutrient,
   TrainingPlan,
   WaterEntry,
   WeeklyPlanDay,
@@ -18,6 +21,7 @@ import type {
   WorkoutSession,
   WorkoutSet,
 } from "@/lib/types";
+import { DEFAULT_TRACKED_NUTRIENTS } from "@/lib/types";
 import { DEFAULT_WEEKLY_PLAN } from "@/lib/data/weekly-plan";
 
 function uid() {
@@ -33,8 +37,29 @@ interface GymState {
   loggedFoods: LoggedFood[];
   addLoggedFood: (
     food: Omit<LoggedFood, "id" | "timestamp">,
-  ) => void;
+  ) => LoggedFood;
   removeLoggedFood: (id: string) => void;
+  updateLoggedFood: (id: string, patch: Partial<LoggedFood>) => void;
+  reorderMealFoods: (meal: MealType, orderedIds: string[]) => void;
+
+  // ---------- Meal actions (menu "···") ----------
+  mealClipboard: LoggedFood[] | null;
+  copyMeal: (meal: MealType) => void;
+  pasteMeal: (meal: MealType) => void;
+  repeatMeal: (meal: MealType) => boolean;
+  clearMeal: (meal: MealType) => void;
+  scaleMealPortions: (meal: MealType, factor: number) => void;
+  mealTemplates: MealTemplate[];
+  saveMealAsTemplate: (meal: MealType, nombre: string) => MealTemplate | null;
+  applyMealTemplate: (templateId: string, meal: MealType) => void;
+
+  // ---------- Nutrient tracking preferences ----------
+  trackedNutrients: TrackableNutrient[];
+  setTrackedNutrients: (keys: TrackableNutrient[]) => void;
+  showRemaining: boolean;
+  toggleShowRemaining: () => void;
+  dayFinishedDate: string | null;
+  finishDay: () => void;
 
   // ---------- Custom foods & favorites ----------
   customFoods: Food[];
@@ -42,6 +67,8 @@ interface GymState {
   updateCustomFood: (id: string, patch: Partial<Food>) => void;
   favoriteFoodIds: string[];
   toggleFavoriteFood: (foodId: string) => void;
+  customPortionsByFood: Record<string, FoodPortion[]>;
+  addCustomPortion: (foodId: string, portion: FoodPortion) => void;
 
   // ---------- Recipes ----------
   recipes: Recipe[];
@@ -120,6 +147,14 @@ interface GymState {
   kegelLastSessionDate: string | null; // ISO date string
   kegelTotalSessions: number;
   completeKegelSession: () => void;
+
+  // ---------- Dashboard personalization ----------
+  dashboardPrefs: {
+    showOtherNutrients: boolean;
+    showWeekStrip: boolean;
+    showFinishDayButton: boolean;
+  };
+  setDashboardPref: (key: keyof GymState["dashboardPrefs"], value: boolean) => void;
 }
 
 export const useGymStore = create<GymState>()(
@@ -131,17 +166,152 @@ export const useGymStore = create<GymState>()(
       carbsGoal: 220,
       fatGoal: 60,
       loggedFoods: [],
-      addLoggedFood: (food) =>
+      addLoggedFood: (food) => {
+        const created: LoggedFood = { ...food, id: uid(), timestamp: Date.now() };
         set((state) => ({
-          loggedFoods: [
-            ...state.loggedFoods,
-            { ...food, id: uid(), timestamp: Date.now() },
-          ],
-        })),
+          loggedFoods: [...state.loggedFoods, created],
+        }));
+        return created;
+      },
       removeLoggedFood: (id) =>
         set((state) => ({
           loggedFoods: state.loggedFoods.filter((f) => f.id !== id),
         })),
+      updateLoggedFood: (id, patch) =>
+        set((state) => ({
+          loggedFoods: state.loggedFoods.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+        })),
+      reorderMealFoods: (meal, orderedIds) =>
+        set((state) => {
+          const now = new Date();
+          const inMeal = (f: LoggedFood) => f.meal === meal && isSameDay(new Date(f.timestamp), now);
+          const others = state.loggedFoods.filter((f) => !inMeal(f));
+          const map = new Map(state.loggedFoods.filter(inMeal).map((f) => [f.id, f] as const));
+          const reordered = orderedIds.map((id) => map.get(id)).filter((f): f is LoggedFood => !!f);
+          return { loggedFoods: [...others, ...reordered] };
+        }),
+
+      // Meal actions (menu "···")
+      mealClipboard: null,
+      copyMeal: (meal) =>
+        set((state) => {
+          const now = new Date();
+          const items = state.loggedFoods.filter(
+            (f) => f.meal === meal && isSameDay(new Date(f.timestamp), now),
+          );
+          return { mealClipboard: items.length ? items : null };
+        }),
+      pasteMeal: (meal) =>
+        set((state) => {
+          if (!state.mealClipboard || state.mealClipboard.length === 0) return state;
+          const pasted = state.mealClipboard.map((f) => ({
+            ...f,
+            id: uid(),
+            meal,
+            timestamp: Date.now(),
+          }));
+          return { loggedFoods: [...state.loggedFoods, ...pasted] };
+        }),
+      repeatMeal: (meal) => {
+        const state = get();
+        const now = new Date();
+        const past = state.loggedFoods
+          .filter((f) => f.meal === meal && !isSameDay(new Date(f.timestamp), now))
+          .sort((a, b) => b.timestamp - a.timestamp);
+        if (past.length === 0) return false;
+        const lastTimestamp = past[0].timestamp;
+        const lastDay = new Date(lastTimestamp);
+        const lastMealItems = past.filter((f) => isSameDay(new Date(f.timestamp), lastDay));
+        set((s) => ({
+          loggedFoods: [
+            ...s.loggedFoods,
+            ...lastMealItems.map((f) => ({ ...f, id: uid(), timestamp: Date.now() })),
+          ],
+        }));
+        return true;
+      },
+      clearMeal: (meal) =>
+        set((state) => {
+          const now = new Date();
+          return {
+            loggedFoods: state.loggedFoods.filter(
+              (f) => !(f.meal === meal && isSameDay(new Date(f.timestamp), now)),
+            ),
+          };
+        }),
+      scaleMealPortions: (meal, factor) =>
+        set((state) => {
+          const now = new Date();
+          return {
+            loggedFoods: state.loggedFoods.map((f) =>
+              f.meal === meal && isSameDay(new Date(f.timestamp), now)
+                ? {
+                    ...f,
+                    calorias: Math.round(f.calorias * factor),
+                    proteina: Math.round(f.proteina * factor * 10) / 10,
+                    carbos: Math.round(f.carbos * factor * 10) / 10,
+                    grasas: Math.round(f.grasas * factor * 10) / 10,
+                    cantidad: f.cantidad ? Math.round(f.cantidad * factor * 100) / 100 : f.cantidad,
+                    gramos: f.gramos ? Math.round(f.gramos * factor * 10) / 10 : f.gramos,
+                  }
+                : f,
+            ),
+          };
+        }),
+      mealTemplates: [],
+      saveMealAsTemplate: (meal, nombre) => {
+        const state = get();
+        const now = new Date();
+        const items = state.loggedFoods.filter(
+          (f) => f.meal === meal && isSameDay(new Date(f.timestamp), now),
+        );
+        if (items.length === 0) return null;
+        const template: MealTemplate = {
+          id: uid(),
+          nombre,
+          meal,
+          items: items.map((f) => ({
+            foodId: f.foodId,
+            nombre: f.nombre,
+            calorias: f.calorias,
+            proteina: f.proteina,
+            carbos: f.carbos,
+            grasas: f.grasas,
+            cantidad: f.cantidad,
+            porcionNombre: f.porcionNombre,
+            gramos: f.gramos,
+            photoUrl: f.photoUrl,
+            cookedState: f.cookedState,
+          })),
+          createdAt: Date.now(),
+        };
+        set((s) => ({ mealTemplates: [template, ...s.mealTemplates] }));
+        return template;
+      },
+      applyMealTemplate: (templateId, meal) =>
+        set((state) => {
+          const template = state.mealTemplates.find((t) => t.id === templateId);
+          if (!template) return state;
+          return {
+            loggedFoods: [
+              ...state.loggedFoods,
+              ...template.items.map((item) => ({
+                ...item,
+                id: uid(),
+                timestamp: Date.now(),
+                meal,
+              })),
+            ],
+          };
+        }),
+
+      // Nutrient tracking preferences
+      trackedNutrients: DEFAULT_TRACKED_NUTRIENTS,
+      setTrackedNutrients: (keys) => set({ trackedNutrients: keys }),
+      showRemaining: false,
+      toggleShowRemaining: () => set((state) => ({ showRemaining: !state.showRemaining })),
+      dayFinishedDate: null,
+      finishDay: () => set({ dayFinishedDate: new Date().toDateString() }),
 
       // Custom foods & favorites
       customFoods: [],
@@ -160,6 +330,14 @@ export const useGymStore = create<GymState>()(
           favoriteFoodIds: state.favoriteFoodIds.includes(foodId)
             ? state.favoriteFoodIds.filter((id) => id !== foodId)
             : [...state.favoriteFoodIds, foodId],
+        })),
+      customPortionsByFood: {},
+      addCustomPortion: (foodId, portion) =>
+        set((state) => ({
+          customPortionsByFood: {
+            ...state.customPortionsByFood,
+            [foodId]: [...(state.customPortionsByFood[foodId] ?? []), portion],
+          },
         })),
 
       // Recipes
@@ -514,11 +692,45 @@ export const useGymStore = create<GymState>()(
             kegelLevel: level,
           };
         }),
+
+      // Dashboard personalization
+      dashboardPrefs: {
+        showOtherNutrients: true,
+        showWeekStrip: true,
+        showFinishDayButton: true,
+      },
+      setDashboardPref: (key, value) =>
+        set((state) => ({
+          dashboardPrefs: { ...state.dashboardPrefs, [key]: value },
+        })),
     }),
     {
       name: "vida-total-gym-store",
       storage: createJSONStorage(() => localStorage),
-      version: 3,
+      version: 5,
+      migrate: (persisted, version) => {
+        const state = persisted as GymState;
+        if (version < 5) {
+          state.dashboardPrefs = {
+            showOtherNutrients: true,
+            showWeekStrip: true,
+            showFinishDayButton: true,
+          };
+        }
+        if (version < 4) {
+          const remap = (m: unknown) => (m === "snacks" ? "snack1" : m);
+          if (Array.isArray(state.loggedFoods)) {
+            state.loggedFoods = state.loggedFoods.map((f) => ({ ...f, meal: remap(f.meal) as MealType }));
+          }
+          if (Array.isArray(state.recipes)) {
+            state.recipes = state.recipes.map((r) => ({
+              ...r,
+              tipos: (r.tipos ?? []).map((t) => remap(t) as MealType),
+            }));
+          }
+        }
+        return state;
+      },
     },
   ),
 );

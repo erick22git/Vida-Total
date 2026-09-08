@@ -151,7 +151,7 @@ export default function VozPage() {
         proteina: nutrition.proteina,
         carbos: nutrition.carbos,
         grasas: nutrition.grasas,
-        meal: "snacks",
+        meal: "snack1",
         cantidad: 1,
         porcionNombre: portion.nombre,
         photoUrl: food.photoUrl,

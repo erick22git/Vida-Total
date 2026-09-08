@@ -32,7 +32,7 @@ export default function RecetasPage() {
     { key: "desayuno", label: "Desayuno" },
     { key: "almuerzo", label: "Almuerzo" },
     { key: "cena", label: "Cena" },
-    { key: "snacks", label: "Snacks" },
+    { key: "snack1", label: "Snacks" },
     { key: "favoritos", label: "Favoritos" },
   ];
 

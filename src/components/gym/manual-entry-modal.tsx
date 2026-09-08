@@ -7,12 +7,12 @@ import { GlassButton } from "@/components/glass/glass-button";
 import { useGymStore } from "@/lib/store/gymStore";
 import { MEAL_LABELS, type MealType } from "@/lib/types";
 
-const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snacks"];
+const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snack1", "snack2"];
 
 export function ManualEntryModal({
   open,
   onClose,
-  defaultMeal = "snacks",
+  defaultMeal = "snack1",
 }: {
   open: boolean;
   onClose: () => void;
@@ -86,7 +86,7 @@ export function ManualEntryModal({
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs text-white/50">Agregar a</label>
-          <div className="grid grid-cols-4 gap-1.5">
+          <div className="grid grid-cols-5 gap-1.5">
             {MEALS.map((m) => (
               <button
                 key={m}

@@ -1,7 +1,7 @@
 "use client";
 
-import { use, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, use, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -22,21 +22,36 @@ import { QuantityKeypad } from "@/components/gym/quantity-keypad";
 import { useGymStore } from "@/lib/store/gymStore";
 import { BASE_FOODS, defaultPortions, scaleNutrition, scaleMicronutrients, MICRONUTRIENT_LABELS, DAILY_VALUES } from "@/lib/food-utils";
 import { categoryEmoji } from "@/lib/food-category-emoji";
-import type { FoodPortion, MealType } from "@/lib/types";
+import type { CookedState, FoodPortion, MealType } from "@/lib/types";
+
+/** Rough water-loss factor applied when a food is marked "cocido" (cooked): the
+ * same displayed weight of a cooked food packs more nutrients per gram than raw,
+ * so we scale the effective grams used for the nutrition lookup up by ~1/0.7.
+ * Kept consistent with src/components/gym/food-entry-sheet.tsx. */
+const COOKED_FACTOR = 0.7;
 
 const ADD_TARGETS: { key: string; label: string; meal: MealType }[] = [
   { key: "desayuno", label: "Desayuno", meal: "desayuno" },
   { key: "almuerzo", label: "Almuerzo", meal: "almuerzo" },
   { key: "cena", label: "Cena", meal: "cena" },
-  { key: "snack1", label: "Snack 1", meal: "snacks" },
-  { key: "snack2", label: "Snack 2", meal: "snacks" },
+  { key: "snack1", label: "Snack 1", meal: "snack1" },
+  { key: "snack2", label: "Snack 2", meal: "snack2" },
 ];
 
 const MACRO_COLORS = { proteina: "#22c55e", carbos: "#eab308", grasas: "#f97316" };
 
 export default function FoodDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense fallback={null}>
+      <FoodDetailContent params={params} />
+    </Suspense>
+  );
+}
+
+function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const customFoods = useGymStore((s) => s.customFoods);
   const favoriteFoodIds = useGymStore((s) => s.favoriteFoodIds);
@@ -48,9 +63,17 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
     [customFoods, id],
   );
 
+  const initialTargetIdx = useMemo(() => {
+    const mealParam = searchParams.get("meal");
+    if (!mealParam) return 0;
+    const idx = ADD_TARGETS.findIndex((t) => t.meal === mealParam);
+    return idx >= 0 ? idx : 0;
+  }, [searchParams]);
+
   const [portions, setPortions] = useState<FoodPortion[]>(() => (food ? defaultPortions(food) : []));
   const [selectedPortionIdx, setSelectedPortionIdx] = useState(0);
   const [cantidad, setCantidad] = useState(1);
+  const [cookedState, setCookedState] = useState<CookedState>("crudo");
   const [keypadOpen, setKeypadOpen] = useState(false);
   const [portionMenuOpen, setPortionMenuOpen] = useState(false);
   const [createPortionOpen, setCreatePortionOpen] = useState(false);
@@ -58,6 +81,7 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
   const [newPortionGrams, setNewPortionGrams] = useState("");
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [addedTarget, setAddedTarget] = useState<string | null>(null);
+  const [defaultTargetIdx] = useState(initialTargetIdx);
   const [nutritionOpen, setNutritionOpen] = useState(true);
   const [microOpen, setMicroOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
@@ -74,7 +98,8 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const selectedPortion = portions[selectedPortionIdx] ?? portions[0];
-  const gramos = cantidad * (selectedPortion?.gramos ?? 100);
+  const rawGramos = cantidad * (selectedPortion?.gramos ?? 100);
+  const gramos = cookedState === "cocido" ? rawGramos / COOKED_FACTOR : rawGramos;
   const nutrition = scaleNutrition(food, gramos);
   const micronutrients = scaleMicronutrients(food, gramos);
   const isFavorite = favoriteFoodIds.includes(food.id);
@@ -125,6 +150,7 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
       cantidad,
       porcionNombre: selectedPortion?.nombre,
       photoUrl: food!.photoUrl,
+      cookedState,
     });
     setAddedTarget(target.key);
     setAddMenuOpen(false);
@@ -132,7 +158,7 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <div className="flex flex-col gap-5 pb-28">
+    <div className="flex flex-col gap-5 pb-44 md:pb-28">
       <header className="flex items-center justify-between pt-2 gap-2">
         <button onClick={() => router.back()} className="text-white/50 hover:text-white transition-colors shrink-0">
           <ArrowLeft size={20} />
@@ -184,7 +210,7 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
           </span>
         )}
         <p className="text-xs text-white/45">
-          Datos por {cantidad} {selectedPortion?.nombre}
+          Datos por {cantidad} {selectedPortion?.nombre} - peso {cookedState}
         </p>
       </div>
 
@@ -220,101 +246,6 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
           <span className="flex items-center gap-1"><Dot color={MACRO_COLORS.carbos} /> Carbos {macroPct.carbos}%</span>
           <span className="flex items-center gap-1"><Dot color={MACRO_COLORS.grasas} /> Grasas {macroPct.grasas}%</span>
         </div>
-      </GlassCard>
-
-      {/* Portion selector */}
-      <GlassCard padding="md" className="flex flex-col gap-3">
-        <p className="text-sm font-semibold text-white">Porción</p>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => setKeypadOpen(true)}
-            className="rounded-2xl bg-white/[0.06] border border-white/[0.12] px-4 py-2.5 text-left cursor-pointer"
-          >
-            <span className="text-[10px] text-white/40 block">Cantidad</span>
-            <span className="text-sm text-white font-medium">{cantidad}</span>
-          </button>
-          <div className="relative">
-            <button
-              onClick={() => setPortionMenuOpen((v) => !v)}
-              className="w-full rounded-2xl bg-white/[0.06] border border-white/[0.12] px-4 py-2.5 text-left cursor-pointer flex items-center justify-between"
-            >
-              <span className="min-w-0">
-                <span className="text-[10px] text-white/40 block">Porción</span>
-                <span className="text-sm text-white font-medium truncate block">{selectedPortion?.nombre}</span>
-              </span>
-              <ChevronDown size={14} className="text-white/40 shrink-0" />
-            </button>
-            {portionMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-30" onClick={() => setPortionMenuOpen(false)} />
-                <div className="absolute left-0 right-0 top-full mt-1 z-40 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden max-h-56 overflow-y-auto">
-                  {portions.map((p, idx) => (
-                    <button
-                      key={p.nombre + idx}
-                      className="w-full text-left px-4 py-2.5 text-sm text-white hover:bg-white/[0.08] cursor-pointer"
-                      onClick={() => {
-                        setSelectedPortionIdx(idx);
-                        setPortionMenuOpen(false);
-                      }}
-                    >
-                      {p.nombre}
-                    </button>
-                  ))}
-                  <button
-                    className="w-full text-left px-4 py-2.5 text-sm text-[var(--gym)] hover:bg-white/[0.08] cursor-pointer border-t border-white/[0.08]"
-                    onClick={() => {
-                      setPortionMenuOpen(false);
-                      setCreatePortionOpen(true);
-                    }}
-                  >
-                    + Crear Porción
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {createPortionOpen && (
-          <div className="flex flex-col gap-2 rounded-2xl bg-white/[0.04] p-3 border border-white/[0.08]">
-            <p className="text-xs text-white/50">Nueva porción personalizada</p>
-            <div className="flex gap-2">
-              <GlassInput placeholder="Nombre" value={newPortionName} onChange={(e) => setNewPortionName(e.target.value)} className="flex-1" />
-              <GlassInput
-                placeholder="Gramos"
-                type="number"
-                inputMode="decimal"
-                value={newPortionGrams}
-                onChange={(e) => setNewPortionGrams(e.target.value)}
-                className="w-24"
-              />
-            </div>
-            <div className="flex gap-2">
-              <GlassButton
-                size="sm"
-                className="flex-1"
-                disabled={!newPortionName.trim() || !newPortionGrams}
-                onClick={() => {
-                  const grams = parseFloat(newPortionGrams);
-                  if (!newPortionName.trim() || !grams) return;
-                  setPortions((prev) => {
-                    const next = [...prev, { nombre: newPortionName.trim(), gramos: grams }];
-                    setSelectedPortionIdx(next.length - 1);
-                    return next;
-                  });
-                  setNewPortionName("");
-                  setNewPortionGrams("");
-                  setCreatePortionOpen(false);
-                }}
-              >
-                Guardar
-              </GlassButton>
-              <GlassButton size="sm" variant="ghost" className="flex-1" onClick={() => setCreatePortionOpen(false)}>
-                Cancelar
-              </GlassButton>
-            </div>
-          </div>
-        )}
       </GlassCard>
 
       {/* Nutrition info */}
@@ -398,28 +329,140 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
 
       <QuantityKeypad open={keypadOpen} onClose={() => setKeypadOpen(false)} initialValue={cantidad} onChange={setCantidad} />
 
-      <div className="fixed bottom-0 left-0 right-0 z-30 p-4 backdrop-blur-xl bg-[color-mix(in_srgb,var(--background)_85%,transparent)] border-t border-white/[0.08]">
-        <div className="max-w-md mx-auto relative">
-          {addMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-30" onClick={() => setAddMenuOpen(false)} />
-              <div className="absolute bottom-full mb-2 left-0 right-0 z-40 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden">
-                {ADD_TARGETS.map((t) => (
-                  <button
-                    key={t.key}
-                    className="w-full flex items-center justify-between text-left px-4 py-3 text-sm text-white hover:bg-white/[0.08] cursor-pointer"
-                    onClick={() => handleAdd(t)}
-                  >
-                    {t.label}
-                    {addedTarget === t.key && <Check size={14} className="text-[var(--gym)]" />}
-                  </button>
-                ))}
+      <div className="fixed bottom-20 md:bottom-0 left-0 right-0 z-30 p-4 backdrop-blur-xl bg-[color-mix(in_srgb,var(--background)_85%,transparent)] border-t border-white/[0.08] flex flex-col gap-2">
+        <div className="max-w-md mx-auto w-full relative">
+          {createPortionOpen && (
+            <div className="absolute bottom-full mb-2 left-0 right-0 z-40 flex flex-col gap-2 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl p-3">
+              <p className="text-xs text-white/50">Nueva porción personalizada</p>
+              <div className="flex gap-2">
+                <GlassInput placeholder="Nombre" value={newPortionName} onChange={(e) => setNewPortionName(e.target.value)} className="flex-1" />
+                <GlassInput
+                  placeholder="Gramos"
+                  type="number"
+                  inputMode="decimal"
+                  value={newPortionGrams}
+                  onChange={(e) => setNewPortionGrams(e.target.value)}
+                  className="w-24"
+                />
               </div>
-            </>
+              <div className="flex gap-2">
+                <GlassButton
+                  size="sm"
+                  className="flex-1"
+                  disabled={!newPortionName.trim() || !newPortionGrams}
+                  onClick={() => {
+                    const grams = parseFloat(newPortionGrams);
+                    if (!newPortionName.trim() || !grams) return;
+                    setPortions((prev) => {
+                      const next = [...prev, { nombre: newPortionName.trim(), gramos: grams }];
+                      setSelectedPortionIdx(next.length - 1);
+                      return next;
+                    });
+                    setNewPortionName("");
+                    setNewPortionGrams("");
+                    setCreatePortionOpen(false);
+                  }}
+                >
+                  Guardar
+                </GlassButton>
+                <GlassButton size="sm" variant="ghost" className="flex-1" onClick={() => setCreatePortionOpen(false)}>
+                  Cancelar
+                </GlassButton>
+              </div>
+            </div>
           )}
-          <GlassButton className="w-full flex items-center justify-center gap-2" size="lg" onClick={() => setAddMenuOpen((v) => !v)}>
-            <Plus size={16} /> Agregar a {ADD_TARGETS[0].label} <ChevronDown size={14} />
-          </GlassButton>
+
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            <button
+              onClick={() => setKeypadOpen(true)}
+              className="rounded-2xl bg-white/[0.06] border border-white/[0.12] px-3 py-2 text-left cursor-pointer"
+            >
+              <span className="text-[10px] text-white/40 block">Cantidad</span>
+              <span className="text-sm text-white font-medium truncate block">{cantidad}</span>
+            </button>
+
+            <div className="relative">
+              <button
+                onClick={() => setPortionMenuOpen((v) => !v)}
+                className="w-full rounded-2xl bg-white/[0.06] border border-white/[0.12] px-3 py-2 text-left cursor-pointer"
+              >
+                <span className="text-[10px] text-white/40 block">Porción</span>
+                <span className="text-sm text-white font-medium truncate block">{selectedPortion?.nombre}</span>
+              </button>
+              {portionMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setPortionMenuOpen(false)} />
+                  <div className="absolute left-0 right-0 bottom-full mb-1 z-40 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden max-h-56 overflow-y-auto">
+                    {portions.map((p, idx) => (
+                      <button
+                        key={p.nombre + idx}
+                        className="w-full text-left px-4 py-2.5 text-sm text-white hover:bg-white/[0.08] cursor-pointer"
+                        onClick={() => {
+                          setSelectedPortionIdx(idx);
+                          setPortionMenuOpen(false);
+                        }}
+                      >
+                        {p.nombre}
+                      </button>
+                    ))}
+                    <button
+                      className="w-full text-left px-4 py-2.5 text-sm text-[var(--gym)] hover:bg-white/[0.08] cursor-pointer border-t border-white/[0.08]"
+                      onClick={() => {
+                        setPortionMenuOpen(false);
+                        setCreatePortionOpen(true);
+                      }}
+                    >
+                      + Crear Porción
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <button
+              onClick={() => setCookedState((v) => (v === "cocido" ? "crudo" : "cocido"))}
+              className="rounded-2xl bg-white/[0.06] border border-white/[0.12] px-3 py-2 text-left cursor-pointer"
+            >
+              <span className="text-[10px] text-white/40 block">Tipo de Peso</span>
+              <span className="text-sm text-white font-medium capitalize truncate block">{cookedState}</span>
+            </button>
+          </div>
+
+          <div className="flex items-stretch gap-2">
+            <GlassButton
+              className="flex-1 flex items-center justify-center gap-2"
+              size="lg"
+              onClick={() => handleAdd(ADD_TARGETS[defaultTargetIdx])}
+            >
+              <Plus size={16} /> Agregar a {ADD_TARGETS[defaultTargetIdx].label}
+            </GlassButton>
+            <div className="relative shrink-0">
+              {addMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setAddMenuOpen(false)} />
+                  <div className="absolute bottom-full mb-2 right-0 z-40 w-48 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden">
+                    {ADD_TARGETS.map((t) => (
+                      <button
+                        key={t.key}
+                        className="w-full flex items-center justify-between text-left px-4 py-3 text-sm text-white hover:bg-white/[0.08] cursor-pointer"
+                        onClick={() => handleAdd(t)}
+                      >
+                        {t.label}
+                        {addedTarget === t.key && <Check size={14} className="text-[var(--gym)]" />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+              <button
+                onClick={() => setAddMenuOpen((v) => !v)}
+                aria-label="Elegir otra comida"
+                className="h-full w-11 flex items-center justify-center rounded-2xl bg-white/[0.06] border border-white/[0.12] hover:bg-white/[0.1] transition-colors cursor-pointer"
+              >
+                <ChevronDown size={16} className="text-white/70" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

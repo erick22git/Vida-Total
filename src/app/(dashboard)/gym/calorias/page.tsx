@@ -1,32 +1,40 @@
 "use client";
 
-import { useState } from "react";
-import { Flame, ArrowLeft, Search, ScanLine, Mic, BookOpen, List } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Flame, ArrowLeft, ChevronDown, TrendingUp } from "lucide-react";
 import Link from "next/link";
-import { ProgressRing } from "@/components/ui/progress-ring";
-import { ProgressBar } from "@/components/ui/progress-bar";
+import { useRouter } from "next/navigation";
+import { eachDayOfInterval, endOfWeek, format, isToday, startOfWeek } from "date-fns";
+import { es } from "date-fns/locale";
+import { CalorieArcCard } from "@/components/gym/calorie-arc-card";
+import { OtherNutrientsCard } from "@/components/gym/other-nutrients-card";
 import { MealCard } from "@/components/gym/meal-card";
-import { FoodSearchModal } from "@/components/gym/food-search-modal";
 import { useGymStore, useTodayLoggedFoods } from "@/lib/store/gymStore";
-import type { MealType } from "@/lib/types";
+import { BASE_FOODS, nutrientTotalsForLoggedFoods } from "@/lib/food-utils";
+import { computeLoggedDaysStreak, dayHasLoggedFood } from "@/lib/gym/streaks";
+import type { Food, MealType } from "@/lib/types";
 
-const QUICK_ACTIONS = [
-  { key: "buscar", label: "Buscar", href: "/gym/calorias/buscar", icon: Search },
-  { key: "escaner", label: "Escáner", href: "/gym/calorias/escaner", icon: ScanLine },
-  { key: "voz", label: "Voz", href: "/gym/calorias/voz", icon: Mic },
-  { key: "recetas", label: "Recetas", href: "/gym/calorias/recetas", icon: BookOpen },
-  { key: "lista", label: "Lista", href: "/gym/calorias/lista", icon: List },
-] as const;
-
-const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snacks"];
+const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snack1", "snack2"];
 
 export default function CaloriasPage() {
-  const calorieGoal = useGymStore((s) => s.calorieGoal);
-  const proteinGoal = useGymStore((s) => s.proteinGoal);
-  const carbsGoal = useGymStore((s) => s.carbsGoal);
-  const fatGoal = useGymStore((s) => s.fatGoal);
+  const router = useRouter();
   const todayFoods = useTodayLoggedFoods();
-  const [activeMeal, setActiveMeal] = useState<MealType | null>(null);
+  const customFoods = useGymStore((s) => s.customFoods);
+  const loggedFoods = useGymStore((s) => s.loggedFoods);
+  const dashboardPrefs = useGymStore((s) => s.dashboardPrefs);
+  const [page, setPage] = useState(0);
+
+  const loggedStreak = useMemo(() => computeLoggedDaysStreak(loggedFoods), [loggedFoods]);
+
+  const weekDays = useMemo(() => {
+    const now = new Date();
+    const start = startOfWeek(now, { weekStartsOn: 1 });
+    const end = endOfWeek(now, { weekStartsOn: 1 });
+    return eachDayOfInterval({ start, end }).map((date) => ({
+      date,
+      hasEntry: dayHasLoggedFood(loggedFoods, date),
+    }));
+  }, [loggedFoods]);
 
   const totals = todayFoods.reduce(
     (acc, f) => ({
@@ -36,6 +44,12 @@ export default function CaloriasPage() {
       grasas: acc.grasas + f.grasas,
     }),
     { calorias: 0, proteina: 0, carbos: 0, grasas: 0 },
+  );
+
+  const allFoods = useMemo<Food[]>(() => [...customFoods, ...BASE_FOODS], [customFoods]);
+  const otherNutrientTotals = useMemo(
+    () => nutrientTotalsForLoggedFoods(todayFoods, allFoods),
+    [todayFoods, allFoods],
   );
 
   return (
@@ -49,50 +63,105 @@ export default function CaloriasPage() {
         </h1>
       </header>
 
-      <div className="flex flex-col items-center gap-4 py-2">
-        <ProgressRing value={totals.calorias} max={calorieGoal} size={220} color="var(--gym)">
-          <div className="flex flex-col items-center">
-            <span className="text-3xl font-bold">{totals.calorias}</span>
-            <span className="text-xs text-white/45">de {calorieGoal} kcal</span>
-          </div>
-        </ProgressRing>
-      </div>
-
-      <div className="grid grid-cols-5 gap-2">
-        {QUICK_ACTIONS.map(({ key, label, href, icon: Icon }) => (
-          <Link
-            key={key}
-            href={href}
-            className="flex flex-col items-center gap-1.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] py-3 transition-colors"
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => router.push("/gym/calorias/rachas")}
+            className="flex items-center gap-1 text-sm font-medium text-white/80 hover:text-white transition-colors cursor-pointer bg-transparent border-0 p-0"
           >
-            <Icon size={17} style={{ color: "var(--gym)" }} />
-            <span className="text-[10px] text-white/60">{label}</span>
-          </Link>
-        ))}
+            Hoy
+            <ChevronDown size={16} className="text-white/50" />
+          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push("/gym/calorias/progreso")}
+              className="flex items-center gap-1.5 cursor-pointer bg-white/[0.06] hover:bg-white/[0.12] transition-colors rounded-full px-3 py-1.5"
+              aria-label="Ver progreso"
+            >
+              <TrendingUp size={14} className="text-white/70" />
+              <span className="text-xs font-semibold text-white/80">Progreso</span>
+            </button>
+            <button
+              onClick={() => router.push("/gym/calorias/rachas")}
+              className="flex items-center gap-1.5 cursor-pointer bg-transparent border-0 p-0"
+              aria-label="Ver racha"
+            >
+              <Flame size={18} style={{ color: "var(--gym)" }} fill="var(--gym)" fillOpacity={0.3} />
+              <span className="text-sm font-semibold tabular-nums" style={{ color: "var(--gym)" }}>
+                {loggedStreak.current}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {dashboardPrefs.showWeekStrip && (
+        <div className="flex justify-between gap-1">
+          {weekDays.map((day, i) => {
+            const today = isToday(day.date);
+            return (
+              <button
+                key={i}
+                onClick={() => router.push("/gym/calorias/rachas")}
+                className="flex flex-col items-center gap-1 flex-1 py-1.5 rounded-xl cursor-pointer transition-colors"
+                style={{ background: today ? "color-mix(in srgb, var(--gym) 18%, transparent)" : "transparent" }}
+              >
+                <span className="text-[10px] uppercase text-white/40 font-medium">
+                  {format(day.date, "eeeeee", { locale: es })}
+                </span>
+                <span
+                  className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold tabular-nums"
+                  style={{
+                    background: today ? "var(--gym)" : "transparent",
+                    color: today ? "white" : "rgba(255,255,255,0.75)",
+                  }}
+                >
+                  {format(day.date, "d")}
+                </span>
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: day.hasEntry ? "var(--gym)" : "rgba(255,255,255,0.15)" }}
+                />
+              </button>
+            );
+          })}
+        </div>
+        )}
       </div>
 
-      <div className="flex flex-col gap-4">
-        <ProgressBar
-          label="Proteína"
-          sublabel={`${Math.round(totals.proteina)} / ${proteinGoal} g`}
-          value={totals.proteina}
-          max={proteinGoal}
-          color="#22c55e"
-        />
-        <ProgressBar
-          label="Carbohidratos"
-          sublabel={`${Math.round(totals.carbos)} / ${carbsGoal} g`}
-          value={totals.carbos}
-          max={carbsGoal}
-          color="#eab308"
-        />
-        <ProgressBar
-          label="Grasas"
-          sublabel={`${Math.round(totals.grasas)} / ${fatGoal} g`}
-          value={totals.grasas}
-          max={fatGoal}
-          color="#f97316"
-        />
+      <div className="flex flex-col gap-2">
+        {dashboardPrefs.showOtherNutrients ? (
+          <>
+            <div
+              className="flex overflow-x-auto snap-x snap-mandatory gap-3 -mx-1 px-1 no-scrollbar"
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                const idx = Math.round(el.scrollLeft / el.clientWidth);
+                if (idx !== page) setPage(idx);
+              }}
+            >
+              <div className="w-full shrink-0 snap-center">
+                <CalorieArcCard totals={totals} />
+              </div>
+              <div className="w-full shrink-0 snap-center">
+                <OtherNutrientsCard totals={otherNutrientTotals as Record<string, number>} />
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-1.5">
+              {[0, 1].map((i) => (
+                <span
+                  key={i}
+                  className="h-1.5 rounded-full transition-all"
+                  style={{
+                    width: page === i ? 16 : 6,
+                    background: page === i ? "var(--gym)" : "rgba(255,255,255,0.2)",
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          <CalorieArcCard totals={totals} />
+        )}
       </div>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -101,18 +170,10 @@ export default function CaloriasPage() {
             key={meal}
             meal={meal}
             foods={todayFoods.filter((f) => f.meal === meal)}
-            onAdd={() => setActiveMeal(meal)}
+            onAdd={() => router.push(`/gym/calorias/buscar?meal=${meal}`)}
           />
         ))}
       </section>
-
-      {activeMeal && (
-        <FoodSearchModal
-          open={!!activeMeal}
-          onClose={() => setActiveMeal(null)}
-          meal={activeMeal}
-        />
-      )}
     </div>
   );
 }

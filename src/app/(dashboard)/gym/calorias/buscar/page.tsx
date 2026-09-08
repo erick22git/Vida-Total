@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Search, MoreVertical, Heart, BadgeCheck } from "lucide-react";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassCard } from "@/components/glass/glass-card";
@@ -12,12 +12,22 @@ import { ManualEntryModal } from "@/components/gym/manual-entry-modal";
 import { useGymStore, useRecentFoods } from "@/lib/store/gymStore";
 import { BASE_FOODS } from "@/lib/food-utils";
 import { categoryEmoji } from "@/lib/food-category-emoji";
-import type { Food } from "@/lib/types";
+import type { Food, MealType } from "@/lib/types";
 
 type Tab = "base" | "favoritos" | "creados";
 
 export default function BuscarAlimentosPage() {
+  return (
+    <Suspense fallback={null}>
+      <BuscarAlimentosContent />
+    </Suspense>
+  );
+}
+
+function BuscarAlimentosContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const targetMeal = searchParams.get("meal") as MealType | null;
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<Tab>("base");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -169,7 +179,7 @@ export default function BuscarAlimentosPage() {
                   }
                   isFavorite={favoriteFoodIds.includes(f.foodId)}
                   onToggleFavorite={() => toggleFavoriteFood(f.foodId)}
-                  onClick={() => router.push(`/gym/calorias/alimento/${f.foodId}`)}
+                  onClick={() => router.push(`/gym/calorias/alimento/${f.foodId}?meal=${targetMeal ?? "desayuno"}`)}
                 />
               );
             })}
@@ -203,7 +213,7 @@ export default function BuscarAlimentosPage() {
               food={food}
               isFavorite={favoriteFoodIds.includes(food.id)}
               onToggleFavorite={() => toggleFavoriteFood(food.id)}
-              onClick={() => router.push(`/gym/calorias/alimento/${food.id}`)}
+              onClick={() => router.push(`/gym/calorias/alimento/${food.id}?meal=${targetMeal ?? "desayuno"}`)}
             />
           ))}
           {results.length === 0 && (

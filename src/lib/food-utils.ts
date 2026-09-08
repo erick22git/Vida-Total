@@ -1,5 +1,5 @@
 import foodsData from "@/lib/data/foods.json";
-import type { Food, FoodPortion } from "@/lib/types";
+import type { Food, FoodPortion, LoggedFood, TrackableNutrient } from "@/lib/types";
 
 export const BASE_FOODS = (foodsData as Food[]).map((f) => ({
   ...f,
@@ -95,6 +95,44 @@ export const MICRONUTRIENT_LABELS: Record<string, { label: string; unit: string;
   cobre: { label: "Cobre", unit: "mg", group: "mineral" },
   manganeso: { label: "Manganeso", unit: "mg", group: "mineral" },
 };
+
+/**
+ * Best-effort totals for the "Otros nutrientes" card: `LoggedFood` entries only
+ * store the four headline macros, so this looks up each entry's source `Food`
+ * (falling back to skipping it if it can no longer be found — e.g. a deleted
+ * custom food) and re-scales its detailed nutrition/micronutrients to the
+ * gram amount that was actually logged.
+ */
+export function nutrientTotalsForLoggedFoods(
+  entries: LoggedFood[],
+  allFoods: Food[],
+): Partial<Record<TrackableNutrient, number>> {
+  const totals: Partial<Record<TrackableNutrient, number>> = {};
+  const add = (key: TrackableNutrient, v: number | undefined) => {
+    if (!v) return;
+    totals[key] = (totals[key] ?? 0) + v;
+  };
+  for (const entry of entries) {
+    const food = allFoods.find((f) => f.id === entry.foodId);
+    if (!food) continue;
+    const gramos = entry.gramos ?? (entry.cantidad ? entry.cantidad * parsePorcionGramos(food) : parsePorcionGramos(food));
+    const n = scaleNutrition(food, gramos);
+    const micro = scaleMicronutrients(food, gramos);
+    add("azucares", n.azucares);
+    add("fibra", n.fibra);
+    add("sodio", n.sodio);
+    add("grasasSaturadas", n.grasasSaturadas);
+    add("grasasTrans", n.grasasTrans);
+    add("azucaresAnadidos", n.azucaresAnadidos);
+    add("carbsNetos", n.carbos !== undefined ? Math.max(0, n.carbos - (n.fibra ?? 0)) : undefined);
+    if (micro) {
+      for (const [key, value] of Object.entries(micro)) {
+        add(key as TrackableNutrient, value);
+      }
+    }
+  }
+  return totals;
+}
 
 /** Daily reference values (approximate adult RDA) used for the nutrient progress bars. */
 export const DAILY_VALUES: Record<string, number> = {

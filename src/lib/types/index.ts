@@ -106,14 +106,17 @@ export interface Food {
   porciones?: FoodPortion[]; // alternate selectable units
 }
 
-export type MealType = "desayuno" | "almuerzo" | "cena" | "snacks";
+export type MealType = "desayuno" | "almuerzo" | "cena" | "snack1" | "snack2";
 
 export const MEAL_LABELS: Record<MealType, string> = {
   desayuno: "Desayuno",
   almuerzo: "Almuerzo",
   cena: "Cena",
-  snacks: "Snacks",
+  snack1: "Snack 1",
+  snack2: "Snack 2",
 };
+
+export type CookedState = "cocido" | "crudo";
 
 export interface LoggedFood {
   id: string;
@@ -127,8 +130,120 @@ export interface LoggedFood {
   timestamp: number;
   cantidad?: number;
   porcionNombre?: string;
+  gramos?: number;
   photoUrl?: string | null;
+  cookedState?: CookedState;
 }
+
+/** A meal saved explicitly by name for later reuse (see "Compartir > Como plantilla"). */
+export interface MealTemplate {
+  id: string;
+  nombre: string;
+  meal: MealType;
+  items: Omit<LoggedFood, "id" | "timestamp" | "meal">[];
+  createdAt: number;
+}
+
+/** Extra nutrients the user has opted into tracking on the "Otros nutrientes" card. */
+export const TRACKABLE_NUTRIENTS = [
+  // Nutrientes
+  "carbsNetos",
+  // Nutrientes a limitar
+  "grasasTrans",
+  "azucaresAnadidos",
+  // Vitaminas
+  "vitaminaA",
+  "vitaminaB1",
+  "vitaminaB2",
+  "vitaminaB3",
+  "vitaminaB5",
+  "vitaminaB6",
+  "vitaminaB12",
+  "vitaminaC",
+  "vitaminaD",
+  "vitaminaE",
+  "vitaminaK",
+  "folato",
+  // Minerales
+  "calcio",
+  "hierro",
+  "magnesio",
+  "fosforo",
+  "potasio",
+  "zinc",
+  "selenio",
+  "cobre",
+  "manganeso",
+  // Otros
+  "alcohol",
+  // Default card nutrients
+  "azucares",
+  "fibra",
+  "sodio",
+  "grasasSaturadas",
+] as const;
+export type TrackableNutrient = (typeof TRACKABLE_NUTRIENTS)[number];
+
+export const NUTRIENT_LABELS: Record<TrackableNutrient, { label: string; unit: string; goal: number }> = {
+  carbsNetos: { label: "Carbs Netos", unit: "g", goal: 150 },
+  grasasTrans: { label: "Grasas Trans", unit: "g", goal: 2 },
+  azucaresAnadidos: { label: "Azúcares añadidos", unit: "g", goal: 25 },
+  vitaminaA: { label: "Vitamina A", unit: "mcg", goal: 900 },
+  vitaminaB1: { label: "Vitamina B1", unit: "mg", goal: 1.2 },
+  vitaminaB2: { label: "Vitamina B2", unit: "mg", goal: 1.3 },
+  vitaminaB3: { label: "Vitamina B3", unit: "mg", goal: 16 },
+  vitaminaB5: { label: "Vitamina B5", unit: "mg", goal: 5 },
+  vitaminaB6: { label: "Vitamina B6", unit: "mg", goal: 1.7 },
+  vitaminaB12: { label: "Vitamina B12", unit: "mcg", goal: 2.4 },
+  vitaminaC: { label: "Vitamina C", unit: "mg", goal: 90 },
+  vitaminaD: { label: "Vitamina D", unit: "mcg", goal: 20 },
+  vitaminaE: { label: "Vitamina E", unit: "mg", goal: 15 },
+  vitaminaK: { label: "Vitamina K", unit: "mcg", goal: 120 },
+  folato: { label: "Folato", unit: "mcg", goal: 400 },
+  calcio: { label: "Calcio", unit: "mg", goal: 1000 },
+  hierro: { label: "Hierro", unit: "mg", goal: 18 },
+  magnesio: { label: "Magnesio", unit: "mg", goal: 420 },
+  fosforo: { label: "Fósforo", unit: "mg", goal: 700 },
+  potasio: { label: "Potasio", unit: "mg", goal: 3400 },
+  zinc: { label: "Zinc", unit: "mg", goal: 11 },
+  selenio: { label: "Selenio", unit: "mcg", goal: 55 },
+  cobre: { label: "Cobre", unit: "mg", goal: 0.9 },
+  manganeso: { label: "Manganeso", unit: "mg", goal: 2.3 },
+  alcohol: { label: "Alcohol", unit: "g", goal: 0 },
+  azucares: { label: "Azúcares", unit: "g", goal: 50 },
+  fibra: { label: "Fibra", unit: "g", goal: 28 },
+  sodio: { label: "Sodio", unit: "mg", goal: 2300 },
+  grasasSaturadas: { label: "Grasas saturadas", unit: "g", goal: 20 },
+};
+
+export const NUTRIENT_SECTIONS: { label: string; keys: TrackableNutrient[] }[] = [
+  { label: "Nutrientes", keys: ["carbsNetos"] },
+  { label: "Nutrientes a limitar", keys: ["grasasTrans", "azucaresAnadidos"] },
+  {
+    label: "Vitaminas",
+    keys: [
+      "vitaminaA",
+      "vitaminaB1",
+      "vitaminaB2",
+      "vitaminaB3",
+      "vitaminaB5",
+      "vitaminaB6",
+      "vitaminaB12",
+      "vitaminaC",
+      "vitaminaD",
+      "vitaminaE",
+      "vitaminaK",
+      "folato",
+    ],
+  },
+  {
+    label: "Minerales",
+    keys: ["calcio", "hierro", "magnesio", "fosforo", "potasio", "zinc", "selenio", "cobre", "manganeso"],
+  },
+  { label: "Otros", keys: ["alcohol"] },
+];
+
+export const DEFAULT_TRACKED_NUTRIENTS: TrackableNutrient[] = ["azucares", "fibra", "sodio", "grasasSaturadas"];
 
 export interface RecipeIngredient {
   foodId: string;

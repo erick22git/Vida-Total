@@ -12,7 +12,7 @@ import { useGymStore } from "@/lib/store/gymStore";
 import { MEAL_LABELS, type MealType, type RecipeIngredient } from "@/lib/types";
 
 type CreationMode = "manual" | "foto" | "enlace" | null;
-const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snacks"];
+const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snack1", "snack2"];
 
 export default function CrearRecetaPage() {
   return (

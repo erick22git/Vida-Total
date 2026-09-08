@@ -16,7 +16,10 @@ export function BottomNav() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 pt-1">
-      <div className="glass-surface rounded-3xl flex items-center justify-between px-1.5 py-2">
+      <div
+        className="glass-surface rounded-3xl flex items-center justify-between px-1.5 py-2"
+        style={{ background: "color-mix(in srgb, var(--background) 88%, transparent)" }}
+      >
         {BOTTOM_NAV_MODULES.map((mod) => {
           const Icon = ICON_MAP[mod.icon];
           const active = isActive(pathname, mod.href);
