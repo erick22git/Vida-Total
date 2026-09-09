@@ -513,7 +513,8 @@
       "Siéntate ajustando el respaldo.",
       "Empuja las manijas hacia arriba.",
       "Baja controladamente."
-    ]
+    ],
+    "imagen": "/exercises/gifs/press-tras-nuca.jpg"
   },
   {
     "id": "curl-biceps-barra",
@@ -909,7 +910,7 @@
   {
     "id": "abduccion-cadera",
     "nombre": "Abducción de cadera en máquina",
-    "categoria": "Gluteos",
+    "categoria": "Abductores",
     "musculoPrimario": "Glúteo medio",
     "musculosSecundarios": [],
     "equipo": "Máquina",
@@ -1152,7 +1153,8 @@
       "De pie con piernas juntas y brazos a los lados.",
       "Salta abriendo piernas y elevando brazos por encima de la cabeza.",
       "Regresa a la posición inicial y repite."
-    ]
+    ],
+    "imagen": "/exercises/gifs/jumping-jacks.jpg"
   },
   {
     "id": "saltar-cuerda",
@@ -1170,5 +1172,1404 @@
       "Mantén un ritmo constante."
     ],
     "imagen": "/exercises/gifs/saltar-cuerda.jpg"
+  },
+  {
+    "id": "press-declinado-barra",
+    "nombre": "Press declinado con barra",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral",
+    "musculosSecundarios": [
+      "Hombros",
+      "Triceps"
+    ],
+    "equipo": "Barra",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Recuéstate en el banco declinado y asegura las piernas en los soportes.",
+      "Toma la barra con un agarre un poco más ancho que los hombros y sácala del soporte con los brazos extendidos.",
+      "Baja la barra de forma controlada hasta tocar la parte baja del pecho.",
+      "Empuja hacia arriba contrayendo el pecho hasta extender los brazos."
+    ],
+    "imagen": "/exercises/gifs/press-declinado-barra.jpg"
+  },
+  {
+    "id": "press-declinado-mancuernas",
+    "nombre": "Press declinado con mancuernas",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral",
+    "musculosSecundarios": [
+      "Hombros",
+      "Triceps"
+    ],
+    "equipo": "Mancuernas",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Asegura las piernas en el banco declinado y recuéstate con una mancuerna en cada mano.",
+      "Lleva las mancuernas a la altura del pecho con las palmas hacia adelante.",
+      "Empuja las mancuernas hacia arriba hasta extender los brazos.",
+      "Baja de forma controlada hasta sentir estiramiento en la parte baja del pecho."
+    ],
+    "imagen": "/exercises/gifs/press-declinado-mancuernas.jpg"
+  },
+  {
+    "id": "fondos-pecho",
+    "nombre": "Fondos en paralelas (énfasis en pecho)",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral",
+    "musculosSecundarios": [
+      "Hombros",
+      "Triceps"
+    ],
+    "equipo": "Paralelas",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Sujétate en las paralelas con los brazos extendidos.",
+      "Inclina el torso hacia adelante unos 30 grados y baja el cuerpo flexionando los codos.",
+      "Desciende hasta sentir un buen estiramiento en el pecho.",
+      "Empuja hacia arriba usando el pecho hasta volver a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/fondos-pecho.jpg"
+  },
+  {
+    "id": "aperturas-inclinadas-mancuernas",
+    "nombre": "Aperturas inclinadas con mancuernas",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral",
+    "musculosSecundarios": [
+      "Hombros"
+    ],
+    "equipo": "Mancuernas",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Acuéstate en un banco inclinado a no más de 30 grados con una mancuerna en cada mano.",
+      "Extiende los brazos sobre el pecho con un ligero doblez en los codos.",
+      "Abre los brazos hacia los lados en forma de arco controlado.",
+      "Junta las mancuernas de vuelta arriba contrayendo el pecho."
+    ],
+    "imagen": "/exercises/gifs/aperturas-inclinadas-mancuernas.jpg"
+  },
+  {
+    "id": "aperturas-declinadas-mancuernas",
+    "nombre": "Aperturas declinadas con mancuernas",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral",
+    "musculosSecundarios": [],
+    "equipo": "Mancuernas",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Asegura las piernas en el banco declinado y sostén una mancuerna en cada mano sobre el pecho.",
+      "Con un ligero doblez en los codos, baja los brazos hacia los lados en forma de arco.",
+      "Desciende hasta sentir un estiramiento en el pecho.",
+      "Vuelve a subir las mancuernas juntándolas sobre el pecho."
+    ],
+    "imagen": "/exercises/gifs/aperturas-declinadas-mancuernas.jpg"
+  },
+  {
+    "id": "press-banca-maquina",
+    "nombre": "Press de banca en máquina",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral",
+    "musculosSecundarios": [
+      "Hombros",
+      "Triceps"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate en la máquina de press de pecho y selecciona el peso.",
+      "Toma las agarraderas con los codos alineados con el torso.",
+      "Empuja hacia adelante hasta extender los brazos.",
+      "Regresa de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/press-banca-maquina.jpg"
+  },
+  {
+    "id": "contractora-pecho",
+    "nombre": "Contractora de pecho (peck deck)",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral",
+    "musculosSecundarios": [],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate en la máquina con la espalda apoyada en el respaldo.",
+      "Sujeta las agarraderas con los brazos paralelos al piso.",
+      "Junta las agarraderas al frente contrayendo el pecho.",
+      "Regresa lentamente hasta sentir el estiramiento en el pecho."
+    ],
+    "imagen": "/exercises/gifs/contractora-pecho.jpg"
+  },
+  {
+    "id": "press-inclinado-multipower",
+    "nombre": "Press inclinado en multipower",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral",
+    "musculosSecundarios": [
+      "Hombros",
+      "Triceps"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Coloca un banco inclinado dentro del multipower y ajusta la barra a la altura del pecho superior.",
+      "Recuéstate y toma la barra con un agarre un poco más ancho que los hombros.",
+      "Baja la barra de forma controlada hasta el pecho superior.",
+      "Empuja hacia arriba hasta extender los brazos."
+    ],
+    "imagen": "/exercises/gifs/press-inclinado-multipower.jpg"
+  },
+  {
+    "id": "press-banca-agarre-ancho",
+    "nombre": "Press de banca agarre ancho",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral",
+    "musculosSecundarios": [
+      "Hombros",
+      "Triceps"
+    ],
+    "equipo": "Barra",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Recuéstate en el banco con los pies firmes en el suelo.",
+      "Toma la barra con un agarre bien abierto, más ancho que los hombros.",
+      "Baja la barra controladamente hasta el pecho medio.",
+      "Empuja hacia arriba extendiendo los codos."
+    ],
+    "imagen": "/exercises/gifs/press-banca-agarre-ancho.jpg"
+  },
+  {
+    "id": "flexiones-abiertas",
+    "nombre": "Flexiones de pecho agarre ancho",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral",
+    "musculosSecundarios": [
+      "Abdomen",
+      "Hombros",
+      "Triceps"
+    ],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Colócate en posición de plancha con las manos bien separadas, más anchas que los hombros.",
+      "Baja el pecho hacia el suelo flexionando los codos.",
+      "Empuja hacia arriba hasta extender los brazos.",
+      "Mantén el cuerpo recto durante todo el movimiento."
+    ],
+    "imagen": "/exercises/gifs/flexiones-abiertas.jpg"
+  },
+  {
+    "id": "dominadas-supinas",
+    "nombre": "Dominadas supinas (chin-up)",
+    "categoria": "Espalda",
+    "musculoPrimario": "Dorsal ancho",
+    "musculosSecundarios": [
+      "Biceps",
+      "Antebrazos",
+      "Espalda media"
+    ],
+    "equipo": "Barra de dominadas",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Sujeta la barra con las palmas hacia ti, con un agarre más cerrado que el ancho de hombros.",
+      "Cuelga con los brazos extendidos y el pecho hacia afuera.",
+      "Sube el cuerpo hasta que la barbilla pase la barra, enfocando el esfuerzo en el bíceps y dorsal.",
+      "Baja de forma controlada hasta extender los brazos por completo."
+    ],
+    "imagen": "/exercises/gifs/dominadas-supinas.jpg"
+  },
+  {
+    "id": "jalon-agarre-ancho",
+    "nombre": "Jalón al pecho agarre ancho",
+    "categoria": "Espalda",
+    "musculoPrimario": "Dorsal ancho",
+    "musculosSecundarios": [
+      "Biceps",
+      "Espalda media",
+      "Hombros"
+    ],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate en la máquina de jalones y ajusta el soporte de rodillas.",
+      "Toma la barra con un agarre ancho, palmas hacia adelante.",
+      "Lleva la barra hacia el pecho alto, juntando los omóplatos.",
+      "Sube de forma controlada hasta extender los brazos."
+    ],
+    "imagen": "/exercises/gifs/jalon-agarre-ancho.jpg"
+  },
+  {
+    "id": "jalon-agarre-cerrado",
+    "nombre": "Jalón al pecho agarre cerrado",
+    "categoria": "Espalda",
+    "musculoPrimario": "Dorsal ancho",
+    "musculosSecundarios": [
+      "Biceps",
+      "Espalda media",
+      "Hombros"
+    ],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate en la máquina de jalones con un agarre más cerrado que el ancho de hombros.",
+      "Inclina el torso ligeramente hacia atrás sacando el pecho.",
+      "Baja la barra hasta el pecho contrayendo la espalda.",
+      "Sube de forma controlada hasta extender los brazos."
+    ],
+    "imagen": "/exercises/gifs/jalon-agarre-cerrado.jpg"
+  },
+  {
+    "id": "remo-unilateral-polea-sentado",
+    "nombre": "Remo unilateral en polea sentado",
+    "categoria": "Espalda",
+    "musculoPrimario": "Espalda media",
+    "musculosSecundarios": [
+      "Biceps",
+      "Dorsal ancho",
+      "Trapecio"
+    ],
+    "equipo": "Polea",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Siéntate en la máquina de remo con los pies apoyados en la plataforma.",
+      "Toma la agarradera con un brazo y estíralo al frente sintiendo el estiramiento en la espalda.",
+      "Tira hacia el torso llevando el codo hacia atrás y apretando la espalda.",
+      "Regresa de forma controlada y repite; luego cambia de brazo."
+    ],
+    "imagen": "/exercises/gifs/remo-unilateral-polea-sentado.jpg"
+  },
+  {
+    "id": "peso-muerto-sumo",
+    "nombre": "Peso muerto sumo",
+    "categoria": "Espalda",
+    "musculoPrimario": "Isquiotibiales",
+    "musculosSecundarios": [
+      "Aductores de cadera",
+      "Antebrazos",
+      "Gluteos",
+      "Lumbar",
+      "Espalda media",
+      "Cuadriceps",
+      "Trapecio"
+    ],
+    "equipo": "Barra",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Coloca la barra en el piso y párate con una postura muy abierta, dedos apuntando hacia afuera.",
+      "Flexiona la cadera y toma la barra con las manos por dentro de las piernas.",
+      "Empuja el piso con los talones, extendiendo cadera y rodillas hasta pararte por completo.",
+      "Baja la barra de forma controlada flexionando la cadera."
+    ],
+    "imagen": "/exercises/gifs/peso-muerto-sumo.jpg"
+  },
+  {
+    "id": "jalones-desde-rack",
+    "nombre": "Jalones parciales desde rack (rack pulls)",
+    "categoria": "Espalda",
+    "musculoPrimario": "Lumbar",
+    "musculosSecundarios": [
+      "Antebrazos",
+      "Gluteos",
+      "Isquiotibiales",
+      "Trapecio"
+    ],
+    "equipo": "Barra",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Coloca la barra sobre los pines de un rack a la altura de la rodilla o un poco más arriba.",
+      "Colócate como en un peso muerto, con la espalda arqueada y agarre firme.",
+      "Extiende cadera y rodillas tirando de la barra hasta quedar de pie.",
+      "Regresa la barra a los pines de forma controlada."
+    ],
+    "imagen": "/exercises/gifs/jalones-desde-rack.jpg"
+  },
+  {
+    "id": "buenos-dias",
+    "nombre": "Buenos días (good morning)",
+    "categoria": "Espalda",
+    "musculoPrimario": "Isquiotibiales",
+    "musculosSecundarios": [
+      "Abdomen",
+      "Gluteos",
+      "Lumbar"
+    ],
+    "equipo": "Barra",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Coloca la barra sobre la espalda alta como en una sentadilla.",
+      "Manteniendo las rodillas ligeramente flexionadas, flexiona la cadera llevando el torso hacia adelante.",
+      "Baja hasta que el torso esté casi paralelo al piso, manteniendo la espalda recta.",
+      "Extiende la cadera para regresar a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/buenos-dias.jpg"
+  },
+  {
+    "id": "hiperextension-reversa",
+    "nombre": "Hiperextensión reversa en máquina",
+    "categoria": "Espalda",
+    "musculoPrimario": "Isquiotibiales",
+    "musculosSecundarios": [
+      "Gemelos",
+      "Gluteos"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Recuéstate boca abajo en la máquina sujetando las agarraderas, con las piernas colgando.",
+      "Flexiona la cadera llevando las piernas hacia adelante.",
+      "Extiende la cadera llevando las piernas hacia atrás y arriba, contrayendo glúteos e isquiotibiales.",
+      "Regresa de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/hiperextension-reversa.jpg"
+  },
+  {
+    "id": "dominadas-explosivas",
+    "nombre": "Dominadas explosivas (muscle up)",
+    "categoria": "Espalda",
+    "musculoPrimario": "Dorsal ancho",
+    "musculosSecundarios": [
+      "Abdomen",
+      "Biceps",
+      "Antebrazos",
+      "Espalda media",
+      "Hombros",
+      "Trapecio",
+      "Triceps"
+    ],
+    "equipo": "Barra de dominadas",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Sujeta la barra o los aros y realiza una dominada explosiva.",
+      "Al llegar arriba, gira los hombros hacia adelante y pasa el pecho por encima de la barra.",
+      "Extiende los brazos hacia abajo para completar el fondo.",
+      "Baja de forma controlada hasta la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/dominadas-explosivas.jpg"
+  },
+  {
+    "id": "jalon-brazos-rectos",
+    "nombre": "Jalón con brazos rectos (pullover en polea)",
+    "categoria": "Espalda",
+    "musculoPrimario": "Dorsal ancho",
+    "musculosSecundarios": [],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Toma la barra de la polea alta con un agarre un poco más ancho que los hombros.",
+      "Inclina el torso ligeramente al frente con los brazos extendidos.",
+      "Con los brazos rectos, baja la barra hasta los muslos contrayendo el dorsal.",
+      "Sube de forma controlada hasta la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/jalon-brazos-rectos.jpg"
+  },
+  {
+    "id": "remo-invertido-trx",
+    "nombre": "Remo invertido en TRX/cuerdas",
+    "categoria": "Espalda",
+    "musculoPrimario": "Espalda media",
+    "musculosSecundarios": [
+      "Biceps",
+      "Dorsal ancho"
+    ],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Cuelga las cuerdas o TRX de un soporte estable y toma las agarraderas.",
+      "Con el cuerpo recto y los talones en el suelo, cuelga con los brazos extendidos.",
+      "Flexiona los codos llevando el pecho hacia las manos.",
+      "Baja de forma controlada hasta extender los brazos."
+    ],
+    "imagen": "/exercises/gifs/remo-invertido-trx.jpg"
+  },
+  {
+    "id": "jalon-agarre-v",
+    "nombre": "Jalón al pecho con agarre en V",
+    "categoria": "Espalda",
+    "musculoPrimario": "Dorsal ancho",
+    "musculosSecundarios": [
+      "Biceps",
+      "Espalda media",
+      "Hombros"
+    ],
+    "equipo": "Polea",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Siéntate en la máquina de jalones con la barra en V en la polea alta.",
+      "Toma la barra con las palmas encontradas y el pecho hacia afuera.",
+      "Baja la barra hasta casi tocar el pecho apretando los omóplatos.",
+      "Sube de forma controlada hasta la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/jalon-agarre-v.jpg"
+  },
+  {
+    "id": "pajaros-polea",
+    "nombre": "Pájaros (posteriores) en polea",
+    "categoria": "Hombros",
+    "musculoPrimario": "Hombros",
+    "musculosSecundarios": [],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Ajusta las poleas por encima de la cabeza y toma cada agarradera cruzada con la mano contraria.",
+      "Con los brazos extendidos al frente, tira hacia atrás y hacia afuera.",
+      "Contrae los deltoides posteriores al final del movimiento.",
+      "Regresa de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/pajaros-polea.jpg"
+  },
+  {
+    "id": "remo-al-menton-mancuerna",
+    "nombre": "Remo al mentón con mancuerna a una mano",
+    "categoria": "Hombros",
+    "musculoPrimario": "Hombros",
+    "musculosSecundarios": [
+      "Biceps",
+      "Trapecio"
+    ],
+    "equipo": "Mancuerna",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Sostén una mancuerna al frente del muslo con el brazo extendido.",
+      "Sube la mancuerna pegada al cuerpo, llevando el codo por encima del antebrazo.",
+      "Sube hasta que la mancuerna llegue casi a la altura del mentón.",
+      "Baja de forma controlada; repite y cambia de brazo."
+    ],
+    "imagen": "/exercises/gifs/remo-al-menton-mancuerna.jpg"
+  },
+  {
+    "id": "press-militar-maquina",
+    "nombre": "Press militar en máquina",
+    "categoria": "Hombros",
+    "musculoPrimario": "Hombros",
+    "musculosSecundarios": [
+      "Triceps"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate en la máquina de press de hombros y selecciona el peso.",
+      "Toma las agarraderas con los codos alineados con el torso.",
+      "Empuja hacia arriba hasta extender los brazos.",
+      "Baja de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/press-militar-maquina.jpg"
+  },
+  {
+    "id": "elevacion-frontal-polea",
+    "nombre": "Elevación frontal en polea",
+    "categoria": "Hombros",
+    "musculoPrimario": "Hombros",
+    "musculosSecundarios": [],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Toma la agarradera de la polea baja frente a los muslos.",
+      "Con un ligero doblez en el codo, eleva el brazo al frente hasta la altura del hombro.",
+      "Contrae el hombro por un segundo en la parte alta.",
+      "Baja de forma controlada; repite y cambia de brazo."
+    ],
+    "imagen": "/exercises/gifs/elevacion-frontal-polea.jpg"
+  },
+  {
+    "id": "elevacion-lateral-polea",
+    "nombre": "Elevación lateral en polea baja",
+    "categoria": "Hombros",
+    "musculoPrimario": "Hombros",
+    "musculosSecundarios": [
+      "Antebrazos"
+    ],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Párate al costado de una polea baja y toma la agarradera cruzando el cuerpo con la mano contraria.",
+      "Con el brazo casi extendido, eleva hacia el lateral hasta la altura del hombro.",
+      "Contrae el deltoide lateral por un segundo.",
+      "Baja de forma controlada; repite y cambia de brazo."
+    ],
+    "imagen": "/exercises/gifs/elevacion-lateral-polea.jpg"
+  },
+  {
+    "id": "rotacion-externa-hombro",
+    "nombre": "Rotación externa de hombro (manguito rotador)",
+    "categoria": "Hombros",
+    "musculoPrimario": "Hombros",
+    "musculosSecundarios": [],
+    "equipo": "Mancuerna",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Recuéstate de lado sobre un banco con una mancuerna en la mano de arriba.",
+      "Flexiona el codo a 90 grados manteniendo el brazo pegado al torso.",
+      "Rota el antebrazo hacia arriba levantando la mancuerna sin mover el brazo superior.",
+      "Baja de forma controlada; repite y cambia de lado."
+    ],
+    "imagen": "/exercises/gifs/rotacion-externa-hombro.jpg"
+  },
+  {
+    "id": "remo-posterior-barra",
+    "nombre": "Remo posterior con barra (rear delt row)",
+    "categoria": "Hombros",
+    "musculoPrimario": "Hombros",
+    "musculosSecundarios": [
+      "Biceps",
+      "Dorsal ancho",
+      "Espalda media"
+    ],
+    "equipo": "Barra",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Toma la barra con un agarre ancho y flexiona ligeramente las rodillas inclinando el torso al frente.",
+      "Deja los brazos colgando con los codos hacia afuera.",
+      "Tira de la barra hacia el pecho alto separando los codos del cuerpo, contrayendo los deltoides posteriores.",
+      "Baja de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/remo-posterior-barra.jpg"
+  },
+  {
+    "id": "press-empuje",
+    "nombre": "Press de empuje (push press)",
+    "categoria": "Hombros",
+    "musculoPrimario": "Hombros",
+    "musculosSecundarios": [
+      "Cuadriceps",
+      "Triceps"
+    ],
+    "equipo": "Barra",
+    "nivel": "Avanzado",
+    "instrucciones": [
+      "Sostén la barra a la altura de los hombros con un agarre un poco más ancho que estos.",
+      "Flexiona ligeramente las rodillas para generar impulso.",
+      "Extiende las piernas explosivamente mientras empujas la barra por encima de la cabeza.",
+      "Baja la barra de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/press-empuje.jpg"
+  },
+  {
+    "id": "curl-barra-z",
+    "nombre": "Curl de bíceps con barra Z",
+    "categoria": "Biceps",
+    "musculoPrimario": "Biceps",
+    "musculosSecundarios": [],
+    "equipo": "Barra Z",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Toma la barra Z por las agarraderas anguladas, codos pegados al torso.",
+      "Sin mover los brazos superiores, sube la barra contrayendo el bíceps.",
+      "Sostén la contracción arriba por un segundo.",
+      "Baja de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/curl-barra-z.jpg"
+  },
+  {
+    "id": "curl-zottman",
+    "nombre": "Curl Zottman",
+    "categoria": "Biceps",
+    "musculoPrimario": "Biceps",
+    "musculosSecundarios": [
+      "Antebrazos"
+    ],
+    "equipo": "Mancuernas",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "De pie, sostén una mancuerna en cada mano con las palmas encontradas.",
+      "Sube las mancuernas contrayendo el bíceps con las palmas hacia arriba.",
+      "En la parte alta gira las muñecas para bajar con las palmas hacia abajo.",
+      "Repite alternando el giro de muñecas en cada repetición."
+    ],
+    "imagen": "/exercises/gifs/curl-zottman.jpg"
+  },
+  {
+    "id": "curl-arana",
+    "nombre": "Curl araña (spider curl)",
+    "categoria": "Biceps",
+    "musculoPrimario": "Biceps",
+    "musculosSecundarios": [],
+    "equipo": "Barra Z",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Apóyate boca abajo sobre el lado inclinado de un banco predicador con los brazos colgando.",
+      "Toma la barra con un agarre supino a la altura de los hombros.",
+      "Sube la barra contrayendo el bíceps sin mover los brazos superiores.",
+      "Baja de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/curl-arana.jpg"
+  },
+  {
+    "id": "curl-martillo-polea",
+    "nombre": "Curl martillo en polea con cuerda",
+    "categoria": "Biceps",
+    "musculoPrimario": "Biceps",
+    "musculosSecundarios": [],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Coloca una cuerda en la polea baja y toma cada extremo con agarre neutro.",
+      "Mantén los codos pegados al cuerpo durante todo el movimiento.",
+      "Sube la cuerda contrayendo el bíceps hasta el antebrazo.",
+      "Baja de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/curl-martillo-polea.jpg"
+  },
+  {
+    "id": "curl-biceps-polea-alta",
+    "nombre": "Curl de bíceps en poleas altas",
+    "categoria": "Biceps",
+    "musculoPrimario": "Biceps",
+    "musculosSecundarios": [],
+    "equipo": "Polea",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Párate entre dos poleas altas y toma una agarradera con cada mano.",
+      "Con los brazos superiores paralelos al piso, curva las agarraderas hacia las orejas.",
+      "Contrae el bíceps por un segundo en la parte alta.",
+      "Regresa de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/curl-biceps-polea-alta.jpg"
+  },
+  {
+    "id": "curl-inclinado-mancuerna",
+    "nombre": "Curl de bíceps en banco inclinado",
+    "categoria": "Biceps",
+    "musculoPrimario": "Biceps",
+    "musculosSecundarios": [],
+    "equipo": "Mancuernas",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate en un banco inclinado con una mancuerna en cada mano, brazos extendidos hacia abajo.",
+      "Sin mover los brazos superiores, sube las mancuernas contrayendo el bíceps.",
+      "Sostén la contracción arriba por un segundo.",
+      "Baja de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/curl-inclinado-mancuerna.jpg"
+  },
+  {
+    "id": "curl-inverso-barra",
+    "nombre": "Curl inverso con barra",
+    "categoria": "Biceps",
+    "musculoPrimario": "Biceps",
+    "musculosSecundarios": [
+      "Antebrazos"
+    ],
+    "equipo": "Barra",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Toma la barra con un agarre prono (palmas hacia abajo) al ancho de los hombros.",
+      "Sin mover los brazos superiores, sube la barra contrayendo el antebrazo y el bíceps.",
+      "Sostén la contracción arriba por un segundo.",
+      "Baja de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/curl-inverso-barra.jpg"
+  },
+  {
+    "id": "curl-drag",
+    "nombre": "Curl drag",
+    "categoria": "Biceps",
+    "musculoPrimario": "Biceps",
+    "musculosSecundarios": [
+      "Antebrazos"
+    ],
+    "equipo": "Barra",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Toma la barra con agarre supino y los codos pegados al cuerpo.",
+      "Sube la barra arrastrándola pegada al torso, llevando los codos hacia atrás.",
+      "Contrae el bíceps en la parte alta del movimiento.",
+      "Baja de forma controlada manteniendo la barra en contacto con el cuerpo."
+    ],
+    "imagen": "/exercises/gifs/curl-drag.jpg"
+  },
+  {
+    "id": "flexiones-diamante-mancuerna",
+    "nombre": "Flexiones cerradas sobre mancuerna",
+    "categoria": "Triceps",
+    "musculoPrimario": "Triceps",
+    "musculosSecundarios": [
+      "Abdomen",
+      "Pectoral",
+      "Hombros"
+    ],
+    "equipo": "Mancuerna",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Colócate en plancha con las manos apoyadas sobre una mancuerna vertical.",
+      "Baja el cuerpo flexionando los codos, manteniéndolos cerca del torso.",
+      "Empuja hacia arriba extendiendo los codos.",
+      "Mantén el cuerpo recto durante todo el movimiento."
+    ],
+    "imagen": "/exercises/gifs/flexiones-diamante-mancuerna.jpg"
+  },
+  {
+    "id": "fondos-maquina",
+    "nombre": "Fondos de tríceps en máquina",
+    "categoria": "Triceps",
+    "musculoPrimario": "Triceps",
+    "musculosSecundarios": [
+      "Pectoral",
+      "Hombros"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate en la máquina de fondos y selecciona el peso.",
+      "Sujeta las agarraderas con los codos pegados al cuerpo.",
+      "Extiende los brazos hacia abajo contrayendo el tríceps.",
+      "Regresa de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/fondos-maquina.jpg"
+  },
+  {
+    "id": "press-jm",
+    "nombre": "Press JM",
+    "categoria": "Triceps",
+    "musculoPrimario": "Triceps",
+    "musculosSecundarios": [
+      "Pectoral",
+      "Hombros"
+    ],
+    "equipo": "Barra",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Recuéstate en un banco plano sosteniendo la barra con agarre cerrado, brazos extendidos sobre el pecho alto.",
+      "Baja la barra como en una extensión de tríceps, dejando que los codos avancen ligeramente hacia las piernas.",
+      "Empuja la barra hacia arriba como en un press cerrado, usando el tríceps.",
+      "Repite el movimiento de forma controlada."
+    ],
+    "imagen": "/exercises/gifs/press-jm.jpg"
+  },
+  {
+    "id": "press-tate",
+    "nombre": "Press Tate",
+    "categoria": "Triceps",
+    "musculoPrimario": "Triceps",
+    "musculosSecundarios": [
+      "Pectoral",
+      "Hombros"
+    ],
+    "equipo": "Mancuernas",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Recuéstate en un banco con una mancuerna en cada mano sobre el pecho, codos hacia afuera.",
+      "Baja las mancuernas en un arco hacia el pecho manteniendo los brazos superiores fijos.",
+      "Empuja las mancuernas de vuelta arriba usando el tríceps.",
+      "Repite el movimiento de forma controlada."
+    ],
+    "imagen": "/exercises/gifs/press-tate.jpg"
+  },
+  {
+    "id": "extension-triceps-polea-cuerda",
+    "nombre": "Extensión de tríceps con cuerda sobre la cabeza",
+    "categoria": "Triceps",
+    "musculoPrimario": "Triceps",
+    "musculosSecundarios": [],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Toma la cuerda de la polea baja y da la espalda a la máquina.",
+      "Extiende los brazos por encima de la cabeza con los codos cerca de las orejas.",
+      "Baja la cuerda detrás de la cabeza flexionando los codos.",
+      "Extiende los brazos de vuelta contrayendo el tríceps."
+    ],
+    "imagen": "/exercises/gifs/extension-triceps-polea-cuerda.jpg"
+  },
+  {
+    "id": "extension-triceps-agarre-invertido",
+    "nombre": "Extensión de tríceps en polea agarre invertido",
+    "categoria": "Triceps",
+    "musculoPrimario": "Triceps",
+    "musculosSecundarios": [],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Toma la barra de la polea alta con un agarre supino (palmas hacia arriba).",
+      "Mantén los codos pegados al cuerpo durante todo el movimiento.",
+      "Extiende los brazos hacia abajo contrayendo el tríceps.",
+      "Sube de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/extension-triceps-agarre-invertido.jpg"
+  },
+  {
+    "id": "extension-triceps-mancuerna-unilateral",
+    "nombre": "Extensión de tríceps con mancuerna a un brazo",
+    "categoria": "Triceps",
+    "musculoPrimario": "Triceps",
+    "musculosSecundarios": [],
+    "equipo": "Mancuerna",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Recuéstate en un banco sosteniendo una mancuerna con el brazo extendido hacia arriba.",
+      "Sujeta el bíceps del brazo activo con la mano libre para dar soporte.",
+      "Baja la mancuerna flexionando el codo hacia el pecho.",
+      "Extiende el brazo de vuelta contrayendo el tríceps; repite y cambia de brazo."
+    ],
+    "imagen": "/exercises/gifs/extension-triceps-mancuerna-unilateral.jpg"
+  },
+  {
+    "id": "sentadilla-hack",
+    "nombre": "Sentadilla hack en máquina",
+    "categoria": "Piernas",
+    "musculoPrimario": "Cuadriceps",
+    "musculosSecundarios": [
+      "Gemelos",
+      "Gluteos",
+      "Isquiotibiales"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Colócate en la máquina hack con la espalda y los hombros apoyados en los soportes.",
+      "Coloca los pies al ancho de los hombros sobre la plataforma.",
+      "Desciende flexionando las rodillas hasta que los muslos queden casi paralelos al piso.",
+      "Empuja con los talones para extender las piernas y volver a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/sentadilla-hack.jpg"
+  },
+  {
+    "id": "sentadilla-hack-barra",
+    "nombre": "Sentadilla hack con barra",
+    "categoria": "Piernas",
+    "musculoPrimario": "Cuadriceps",
+    "musculosSecundarios": [
+      "Gemelos",
+      "Antebrazos",
+      "Isquiotibiales"
+    ],
+    "equipo": "Barra",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Sostén la barra detrás de ti con los brazos extendidos y los pies al ancho de los hombros.",
+      "Manteniendo la espalda recta, desciende en sentadilla hasta que los muslos queden paralelos al piso.",
+      "Empuja con los talones para subir contrayendo los cuádriceps.",
+      "Repite el movimiento de forma controlada."
+    ],
+    "imagen": "/exercises/gifs/sentadilla-hack-barra.jpg"
+  },
+  {
+    "id": "sentadilla-frontal",
+    "nombre": "Sentadilla frontal con barra",
+    "categoria": "Piernas",
+    "musculoPrimario": "Cuadriceps",
+    "musculosSecundarios": [
+      "Abdomen",
+      "Gluteos",
+      "Isquiotibiales"
+    ],
+    "equipo": "Barra",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Coloca la barra sobre los deltoides frontales, sujeta con las puntas de los dedos.",
+      "Levanta la barra del soporte y da un paso atrás con los pies al ancho de los hombros.",
+      "Desciende flexionando cadera y rodillas manteniendo el torso erguido y los codos altos.",
+      "Empuja con los talones para subir y regresar a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/sentadilla-frontal.jpg"
+  },
+  {
+    "id": "zancadas-caminando-barra",
+    "nombre": "Zancadas caminando con barra",
+    "categoria": "Piernas",
+    "musculoPrimario": "Cuadriceps",
+    "musculosSecundarios": [
+      "Gemelos",
+      "Gluteos",
+      "Isquiotibiales"
+    ],
+    "equipo": "Barra",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Coloca la barra sobre la espalda alta y párate con los pies al ancho de los hombros.",
+      "Da un paso largo hacia adelante y desciende hasta que la rodilla trasera casi toque el piso.",
+      "Empuja con el talón delantero para extender ambas piernas y ponerte de pie.",
+      "Da un paso adelante con la pierna trasera y repite alternando piernas."
+    ],
+    "imagen": "/exercises/gifs/zancadas-caminando-barra.jpg"
+  },
+  {
+    "id": "curl-femoral-de-pie",
+    "nombre": "Curl femoral de pie en máquina",
+    "categoria": "Piernas",
+    "musculoPrimario": "Isquiotibiales",
+    "musculosSecundarios": [],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Colócate de pie en la máquina con el cojín apoyado detrás de la pantorrilla de una pierna.",
+      "Sujeta las agarraderas manteniendo el torso estable.",
+      "Flexiona la rodilla llevando el talón hacia el glúteo contrayendo el isquiotibial.",
+      "Regresa de forma controlada; repite y cambia de pierna."
+    ],
+    "imagen": "/exercises/gifs/curl-femoral-de-pie.jpg"
+  },
+  {
+    "id": "curl-femoral-sentado",
+    "nombre": "Curl femoral sentado en máquina",
+    "categoria": "Piernas",
+    "musculoPrimario": "Isquiotibiales",
+    "musculosSecundarios": [],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate en la máquina con la espalda apoyada y las piernas extendidas sobre el cojín.",
+      "Sujeta las agarraderas laterales para estabilizar el torso.",
+      "Flexiona las rodillas llevando el cojín hacia atrás contrayendo los isquiotibiales.",
+      "Regresa de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/curl-femoral-sentado.jpg"
+  },
+  {
+    "id": "elevacion-talones-sentado",
+    "nombre": "Elevación de talones sentado",
+    "categoria": "Piernas",
+    "musculoPrimario": "Gemelos",
+    "musculosSecundarios": [],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate en la máquina con las puntas de los pies sobre la plataforma y los muslos bajo el cojín.",
+      "Levanta el seguro y deja que los talones bajen estirando los gemelos.",
+      "Eleva los talones lo más alto posible contrayendo los gemelos.",
+      "Baja de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/elevacion-talones-sentado.jpg"
+  },
+  {
+    "id": "elevacion-talones-burro",
+    "nombre": "Elevación de talones burro (donkey calf raise)",
+    "categoria": "Piernas",
+    "musculoPrimario": "Gemelos",
+    "musculosSecundarios": [],
+    "equipo": "Máquina",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Inclínate en la máquina con las caderas bajo el cojín y las puntas de los pies en la plataforma.",
+      "Deja que los talones bajen para estirar los gemelos.",
+      "Eleva los talones lo más alto posible contrayendo los gemelos.",
+      "Baja de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/elevacion-talones-burro.jpg"
+  },
+  {
+    "id": "zancada-estatica-mancuernas",
+    "nombre": "Zancada estática con mancuernas",
+    "categoria": "Piernas",
+    "musculoPrimario": "Cuadriceps",
+    "musculosSecundarios": [
+      "Gluteos",
+      "Isquiotibiales"
+    ],
+    "equipo": "Mancuernas",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Colócate en posición de zancada con el pie trasero elevado y el delantero al frente.",
+      "Sostén una mancuerna en cada mano a los lados del cuerpo.",
+      "Desciende flexionando cadera y rodilla delantera manteniendo el torso erguido.",
+      "Empuja con el talón delantero para volver a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/zancada-estatica-mancuernas.jpg"
+  },
+  {
+    "id": "sentadilla-multipower",
+    "nombre": "Sentadilla en multipower",
+    "categoria": "Piernas",
+    "musculoPrimario": "Cuadriceps",
+    "musculosSecundarios": [
+      "Gemelos",
+      "Gluteos",
+      "Isquiotibiales",
+      "Lumbar"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Coloca la barra del multipower sobre la espalda alta y desengancha el seguro.",
+      "Coloca los pies al ancho de los hombros, ligeramente adelantados.",
+      "Desciende flexionando las rodillas hasta que los muslos queden casi paralelos al piso.",
+      "Empuja con los talones para volver a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/sentadilla-multipower.jpg"
+  },
+  {
+    "id": "sentadilla-peso-corporal",
+    "nombre": "Sentadilla con peso corporal",
+    "categoria": "Piernas",
+    "musculoPrimario": "Cuadriceps",
+    "musculosSecundarios": [
+      "Gluteos",
+      "Isquiotibiales"
+    ],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Párate con los pies al ancho de los hombros, manos al frente o detrás de la cabeza.",
+      "Flexiona cadera y rodillas descendiendo como si te fueras a sentar.",
+      "Baja hasta donde tu movilidad lo permita manteniendo el pecho arriba.",
+      "Empuja con los talones para volver a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/sentadilla-peso-corporal.jpg"
+  },
+  {
+    "id": "sentadilla-al-cajon",
+    "nombre": "Sentadilla al cajón (box squat)",
+    "categoria": "Piernas",
+    "musculoPrimario": "Cuadriceps",
+    "musculosSecundarios": [
+      "Aductores de cadera",
+      "Gemelos",
+      "Gluteos",
+      "Isquiotibiales",
+      "Lumbar"
+    ],
+    "equipo": "Barra",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Coloca la barra sobre la espalda alta con un cajón detrás de ti a la altura deseada.",
+      "Con los pies un poco más abiertos que los hombros, desciende llevando la cadera hacia atrás.",
+      "Siéntate suavemente en el cajón sin rebotar y sin relajar el torso.",
+      "Empuja con los talones para volver a subir con fuerza."
+    ],
+    "imagen": "/exercises/gifs/sentadilla-al-cajon.jpg"
+  },
+  {
+    "id": "puente-gluteo-barra",
+    "nombre": "Puente de glúteos con barra",
+    "categoria": "Gluteos",
+    "musculoPrimario": "Gluteos",
+    "musculosSecundarios": [
+      "Gemelos",
+      "Isquiotibiales"
+    ],
+    "equipo": "Barra",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Siéntate en el piso con una barra apoyada sobre la cadera y recuéstate.",
+      "Apoya la parte alta de la espalda en el piso o en un banco.",
+      "Empuja con los talones extendiendo la cadera hacia arriba contrayendo los glúteos.",
+      "Baja de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/puente-gluteo-barra.jpg"
+  },
+  {
+    "id": "puente-gluteo-unilateral",
+    "nombre": "Puente de glúteos a una pierna",
+    "categoria": "Gluteos",
+    "musculoPrimario": "Gluteos",
+    "musculosSecundarios": [
+      "Isquiotibiales"
+    ],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Recuéstate boca arriba con los pies apoyados y las rodillas flexionadas.",
+      "Eleva una pierna llevando la rodilla hacia el pecho.",
+      "Empuja con el talón de la pierna apoyada, elevando la cadera.",
+      "Baja de forma controlada; repite y cambia de pierna."
+    ],
+    "imagen": "/exercises/gifs/puente-gluteo-unilateral.jpg"
+  },
+  {
+    "id": "jalon-cadera-polea",
+    "nombre": "Jalón de cadera en polea (pull through)",
+    "categoria": "Gluteos",
+    "musculoPrimario": "Gluteos",
+    "musculosSecundarios": [
+      "Isquiotibiales",
+      "Lumbar"
+    ],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Párate de espaldas a la polea baja con una cuerda entre las piernas.",
+      "Da unos pasos al frente con las piernas separadas y ligeramente flexionadas.",
+      "Flexiona la cadera llevando la cuerda entre las piernas hacia atrás.",
+      "Extiende la cadera hacia adelante contrayendo los glúteos hasta pararte."
+    ],
+    "imagen": "/exercises/gifs/jalon-cadera-polea.jpg"
+  },
+  {
+    "id": "step-up-elevacion-rodilla",
+    "nombre": "Step up con elevación de rodilla",
+    "categoria": "Gluteos",
+    "musculoPrimario": "Gluteos",
+    "musculosSecundarios": [
+      "Isquiotibiales",
+      "Cuadriceps"
+    ],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Párate frente a un banco o cajón con los pies juntos.",
+      "Sube apoyando un pie completo sobre el banco y extiende la cadera y rodilla para subir.",
+      "Al llegar arriba, eleva la rodilla contraria hacia el pecho.",
+      "Baja de forma controlada y repite alternando piernas."
+    ],
+    "imagen": "/exercises/gifs/step-up-elevacion-rodilla.jpg"
+  },
+  {
+    "id": "sit-up-basico",
+    "nombre": "Sit-up básico",
+    "categoria": "Abdomen",
+    "musculoPrimario": "Abdomen",
+    "musculosSecundarios": [],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Acuéstate con las rodillas flexionadas y los pies fijos en el piso.",
+      "Coloca las manos detrás de la cabeza sin jalar el cuello.",
+      "Eleva el torso completo hasta quedar sentado, contrayendo el abdomen.",
+      "Baja de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/sit-up-basico.jpg"
+  },
+  {
+    "id": "bicicleta-abdominal",
+    "nombre": "Bicicleta abdominal (air bike)",
+    "categoria": "Abdomen",
+    "musculoPrimario": "Abdomen",
+    "musculosSecundarios": [],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Acuéstate boca arriba con las manos detrás de la cabeza y los hombros elevados en crunch.",
+      "Lleva las rodillas hacia el pecho simulando pedalear.",
+      "Lleva el codo hacia la rodilla contraria alternando de lado en cada repetición.",
+      "Mantén el movimiento continuo y controlado."
+    ],
+    "imagen": "/exercises/gifs/bicicleta-abdominal.jpg"
+  },
+  {
+    "id": "crunch-inverso",
+    "nombre": "Crunch inverso",
+    "categoria": "Abdomen",
+    "musculoPrimario": "Abdomen",
+    "musculosSecundarios": [],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Acuéstate con los brazos a los lados y las piernas elevadas, muslos perpendiculares al piso.",
+      "Lleva las rodillas hacia el pecho enrollando la pelvis hacia atrás y elevando la cadera del piso.",
+      "Sostén la contracción abdominal por un segundo.",
+      "Baja de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/crunch-inverso.jpg"
+  },
+  {
+    "id": "plancha-lateral",
+    "nombre": "Plancha lateral (side bridge)",
+    "categoria": "Abdomen",
+    "musculoPrimario": "Abdomen",
+    "musculosSecundarios": [
+      "Hombros"
+    ],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Recuéstate de lado apoyando el antebrazo en el piso, alineado bajo el hombro.",
+      "Eleva la cadera del piso formando una línea recta de cabeza a pies.",
+      "Mantén la posición contrayendo el abdomen y los oblicuos.",
+      "Sostén el tiempo indicado y repite del otro lado."
+    ],
+    "imagen": "/exercises/gifs/plancha-lateral.jpg"
+  },
+  {
+    "id": "pike-colgado",
+    "nombre": "Pike colgado",
+    "categoria": "Abdomen",
+    "musculoPrimario": "Abdomen",
+    "musculosSecundarios": [],
+    "equipo": "Barra de dominadas",
+    "nivel": "Avanzado",
+    "instrucciones": [
+      "Cuelga de una barra con las piernas juntas y extendidas.",
+      "Flexiona las rodillas llevando los muslos al frente, formando un ángulo de 90 grados.",
+      "Sube las piernas contrayendo el abdomen hasta acercarlas a la barra.",
+      "Baja de forma lenta y controlada, evitando el balanceo."
+    ],
+    "imagen": "/exercises/gifs/pike-colgado.jpg"
+  },
+  {
+    "id": "dead-bug",
+    "nombre": "Dead bug",
+    "categoria": "Abdomen",
+    "musculoPrimario": "Abdomen",
+    "musculosSecundarios": [],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Acuéstate boca arriba con los brazos extendidos hacia el techo y las rodillas flexionadas a 90 grados.",
+      "Aplana la espalda baja contra el piso contrayendo el abdomen; esta es la posición inicial.",
+      "Extiende un brazo y la pierna contraria hacia el piso sin perder el contacto de la espalda baja.",
+      "Regresa a la posición inicial y repite alternando lados."
+    ],
+    "imagen": "/exercises/gifs/dead-bug.jpg"
+  },
+  {
+    "id": "giro-ruso-polea",
+    "nombre": "Giro ruso en polea",
+    "categoria": "Abdomen",
+    "musculoPrimario": "Abdomen",
+    "musculosSecundarios": [],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Toma la agarradera de la polea a la altura media con ambas manos frente al pecho.",
+      "Mantén los brazos extendidos y el abdomen contraído.",
+      "Gira el torso alejándote de la polea rotando desde la cadera.",
+      "Regresa de forma controlada; repite y cambia de lado."
+    ],
+    "imagen": "/exercises/gifs/giro-ruso-polea.jpg"
+  },
+  {
+    "id": "crunch-declinado",
+    "nombre": "Crunch declinado",
+    "categoria": "Abdomen",
+    "musculoPrimario": "Abdomen",
+    "musculosSecundarios": [],
+    "equipo": "Peso corporal",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Asegura las piernas en el banco declinado y recuéstate.",
+      "Coloca las manos a los lados de la cabeza sin entrelazar los dedos.",
+      "Eleva los hombros del banco contrayendo el abdomen.",
+      "Baja de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/crunch-declinado.jpg"
+  },
+  {
+    "id": "tijeras-piernas",
+    "nombre": "Tijeras de piernas (flutter kicks)",
+    "categoria": "Abdomen",
+    "musculoPrimario": "Recto abdominal inferior",
+    "musculosSecundarios": [
+      "Isquiotibiales"
+    ],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Acuéstate boca arriba con las manos bajo los glúteos y las piernas extendidas.",
+      "Eleva ligeramente ambas piernas del piso.",
+      "Sube y baja las piernas alternando una arriba y otra abajo, como una patada de nado.",
+      "Mantén el abdomen contraído y respira de forma continua."
+    ],
+    "imagen": "/exercises/gifs/tijeras-piernas.jpg"
+  },
+  {
+    "id": "crunch-con-peso",
+    "nombre": "Crunch con peso",
+    "categoria": "Abdomen",
+    "musculoPrimario": "Abdomen",
+    "musculosSecundarios": [],
+    "equipo": "Balón medicinal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Acuéstate boca arriba con las rodillas flexionadas y los pies apoyados.",
+      "Sostén un disco o balón medicinal contra el pecho.",
+      "Eleva los hombros del piso contrayendo el abdomen.",
+      "Baja de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/crunch-con-peso.jpg"
+  },
+  {
+    "id": "eliptica",
+    "nombre": "Elíptica",
+    "categoria": "Cardio",
+    "musculoPrimario": "Sistema cardiovascular",
+    "musculosSecundarios": [
+      "Gemelos",
+      "Gluteos",
+      "Isquiotibiales"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Sube a la elíptica y selecciona el programa o modo manual.",
+      "Sujeta las agarraderas y comienza a pedalear con un ritmo constante.",
+      "Ajusta la resistencia o inclinación según la intensidad deseada.",
+      "Mantén una postura erguida durante todo el ejercicio."
+    ],
+    "imagen": "/exercises/gifs/eliptica.jpg"
+  },
+  {
+    "id": "escaladora",
+    "nombre": "Escaladora (stairmaster)",
+    "categoria": "Cardio",
+    "musculoPrimario": "Sistema cardiovascular",
+    "musculosSecundarios": [
+      "Gemelos",
+      "Gluteos",
+      "Isquiotibiales"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Sube a la escaladora y selecciona el programa o modo manual.",
+      "Sujeta las agarraderas ligeramente para mantener el equilibrio.",
+      "Pisa los escalones con un ritmo constante sin apoyarte por completo en las agarraderas.",
+      "Mantén la espalda recta durante todo el ejercicio."
+    ],
+    "imagen": "/exercises/gifs/escaladora.jpg"
+  },
+  {
+    "id": "caminata-monstruo-banda",
+    "nombre": "Caminata monstruo con banda elástica",
+    "categoria": "Abductores",
+    "musculoPrimario": "Abductores de cadera",
+    "musculosSecundarios": [],
+    "equipo": "Banda elástica",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Coloca una banda elástica alrededor de los tobillos o rodillas.",
+      "Flexiona ligeramente las rodillas manteniendo tensión en la banda.",
+      "Da pasos cortos hacia los lados o al frente manteniendo la tensión constante.",
+      "Repite el recorrido en ambas direcciones."
+    ],
+    "imagen": "/exercises/gifs/caminata-monstruo-banda.jpg"
+  },
+  {
+    "id": "aduccion-cadera-maquina",
+    "nombre": "Aducción de cadera en máquina",
+    "categoria": "Aductores",
+    "musculoPrimario": "Aductores de cadera",
+    "musculosSecundarios": [
+      "Gluteos",
+      "Isquiotibiales"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate en la máquina de aductores y ajusta las almohadillas contra la parte interna de los muslos.",
+      "Sujeta las agarraderas manteniendo el torso estable.",
+      "Junta las piernas contrayendo los aductores.",
+      "Regresa de forma controlada a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/aduccion-cadera-maquina.jpg"
+  },
+  {
+    "id": "aduccion-cadera-banda",
+    "nombre": "Aducción de cadera con banda elástica",
+    "categoria": "Aductores",
+    "musculoPrimario": "Aductores de cadera",
+    "musculosSecundarios": [],
+    "equipo": "Banda elástica",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Ancla una banda elástica a un poste u objeto fijo.",
+      "Coloca el tobillo más alejado del poste dentro de la banda.",
+      "Cruza la pierna hacia el centro del cuerpo contrayendo el aductor.",
+      "Regresa de forma controlada; repite y cambia de pierna."
+    ],
+    "imagen": "/exercises/gifs/aduccion-cadera-banda.jpg"
+  },
+  {
+    "id": "aduccion-cadera-polea",
+    "nombre": "Aducción de cadera en polea",
+    "categoria": "Aductores",
+    "musculoPrimario": "Aductores de cadera",
+    "musculosSecundarios": [],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Coloca el manguito de tobillo en la pierna más cercana a la polea baja.",
+      "Aléjate de la máquina con una postura amplia sujetando el soporte.",
+      "Cruza la pierna con el manguito hacia el frente de la pierna de apoyo.",
+      "Regresa de forma controlada; repite y cambia de pierna."
+    ],
+    "imagen": "/exercises/gifs/aduccion-cadera-polea.jpg"
   }
 ]

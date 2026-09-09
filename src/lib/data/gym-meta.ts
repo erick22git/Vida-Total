@@ -9,6 +9,8 @@ export const MUSCLE_GROUPS: { value: MuscleGroup; label: string; icon: string }[
   { value: "Piernas", label: "Piernas", icon: "Footprints" },
   { value: "Gluteos", label: "Glúteos", icon: "CircleDot" },
   { value: "Abdomen", label: "Abdomen", icon: "Hexagon" },
+  { value: "Abductores", label: "Abductores", icon: "MoveHorizontal" },
+  { value: "Aductores", label: "Aductores", icon: "Move" },
   { value: "Cardio", label: "Cardio", icon: "HeartPulse" },
 ];
 
@@ -32,6 +34,8 @@ export const EQUIPMENT_LIST: string[] = [
   "Cinta",
   "Bicicleta",
   "Cuerda",
+  "Kettlebell",
+  "Banda elástica",
 ];
 
 export const MUSCLE_COLOR: Record<string, string> = {
@@ -43,6 +47,8 @@ export const MUSCLE_COLOR: Record<string, string> = {
   Piernas: "#4ade80",
   Gluteos: "#fb923c",
   Abdomen: "#22d3ee",
+  Abductores: "#c084fc",
+  Aductores: "#2dd4bf",
   Cardio: "#f43f5e",
 };
 

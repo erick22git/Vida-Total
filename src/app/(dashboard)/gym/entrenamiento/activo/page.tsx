@@ -19,11 +19,11 @@ import { GlassInput } from "@/components/glass/glass-input";
 import { SessionSetRow } from "@/components/gym/session-set-row";
 import { SessionExerciseCarousel } from "@/components/gym/session-exercise-carousel";
 import { RestBar } from "@/components/gym/rest-bar";
+import { RestDurationModal, formatRestDuration } from "@/components/gym/rest-duration-modal";
+import { PillActionButton } from "@/components/gym/pill-action-button";
 import { SessionTimer } from "@/components/gym/session-timer";
 import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
 import { useGymStore } from "@/lib/store/gymStore";
-
-const REST_PRESETS = [30, 60, 90, 120, 180];
 
 export default function ActiveWorkoutPage() {
   const router = useRouter();
@@ -136,18 +136,18 @@ export default function ActiveWorkoutPage() {
             </GlassCard>
           )}
 
-          <div className="grid grid-cols-4 gap-2">
-            <PillButton icon={BookOpen} label="Tutorial" onClick={() => exercise && router.push(`/gym/entrenamiento/${exercise.id}?tab=guia`)} />
-            <PillButton icon={Repeat} label="Reemplazar" onClick={() => setPickerOpen(true)} />
-            <PillButton icon={StickyNote} label="Notas" onClick={() => setNotesOpen(true)} active={!!currentLog.nota} />
-            <PillButton icon={Clock} label={`${restSeconds}s`} onClick={() => setRestConfigOpen(true)} />
+          <div className="flex items-center gap-2 flex-wrap">
+            <PillActionButton icon={BookOpen} title="Tutorial" onClick={() => exercise && router.push(`/gym/entrenamiento/${exercise.id}?tab=guia`)} />
+            <PillActionButton icon={Repeat} title="Reemplazar" onClick={() => setPickerOpen(true)} />
+            <PillActionButton icon={StickyNote} title="Notas" onClick={() => setNotesOpen(true)} active={!!currentLog.nota} />
+            <PillActionButton icon={Clock} title="Descanso" badge={formatRestDuration(restSeconds)} onClick={() => setRestConfigOpen(true)} />
           </div>
 
           <div className="flex flex-col gap-2">
             <div className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 px-1 text-[11px] font-semibold text-white/40 uppercase tracking-wide">
-              <span className="w-8">Serie</span>
-              <span>{soloReps ? "" : "Kg"}</span>
-              <span>Reps</span>
+              <span className="w-8 text-center">Serie</span>
+              <span className="text-center">{soloReps ? "" : "Kg"}</span>
+              <span className="text-center">Reps</span>
               <span className="text-center">IA</span>
               <span className="w-9" />
             </div>
@@ -198,27 +198,12 @@ export default function ActiveWorkoutPage() {
         </div>
       </GlassModal>
 
-      <GlassModal open={restConfigOpen} onClose={() => setRestConfigOpen(false)} title="Descanso del ejercicio">
-        <div className="flex flex-col gap-2">
-          {REST_PRESETS.map((sec) => (
-            <button
-              key={sec}
-              onClick={() => {
-                setExerciseRest(currentLog.exerciseId, sec);
-                setRestConfigOpen(false);
-              }}
-              className="flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-medium cursor-pointer transition-colors"
-              style={{
-                background: restSeconds === sec ? "var(--gym)22" : "rgba(255,255,255,0.04)",
-                border: `1px solid ${restSeconds === sec ? "var(--gym)" : "rgba(255,255,255,0.1)"}`,
-                color: restSeconds === sec ? "white" : "rgba(255,255,255,0.7)",
-              }}
-            >
-              {sec >= 60 ? `${Math.floor(sec / 60)} min${sec % 60 ? ` ${sec % 60}s` : ""}` : `${sec} segundos`}
-            </button>
-          ))}
-        </div>
-      </GlassModal>
+      <RestDurationModal
+        open={restConfigOpen}
+        onClose={() => setRestConfigOpen(false)}
+        value={restSeconds}
+        onConfirm={(sec) => setExerciseRest(currentLog.exerciseId, sec)}
+      />
 
       <button
         onClick={() => {
@@ -232,32 +217,5 @@ export default function ActiveWorkoutPage() {
         Descartar entrenamiento
       </button>
     </div>
-  );
-}
-
-function PillButton({
-  icon: Icon,
-  label,
-  onClick,
-  active,
-}: {
-  icon: React.ElementType;
-  label: string;
-  onClick: () => void;
-  active?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex flex-col items-center gap-1 rounded-2xl py-2.5 text-[11px] font-medium cursor-pointer transition-colors"
-      style={{
-        background: active ? "var(--gym)22" : "rgba(255,255,255,0.05)",
-        border: `1px solid ${active ? "var(--gym)" : "rgba(255,255,255,0.12)"}`,
-        color: active ? "white" : "rgba(255,255,255,0.65)",
-      }}
-    >
-      <Icon size={16} />
-      {label}
-    </button>
   );
 }

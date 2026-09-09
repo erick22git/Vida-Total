@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Moon, Check } from "lucide-react";
+import { ArrowLeft, Moon, Dumbbell, X } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
-import { GlassModal } from "@/components/glass/glass-modal";
-import { MUSCLE_GROUPS } from "@/lib/data/gym-meta";
+import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
+import { ExerciseSessionBuilder } from "@/components/gym/exercise-session-builder";
 import { useGymStore } from "@/lib/store/gymStore";
-import type { WeeklyPlanDay } from "@/lib/types";
+import { dominantMuscleGroup } from "@/lib/gym-utils";
+import type { RoutineExercise, WeeklyPlanDay } from "@/lib/types";
 
 const DAYS = [
   { key: "L", label: "Lunes" },
@@ -25,13 +26,26 @@ export default function ManualPlanCreatorPage() {
   const createPlan = useGymStore((s) => s.createPlan);
   const setActivePlan = useGymStore((s) => s.setActivePlan);
   const applyPlanToWeek = useGymStore((s) => s.applyPlanToWeek);
+  const saveRoutine = useGymStore((s) => s.saveRoutine);
+  const allExercises = useAllExercises();
 
-  const [dias, setDias] = useState<WeeklyPlanDay[]>(DAYS.map((d) => ({ day: d.key, grupoMuscular: "Descanso" })));
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [dayDrafts, setDayDrafts] = useState<RoutineExercise[][]>(DAYS.map(() => []));
+  const [editingDay, setEditingDay] = useState<number | null>(null);
 
-  const daysActive = dias.filter((d) => d.grupoMuscular !== "Descanso").length;
+  const daysActive = dayDrafts.filter((d) => d.length > 0).length;
+
+  function clearDay(i: number) {
+    setDayDrafts((d) => d.map((day, idx) => (idx === i ? [] : day)));
+  }
 
   function handleCreate() {
+    const dias: WeeklyPlanDay[] = DAYS.map((d, i) => {
+      const draft = dayDrafts[i];
+      if (draft.length === 0) return { day: d.key, grupoMuscular: "Descanso" as const };
+      const routine = saveRoutine(`Mi Plan Personalizado - ${d.label}`, draft);
+      const grupo = dominantMuscleGroup(draft, allExercises) ?? "Cardio";
+      return { day: d.key, grupoMuscular: grupo, routineId: routine.id };
+    });
     const plan = createPlan({
       nombre: "Mi Plan Personalizado",
       contexto: `Gimnasio · ${daysActive} días/semana`,
@@ -45,6 +59,56 @@ export default function ManualPlanCreatorPage() {
     router.push("/gym/entrenamiento/planificaciones");
   }
 
+  if (editingDay !== null) {
+    const label = DAYS[editingDay].label;
+    const draft = dayDrafts[editingDay];
+    return (
+      <div className="flex flex-col gap-5 pb-8">
+        <header className="flex items-center justify-between gap-3 pt-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={() => setEditingDay(null)} className="text-white/50 hover:text-white transition-colors cursor-pointer shrink-0">
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-xl md:text-2xl font-semibold tracking-tight truncate">Editar: {label}</h1>
+          </div>
+          <GlassButton size="sm" accentColor="var(--gym-2)" onClick={() => setEditingDay(null)}>
+            Listo
+          </GlassButton>
+        </header>
+
+        {draft.length === 0 ? (
+          <>
+            <p className="text-sm text-white/50 -mt-3">Selecciona los ejercicios para {label}.</p>
+            <ExercisePicker
+              multiple
+              onConfirmSelection={(exs) =>
+                setDayDrafts((d) =>
+                  d.map((day, idx) =>
+                    idx === editingDay
+                      ? exs.map<RoutineExercise>((e) => ({
+                          exerciseId: e.id,
+                          sets: [
+                            { peso: 0, reps: 10, tipo: "normal" },
+                            { peso: 0, reps: 10, tipo: "normal" },
+                            { peso: 0, reps: 10, tipo: "normal" },
+                          ],
+                        }))
+                      : day,
+                  ),
+                )
+              }
+            />
+          </>
+        ) : (
+          <ExerciseSessionBuilder
+            draft={draft}
+            onDraftChange={(next) => setDayDrafts((d) => d.map((day, idx) => (idx === editingDay ? next : day)))}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6 pb-28">
       <header className="flex items-center gap-3 pt-2">
@@ -53,18 +117,34 @@ export default function ManualPlanCreatorPage() {
         </button>
         <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Crear Manualmente</h1>
       </header>
+      <p className="text-sm text-white/50 -mt-3">Toca un día para agregarle ejercicios.</p>
 
       <div className="grid grid-cols-2 gap-3">
         {DAYS.map((d, i) => {
-          const isRest = dias[i].grupoMuscular === "Descanso";
+          const draft = dayDrafts[i];
+          const isRest = draft.length === 0;
+          const grupo = isRest ? null : dominantMuscleGroup(draft, allExercises);
           return (
             <GlassCard
               key={d.key}
               padding="sm"
               accentColor={isRest ? undefined : "var(--gym)"}
-              onClick={() => setEditingIndex(i)}
-              className="flex flex-col gap-2 h-28 justify-center items-center text-center cursor-pointer"
+              onClick={() => setEditingDay(i)}
+              className="relative flex flex-col gap-2 h-28 justify-center items-center text-center cursor-pointer"
             >
+              {!isRest && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearDay(i);
+                  }}
+                  className="absolute top-2 right-2 flex items-center justify-center w-6 h-6 rounded-full bg-black/40 text-white/50 hover:text-white cursor-pointer"
+                  title="Marcar como descanso"
+                  aria-label="Marcar como descanso"
+                >
+                  <X size={12} />
+                </button>
+              )}
               <p className="text-xs font-semibold text-white/50">{d.label}</p>
               {isRest ? (
                 <>
@@ -72,7 +152,11 @@ export default function ManualPlanCreatorPage() {
                   <p className="text-xs text-white/40">Día de descanso</p>
                 </>
               ) : (
-                <p className="text-sm font-bold text-white">{dias[i].grupoMuscular}</p>
+                <>
+                  <Dumbbell size={20} className="text-[var(--gym)]" />
+                  <p className="text-sm font-bold text-white">{grupo}</p>
+                  <p className="text-[10px] text-white/40">{draft.length} ejercicios</p>
+                </>
               )}
             </GlassCard>
           );
@@ -84,42 +168,6 @@ export default function ManualPlanCreatorPage() {
           Crear Planificación
         </GlassButton>
       </div>
-
-      <GlassModal open={editingIndex !== null} onClose={() => setEditingIndex(null)} title="Elegir grupo muscular">
-        <div className="flex flex-col gap-1.5">
-          <button
-            onClick={() => {
-              if (editingIndex === null) return;
-              setDias((d) => d.map((day, i) => (i === editingIndex ? { ...day, grupoMuscular: "Descanso" } : day)));
-              setEditingIndex(null);
-            }}
-            className="flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left cursor-pointer hover:bg-white/10"
-          >
-            <Moon size={16} className="text-white/50" />
-            <span className="flex-1 text-sm text-white/85">Día de descanso</span>
-            {editingIndex !== null && dias[editingIndex].grupoMuscular === "Descanso" && (
-              <Check size={16} className="text-white/60" />
-            )}
-          </button>
-          <div className="h-px bg-white/10 my-1" />
-          {MUSCLE_GROUPS.map((m) => (
-            <button
-              key={m.value}
-              onClick={() => {
-                if (editingIndex === null) return;
-                setDias((d) => d.map((day, i) => (i === editingIndex ? { ...day, grupoMuscular: m.value } : day)));
-                setEditingIndex(null);
-              }}
-              className="flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left cursor-pointer hover:bg-white/10"
-            >
-              <span className="flex-1 text-sm text-white/85">{m.label}</span>
-              {editingIndex !== null && dias[editingIndex].grupoMuscular === m.value && (
-                <Check size={16} className="text-[var(--gym)]" />
-              )}
-            </button>
-          ))}
-        </div>
-      </GlassModal>
     </div>
   );
 }

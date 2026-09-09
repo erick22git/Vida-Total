@@ -29,12 +29,16 @@ export function QuantityKeypad({
   initialValue,
   onChange,
   accentColor = "var(--gym)",
+  label = "Cantidad",
+  allowFraction = true,
 }: {
   open: boolean;
   onClose: () => void;
   initialValue: number;
   onChange: (value: number) => void;
   accentColor?: string;
+  label?: string;
+  allowFraction?: boolean;
 }) {
   const [mode, setMode] = useState<"numero" | "fraccion">("numero");
   const [text, setText] = useState(String(initialValue || ""));
@@ -82,29 +86,32 @@ export function QuantityKeypad({
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 340 }}
             className="glass-surface relative w-full md:max-w-md rounded-t-3xl overflow-hidden flex flex-col"
+            style={{ background: "color-mix(in srgb, var(--background) 94%, transparent)" }}
           >
             <div className="px-5 pt-4 pb-2 text-center">
-              <p className="text-xs text-white/45 mb-1">Cantidad</p>
+              <p className="text-xs text-white/45 mb-1">{label}</p>
               <p className="text-4xl font-bold tabular-nums text-white">{text || "0"}</p>
             </div>
 
-            <div className="px-4 flex items-center gap-1 rounded-full bg-white/[0.06] p-1 mx-4 mb-3">
-              {(["numero", "fraccion"] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className={cn(
-                    "flex-1 rounded-full py-2 text-xs font-medium transition-colors cursor-pointer",
-                    mode === m ? "text-white" : "text-white/50",
-                  )}
-                  style={mode === m ? { background: accentColor } : undefined}
-                >
-                  {m === "numero" ? "Número" : "Fracción"}
-                </button>
-              ))}
-            </div>
+            {allowFraction && (
+              <div className="px-4 flex items-center gap-1 rounded-full bg-white/[0.06] p-1 mx-4 mb-3">
+                {(["numero", "fraccion"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMode(m)}
+                    className={cn(
+                      "flex-1 rounded-full py-2 text-xs font-medium transition-colors cursor-pointer",
+                      mode === m ? "text-white" : "text-white/50",
+                    )}
+                    style={mode === m ? { background: accentColor } : undefined}
+                  >
+                    {m === "numero" ? "Número" : "Fracción"}
+                  </button>
+                ))}
+              </div>
+            )}
 
-            {mode === "numero" ? (
+            {mode === "numero" || !allowFraction ? (
               <div className="grid grid-cols-3 gap-2 px-4 pb-3">
                 {KEYS.map((k) => (
                   <button

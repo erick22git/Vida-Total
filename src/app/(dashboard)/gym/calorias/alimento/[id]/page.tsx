@@ -15,7 +15,6 @@ import {
   Check,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
-import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
 import { FoodPhoto } from "@/components/gym/food-photo";
 import { QuantityKeypad } from "@/components/gym/quantity-keypad";
@@ -71,14 +70,11 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
   }, [searchParams]);
 
   const [portions, setPortions] = useState<FoodPortion[]>(() => (food ? defaultPortions(food) : []));
-  const [selectedPortionIdx, setSelectedPortionIdx] = useState(0);
+  const [selectedPortionIdx] = useState(0);
   const [cantidad, setCantidad] = useState(1);
   const [cookedState, setCookedState] = useState<CookedState>("crudo");
   const [keypadOpen, setKeypadOpen] = useState(false);
-  const [portionMenuOpen, setPortionMenuOpen] = useState(false);
-  const [createPortionOpen, setCreatePortionOpen] = useState(false);
-  const [newPortionName, setNewPortionName] = useState("");
-  const [newPortionGrams, setNewPortionGrams] = useState("");
+  const [portionKeypadOpen, setPortionKeypadOpen] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [addedTarget, setAddedTarget] = useState<string | null>(null);
   const [defaultTargetIdx] = useState(initialTargetIdx);
@@ -328,50 +324,25 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
       </GlassCard>
 
       <QuantityKeypad open={keypadOpen} onClose={() => setKeypadOpen(false)} initialValue={cantidad} onChange={setCantidad} />
+      <QuantityKeypad
+        open={portionKeypadOpen}
+        onClose={() => setPortionKeypadOpen(false)}
+        initialValue={selectedPortion?.gramos ?? 100}
+        label="Gramos"
+        allowFraction={false}
+        onChange={(value) => {
+          const grams = value > 0 ? value : 1;
+          setPortions((prev) => {
+            const idx = selectedPortionIdx < prev.length ? selectedPortionIdx : 0;
+            const next = [...prev];
+            next[idx] = { ...next[idx], nombre: `${grams} g`, gramos: grams };
+            return next;
+          });
+        }}
+      />
 
       <div className="fixed bottom-20 md:bottom-0 left-0 right-0 z-30 p-4 backdrop-blur-xl bg-[color-mix(in_srgb,var(--background)_85%,transparent)] border-t border-white/[0.08] flex flex-col gap-2">
         <div className="max-w-md mx-auto w-full relative">
-          {createPortionOpen && (
-            <div className="absolute bottom-full mb-2 left-0 right-0 z-40 flex flex-col gap-2 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl p-3">
-              <p className="text-xs text-white/50">Nueva porción personalizada</p>
-              <div className="flex gap-2">
-                <GlassInput placeholder="Nombre" value={newPortionName} onChange={(e) => setNewPortionName(e.target.value)} className="flex-1" />
-                <GlassInput
-                  placeholder="Gramos"
-                  type="number"
-                  inputMode="decimal"
-                  value={newPortionGrams}
-                  onChange={(e) => setNewPortionGrams(e.target.value)}
-                  className="w-24"
-                />
-              </div>
-              <div className="flex gap-2">
-                <GlassButton
-                  size="sm"
-                  className="flex-1"
-                  disabled={!newPortionName.trim() || !newPortionGrams}
-                  onClick={() => {
-                    const grams = parseFloat(newPortionGrams);
-                    if (!newPortionName.trim() || !grams) return;
-                    setPortions((prev) => {
-                      const next = [...prev, { nombre: newPortionName.trim(), gramos: grams }];
-                      setSelectedPortionIdx(next.length - 1);
-                      return next;
-                    });
-                    setNewPortionName("");
-                    setNewPortionGrams("");
-                    setCreatePortionOpen(false);
-                  }}
-                >
-                  Guardar
-                </GlassButton>
-                <GlassButton size="sm" variant="ghost" className="flex-1" onClick={() => setCreatePortionOpen(false)}>
-                  Cancelar
-                </GlassButton>
-              </div>
-            </div>
-          )}
-
           <div className="grid grid-cols-3 gap-2 mb-2">
             <button
               onClick={() => setKeypadOpen(true)}
@@ -381,43 +352,13 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
               <span className="text-sm text-white font-medium truncate block">{cantidad}</span>
             </button>
 
-            <div className="relative">
-              <button
-                onClick={() => setPortionMenuOpen((v) => !v)}
-                className="w-full rounded-2xl bg-white/[0.06] border border-white/[0.12] px-3 py-2 text-left cursor-pointer"
-              >
-                <span className="text-[10px] text-white/40 block">Porción</span>
-                <span className="text-sm text-white font-medium truncate block">{selectedPortion?.nombre}</span>
-              </button>
-              {portionMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-30" onClick={() => setPortionMenuOpen(false)} />
-                  <div className="absolute left-0 right-0 bottom-full mb-1 z-40 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden max-h-56 overflow-y-auto">
-                    {portions.map((p, idx) => (
-                      <button
-                        key={p.nombre + idx}
-                        className="w-full text-left px-4 py-2.5 text-sm text-white hover:bg-white/[0.08] cursor-pointer"
-                        onClick={() => {
-                          setSelectedPortionIdx(idx);
-                          setPortionMenuOpen(false);
-                        }}
-                      >
-                        {p.nombre}
-                      </button>
-                    ))}
-                    <button
-                      className="w-full text-left px-4 py-2.5 text-sm text-[var(--gym)] hover:bg-white/[0.08] cursor-pointer border-t border-white/[0.08]"
-                      onClick={() => {
-                        setPortionMenuOpen(false);
-                        setCreatePortionOpen(true);
-                      }}
-                    >
-                      + Crear Porción
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+            <button
+              onClick={() => setPortionKeypadOpen(true)}
+              className="rounded-2xl bg-white/[0.06] border border-white/[0.12] px-3 py-2 text-left cursor-pointer"
+            >
+              <span className="text-[10px] text-white/40 block">Porción</span>
+              <span className="text-sm text-white font-medium truncate block">{selectedPortion?.nombre}</span>
+            </button>
 
             <button
               onClick={() => setCookedState((v) => (v === "cocido" ? "crudo" : "cocido"))}

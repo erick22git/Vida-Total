@@ -123,6 +123,7 @@ interface GymState {
   createPlan: (plan: Omit<TrainingPlan, "id" | "createdAt">) => TrainingPlan;
   setActivePlan: (id: string) => void;
   applyPlanToWeek: (id: string) => void;
+  updatePlanDay: (planId: string, dayIndex: number, patch: Partial<WeeklyPlanDay>) => void;
 
   // ---------- Rank preferences ----------
   excludedFromGlobalRank: string[];
@@ -629,6 +630,18 @@ export const useGymStore = create<GymState>()(
         if (!plan) return;
         set({ weeklyPlan: plan.dias, activePlanId: id });
       },
+      updatePlanDay: (planId, dayIndex, patch) =>
+        set((state) => {
+          const plans = state.plans.map((p) =>
+            p.id === planId
+              ? { ...p, dias: p.dias.map((d, i) => (i === dayIndex ? { ...d, ...patch } : d)) }
+              : p,
+          );
+          const patchedPlan = plans.find((p) => p.id === planId);
+          const weeklyPlan =
+            state.activePlanId === planId && patchedPlan ? patchedPlan.dias : state.weeklyPlan;
+          return { plans, weeklyPlan };
+        }),
 
       // Rank preferences
       excludedFromGlobalRank: [],

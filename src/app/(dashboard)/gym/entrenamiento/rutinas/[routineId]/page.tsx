@@ -19,9 +19,10 @@ import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassModal } from "@/components/glass/glass-modal";
 import { GlassInput } from "@/components/glass/glass-input";
-import { useAllExercises } from "@/components/gym/exercise-picker";
+import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
 import { useGymStore } from "@/lib/store/gymStore";
 import { MUSCLE_COLOR } from "@/lib/data/gym-meta";
+import { getMuscleDistribution } from "@/lib/gym-utils";
 
 export default function RoutineDetailPage({
   params,
@@ -40,23 +41,24 @@ export default function RoutineDetailPage({
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [newName, setNewName] = useState(routine?.nombre ?? "");
+  const [replacingExerciseId, setReplacingExerciseId] = useState<string | null>(null);
+
+  function replaceExerciseInRoutine(oldId: string, newId: string) {
+    if (!routine || oldId === newId) {
+      setReplacingExerciseId(null);
+      return;
+    }
+    updateRoutine(routine.id, {
+      ejercicios: routine.ejercicios.map((rex) =>
+        rex.exerciseId === oldId ? { ...rex, exerciseId: newId } : rex,
+      ),
+    });
+    setReplacingExerciseId(null);
+  }
 
   const distribution = useMemo(() => {
     if (!routine) return [];
-    const counts: Record<string, number> = {};
-    let total = 0;
-    for (const rex of routine.ejercicios) {
-      const ex = allExercises.find((e) => e.id === rex.exerciseId);
-      if (!ex) continue;
-      counts[ex.categoria] = (counts[ex.categoria] ?? 0) + rex.sets.length;
-      total += rex.sets.length;
-    }
-    return Object.entries(counts)
-      .map(([categoria, count]) => ({
-        categoria,
-        pct: total > 0 ? Math.round((count / total) * 100) : 0,
-      }))
-      .sort((a, b) => b.pct - a.pct);
+    return getMuscleDistribution(routine.ejercicios, allExercises);
   }, [routine, allExercises]);
 
   if (!routine) {
@@ -81,10 +83,12 @@ export default function RoutineDetailPage({
         </div>
         <div className="flex items-center gap-1.5 shrink-0 relative">
           <button
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold cursor-pointer"
-            style={{ background: "#3b82f622", border: "1px solid #3b82f666", color: "#93c5fd", boxShadow: "0 0 16px #3b82f655" }}
+            title="Adaptar con IA"
+            aria-label="Adaptar con IA"
+            className="flex items-center justify-center w-9 h-9 rounded-full cursor-pointer shrink-0"
+            style={{ background: "linear-gradient(135deg, #a855f7, #6366f1)", boxShadow: "0 0 16px #a855f755" }}
           >
-            <Sparkles size={13} /> Adaptar
+            <Sparkles size={16} className="text-white" />
           </button>
           <button className="text-white/50 hover:text-white p-1.5 cursor-pointer">
             <Share2 size={18} />
@@ -99,11 +103,6 @@ export default function RoutineDetailPage({
                 icon={ListChecks}
                 label="Editar rutina"
                 onClick={() => { setMenuOpen(false); router.push(`/gym/entrenamiento/rutinas/${routine.id}/editar`); }}
-              />
-              <MenuItem
-                icon={Play}
-                label="Iniciar rutina"
-                onClick={() => { setMenuOpen(false); startWorkoutFromRoutine(routine); router.push("/gym/entrenamiento/activo"); }}
               />
               <MenuItem
                 icon={Trash2}
@@ -142,7 +141,12 @@ export default function RoutineDetailPage({
           if (!ex) return null;
           const repsRange = rex.sets.map((s) => s.reps).join("/");
           return (
-            <GlassCard key={rex.exerciseId} padding="sm" interactive={false} className="flex items-center gap-3">
+            <GlassCard
+              key={rex.exerciseId}
+              padding="sm"
+              onClick={() => router.push(`/gym/entrenamiento/${ex.id}`)}
+              className="flex items-center gap-3"
+            >
               <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/[0.06] flex items-center justify-center shrink-0">
                 {ex.imagen ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -157,12 +161,17 @@ export default function RoutineDetailPage({
                   {rex.sets.length} series x {repsRange} reps
                 </p>
               </div>
-              <Link
-                href={`/gym/entrenamiento/rutinas/${routine.id}/editar`}
-                className="text-white/40 hover:text-white shrink-0 p-1.5"
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setReplacingExerciseId(ex.id);
+                }}
+                className="text-white/40 hover:text-white shrink-0 p-1.5 cursor-pointer"
+                title="Sustituir ejercicio"
+                aria-label="Sustituir ejercicio"
               >
                 <ArrowLeftRight size={16} />
-              </Link>
+              </button>
             </GlassCard>
           );
         })}
@@ -194,6 +203,18 @@ export default function RoutineDetailPage({
             Guardar
           </GlassButton>
         </div>
+      </GlassModal>
+
+      <GlassModal
+        open={replacingExerciseId !== null}
+        onClose={() => setReplacingExerciseId(null)}
+        title="Sustituir ejercicio"
+      >
+        <ExercisePicker
+          onSelect={(ex) => {
+            if (replacingExerciseId) replaceExerciseInRoutine(replacingExerciseId, ex.id);
+          }}
+        />
       </GlassModal>
     </div>
   );

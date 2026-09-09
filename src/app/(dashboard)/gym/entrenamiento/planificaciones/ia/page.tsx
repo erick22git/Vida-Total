@@ -38,11 +38,11 @@ const GOAL_TO_SETS: Record<string, { sets: number; reps: string; repsNum: number
 };
 
 const MUSCLE_TO_CATEGORIES: Record<string, MuscleGroup[]> = {
-  completo: ["Pecho", "Espalda", "Hombros", "Biceps", "Triceps", "Piernas", "Gluteos", "Abdomen"],
+  completo: ["Pecho", "Espalda", "Hombros", "Biceps", "Triceps", "Piernas", "Gluteos", "Abdomen", "Abductores", "Aductores"],
   traccion: ["Espalda", "Biceps"],
   empuje: ["Pecho", "Hombros", "Triceps"],
   superior: ["Pecho", "Espalda", "Hombros", "Biceps", "Triceps"],
-  inferior: ["Piernas", "Gluteos"],
+  inferior: ["Piernas", "Gluteos", "Abductores", "Aductores"],
   custom: ["Pecho", "Espalda", "Piernas"],
 };
 

@@ -24,6 +24,8 @@ export type MuscleGroup =
   | "Piernas"
   | "Abdomen"
   | "Gluteos"
+  | "Abductores"
+  | "Aductores"
   | "Cardio";
 
 export type Difficulty = "Principiante" | "Intermedio" | "Avanzado";
@@ -332,6 +334,7 @@ export interface RoutineExercise {
   sets: RoutineSetPlan[];
   nota?: string;
   soloReps?: boolean;
+  restSeconds?: number;
 }
 
 export interface Routine {

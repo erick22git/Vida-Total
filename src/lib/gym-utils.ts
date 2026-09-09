@@ -1,4 +1,4 @@
-import type { Rank, WorkoutSession, WorkoutSet } from "@/lib/types";
+import type { Exercise, MuscleGroup, Rank, RoutineExercise, WorkoutSession, WorkoutSet } from "@/lib/types";
 
 export function getExerciseVolume(
   exerciseId: string,
@@ -119,6 +119,68 @@ export function getRankStanding(sp: number): RankStanding {
 
 export function volumeForSet(set: Pick<WorkoutSet, "peso" | "reps">): number {
   return set.peso * set.reps;
+}
+
+// ---------------------------------------------------------------------------
+// Muscle distribution (by series count, per muscle group)
+// ---------------------------------------------------------------------------
+
+export interface MuscleDistributionEntry {
+  categoria: string;
+  pct: number;
+}
+
+/**
+ * Computes the % of total series each muscle group (`Exercise.categoria`)
+ * accounts for within a set of routine exercises. Used by both the routine
+ * detail page and the weekly "Tu Plan" cards so the numbers always match.
+ */
+export function getMuscleDistribution(
+  ejercicios: RoutineExercise[],
+  allExercises: Exercise[],
+): MuscleDistributionEntry[] {
+  const counts: Record<string, number> = {};
+  let total = 0;
+  for (const rex of ejercicios) {
+    const ex = allExercises.find((e) => e.id === rex.exerciseId);
+    if (!ex) continue;
+    counts[ex.categoria] = (counts[ex.categoria] ?? 0) + rex.sets.length;
+    total += rex.sets.length;
+  }
+  return Object.entries(counts)
+    .map(([categoria, count]) => ({
+      categoria,
+      pct: total > 0 ? Math.round((count / total) * 100) : 0,
+    }))
+    .sort((a, b) => b.pct - a.pct);
+}
+
+/**
+ * Best-guess single muscle group label for a set of routine exercises —
+ * whichever category accounts for the most series. Used to summarize a
+ * training-plan day ("Pecho", "Piernas", ...) once exercises are assigned to
+ * it, without needing a separate free-text field on the plan.
+ */
+export function dominantMuscleGroup(
+  ejercicios: RoutineExercise[],
+  allExercises: Exercise[],
+): MuscleGroup | null {
+  const dist = getMuscleDistribution(ejercicios, allExercises);
+  return dist.length > 0 ? (dist[0].categoria as MuscleGroup) : null;
+}
+
+/**
+ * Rough estimated session duration in minutes, from the routine's own sets:
+ * ~45s of work + ~75s of rest per working set, plus ~60s setup per exercise
+ * (changing weights/machines). Deterministic and local-only, no external data.
+ */
+export function estimateRoutineDurationMinutes(ejercicios: RoutineExercise[]): number {
+  const totalSets = ejercicios.reduce((sum, ex) => sum + ex.sets.length, 0);
+  if (totalSets === 0) return 0;
+  const workSeconds = totalSets * 45;
+  const restSeconds = totalSets * 75;
+  const setupSeconds = ejercicios.length * 60;
+  return Math.round((workSeconds + restSeconds + setupSeconds) / 60);
 }
 
 // ---------------------------------------------------------------------------

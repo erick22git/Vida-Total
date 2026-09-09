@@ -1,27 +1,57 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Moon, ChevronsRight } from "lucide-react";
 import { useGymStore } from "@/lib/store/gymStore";
 
-export function RestBar() {
-  const restEndsAt = useGymStore((s) => s.restEndsAt);
-  const adjustRest = useGymStore((s) => s.adjustRest);
-  const clearRest = useGymStore((s) => s.clearRest);
+/**
+ * Countdown bar shown below the set table after a set is checked off.
+ * By default it drives itself from the active-workout store (real session).
+ * Pass `restEndsAt`/`onAdjust`/`onSkip` to control it externally instead —
+ * used by the plan/routine day editor, which has no live session to rest in
+ * but still needs to preview the same "descanso" UI.
+ */
+export function RestBar({
+  restEndsAt: restEndsAtProp,
+  onAdjust,
+  onSkip,
+}: {
+  restEndsAt?: number | null;
+  onAdjust?: (deltaSeconds: number) => void;
+  onSkip?: () => void;
+} = {}) {
+  const storeRestEndsAt = useGymStore((s) => s.restEndsAt);
+  const storeAdjustRest = useGymStore((s) => s.adjustRest);
+  const storeClearRest = useGymStore((s) => s.clearRest);
+  const noop = useMemo(() => () => {}, []);
+  const controlled = restEndsAtProp !== undefined;
+  const restEndsAt = controlled ? restEndsAtProp : storeRestEndsAt;
+  const adjustRest = useMemo(
+    () => (controlled ? (onAdjust ?? noop) : storeAdjustRest),
+    [controlled, onAdjust, noop, storeAdjustRest],
+  );
+  const clearRest = useMemo(
+    () => (controlled ? (onSkip ?? noop) : storeClearRest),
+    [controlled, onSkip, noop, storeClearRest],
+  );
   const [remaining, setRemaining] = useState(0);
+  const clearRestRef = useRef(clearRest);
+  useEffect(() => {
+    clearRestRef.current = clearRest;
+  }, [clearRest]);
 
   useEffect(() => {
     if (!restEndsAt) return;
     const tick = () => {
       const rem = Math.max(0, Math.round((restEndsAt - Date.now()) / 1000));
       setRemaining(rem);
-      if (rem <= 0) clearRest();
+      if (rem <= 0) clearRestRef.current();
     };
     tick();
     const id = setInterval(tick, 250);
     return () => clearInterval(id);
-  }, [restEndsAt, clearRest]);
+  }, [restEndsAt]);
 
   if (!restEndsAt) return null;
 
