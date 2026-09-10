@@ -23,9 +23,22 @@ import type {
 } from "@/lib/types";
 import { DEFAULT_TRACKED_NUTRIENTS } from "@/lib/types";
 import { DEFAULT_WEEKLY_PLAN } from "@/lib/data/weekly-plan";
+import type { DrinkOverride } from "@/lib/data/drinks";
 
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+/**
+ * Timestamp that falls on `date`'s calendar day, keeping the current
+ * time-of-day (so ordering within the day stays sensible). Used when an
+ * item is added/copied/pasted onto a day other than today.
+ */
+function timestampForDate(date: Date): number {
+  const now = new Date();
+  const d = new Date(date);
+  d.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+  return d.getTime();
 }
 
 interface GymState {
@@ -40,17 +53,20 @@ interface GymState {
   ) => LoggedFood;
   removeLoggedFood: (id: string) => void;
   updateLoggedFood: (id: string, patch: Partial<LoggedFood>) => void;
-  reorderMealFoods: (meal: MealType, orderedIds: string[]) => void;
+  reorderMealFoods: (meal: MealType, orderedIds: string[], date?: Date) => void;
 
   // ---------- Meal actions (menu "···") ----------
+  // Todas aceptan un `date` opcional (default: hoy) para poder operar sobre
+  // el día que se esté viendo en la pantalla de Calorías, no solo hoy — así
+  // se puede copiar/repetir/vaciar la comida de un día pasado.
   mealClipboard: LoggedFood[] | null;
-  copyMeal: (meal: MealType) => void;
-  pasteMeal: (meal: MealType) => void;
-  repeatMeal: (meal: MealType) => boolean;
-  clearMeal: (meal: MealType) => void;
-  scaleMealPortions: (meal: MealType, factor: number) => void;
+  copyMeal: (meal: MealType, date?: Date) => void;
+  pasteMeal: (meal: MealType, date?: Date) => void;
+  repeatMeal: (meal: MealType, date?: Date) => boolean;
+  clearMeal: (meal: MealType, date?: Date) => void;
+  scaleMealPortions: (meal: MealType, factor: number, date?: Date) => void;
   mealTemplates: MealTemplate[];
-  saveMealAsTemplate: (meal: MealType, nombre: string) => MealTemplate | null;
+  saveMealAsTemplate: (meal: MealType, nombre: string, date?: Date) => MealTemplate | null;
   applyMealTemplate: (templateId: string, meal: MealType) => void;
 
   // ---------- Nutrient tracking preferences ----------
@@ -80,8 +96,16 @@ interface GymState {
   // ---------- Water ----------
   waterGoalMl: number;
   waterEntries: WaterEntry[];
-  addWater: (ml: number) => void;
+  addWater: (ml: number, drink?: { id: string; nombre: string; emoji: string }) => void;
   removeWaterEntry: (id: string) => void;
+
+  // ---------- Bebidas (catálogo editable, ver lib/data/drinks.ts) ----------
+  /** Cambios del usuario sobre una bebida del catálogo (nombre/ícono/color/
+   * propiedades) — se guardan aparte y se combinan con la data base al leer. */
+  drinkOverrides: Record<string, DrinkOverride>;
+  setDrinkOverride: (id: string, patch: DrinkOverride) => void;
+  hiddenDrinkIds: string[];
+  toggleDrinkHidden: (id: string) => void;
 
   // ---------- Workout ----------
   weeklyPlan: WeeklyPlanDay[];
@@ -124,6 +148,8 @@ interface GymState {
   setActivePlan: (id: string) => void;
   applyPlanToWeek: (id: string) => void;
   updatePlanDay: (planId: string, dayIndex: number, patch: Partial<WeeklyPlanDay>) => void;
+  /** Edita nombre/categoría/notas de un plan (no toca sus días). */
+  updatePlan: (id: string, patch: Partial<Pick<TrainingPlan, "nombre" | "categoria" | "notas" | "contexto">>) => void;
 
   // ---------- Rank preferences ----------
   excludedFromGlobalRank: string[];
@@ -168,7 +194,7 @@ export const useGymStore = create<GymState>()(
       fatGoal: 60,
       loggedFoods: [],
       addLoggedFood: (food) => {
-        const created: LoggedFood = { ...food, id: uid(), timestamp: Date.now() };
+        const created: LoggedFood = { activo: true, ...food, id: uid(), timestamp: Date.now() };
         set((state) => ({
           loggedFoods: [...state.loggedFoods, created],
         }));
@@ -182,10 +208,10 @@ export const useGymStore = create<GymState>()(
         set((state) => ({
           loggedFoods: state.loggedFoods.map((f) => (f.id === id ? { ...f, ...patch } : f)),
         })),
-      reorderMealFoods: (meal, orderedIds) =>
+      reorderMealFoods: (meal, orderedIds, date) =>
         set((state) => {
-          const now = new Date();
-          const inMeal = (f: LoggedFood) => f.meal === meal && isSameDay(new Date(f.timestamp), now);
+          const day = date ?? new Date();
+          const inMeal = (f: LoggedFood) => f.meal === meal && isSameDay(new Date(f.timestamp), day);
           const others = state.loggedFoods.filter((f) => !inMeal(f));
           const map = new Map(state.loggedFoods.filter(inMeal).map((f) => [f.id, f] as const));
           const reordered = orderedIds.map((id) => map.get(id)).filter((f): f is LoggedFood => !!f);
@@ -194,30 +220,31 @@ export const useGymStore = create<GymState>()(
 
       // Meal actions (menu "···")
       mealClipboard: null,
-      copyMeal: (meal) =>
+      copyMeal: (meal, date) =>
         set((state) => {
-          const now = new Date();
+          const day = date ?? new Date();
           const items = state.loggedFoods.filter(
-            (f) => f.meal === meal && isSameDay(new Date(f.timestamp), now),
+            (f) => f.meal === meal && isSameDay(new Date(f.timestamp), day),
           );
           return { mealClipboard: items.length ? items : null };
         }),
-      pasteMeal: (meal) =>
+      pasteMeal: (meal, date) =>
         set((state) => {
           if (!state.mealClipboard || state.mealClipboard.length === 0) return state;
+          const day = date ?? new Date();
           const pasted = state.mealClipboard.map((f) => ({
             ...f,
             id: uid(),
             meal,
-            timestamp: Date.now(),
+            timestamp: timestampForDate(day),
           }));
           return { loggedFoods: [...state.loggedFoods, ...pasted] };
         }),
-      repeatMeal: (meal) => {
+      repeatMeal: (meal, date) => {
         const state = get();
-        const now = new Date();
+        const day = date ?? new Date();
         const past = state.loggedFoods
-          .filter((f) => f.meal === meal && !isSameDay(new Date(f.timestamp), now))
+          .filter((f) => f.meal === meal && !isSameDay(new Date(f.timestamp), day) && f.timestamp < timestampForDate(day))
           .sort((a, b) => b.timestamp - a.timestamp);
         if (past.length === 0) return false;
         const lastTimestamp = past[0].timestamp;
@@ -226,26 +253,26 @@ export const useGymStore = create<GymState>()(
         set((s) => ({
           loggedFoods: [
             ...s.loggedFoods,
-            ...lastMealItems.map((f) => ({ ...f, id: uid(), timestamp: Date.now() })),
+            ...lastMealItems.map((f) => ({ ...f, id: uid(), timestamp: timestampForDate(day) })),
           ],
         }));
         return true;
       },
-      clearMeal: (meal) =>
+      clearMeal: (meal, date) =>
         set((state) => {
-          const now = new Date();
+          const day = date ?? new Date();
           return {
             loggedFoods: state.loggedFoods.filter(
-              (f) => !(f.meal === meal && isSameDay(new Date(f.timestamp), now)),
+              (f) => !(f.meal === meal && isSameDay(new Date(f.timestamp), day)),
             ),
           };
         }),
-      scaleMealPortions: (meal, factor) =>
+      scaleMealPortions: (meal, factor, date) =>
         set((state) => {
-          const now = new Date();
+          const day = date ?? new Date();
           return {
             loggedFoods: state.loggedFoods.map((f) =>
-              f.meal === meal && isSameDay(new Date(f.timestamp), now)
+              f.meal === meal && isSameDay(new Date(f.timestamp), day)
                 ? {
                     ...f,
                     calorias: Math.round(f.calorias * factor),
@@ -260,11 +287,11 @@ export const useGymStore = create<GymState>()(
           };
         }),
       mealTemplates: [],
-      saveMealAsTemplate: (meal, nombre) => {
+      saveMealAsTemplate: (meal, nombre, date) => {
         const state = get();
-        const now = new Date();
+        const day = date ?? new Date();
         const items = state.loggedFoods.filter(
-          (f) => f.meal === meal && isSameDay(new Date(f.timestamp), now),
+          (f) => f.meal === meal && isSameDay(new Date(f.timestamp), day),
         );
         if (items.length === 0) return null;
         const template: MealTemplate = {
@@ -364,16 +391,40 @@ export const useGymStore = create<GymState>()(
       // Water
       waterGoalMl: 2500,
       waterEntries: [],
-      addWater: (ml) =>
+      addWater: (ml, drink) =>
         set((state) => ({
           waterEntries: [
             ...state.waterEntries,
-            { id: uid(), ml, timestamp: Date.now() },
+            {
+              id: uid(),
+              ml,
+              timestamp: Date.now(),
+              drinkId: drink?.id,
+              drinkNombre: drink?.nombre,
+              drinkEmoji: drink?.emoji,
+            },
           ],
         })),
       removeWaterEntry: (id) =>
         set((state) => ({
           waterEntries: state.waterEntries.filter((w) => w.id !== id),
+        })),
+
+      // Bebidas
+      drinkOverrides: {},
+      setDrinkOverride: (id, patch) =>
+        set((state) => ({
+          drinkOverrides: {
+            ...state.drinkOverrides,
+            [id]: { ...state.drinkOverrides[id], ...patch },
+          },
+        })),
+      hiddenDrinkIds: [],
+      toggleDrinkHidden: (id) =>
+        set((state) => ({
+          hiddenDrinkIds: state.hiddenDrinkIds.includes(id)
+            ? state.hiddenDrinkIds.filter((d) => d !== id)
+            : [...state.hiddenDrinkIds, id],
         })),
 
       // Workout
@@ -642,6 +693,10 @@ export const useGymStore = create<GymState>()(
             state.activePlanId === planId && patchedPlan ? patchedPlan.dias : state.weeklyPlan;
           return { plans, weeklyPlan };
         }),
+      updatePlan: (id, patch) =>
+        set((state) => ({
+          plans: state.plans.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+        })),
 
       // Rank preferences
       excludedFromGlobalRank: [],
@@ -754,6 +809,14 @@ export function useTodayLoggedFoods() {
   const loggedFoods = useGymStore((s) => s.loggedFoods);
   const now = new Date();
   return loggedFoods.filter((f) => isSameDay(new Date(f.timestamp), now));
+}
+
+/** Como useTodayLoggedFoods, pero para cualquier día — usado en la pantalla
+ * de Calorías para poder retroceder/avanzar de fecha y ver/copiar el
+ * registro de otros días. */
+export function useLoggedFoodsForDate(date: Date) {
+  const loggedFoods = useGymStore((s) => s.loggedFoods);
+  return loggedFoods.filter((f) => isSameDay(new Date(f.timestamp), date));
 }
 
 export function useTodayWaterEntries() {

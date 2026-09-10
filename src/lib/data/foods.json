@@ -2,6 +2,7 @@
   {"id":"pechuga-pollo","nombre":"Pechuga de pollo a la plancha","categoria":"Proteína","porcion":"100 g","calorias":165,"proteina":31,"carbos":0,"grasas":3.6},
   {"id":"arroz-blanco","nombre":"Arroz blanco cocido","categoria":"Cereal","porcion":"100 g","calorias":130,"proteina":2.7,"carbos":28,"grasas":0.3},
   {"id":"arroz-integral","nombre":"Arroz integral cocido","categoria":"Cereal","porcion":"100 g","calorias":123,"proteina":2.7,"carbos":26,"grasas":1},
+  {"id":"crema-arroz","nombre":"Crema de arroz","categoria":"Cereal","porcion":"100 g","calorias":378,"proteina":6.5,"carbos":86.9,"grasas":0.45,"fibra":4.9},
   {"id":"huevo","nombre":"Huevo entero","categoria":"Proteína","porcion":"1 unidad (50 g)","calorias":78,"proteina":6.3,"carbos":0.6,"grasas":5.3},
   {"id":"clara-huevo","nombre":"Clara de huevo","categoria":"Proteína","porcion":"1 unidad (33 g)","calorias":17,"proteina":3.6,"carbos":0.2,"grasas":0.1},
   {"id":"avena","nombre":"Avena en hojuelas","categoria":"Cereal","porcion":"40 g","calorias":150,"proteina":5.3,"carbos":27,"grasas":2.8},

@@ -16,6 +16,13 @@ export function parsePorcionGramos(food: Food): number {
   return 100;
 }
 
+/** Entries the user has un-checked (activo === false) stay visible in the log
+ * but must never count toward any calorie/macro/nutrient total. Every sum
+ * over a LoggedFood[] should filter through this first. */
+export function activeLoggedFoods(entries: LoggedFood[]): LoggedFood[] {
+  return entries.filter((f) => f.activo !== false);
+}
+
 export function defaultPortions(food: Food): FoodPortion[] {
   const gramos = parsePorcionGramos(food);
   const list: FoodPortion[] = food.porciones?.length

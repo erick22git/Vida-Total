@@ -1,44 +1,42 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Droplets, X } from "lucide-react";
-import { format, isSameDay, subDays } from "date-fns";
-import { es } from "date-fns/locale";
-import {
-  Bar,
-  BarChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-} from "recharts";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, ChevronRight, Droplets, Plus, X } from "lucide-react";
+import { format } from "date-fns";
 import { GlassCard } from "@/components/glass/glass-card";
 import { WaterBottle } from "@/components/gym/water-bottle";
+import { WeeklyWaterCard } from "@/components/gym/weekly-water-card";
+import { AddDrinkModal } from "@/components/gym/add-drink-modal";
+import { PageBackdrop } from "@/components/layout/page-backdrop";
+import { totalsByDrink } from "@/lib/gym/water-stats";
 import { useGymStore, useTodayWaterEntries } from "@/lib/store/gymStore";
 
 const QUICK_ADDS = [150, 250, 500];
 
 export default function AguaPage() {
+  const router = useRouter();
   const waterGoalMl = useGymStore((s) => s.waterGoalMl);
   const waterEntries = useGymStore((s) => s.waterEntries);
+  const drinkOverrides = useGymStore((s) => s.drinkOverrides);
   const addWater = useGymStore((s) => s.addWater);
   const removeWaterEntry = useGymStore((s) => s.removeWaterEntry);
   const todayEntries = useTodayWaterEntries();
+  const [addDrinkOpen, setAddDrinkOpen] = useState(false);
 
-  const totalToday = todayEntries.reduce((sum, w) => sum + w.ml, 0);
-
-  const last7Days = Array.from({ length: 7 }).map((_, i) => {
-    const date = subDays(new Date(), 6 - i);
-    const total = waterEntries
-      .filter((w) => isSameDay(new Date(w.timestamp), date))
-      .reduce((sum, w) => sum + w.ml, 0);
-    return {
-      day: format(date, "EEE", { locale: es }),
-      ml: total,
-    };
-  });
+  const todayByDrink = useMemo(() => totalsByDrink(todayEntries, drinkOverrides), [todayEntries, drinkOverrides]);
 
   return (
     <div className="flex flex-col gap-6">
+      <PageBackdrop
+        src="/backgrounds/agua.png"
+        positionClass="object-[60%_40%] md:object-[55%_45%] lg:object-[50%_50%]"
+      />
+
+      {/* `relative`: sin position, estos hijos se pintan debajo del
+      PageBackdrop (fixed) sin importar el orden en el DOM. */}
+      <div className="relative flex flex-col gap-6">
       <header className="flex items-center gap-3 pt-2">
         <Link href="/gym" className="text-white/50 hover:text-white transition-colors">
           <ArrowLeft size={20} />
@@ -49,7 +47,7 @@ export default function AguaPage() {
       </header>
 
       <GlassCard accentColor="#3b82f6" glow className="flex flex-col items-center gap-6 py-8">
-        <WaterBottle value={totalToday} max={waterGoalMl} />
+        <WaterBottle segments={todayByDrink.map((d) => ({ color: d.color, ml: d.ml }))} max={waterGoalMl} />
         <div className="flex gap-3">
           {QUICK_ADDS.map((ml) => (
             <button
@@ -65,35 +63,15 @@ export default function AguaPage() {
             </button>
           ))}
         </div>
+        <button
+          onClick={() => setAddDrinkOpen(true)}
+          className="flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] transition-colors cursor-pointer"
+        >
+          <Plus size={16} /> Añadir una bebida
+        </button>
       </GlassCard>
 
-      <GlassCard className="flex flex-col gap-3">
-        <p className="text-sm font-semibold text-white/80">Últimos 7 días</p>
-        <div className="h-40 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={last7Days}>
-              <XAxis
-                dataKey="day"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 12 }}
-              />
-              <Tooltip
-                cursor={{ fill: "rgba(255,255,255,0.05)" }}
-                contentStyle={{
-                  background: "rgba(20,20,26,0.9)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: 12,
-                  color: "white",
-                  fontSize: 12,
-                }}
-                formatter={(v) => [`${v} ml`, "Agua"]}
-              />
-              <Bar dataKey="ml" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </GlassCard>
+      <AddDrinkModal open={addDrinkOpen} onClose={() => setAddDrinkOpen(false)} />
 
       <GlassCard className="flex flex-col gap-2">
         <p className="text-sm font-semibold text-white/80">Registros de hoy</p>
@@ -107,7 +85,9 @@ export default function AguaPage() {
                   key={w.id}
                   className="flex items-center justify-between text-sm bg-white/[0.04] rounded-xl px-3 py-2"
                 >
-                  <span className="text-white/80">{w.ml} ml</span>
+                  <span className="text-white/80">
+                    {w.drinkEmoji ?? "💧"} {w.drinkNombre ?? "Agua"} · {w.ml} ml
+                  </span>
                   <div className="flex items-center gap-2">
                     <span className="text-white/40 text-xs">
                       {format(new Date(w.timestamp), "HH:mm")}
@@ -126,6 +106,20 @@ export default function AguaPage() {
           <p className="text-sm text-white/30">Aún no registras agua hoy</p>
         )}
       </GlassCard>
+
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-white/80">Estadísticas semanales</p>
+          <button
+            onClick={() => router.push("/gym/agua/estadisticas")}
+            className="flex items-center gap-0.5 text-xs font-medium text-[#3b82f6] hover:text-[#60a5fa] transition-colors cursor-pointer"
+          >
+            Más <ChevronRight size={13} />
+          </button>
+        </div>
+        <WeeklyWaterCard waterEntries={waterEntries} waterGoalMl={waterGoalMl} />
+      </div>
+      </div>
     </div>
   );
 }

@@ -135,6 +135,9 @@ export interface LoggedFood {
   gramos?: number;
   photoUrl?: string | null;
   cookedState?: CookedState;
+  /** Si es false, el alimento sigue en el registro (visible, se puede reactivar)
+   * pero no cuenta en ningún total de calorías/macros. Default: true. */
+  activo?: boolean;
 }
 
 /** A meal saved explicitly by name for later reuse (see "Compartir > Como plantilla"). */
@@ -279,6 +282,11 @@ export interface WaterEntry {
   id: string;
   ml: number;
   timestamp: number;
+  /** Bebida elegida en el selector (ver lib/data/drinks.ts) — opcional porque
+   * los accesos rápidos (+150ml, etc.) siguen registrando sin especificar tipo. */
+  drinkId?: string;
+  drinkNombre?: string;
+  drinkEmoji?: string;
 }
 
 export type SetType = "normal" | "calentamiento" | "descendente" | "fallo";
@@ -362,7 +370,9 @@ export interface TrainingPlan {
   id: string;
   nombre: string;
   contexto: string; // e.g. "Gimnasio comercial · 5 días/semana"
-  categoria: string; // "En el Gym" | "Calistenia" | ...
+  categoria: string; // "En el Gym" | "Calistenia" | ... (el usuario puede crear categorías nuevas con solo escribir un nombre distinto)
+  /** Observación libre del usuario sobre el plan — se muestra junto a la categoría. */
+  notas?: string;
   dias: WeeklyPlanDay[];
   activo?: boolean;
   createdAt: number;

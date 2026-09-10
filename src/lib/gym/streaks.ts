@@ -1,10 +1,13 @@
 import { format, isSameDay, subDays } from "date-fns";
 import type { LoggedFood } from "@/lib/types";
 
-/** Groups logged foods by calendar-day key (yyyy-MM-dd, local time). */
+/** Groups logged foods by calendar-day key (yyyy-MM-dd, local time). Entries
+ * the user un-checked (activo === false) are excluded — they don't count
+ * toward streaks, scores, or "day has entry" indicators. */
 export function groupLoggedFoodsByDay(loggedFoods: LoggedFood[]): Map<string, LoggedFood[]> {
   const map = new Map<string, LoggedFood[]>();
   for (const f of loggedFoods) {
+    if (f.activo === false) continue;
     const key = format(new Date(f.timestamp), "yyyy-MM-dd");
     const list = map.get(key);
     if (list) list.push(f);
@@ -99,7 +102,7 @@ export function computePerfectDaysStreak(
 
 /** Whether the given date has at least one logged food entry. */
 export function dayHasLoggedFood(loggedFoods: LoggedFood[], date: Date): boolean {
-  return loggedFoods.some((f) => isSameDay(new Date(f.timestamp), date));
+  return loggedFoods.some((f) => f.activo !== false && isSameDay(new Date(f.timestamp), date));
 }
 
 /** Average kcal logged per day-with-entries within [start, end] inclusive; null if none. */

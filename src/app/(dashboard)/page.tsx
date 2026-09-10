@@ -9,6 +9,7 @@ import {
   useTodayLoggedFoods,
   useTodayWaterEntries,
 } from "@/lib/store/gymStore";
+import { activeLoggedFoods } from "@/lib/food-utils";
 import { DEFAULT_WEEKLY_PLAN, todayDayIndex } from "@/lib/data/weekly-plan";
 import { useHabitsCompletedToday, useHabitsStore } from "@/lib/store/habitsStore";
 import { HABIT_ICON_MAP, formatHour } from "@/lib/habits-utils";
@@ -27,7 +28,7 @@ export default function HomePage() {
   const todayFoods = useTodayLoggedFoods();
   const todayWater = useTodayWaterEntries();
 
-  const caloriesToday = todayFoods.reduce((sum, f) => sum + f.calorias, 0);
+  const caloriesToday = activeLoggedFoods(todayFoods).reduce((sum, f) => sum + f.calorias, 0);
   const waterToday = todayWater.reduce((sum, w) => sum + w.ml, 0);
   const todayPlan = DEFAULT_WEEKLY_PLAN[todayDayIndex()];
 

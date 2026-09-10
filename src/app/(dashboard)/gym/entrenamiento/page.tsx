@@ -21,6 +21,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
+import { PageBackdrop } from "@/components/layout/page-backdrop";
 import { useGymStore } from "@/lib/store/gymStore";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { todayDayIndex } from "@/lib/data/weekly-plan";
@@ -73,6 +74,14 @@ export default function EntrenamientoPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <PageBackdrop
+        src="/backgrounds/entrenamiento.png"
+        positionClass="object-[50%_70%] md:object-[50%_60%] lg:object-[50%_50%]"
+      />
+
+      {/* `relative`: sin position, estos hijos se pintan debajo del
+      PageBackdrop (fixed) sin importar el orden en el DOM. */}
+      <div className="relative flex flex-col gap-6">
       <header className="flex items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-3 min-w-0">
           <Link href="/gym" className="text-white/50 hover:text-white transition-colors shrink-0">
@@ -346,6 +355,7 @@ export default function EntrenamientoPage() {
           )
         )}
       </GlassCard>
+      </div>
     </div>
   );
 }

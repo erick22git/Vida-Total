@@ -4,12 +4,14 @@ import Link from "next/link";
 import { Flame, Droplets, Dumbbell, Sparkles, ChevronRight } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { PageBackdrop } from "@/components/layout/page-backdrop";
 import {
   useGymStore,
   useTodayLoggedFoods,
   useTodayWaterEntries,
 } from "@/lib/store/gymStore";
 import { DEFAULT_WEEKLY_PLAN, todayDayIndex } from "@/lib/data/weekly-plan";
+import { activeLoggedFoods } from "@/lib/food-utils";
 
 export default function GymHubPage() {
   const calorieGoal = useGymStore((s) => s.calorieGoal);
@@ -19,7 +21,7 @@ export default function GymHubPage() {
   const todayFoods = useTodayLoggedFoods();
   const todayWater = useTodayWaterEntries();
 
-  const caloriesToday = todayFoods.reduce((sum, f) => sum + f.calorias, 0);
+  const caloriesToday = activeLoggedFoods(todayFoods).reduce((sum, f) => sum + f.calorias, 0);
   const waterToday = todayWater.reduce((sum, w) => sum + w.ml, 0);
   const todayPlan = DEFAULT_WEEKLY_PLAN[todayDayIndex()];
 
@@ -60,6 +62,14 @@ export default function GymHubPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <PageBackdrop
+        src="/backgrounds/gym.png"
+        positionClass="object-[75%_center] md:object-[65%_center] lg:object-[50%_center]"
+      />
+
+      {/* `relative`: sin position, estos hijos se pintan debajo del
+      PageBackdrop (fixed) sin importar el orden en el DOM. */}
+      <div className="relative flex flex-col gap-6">
       <header className="flex flex-col gap-1 pt-2">
         <p className="text-white/50 text-sm md:text-base">Módulo</p>
         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2">
@@ -89,6 +99,7 @@ export default function GymHubPage() {
           </Link>
         ))}
       </section>
+      </div>
     </div>
   );
 }

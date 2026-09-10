@@ -9,10 +9,12 @@ export interface GlassModalProps {
   open: boolean;
   onClose: () => void;
   title?: string;
+  /** Contenido extra en el header, a la izquierda del título (p.ej. un botón de ajustes). */
+  headerStart?: React.ReactNode;
   children: React.ReactNode;
 }
 
-export function GlassModal({ open, onClose, title, children }: GlassModalProps) {
+export function GlassModal({ open, onClose, title, headerStart, children }: GlassModalProps) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -52,7 +54,10 @@ export function GlassModal({ open, onClose, title, children }: GlassModalProps) 
               <div className="h-1 w-10 rounded-full bg-white/20" />
             </div>
             <div className="flex items-center justify-between px-5 py-3 md:py-4 border-b border-white/10 shrink-0">
-              <h3 className="text-base md:text-lg font-semibold text-white">{title}</h3>
+              <div className="flex items-center gap-2 min-w-0">
+                {headerStart}
+                <h3 className="text-base md:text-lg font-semibold text-white truncate">{title}</h3>
+              </div>
               <button
                 onClick={onClose}
                 className="flex items-center justify-center w-11 h-11 -mr-2.5 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"

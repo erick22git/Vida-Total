@@ -16,6 +16,8 @@ import {
   Image as ImageIcon,
   FileStack,
   GripVertical,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
@@ -25,7 +27,7 @@ import { FoodEntrySheet } from "@/components/gym/food-entry-sheet";
 import type { Food, LoggedFood, MealType } from "@/lib/types";
 import { MEAL_LABELS } from "@/lib/types";
 import { useGymStore } from "@/lib/store/gymStore";
-import { BASE_FOODS } from "@/lib/food-utils";
+import { activeLoggedFoods, BASE_FOODS } from "@/lib/food-utils";
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import { cn } from "@/lib/utils";
 
@@ -33,11 +35,21 @@ export function MealCard({
   meal,
   foods,
   onAdd,
+  date,
+  disableAdd,
 }: {
   meal: MealType;
   foods: LoggedFood[];
   onAdd: () => void;
+  /** Día que se está mostrando (default: hoy) — se pasa a copiar/pegar/repetir/
+   * vaciar/escalar/plantilla para que operen sobre ese día, no siempre "hoy". */
+  date?: Date;
+  /** Cuando el día mostrado no es hoy, agregar comida nueva a mano no está
+   * soportado todavía (el flujo de búsqueda de alimentos siempre registra
+   * con la fecha/hora actual) — se deshabilita el botón "+" y se avisa. */
+  disableAdd?: boolean;
 }) {
+  const updateLoggedFood = useGymStore((s) => s.updateLoggedFood);
   const reorderMealFoods = useGymStore((s) => s.reorderMealFoods);
   const copyMeal = useGymStore((s) => s.copyMeal);
   const pasteMeal = useGymStore((s) => s.pasteMeal);
@@ -62,7 +74,7 @@ export function MealCard({
 
   // Keep local reorder-list in sync when the underlying store data changes
   // (new item added/removed/edited) without fighting the user's in-progress drag.
-  const key = foods.map((f) => `${f.id}:${f.calorias}:${f.gramos}:${f.cookedState}:${f.cantidad}`).join(",");
+  const key = foods.map((f) => `${f.id}:${f.calorias}:${f.gramos}:${f.cookedState}:${f.cantidad}:${f.activo}`).join(",");
   const [lastKey, setLastKey] = useState(key);
   if (key !== lastKey) {
     setLastKey(key);
@@ -71,7 +83,7 @@ export function MealCard({
 
   const allFoods = useMemo<Food[]>(() => [...customFoods, ...BASE_FOODS], [customFoods]);
 
-  const total = foods.reduce(
+  const total = activeLoggedFoods(foods).reduce(
     (acc, f) => ({
       calorias: acc.calorias + f.calorias,
       proteina: acc.proteina + f.proteina,
@@ -132,7 +144,7 @@ export function MealCard({
                     icon={<Copy size={14} />}
                     label="Copiar"
                     onClick={() => {
-                      copyMeal(meal);
+                      copyMeal(meal, date);
                       setMenuOpen(false);
                       flashToast("Comida copiada");
                     }}
@@ -142,7 +154,7 @@ export function MealCard({
                     label="Pegar"
                     disabled={!mealClipboard || mealClipboard.length === 0}
                     onClick={() => {
-                      pasteMeal(meal);
+                      pasteMeal(meal, date);
                       setMenuOpen(false);
                       flashToast("Comida pegada");
                     }}
@@ -151,7 +163,7 @@ export function MealCard({
                     icon={<RotateCcw size={14} />}
                     label="Repetir comida"
                     onClick={() => {
-                      const ok = repeatMeal(meal);
+                      const ok = repeatMeal(meal, date);
                       setMenuOpen(false);
                       flashToast(ok ? "Comida repetida" : "Sin comida anterior");
                     }}
@@ -248,7 +260,7 @@ export function MealCard({
           <div className="flex gap-1.5 shrink-0">
             <button
               onClick={() => {
-                clearMeal(meal);
+                clearMeal(meal, date);
                 setConfirmClear(false);
               }}
               className="rounded-lg px-2.5 py-1 text-xs font-medium bg-red-500 text-white cursor-pointer"
@@ -273,7 +285,7 @@ export function MealCard({
               <button
                 key={factor}
                 onClick={() => {
-                  scaleMealPortions(meal, factor);
+                  scaleMealPortions(meal, factor, date);
                   setScaleOpen(false);
                   flashToast(`Porciones x${factor}`);
                 }}
@@ -299,7 +311,7 @@ export function MealCard({
               className="flex-1"
               disabled={!templateName.trim()}
               onClick={() => {
-                const created = saveMealAsTemplate(meal, templateName.trim());
+                const created = saveMealAsTemplate(meal, templateName.trim(), date);
                 setTemplateOpen(false);
                 setTemplateName("");
                 flashToast(created ? "Plantilla guardada" : "No se pudo guardar");
@@ -325,6 +337,7 @@ export function MealCard({
             reorderMealFoods(
               meal,
               next.map((i) => i.id),
+              date,
             );
           }}
           className="flex flex-col gap-1.5"
@@ -351,7 +364,10 @@ export function MealCard({
               </button>
               <button
                 onClick={() => setEditingEntry(f)}
-                className="flex items-center gap-2.5 flex-1 min-w-0 text-left cursor-pointer"
+                className={cn(
+                  "flex items-center gap-2.5 flex-1 min-w-0 text-left cursor-pointer transition-opacity",
+                  f.activo === false && "opacity-40",
+                )}
               >
                 <FoodPhoto
                   photoUrl={f.photoUrl}
@@ -360,7 +376,9 @@ export function MealCard({
                   emoji={categoryEmoji(foodFor(f).categoria)}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-white truncate">{f.nombre}</p>
+                  <p className={cn("text-xs font-medium text-white truncate", f.activo === false && "line-through")}>
+                    {f.nombre}
+                  </p>
                   <p className="text-[10px] text-white/40 capitalize">{f.cookedState ?? "crudo"}</p>
                 </div>
                 <div className="flex flex-col items-end shrink-0">
@@ -368,17 +386,37 @@ export function MealCard({
                   <span className="text-[10px] text-white/40">{Math.round(f.calorias)} kcal</span>
                 </div>
               </button>
+              <button
+                onClick={() => updateLoggedFood(f.id, { activo: f.activo === false })}
+                aria-label={f.activo === false ? "Contar este alimento" : "No contar este alimento"}
+                title={f.activo === false ? "Contar este alimento" : "No contar este alimento"}
+                className="flex items-center justify-center w-7 h-7 shrink-0 rounded-full cursor-pointer transition-colors"
+                style={{ color: f.activo === false ? "rgba(255,255,255,0.25)" : "var(--gym)" }}
+              >
+                {f.activo === false ? <Circle size={20} /> : <CheckCircle2 size={20} />}
+              </button>
             </Reorder.Item>
           ))}
         </Reorder.Group>
       )}
 
       <button
-        onClick={onAdd}
+        onClick={() => {
+          if (disableAdd) {
+            flashToast("Para un día pasado, usá Pegar o Repetir comida");
+            return;
+          }
+          onAdd();
+        }}
         aria-label={`Agregar a ${MEAL_LABELS[meal]}`}
-        className="flex items-center justify-center w-full h-11 rounded-2xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.10] transition-colors cursor-pointer"
+        className={cn(
+          "flex items-center justify-center w-full h-11 rounded-2xl border transition-colors",
+          disableAdd
+            ? "bg-white/[0.02] border-white/[0.06] cursor-not-allowed"
+            : "bg-white/[0.04] hover:bg-white/[0.09] border-white/[0.10] cursor-pointer",
+        )}
       >
-        <Plus size={18} className="text-white/60" />
+        <Plus size={18} className={disableAdd ? "text-white/25" : "text-white/60"} />
       </button>
 
       {editingEntry && (

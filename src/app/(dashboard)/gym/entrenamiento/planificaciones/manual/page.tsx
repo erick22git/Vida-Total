@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Moon, Dumbbell, X } from "lucide-react";
+import { ArrowLeft, Moon, Dumbbell, Plus, X } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
+import { GlassInput } from "@/components/glass/glass-input";
 import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
 import { ExerciseSessionBuilder } from "@/components/gym/exercise-session-builder";
 import { useGymStore } from "@/lib/store/gymStore";
 import { dominantMuscleGroup } from "@/lib/gym-utils";
+import { PLAN_LIBRARY_CATEGORIES } from "@/lib/data/plan-library";
+import { cn } from "@/lib/utils";
 import type { RoutineExercise, WeeklyPlanDay } from "@/lib/types";
 
 const DAYS = [
@@ -27,10 +30,20 @@ export default function ManualPlanCreatorPage() {
   const setActivePlan = useGymStore((s) => s.setActivePlan);
   const applyPlanToWeek = useGymStore((s) => s.applyPlanToWeek);
   const saveRoutine = useGymStore((s) => s.saveRoutine);
+  const existingPlans = useGymStore((s) => s.plans);
   const allExercises = useAllExercises();
 
   const [dayDrafts, setDayDrafts] = useState<RoutineExercise[][]>(DAYS.map(() => []));
   const [editingDay, setEditingDay] = useState<number | null>(null);
+  const [nombre, setNombre] = useState("Mi Plan Personalizado");
+  const [categoria, setCategoria] = useState(PLAN_LIBRARY_CATEGORIES[0]);
+  const [nuevaCategoria, setNuevaCategoria] = useState(false);
+  const [notas, setNotas] = useState("");
+
+  const categoriasDisponibles = useMemo(
+    () => Array.from(new Set([...PLAN_LIBRARY_CATEGORIES, ...existingPlans.map((p) => p.categoria)])),
+    [existingPlans],
+  );
 
   const daysActive = dayDrafts.filter((d) => d.length > 0).length;
 
@@ -42,14 +55,15 @@ export default function ManualPlanCreatorPage() {
     const dias: WeeklyPlanDay[] = DAYS.map((d, i) => {
       const draft = dayDrafts[i];
       if (draft.length === 0) return { day: d.key, grupoMuscular: "Descanso" as const };
-      const routine = saveRoutine(`Mi Plan Personalizado - ${d.label}`, draft);
+      const routine = saveRoutine(`${nombre.trim() || "Mi Plan Personalizado"} - ${d.label}`, draft);
       const grupo = dominantMuscleGroup(draft, allExercises) ?? "Cardio";
       return { day: d.key, grupoMuscular: grupo, routineId: routine.id };
     });
     const plan = createPlan({
-      nombre: "Mi Plan Personalizado",
+      nombre: nombre.trim() || "Mi Plan Personalizado",
       contexto: `Gimnasio · ${daysActive} días/semana`,
-      categoria: "En el Gym",
+      categoria: categoria.trim() || PLAN_LIBRARY_CATEGORIES[0],
+      notas: notas.trim(),
       dias,
       daysPerWeek: daysActive,
       minsPerSession: 60,
@@ -117,7 +131,66 @@ export default function ManualPlanCreatorPage() {
         </button>
         <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Crear Manualmente</h1>
       </header>
-      <p className="text-sm text-white/50 -mt-3">Toca un día para agregarle ejercicios.</p>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">Nombre del plan</span>
+        <GlassInput value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre del plan" />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">Categoría</span>
+        <div className="flex flex-wrap gap-2">
+          {categoriasDisponibles.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => {
+                setCategoria(cat);
+                setNuevaCategoria(false);
+              }}
+              className={cn(
+                "rounded-full px-3.5 py-1.5 text-xs font-semibold cursor-pointer transition-colors border",
+                categoria === cat && !nuevaCategoria
+                  ? "bg-[var(--gym)] border-[var(--gym)] text-white"
+                  : "bg-white/[0.05] border-white/10 text-white/65 hover:bg-white/[0.1]",
+              )}
+            >
+              {cat}
+            </button>
+          ))}
+          <button
+            onClick={() => setNuevaCategoria(true)}
+            className={cn(
+              "flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-semibold cursor-pointer transition-colors border",
+              nuevaCategoria
+                ? "bg-[var(--gym)] border-[var(--gym)] text-white"
+                : "bg-white/[0.05] border-white/10 text-white/65 hover:bg-white/[0.1]",
+            )}
+          >
+            <Plus size={12} /> Nueva
+          </button>
+        </div>
+        {nuevaCategoria && (
+          <GlassInput
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
+            placeholder="Nombre de la nueva categoría"
+            className="mt-1"
+          />
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">Notas (opcional)</span>
+        <textarea
+          value={notas}
+          onChange={(e) => setNotas(e.target.value)}
+          placeholder="Alguna observación sobre este plan..."
+          rows={2}
+          className="w-full rounded-2xl bg-white/[0.06] border border-white/[0.12] backdrop-blur-md px-4 py-2.5 text-sm text-white placeholder:text-white/35 outline-none transition-all focus:border-white/30 focus:bg-white/[0.09] resize-none"
+        />
+      </div>
+
+      <p className="text-sm text-white/50 -mt-1">Toca un día para agregarle ejercicios.</p>
 
       <div className="grid grid-cols-2 gap-3">
         {DAYS.map((d, i) => {
