@@ -2571,5 +2571,216 @@
       "Regresa de forma controlada; repite y cambia de pierna."
     ],
     "imagen": "/exercises/gifs/aduccion-cadera-polea.jpg"
+  },
+  {
+    "id": "puente-cadera-balon",
+    "nombre": "Puente de cadera en balón suizo",
+    "categoria": "Gluteos",
+    "musculoPrimario": "Glúteo mayor",
+    "musculosSecundarios": [
+      "Isquiotibiales"
+    ],
+    "equipo": "Balón de estabilidad",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Apoya la parte alta de la espalda sobre el balón, con los pies firmes en el piso separados al ancho de la cadera.",
+      "Empuja con los talones extendiendo la cadera hacia arriba, contrayendo los glúteos.",
+      "Haz una pausa arriba y baja controladamente a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/puente-cadera-balon.jpg"
+  },
+  {
+    "id": "extension-cadera-banda",
+    "nombre": "Extensión de cadera con banda elástica",
+    "categoria": "Gluteos",
+    "musculoPrimario": "Glúteo mayor",
+    "musculosSecundarios": [
+      "Isquiotibiales"
+    ],
+    "equipo": "Banda elástica",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Ancla la banda a la base de un poste y sujeta el otro extremo al tobillo.",
+      "De frente al anclaje, sostente de un soporte para mantener el equilibrio.",
+      "Con el torso erguido, lleva la pierna hacia atrás lo más lejos posible sin flexionar la rodilla.",
+      "Regresa controladamente a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/extension-cadera-banda.jpg"
+  },
+  {
+    "id": "sentadilla-rodillas-barra",
+    "nombre": "Sentadilla de rodillas con barra",
+    "categoria": "Gluteos",
+    "musculoPrimario": "Glúteo mayor",
+    "musculosSecundarios": [
+      "Cuadriceps"
+    ],
+    "equipo": "Barra",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Coloca la barra a la altura adecuada en un rack y arrodíllate detrás de ella (usa una colchoneta para las rodillas).",
+      "Ubica la barra sobre la espalda alta, igual que en una sentadilla de pie.",
+      "Desde la posición de rodillas, siéntate hacia atrás hasta tocar los talones con los glúteos.",
+      "Extiende la cadera para volver a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/sentadilla-rodillas-barra.jpg"
+  },
+  {
+    "id": "flutter-kicks-banco",
+    "nombre": "Flutter kicks en banco (patada de glúteo)",
+    "categoria": "Gluteos",
+    "musculoPrimario": "Glúteo mayor",
+    "musculosSecundarios": [
+      "Isquiotibiales"
+    ],
+    "equipo": "Banco",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Acuéstate boca abajo en un banco con la cadera en el borde y las piernas extendidas.",
+      "Sujétate del borde delantero del banco con las manos.",
+      "Contrae los glúteos y da pequeñas patadas alternando las piernas, manteniéndolas estiradas."
+    ],
+    "imagen": "/exercises/gifs/flutter-kicks-banco.jpg"
+  },
+  {
+    "id": "elevacion-pierna-trasera-pie",
+    "nombre": "Elevación de pierna de pie (patada trasera)",
+    "categoria": "Gluteos",
+    "musculoPrimario": "Glúteo mayor",
+    "musculosSecundarios": [
+      "Isquiotibiales"
+    ],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "De pie, sostente de un soporte firme para mantener el equilibrio.",
+      "Manteniendo la pierna de apoyo recta, lleva la otra pierna hacia atrás como en un curl femoral de pie.",
+      "Regresa controladamente y repite con la otra pierna."
+    ],
+    "imagen": "/exercises/gifs/elevacion-pierna-trasera-pie.jpg"
+  },
+  {
+    "id": "aduccion-cadera-polea-baja",
+    "nombre": "Aducción de cadera en polea baja",
+    "categoria": "Aductores",
+    "musculoPrimario": "Aductores de cadera",
+    "musculosSecundarios": [],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Párate junto a una polea baja con un brazalete de tobillo enganchado a la pierna más cercana a la polea.",
+      "Aléjate del aparato con las piernas separadas, sujetando el marco para estabilizarte.",
+      "Cruza la pierna enganchada por delante de la otra usando el interior del muslo para llevarla hacia adentro.",
+      "Regresa controladamente a la posición inicial."
+    ],
+    "imagen": "/exercises/gifs/aduccion-cadera-polea-baja.jpg"
+  },
+  {
+    "id": "elevacion-lateral-pierna-pie",
+    "nombre": "Elevación lateral de pierna de pie",
+    "categoria": "Aductores",
+    "musculoPrimario": "Aductores de cadera",
+    "musculosSecundarios": [
+      "Abductores de cadera"
+    ],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Párate junto a una silla o soporte y sujétate con una mano.",
+      "Con la pierna recta, elévala hacia el costado lo más alto posible.",
+      "Baja la pierna cruzándola por delante de la pierna de apoyo.",
+      "Repite el movimiento de vaivén varias veces antes de cambiar de pierna."
+    ],
+    "imagen": "/exercises/gifs/elevacion-lateral-pierna-pie.jpg"
+  },
+  {
+    "id": "salto-lateral-bound",
+    "nombre": "Salto lateral (lateral bound)",
+    "categoria": "Aductores",
+    "musculoPrimario": "Aductores de cadera",
+    "musculosSecundarios": [
+      "Gluteos",
+      "Cuadriceps"
+    ],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Adopta una media sentadilla, de costado a la dirección del movimiento.",
+      "Carga el peso en la pierna de apoyo y salta hacia el lado contrario lo más lejos posible.",
+      "Aterriza controlando el impulso y de inmediato salta de regreso al lado opuesto.",
+      "Continúa alternando de un lado a otro."
+    ],
+    "imagen": "/exercises/gifs/salto-lateral-bound.jpg"
+  },
+  {
+    "id": "carioca-paso-cruzado",
+    "nombre": "Carioca (paso cruzado lateral)",
+    "categoria": "Aductores",
+    "musculoPrimario": "Aductores de cadera",
+    "musculosSecundarios": [
+      "Abductores de cadera"
+    ],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Comienza de pie con los brazos en posición atlética relajada.",
+      "Da un paso cruzando un pie por detrás del otro mientras avanzas de costado, elevando la rodilla.",
+      "Alterna cruzando el pie por delante y por detrás mientras te desplazas, sin girar los pies y mirando siempre al frente."
+    ],
+    "imagen": "/exercises/gifs/carioca-paso-cruzado.jpg"
+  },
+  {
+    "id": "salto-lateral-cajon",
+    "nombre": "Salto lateral al cajón",
+    "categoria": "Aductores",
+    "musculoPrimario": "Aductores de cadera",
+    "musculosSecundarios": [
+      "Gluteos",
+      "Cuadriceps"
+    ],
+    "equipo": "Cajón pliométrico",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Párate junto a un cajón bajo, de costado.",
+      "Haz un cuarto de sentadilla rápido y salta hacia arriba y hacia el lado, aterrizando sobre el cajón.",
+      "Baja con cuidado hacia el otro lado y repite el movimiento alternando direcciones."
+    ],
+    "imagen": "/exercises/gifs/salto-lateral-cajon.jpg"
+  },
+  {
+    "id": "circulos-cadera-cuadrupedia",
+    "nombre": "Círculos de cadera en cuadrupedia",
+    "categoria": "Abductores",
+    "musculoPrimario": "Abductores de cadera",
+    "musculosSecundarios": [
+      "Gluteos"
+    ],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Colócate en cuatro apoyos (manos y rodillas) manteniendo buena postura.",
+      "Eleva una rodilla flexionada separándola del piso.",
+      "Con la rodilla flexionada, traza un círculo amplio rotando el fémur.",
+      "Repite varias veces y cambia de lado."
+    ],
+    "imagen": "/exercises/gifs/circulos-cadera-cuadrupedia.jpg"
+  },
+  {
+    "id": "circulos-cadera-pie",
+    "nombre": "Círculos de cadera de pie",
+    "categoria": "Abductores",
+    "musculoPrimario": "Abductores de cadera",
+    "musculosSecundarios": [
+      "Aductores de cadera"
+    ],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Párate sobre una pierna sujetándote de un soporte vertical.",
+      "Eleva la rodilla libre hasta 90 grados.",
+      "Abre la cadera trazando un círculo amplio con la rodilla.",
+      "Realiza el movimiento lento durante varias repeticiones y cambia de lado."
+    ],
+    "imagen": "/exercises/gifs/circulos-cadera-pie.jpg"
   }
 ]
