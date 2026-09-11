@@ -6,13 +6,14 @@ import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { MODULES } from "@/lib/constants";
 import { ICON_MAP } from "./icon-map";
+import { UserMenu, type SessionUser } from "./user-menu";
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname.startsWith(href);
 }
 
-export function Sidebar() {
+export function Sidebar({ user }: { user: SessionUser }) {
   const pathname = usePathname();
 
   return (
@@ -58,8 +59,9 @@ export function Sidebar() {
           })}
         </nav>
 
-        <div className="mt-auto px-2 py-3 text-[11px] text-white/35">
-          Vida Total © 2026
+        <div className="mt-auto pt-2 border-t border-white/10">
+          <UserMenu user={user} />
+          <div className="px-2 pt-2 text-[11px] text-white/35">Vida Total © 2026</div>
         </div>
       </div>
     </aside>

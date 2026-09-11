@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { userScopedLocalStorage } from "./scoped-storage";
 import { differenceInCalendarDays, format } from "date-fns";
 import type {
   AngerEpisode,
@@ -181,7 +182,7 @@ export const usePazMentalStore = create<PazMentalState>()(
     }),
     {
       name: "vida-total-paz-mental-store",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => userScopedLocalStorage("vida-total-paz-mental-store")),
     },
   ),
 );

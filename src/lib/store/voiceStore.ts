@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { userScopedLocalStorage } from "./scoped-storage";
 import { differenceInCalendarDays, format } from "date-fns";
 import type {
   Recording,
@@ -113,7 +114,7 @@ export const useVoiceStore = create<VoiceState>()(
     }),
     {
       name: "vida-total-voz-store",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => userScopedLocalStorage("vida-total-voz-store")),
     },
   ),
 );

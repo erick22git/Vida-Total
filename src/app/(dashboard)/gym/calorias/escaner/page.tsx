@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Camera as CameraIcon, RotateCcw } from "lucide-react";
+import { ArrowLeft, Camera as CameraIcon, RotateCcw, Sparkles } from "lucide-react";
 import { CaloriasMethodNav } from "@/components/gym/calorias-method-nav";
 import { GlassButton } from "@/components/glass/glass-button";
+import { GlassModal } from "@/components/glass/glass-modal";
 import { useGymStore } from "@/lib/store/gymStore";
 import { cn } from "@/lib/utils";
+import type { AnalyzedFoodItem } from "@/app/api/food/analyze/route";
 
 type Mode = "foto" | "codigo";
 
@@ -17,6 +19,14 @@ interface OpenFoodFactsProduct {
   nutriments?: Record<string, number>;
   image_front_url?: string;
 }
+
+type AnalyzeErrorKind = "no_api_key" | "rate_limit" | "network" | "timeout" | "unknown";
+
+const ANALYZE_TIMEOUT_MS = 15000;
+
+/** sessionStorage keys shared with crear-alimento (fallback) and resultados (AI results). */
+const PHOTO_KEY = "vt-scanned-photo";
+const RESULTS_KEY = "vt-scan-results";
 
 export default function EscanerPage() {
   const router = useRouter();
@@ -29,6 +39,11 @@ export default function EscanerPage() {
   const [permissionState, setPermissionState] = useState<"idle" | "granted" | "denied" | "error">("idle");
   const [status, setStatus] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+
+  // Modo Foto: análisis con Gemini Vision.
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<AnalyzeErrorKind | null>(null);
 
   const addCustomFood = useGymStore((s) => s.addCustomFood);
 
@@ -133,6 +148,87 @@ export default function EscanerPage() {
     };
   }, [mode, permissionState, handleBarcodeDetected]);
 
+  function persistPhotoForFallback(dataUrl: string) {
+    try {
+      sessionStorage.setItem(PHOTO_KEY, dataUrl);
+    } catch {
+      // sessionStorage unavailable — proceed without the photo attached.
+    }
+  }
+
+  /** Fallback: same behavior the "Foto" mode had before Gemini was wired up —
+   * navigate to "Crear Alimento" with the photo attached so the user completes
+   * the data manually. Used when AI analysis isn't available or fails. */
+  const goToManualCreate = useCallback(() => {
+    stopCamera();
+    router.push("/gym/calorias/crear-alimento?fromScan=1");
+  }, [router, stopCamera]);
+
+  const goToManualSearch = useCallback(() => {
+    stopCamera();
+    router.push("/gym/calorias/buscar");
+  }, [router, stopCamera]);
+
+  async function analyzePhoto(dataUrl: string) {
+    setAnalyzing(true);
+    setAnalyzeError(null);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), ANALYZE_TIMEOUT_MS);
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        throw new Error("offline");
+      }
+
+      const res = await fetch("/api/food/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: dataUrl }),
+        signal: controller.signal,
+      });
+
+      const data = (await res.json().catch(() => ({}))) as {
+        items?: AnalyzedFoodItem[];
+        error?: string;
+      };
+
+      if (!res.ok || !data.items) {
+        if (data.error === "no_api_key") {
+          setAnalyzeError("no_api_key");
+        } else if (data.error === "rate_limit" || res.status === 429) {
+          setAnalyzeError("rate_limit");
+        } else {
+          setAnalyzeError("unknown");
+        }
+        setAnalyzing(false);
+        return;
+      }
+
+      try {
+        sessionStorage.setItem(RESULTS_KEY, JSON.stringify({ photo: dataUrl, items: data.items }));
+      } catch {
+        // sessionStorage unavailable — cannot pass results along, fall back to manual.
+        setAnalyzeError("unknown");
+        setAnalyzing(false);
+        return;
+      }
+
+      stopCamera();
+      router.push("/gym/calorias/escaner/resultados");
+    } catch (err) {
+      const isAbort = err instanceof DOMException && err.name === "AbortError";
+      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+      console.warn("[escaner] gemini analyze error", err);
+      if (isAbort) setAnalyzeError("timeout");
+      else if (offline || err instanceof TypeError) setAnalyzeError("network");
+      else setAnalyzeError("unknown");
+      setAnalyzing(false);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
   function capturePhoto() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -143,13 +239,15 @@ export default function EscanerPage() {
     if (!ctx) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    try {
-      sessionStorage.setItem("vt-scanned-photo", dataUrl);
-    } catch {
-      // sessionStorage unavailable — proceed without the photo attached.
-    }
+    persistPhotoForFallback(dataUrl);
     stopCamera();
-    router.push("/gym/calorias/crear-alimento?fromScan=1");
+    setCapturedPhoto(dataUrl);
+    analyzePhoto(dataUrl);
+  }
+
+  function retryAnalyze() {
+    if (!capturedPhoto) return;
+    analyzePhoto(capturedPhoto);
   }
 
   return (
@@ -174,6 +272,38 @@ export default function EscanerPage() {
               <RotateCcw size={14} /> Reintentar
             </GlassButton>
           </div>
+        ) : capturedPhoto ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={capturedPhoto} alt="Foto capturada" className="w-full h-full object-cover" />
+            {analyzing && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/55 backdrop-blur-[2px]">
+                <div className="relative w-12 h-12">
+                  <div className="absolute inset-0 rounded-full border-2 border-white/20" />
+                  <div
+                    className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
+                    style={{ borderTopColor: "var(--gym)", borderRightColor: "var(--gym)" }}
+                  />
+                  <Sparkles size={18} className="absolute inset-0 m-auto text-white/90" />
+                </div>
+                <p className="text-sm font-medium text-white">Analizando...</p>
+                <p className="text-xs text-white/60 px-8 text-center">
+                  Identificando alimentos y estimando porciones con IA
+                </p>
+              </div>
+            )}
+            {!analyzing && !analyzeError && (
+              <button
+                onClick={() => {
+                  setCapturedPhoto(null);
+                  startCamera();
+                }}
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/60 backdrop-blur-md px-4 py-2 text-xs text-white flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw size={13} /> Tomar otra foto
+              </button>
+            )}
+          </>
         ) : (
           <>
             <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
@@ -212,15 +342,75 @@ export default function EscanerPage() {
             )}
 
             {mode === "foto" && (
-              <button
-                onClick={capturePhoto}
-                className="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white border-4 border-white/40 active:scale-90 transition-transform cursor-pointer"
-                aria-label="Capturar foto"
-              />
+              <>
+                <p className="absolute bottom-20 left-4 right-4 text-center text-xs text-white/60">
+                  Encuadra el plato y toma la foto para identificar los alimentos
+                </p>
+                <button
+                  onClick={capturePhoto}
+                  className="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white border-4 border-white/40 active:scale-90 transition-transform cursor-pointer"
+                  aria-label="Capturar foto"
+                />
+              </>
             )}
           </>
         )}
       </div>
+
+      <GlassModal
+        open={analyzeError !== null}
+        onClose={() => setAnalyzeError(null)}
+        title={
+          analyzeError === "rate_limit"
+            ? "Límite de análisis alcanzado"
+            : analyzeError === "no_api_key"
+              ? "Reconocimiento IA no disponible"
+              : analyzeError === "network"
+                ? "Sin conexión a internet"
+                : analyzeError === "timeout"
+                  ? "La solicitud tardó demasiado"
+                  : "No se pudo analizar la foto"
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-white/70">
+            {analyzeError === "rate_limit" &&
+              "Se alcanzó el límite de análisis por hoy. Intenta mañana o agrega el alimento manualmente."}
+            {analyzeError === "no_api_key" &&
+              "El reconocimiento por IA no está configurado todavía. Puedes completar los datos del alimento manualmente con la foto que tomaste."}
+            {analyzeError === "network" &&
+              "El reconocimiento por foto requiere conexión a internet, a diferencia del resto de la app. Revisa tu conexión e inténtalo de nuevo."}
+            {analyzeError === "timeout" &&
+              "Gemini no respondió a tiempo. Puedes reintentar o completar el alimento manualmente."}
+            {analyzeError === "unknown" &&
+              "Ocurrió un problema al analizar la foto. Puedes reintentar o completar el alimento manualmente."}
+          </p>
+
+          <div className="flex flex-col gap-2">
+            {(analyzeError === "network" || analyzeError === "timeout" || analyzeError === "unknown") && (
+              <GlassButton
+                size="md"
+                className="w-full flex items-center justify-center gap-1.5"
+                onClick={() => {
+                  setAnalyzeError(null);
+                  retryAnalyze();
+                }}
+              >
+                <RotateCcw size={14} /> Reintentar
+              </GlassButton>
+            )}
+            {analyzeError === "rate_limit" ? (
+              <GlassButton size="md" variant="outline" className="w-full" onClick={goToManualSearch}>
+                Buscar alimento manualmente
+              </GlassButton>
+            ) : (
+              <GlassButton size="md" variant="outline" className="w-full" onClick={goToManualCreate}>
+                Completar manualmente
+              </GlassButton>
+            )}
+          </div>
+        </div>
+      </GlassModal>
     </div>
   );
 }

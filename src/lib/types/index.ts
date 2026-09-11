@@ -138,6 +138,9 @@ export interface LoggedFood {
   /** Si es false, el alimento sigue en el registro (visible, se puede reactivar)
    * pero no cuenta en ningún total de calorías/macros. Default: true. */
   activo?: boolean;
+  /** De dónde vino este registro (para mostrar un badge/ícono distinto). Sin
+   * valor = entrada manual/normal, como hasta ahora. */
+  source?: "escaner-ia";
 }
 
 /** A meal saved explicitly by name for later reuse (see "Compartir > Como plantilla"). */

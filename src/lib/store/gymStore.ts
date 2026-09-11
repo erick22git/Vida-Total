@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { userScopedLocalStorage } from "./scoped-storage";
 import { isSameDay, differenceInCalendarDays } from "date-fns";
 import type {
   Exercise,
@@ -774,7 +775,7 @@ export const useGymStore = create<GymState>()(
     }),
     {
       name: "vida-total-gym-store",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => userScopedLocalStorage("vida-total-gym-store")),
       version: 5,
       migrate: (persisted, version) => {
         const state = persisted as GymState;

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { userScopedLocalStorage } from "./scoped-storage";
 import type { ClothingItem, Outfit, OutfitOccasion, WeeklyPlan } from "@/lib/types/outfit";
 
 function uid() {
@@ -168,7 +169,7 @@ export const useOutfitStore = create<OutfitState>()(
     }),
     {
       name: "vida-total-outfit-store",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => userScopedLocalStorage("vida-total-outfit-store")),
     },
   ),
 );

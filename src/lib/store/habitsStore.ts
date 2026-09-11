@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { userScopedLocalStorage } from "./scoped-storage";
 import { differenceInCalendarDays, format } from "date-fns";
 import type {
   Habit,
@@ -347,7 +348,7 @@ export const useHabitsStore = create<HabitsState>()(
     }),
     {
       name: "vida-total-habits-store",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => userScopedLocalStorage("vida-total-habits-store")),
     },
   ),
 );

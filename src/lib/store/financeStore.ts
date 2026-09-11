@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { userScopedLocalStorage } from "./scoped-storage";
 import { format, subMonths } from "date-fns";
 import {
   CURRENCIES,
@@ -130,7 +131,7 @@ export const useFinanceStore = create<FinanceState>()(
     }),
     {
       name: "vida-total-finance-store",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => userScopedLocalStorage("vida-total-finance-store")),
     },
   ),
 );
