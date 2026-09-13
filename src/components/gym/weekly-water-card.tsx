@@ -5,8 +5,25 @@ import { es } from "date-fns/locale";
 import type { WaterEntry } from "@/lib/types";
 import { totalMlForDay } from "@/lib/gym/water-stats";
 
-function DayRing({ label, dayNum, pct, ml, highlight }: { label: string; dayNum: string; pct: number; ml: number; highlight: boolean }) {
-  const size = 40;
+function DayRing({
+  label,
+  dayNum,
+  pct,
+  ml,
+  highlight,
+  size = 40,
+  showMl = true,
+  strokeColor = "white",
+}: {
+  label: string;
+  dayNum: string;
+  pct: number;
+  ml: number;
+  highlight: boolean;
+  size?: number;
+  showMl?: boolean;
+  strokeColor?: string;
+}) {
   const stroke = 3;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -23,7 +40,7 @@ function DayRing({ label, dayNum, pct, ml, highlight }: { label: string; dayNum:
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="white"
+            stroke={strokeColor}
             strokeWidth={stroke}
             strokeDasharray={circumference}
             strokeDashoffset={offset}
@@ -32,17 +49,36 @@ function DayRing({ label, dayNum, pct, ml, highlight }: { label: string; dayNum:
           />
         </svg>
         <span
-          className={`absolute inset-0 flex items-center justify-center text-xs font-semibold text-white ${highlight ? "font-extrabold" : ""}`}
+          className={`absolute inset-0 flex items-center justify-center text-white ${highlight ? "font-extrabold" : "font-semibold"}`}
+          style={{ fontSize: size < 36 ? 10 : 12 }}
         >
           {dayNum}
         </span>
       </div>
-      <span className="text-[10px] text-white/85 font-medium">{ml} ml</span>
+      {showMl && <span className="text-[10px] text-white/85 font-medium">{ml} ml</span>}
     </div>
   );
 }
 
-export function WeeklyWaterCard({ waterEntries, waterGoalMl }: { waterEntries: WaterEntry[]; waterGoalMl: number }) {
+/** Gradient stop for a day's ring, scaled by how much of the goal was hit —
+ * rose (barely started) through orange to blue (goal reached or close). */
+function pctColor(pct: number): string {
+  if (pct >= 0.9) return "#3b82f6";
+  if (pct >= 0.45) return "#fb923c";
+  return "#fb7185";
+}
+
+export function WeeklyWaterCard({
+  waterEntries,
+  waterGoalMl,
+  compact = false,
+}: {
+  waterEntries: WaterEntry[];
+  waterGoalMl: number;
+  /** Compact mode: smaller colored rings only, no ml labels, no background/stats
+   * — meant to be embedded inside another card (e.g. the Gym hub). */
+  compact?: boolean;
+}) {
   const now = new Date();
   const start = startOfWeek(now, { weekStartsOn: 1 });
   const end = endOfWeek(now, { weekStartsOn: 1 });
@@ -50,6 +86,26 @@ export function WeeklyWaterCard({ waterEntries, waterGoalMl }: { waterEntries: W
     const ml = totalMlForDay(waterEntries, date);
     return { date, ml, pct: waterGoalMl > 0 ? ml / waterGoalMl : 0 };
   });
+
+  if (compact) {
+    return (
+      <div className="flex justify-between gap-1">
+        {days.map((d) => (
+          <DayRing
+            key={d.date.toISOString()}
+            label={format(d.date, "eeeeee", { locale: es })}
+            dayNum={format(d.date, "d")}
+            pct={d.pct}
+            ml={d.ml}
+            highlight={isToday(d.date)}
+            size={26}
+            showMl={false}
+            strokeColor={pctColor(d.pct)}
+          />
+        ))}
+      </div>
+    );
+  }
 
   const totalWeek = days.reduce((sum, d) => sum + d.ml, 0);
   const avgPct = Math.round((days.reduce((sum, d) => sum + d.pct, 0) / days.length) * 100);

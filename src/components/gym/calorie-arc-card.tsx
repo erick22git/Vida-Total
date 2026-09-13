@@ -7,8 +7,7 @@ import { GlassModal } from "@/components/glass/glass-modal";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
 import { useGymStore } from "@/lib/store/gymStore";
-
-const MACRO_COLORS = { proteina: "#22c55e", carbos: "#eab308", grasas: "#f97316" };
+import { ArcChart, MacroColumn, MACRO_COLORS } from "@/components/gym/calorie-arc-visual";
 
 export function CalorieArcCard({
   totals,
@@ -207,56 +206,3 @@ function LabeledInput({ label, value, onChange }: { label: string; value: string
   );
 }
 
-function MacroColumn({ label, value, goal, color }: { label: string; value: number; goal: number; color: string }) {
-  const pct = Math.min(100, goal > 0 ? (value / goal) * 100 : 0);
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <span className="text-[11px] text-white/45">{label}</span>
-      <span className="text-xs font-medium text-white tabular-nums">
-        {Math.round(value)} / {goal}g
-      </span>
-      <div className="w-full h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
-      </div>
-    </div>
-  );
-}
-
-/** Shallow "smile" arc with two range markers — replaces the circular ring per
- * the Fitia-style reference design. Points are placed along the same quadratic
- * Bézier used to draw the curve so they sit exactly on it. */
-function ArcChart({ low, high }: { low: number; high: number }) {
-  const P0 = { x: 20, y: 58 };
-  const P1 = { x: 160, y: 18 };
-  const P2 = { x: 300, y: 58 };
-  const bezier = (t: number) => {
-    const mt = 1 - t;
-    return {
-      x: mt * mt * P0.x + 2 * mt * t * P1.x + t * t * P2.x,
-      y: mt * mt * P0.y + 2 * mt * t * P1.y + t * t * P2.y,
-    };
-  };
-  const pointA = bezier(0.3);
-  const pointB = bezier(0.7);
-
-  return (
-    <svg viewBox="0 0 320 90" className="w-full h-auto">
-      <path
-        d={`M ${P0.x} ${P0.y} Q ${P1.x} ${P1.y} ${P2.x} ${P2.y}`}
-        fill="none"
-        stroke="rgba(255,255,255,0.22)"
-        strokeWidth={2}
-        strokeLinecap="round"
-      />
-      {[pointA, pointB].map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={4} fill="white" fillOpacity={0.85} />
-      ))}
-      <text x={pointA.x} y={pointA.y + 22} textAnchor="middle" fontSize="13" fill="rgba(255,255,255,0.55)">
-        {low.toLocaleString()}
-      </text>
-      <text x={pointB.x} y={pointB.y + 22} textAnchor="middle" fontSize="13" fill="rgba(255,255,255,0.55)">
-        {high.toLocaleString()}
-      </text>
-    </svg>
-  );
-}
