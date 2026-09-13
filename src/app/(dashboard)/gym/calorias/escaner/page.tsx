@@ -35,7 +35,8 @@ export default function EscanerPage() {
   const streamRef = useRef<MediaStream | null>(null);
   const readerRef = useRef<import("@zxing/library").BrowserMultiFormatReader | null>(null);
 
-  const [mode, setMode] = useState<Mode>("codigo");
+  const [mode, setMode] = useState<Mode>("foto");
+  const prevModeRef = useRef<Mode>("foto");
   const [permissionState, setPermissionState] = useState<"idle" | "granted" | "denied" | "error">("idle");
   const [status, setStatus] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
@@ -56,6 +57,10 @@ export default function EscanerPage() {
   const startCamera = useCallback(async () => {
     setStatus(null);
     try {
+      // Detiene cualquier stream previo antes de pedir uno nuevo — evita
+      // fugas de tracks abiertos cuando esto se llama de nuevo (p.ej. al
+      // volver al modo Foto tras usar el Código de barras).
+      streamRef.current?.getTracks().forEach((t) => t.stop());
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       streamRef.current = stream;
       if (videoRef.current) {
@@ -118,6 +123,20 @@ export default function EscanerPage() {
     return () => stopCamera();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Reacquire the camera when returning to "Foto" from "Código": zxing's
+  // `reader.reset()` (called on cleanup when leaving "codigo" mode below)
+  // stops the tracks of the MediaStream bound to our shared <video>, since
+  // it assumes ownership of it. Without this, the video element is left
+  // showing a black frame — dead tracks, but no error — whenever you go
+  // back to "Foto" mode after having used "Código" at least once.
+  useEffect(() => {
+    const prevMode = prevModeRef.current;
+    prevModeRef.current = mode;
+    if (mode === "foto" && prevMode === "codigo" && permissionState === "granted") {
+      startCamera();
+    }
+  }, [mode, permissionState, startCamera]);
 
   // Barcode scanning loop when in "codigo" mode.
   useEffect(() => {
@@ -306,7 +325,20 @@ export default function EscanerPage() {
           </>
         ) : (
           <>
-            <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
+            <video
+              ref={videoRef}
+              className="w-full h-full object-cover"
+              playsInline
+              muted
+              autoPlay
+              // Respaldo: si `play()` fue interrumpido en `startCamera()`
+              // (p.ej. llamado antes de que el video tuviera metadata lista,
+              // algo común en iOS Safari) reintenta apenas la metadata está
+              // disponible, para no quedar con un frame negro congelado.
+              onLoadedMetadata={(e) => {
+                e.currentTarget.play().catch(() => {});
+              }}
+            />
             <canvas ref={canvasRef} className="hidden" />
 
             {mode === "codigo" && (

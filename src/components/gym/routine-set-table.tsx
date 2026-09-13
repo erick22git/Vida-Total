@@ -109,7 +109,7 @@ export function RoutineSetTable({
                 value={s.peso || ""}
                 placeholder="0"
                 onChange={(e) => updateSet(i, { peso: parseFloat(e.target.value) || 0 })}
-                className="w-full rounded-lg bg-white/[0.05] border border-white/[0.1] px-2 py-1.5 text-sm text-white text-center outline-none"
+                className="w-full rounded-lg bg-white/[0.05] glass-specular-ring px-2 py-1.5 text-base text-white text-center outline-none"
               />
             )}
             <input
@@ -117,7 +117,7 @@ export function RoutineSetTable({
               value={s.reps || ""}
               placeholder="0"
               onChange={(e) => updateSet(i, { reps: parseInt(e.target.value) || 0 })}
-              className={`w-full rounded-lg bg-white/[0.05] border border-white/[0.1] px-2 py-1.5 text-sm text-white text-center outline-none ${soloReps ? "col-span-2" : ""}`}
+              className={`w-full rounded-lg bg-white/[0.05] glass-specular-ring px-2 py-1.5 text-base text-white text-center outline-none ${soloReps ? "col-span-2" : ""}`}
             />
             <button
               onClick={() => removeSet(i)}

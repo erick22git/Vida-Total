@@ -42,7 +42,7 @@ export function CalorieArcCard({
   const displayValue = showRemaining ? Math.max(0, Math.round(calorieGoal - totals.calorias)) : Math.round(totals.calorias);
 
   return (
-    <GlassCard padding="md" className="flex flex-col gap-4" style={{ background: "rgba(10,10,14,0.55)" }}>
+    <GlassCard padding="md" className="flex flex-col gap-4" style={{ background: "var(--glass-bg-dark)" }}>
       <div className="flex items-center justify-between">
         <div className="relative">
           <button
@@ -55,7 +55,7 @@ export function CalorieArcCard({
           {pencilOpen && (
             <>
               <div className="fixed inset-0 z-30" onClick={() => setPencilOpen(false)} />
-              <div className="absolute left-0 top-9 z-40 w-52 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden py-1">
+              <div className="glass-panel absolute left-0 top-9 z-40 w-52 rounded-2xl shadow-2xl overflow-hidden py-1">
                 <button
                   onClick={() => {
                     toggleShowRemaining();
@@ -104,7 +104,7 @@ export function CalorieArcCard({
           {moreOpen && (
             <>
               <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} />
-              <div className="absolute right-0 top-9 z-40 w-44 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden py-1">
+              <div className="glass-panel absolute right-0 top-9 z-40 w-44 rounded-2xl shadow-2xl overflow-hidden py-1">
                 <button
                   onClick={() => setMoreOpen(false)}
                   className="w-full text-left px-3.5 py-2.5 text-xs text-white/40 cursor-default"

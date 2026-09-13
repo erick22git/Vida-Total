@@ -76,7 +76,7 @@ function ExerciseTabs({
 
   return (
     <div key={exerciseId} className="flex flex-col gap-5">
-      <div className="flex gap-1.5 rounded-2xl bg-white/[0.04] p-1 border border-white/[0.08]">
+      <div className="flex gap-1.5 rounded-2xl bg-white/[0.04] p-1 glass-specular-ring">
         {TABS.map((t) => (
           <button
             key={t.key}

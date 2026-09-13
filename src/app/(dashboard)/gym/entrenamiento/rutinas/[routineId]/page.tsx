@@ -147,7 +147,7 @@ export default function RoutineDetailPage({
               onClick={() => router.push(`/gym/entrenamiento/${ex.id}`)}
               className="flex items-center gap-3"
             >
-              <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/[0.06] flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/[0.06] glass-specular-ring flex items-center justify-center shrink-0">
                 {ex.imagen ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={ex.imagen} alt="" className="w-full h-full object-cover" />

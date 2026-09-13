@@ -53,7 +53,7 @@ export default function PlanSemanalPage() {
       <header className="flex items-center gap-3 pt-2">
         <Link
           href="/outfit"
-          className="flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.06] border border-white/10 text-white/70 hover:text-white transition-colors"
+          className="flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.06] glass-specular-ring text-white/70 hover:text-white transition-colors"
         >
           <ArrowLeft size={17} />
         </Link>
@@ -62,7 +62,7 @@ export default function PlanSemanalPage() {
         </h1>
       </header>
 
-      <div className="inline-flex self-start rounded-full border border-white/10 bg-white/[0.04] p-1">
+      <div className="inline-flex self-start rounded-full glass-specular-ring bg-white/[0.04] p-1">
         {([3, 7] as const).map((r) => (
           <button
             key={r}
@@ -97,7 +97,7 @@ export default function PlanSemanalPage() {
                   {format(day.date, "d 'de' MMMM", { locale: es })}
                 </p>
               </div>
-              <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] px-3 py-2">
+              <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] glass-specular-ring px-3 py-2">
                 <span className="text-lg font-semibold">{day.weather.temp}°</span>
                 <WeatherIcon icon={day.weather.icon} condition={day.weather.condition} size={22} />
               </div>

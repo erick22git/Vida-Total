@@ -9,7 +9,7 @@ function DrinkTile({ drink, onClick }: { drink: DrinkOption; onClick: () => void
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] py-4 px-2 transition-colors cursor-pointer"
+      className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] glass-specular-ring py-4 px-2 transition-colors cursor-pointer"
     >
       <span className="text-2xl leading-none">{drink.emoji}</span>
       <span className="text-xs font-medium text-white text-center leading-tight">{drink.nombre}</span>

@@ -67,7 +67,7 @@ export function ClothingFormModal({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-28 h-28 rounded-2xl overflow-hidden flex items-center justify-center cursor-pointer border border-white/15"
+            className="w-28 h-28 rounded-2xl overflow-hidden flex items-center justify-center cursor-pointer glass-specular-ring"
             style={{ background: "var(--outfit)14" }}
           >
             {imageUrl ? (

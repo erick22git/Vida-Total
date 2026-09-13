@@ -167,7 +167,7 @@ export default function EscanerResultadosPage() {
       <div className="flex items-center gap-3">
         {photo && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={photo} alt="Foto capturada" className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-white/10" />
+          <img src={photo} alt="Foto capturada" className="w-16 h-16 rounded-2xl object-cover shrink-0 glass-specular-ring" />
         )}
         <div className="flex items-center gap-1.5 text-white/60 text-xs">
           <Sparkles size={14} className="text-[var(--gym)]" />
@@ -212,7 +212,7 @@ export default function EscanerResultadosPage() {
                   Confianza {it.confidence}
                 </span>
 
-                <div className="flex items-center gap-1 rounded-full bg-white/[0.06] border border-white/[0.12] px-1 py-1">
+                <div className="flex items-center gap-1 rounded-full bg-white/[0.06] glass-specular-ring px-1 py-1">
                   <button
                     onClick={() => updateGrams(it.id, -10)}
                     aria-label="Reducir gramos"
@@ -272,7 +272,7 @@ export default function EscanerResultadosPage() {
         <select
           value={meal}
           onChange={(e) => setMeal(e.target.value as MealType)}
-          className="w-full rounded-2xl bg-white/[0.06] border border-white/[0.12] backdrop-blur-md px-4 py-3 text-sm text-white outline-none focus:border-white/30 min-h-[44px]"
+          className="w-full rounded-2xl bg-white/[0.06] glass-specular-ring backdrop-blur-md px-4 py-3 text-sm text-white outline-none focus:shadow-[var(--glass-specular-strong)] min-h-[44px]"
         >
           {MEAL_OPTIONS.map((m) => (
             <option key={m} value={m} className="bg-[#1c1c22]">

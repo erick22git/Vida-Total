@@ -56,7 +56,7 @@ export function RecipeIngredientPicker({
             <button
               key={food.id}
               onClick={() => handlePick(food)}
-              className="flex items-center gap-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] px-3 py-2.5 text-left transition-colors cursor-pointer"
+              className="flex items-center gap-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.09] glass-specular-ring px-3 py-2.5 text-left transition-colors cursor-pointer"
             >
               <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={36} emoji={categoryEmoji(food.categoria)} />
               <div className="flex flex-col min-w-0">

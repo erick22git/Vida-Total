@@ -92,7 +92,7 @@ export function CreateExerciseModal({
           <select
             value={categoria}
             onChange={(e) => setCategoria(e.target.value as MuscleGroup)}
-            className="w-full rounded-2xl bg-white/[0.06] border border-white/[0.12] px-4 py-2.5 text-sm text-white outline-none"
+            className="w-full rounded-2xl bg-white/[0.06] glass-specular-ring px-4 py-2.5 text-sm text-white outline-none"
           >
             {MUSCLE_GROUPS.map((m) => (
               <option key={m.value} value={m.value} className="bg-[#141420]">
@@ -127,7 +127,7 @@ export function CreateExerciseModal({
           <select
             value={equipo}
             onChange={(e) => setEquipo(e.target.value)}
-            className="w-full rounded-2xl bg-white/[0.06] border border-white/[0.12] px-4 py-2.5 text-sm text-white outline-none"
+            className="w-full rounded-2xl bg-white/[0.06] glass-specular-ring px-4 py-2.5 text-sm text-white outline-none"
           >
             {EQUIPMENT_LIST.map((eq) => (
               <option key={eq} value={eq} className="bg-[#141420]">

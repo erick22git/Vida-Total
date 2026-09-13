@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;overflow:hidden;pointer-events:none;" aria-hidden="true" focusable="false">
+<!-- ============================================================
+     [GLASS ENGINE — CORE] — portado tal cual desde
+     C:\Erick\Gym\public\svg\filters.svg. Los valores numéricos
+     (scale, x/y/width/height de margen, specularConstant,
+     baseFrequency...) son decisiones de diseño ya calibradas en
+     el proyecto de referencia — se copian idénticos para
+     "menu"/"card"/"button", salvo el canal "panel" (nuevo en
+     esta app, clonado de "card" para los dropdowns/.glass-panel
+     de Vida Total) cuyos valores YA fueron reducidos en una
+     corrección previa tras probar en un iPhone real (ver
+     comentario del propio canal más abajo) — se conservan esos
+     valores reducidos, no se vuelve a los de "card" original.
+     "card"/"button" no tienen consumidor propio todavía en esta
+     app, se mantienen definidos (y cacheados por refraction.ts)
+     para no perder funcionalidad si algún componente futuro los
+     usa.
+     ============================================================ -->
+<defs>
+
+    <!-- ============================================================
+         REFRACCIÓN — MENU
+
+         feTurbulence genera ruido de fractal; feGaussianBlur lo
+         suaviza para que no se vea granulado; feDisplacementMap usa
+         ese ruido suavizado para desplazar los píxeles del propio
+         material (SourceGraphic), como si la luz se doblara al
+         atravesar una superficie irregular de vidrio. La cápsula es
+         pequeña, así que la distorsión debe ser sutil para no
+         romper la legibilidad de los íconos.
+    ============================================================ -->
+    <filter id="glass-refraction-menu" x="-45%" y="-35%" width="190%" height="170%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.007 0.015" numOctaves="2" seed="7" result="noise"/>
+        <feGaussianBlur in="noise" stdDeviation="2.5" result="softNoise"/>
+        <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="58" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <!-- ============================================================
+         REFRACCIÓN — CARD
+
+         Sin consumidor propio todavía en esta app — definido tal
+         cual el original para no perder funcionalidad.
+    ============================================================ -->
+    <filter id="glass-refraction-card" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.008 0.010" numOctaves="2" seed="11" result="noise"/>
+        <feGaussianBlur in="noise" stdDeviation="3.5" result="softNoise"/>
+        <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="16" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <!-- ============================================================
+         REFRACCIÓN — BUTTON
+
+         Sin consumidor propio todavía en esta app — definido tal
+         cual el original para no perder funcionalidad.
+    ============================================================ -->
+    <filter id="glass-refraction-button" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.008 0.010" numOctaves="2" seed="11" result="noise"/>
+        <feGaussianBlur in="noise" stdDeviation="3.5" result="softNoise"/>
+        <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="16" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <!-- ============================================================
+         REFRACCIÓN — PANEL (dropdowns / .glass-panel)
+
+         [CONSUMIDOR — nuevo en Vida Total] Clonado del canal "card"
+         de origen, con dos ajustes de calibración pedidos por el
+         usuario tras probar en un iPhone real: el efecto SÍ se nota
+         (confirmado), pero estaba demasiado fuerte para un dropdown
+         (debe ser sutil/apenas perceptible, no ausente). `scale` de
+         feDisplacementMap bajado de 16 a 7 (rango sugerido 6-8) —
+         menos recorrido de desplazamiento por el mismo campo de
+         ruido, así que el contenido del panel se distorsiona mucho
+         menos pero sigue leyéndose como vidrio, no como plano.
+         `stdDeviation` del feGaussianBlur subido levemente de 3.5 a
+         4 para suavizar más el ruido de base (menos "grano" visible
+         a esa escala más chica). id propio para no compartir en vivo
+         el scale/fePointLight con "menu".
+    ============================================================ -->
+    <filter id="glass-refraction-panel" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.008 0.010" numOctaves="2" seed="11" result="noise"/>
+        <feGaussianBlur in="noise" stdDeviation="4" result="softNoise"/>
+        <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <!-- ============================================================
+         ESPECULAR — MENU
+
+         Iluminación real, no un gradiente disfrazado. feMorphology
+         dilata la máscara de alfa para dar espesor al borde antes de
+         iluminarlo; feSpecularLighting calcula el brillo especular
+         de una fuente de luz puntual (fePointLight) sobre esa
+         superficie; los feComposite recortan el brillo a la forma
+         del material y lo suman sobre el resultado anterior.
+    ============================================================ -->
+    <filter id="glass-specular-menu" x="-30%" y="-30%" width="160%" height="160%" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">
+        <feMorphology in="SourceAlpha" operator="dilate" radius="0.004" result="thickAlpha"/>
+        <feGaussianBlur in="thickAlpha" stdDeviation="0.01" result="softAlpha"/>
+        <feSpecularLighting in="softAlpha" surfaceScale="3.2" specularConstant="0.9" specularExponent="18" lighting-color="#ffffff" result="specular">
+            <fePointLight x="0.5" y="0.5" z="0.55"/>
+        </feSpecularLighting>
+        <feComposite in="specular" in2="SourceAlpha" operator="in" result="specularClip"/>
+        <feComposite in="SourceGraphic" in2="specularClip" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+
+    <!-- ============================================================
+         ESPECULAR — CARD
+
+         Sin consumidor propio todavía en esta app — definido tal
+         cual el original para no perder funcionalidad.
+    ============================================================ -->
+    <filter id="glass-specular-card" x="-30%" y="-30%" width="160%" height="160%" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">
+        <feMorphology in="SourceAlpha" operator="dilate" radius="0.003" result="thickAlpha"/>
+        <feGaussianBlur in="thickAlpha" stdDeviation="0.012" result="softAlpha"/>
+        <feSpecularLighting in="softAlpha" surfaceScale="4" specularConstant="0.45" specularExponent="16" lighting-color="#ffffff" result="specular">
+            <fePointLight x="0.5" y="0.3" z="0.6"/>
+        </feSpecularLighting>
+        <feComposite in="specular" in2="SourceAlpha" operator="in" result="specularClip"/>
+        <feComposite in="SourceGraphic" in2="specularClip" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+
+    <!-- ============================================================
+         ESPECULAR — BUTTON
+
+         Sin consumidor propio todavía en esta app — definido tal
+         cual el original para no perder funcionalidad.
+    ============================================================ -->
+    <filter id="glass-specular-button" x="-30%" y="-30%" width="160%" height="160%" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">
+        <feMorphology in="SourceAlpha" operator="dilate" radius="0.003" result="thickAlpha"/>
+        <feGaussianBlur in="thickAlpha" stdDeviation="0.012" result="softAlpha"/>
+        <feSpecularLighting in="softAlpha" surfaceScale="4" specularConstant="0.45" specularExponent="16" lighting-color="#ffffff" result="specular">
+            <fePointLight x="0.5" y="0.3" z="0.6"/>
+        </feSpecularLighting>
+        <feComposite in="specular" in2="SourceAlpha" operator="in" result="specularClip"/>
+        <feComposite in="SourceGraphic" in2="specularClip" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+
+    <!-- ============================================================
+         ESPECULAR — PANEL (dropdowns / .glass-panel)
+
+         [CONSUMIDOR — nuevo en Vida Total] Clonado del canal "card"
+         de origen: specularConstant más bajo que "menu" ("que no
+         alumbre tanto"), id propio para no afectar a la burbuja.
+         Bajado de 0.45 a 0.28 (rango sugerido 0.25-0.3) junto con la
+         reducción de `scale` de glass-refraction-panel de arriba —
+         mismo reporte del usuario: el brillo también se sentía
+         fuerte para un panel de dropdown, debe acompañar sutil, no
+         competir con el contenido.
+    ============================================================ -->
+    <filter id="glass-specular-panel" x="-30%" y="-30%" width="160%" height="160%" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">
+        <feMorphology in="SourceAlpha" operator="dilate" radius="0.003" result="thickAlpha"/>
+        <feGaussianBlur in="thickAlpha" stdDeviation="0.012" result="softAlpha"/>
+        <feSpecularLighting in="softAlpha" surfaceScale="4" specularConstant="0.28" specularExponent="16" lighting-color="#ffffff" result="specular">
+            <fePointLight x="0.5" y="0.3" z="0.6"/>
+        </feSpecularLighting>
+        <feComposite in="specular" in2="SourceAlpha" operator="in" result="specularClip"/>
+        <feComposite in="SourceGraphic" in2="specularClip" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+
+    <!-- ============================================================
+         LUPA REAL — glassLensDistortion (bottom-nav pill)
+
+         No es ruido (feTurbulence/feDisplacementMap, que da "agua
+         temblando"): el mapa de desplazamiento (<feImage>, href
+         puesto por JS) es un campo de vectores generado por píxel
+         en glass-engine/lens-map.ts que empuja hacia AFUERA desde
+         el centro con perfil convexo (más fuerte cerca del borde) —
+         así el centro apenas se mueve (efecto lupa/foco) y el borde
+         dobla con fuerza. Se regenera cuando cambia el tamaño de la
+         burbuja activa (ver menu.ts: syncToActive) y su `scale` se
+         reajusta en vivo según la velocidad del movimiento (ver
+         menu.ts: update). SCALE base=110 — valor calibrado en el
+         proyecto de referencia (ver comentario histórico en
+         C:\Erick\Gym\public\svg\filters.svg): con el margen ampliado
+         de abajo (x/y/width/height, para que el doblado no se corte
+         en el borde) es el valor que produce distorsión realmente
+         visible, no el piso de ruido.
+    ============================================================ -->
+    <filter id="glassLensDistortion" x="-35%" y="-45%" width="170%" height="190%" filterUnits="objectBoundingBox">
+        <feImage id="lensMapImage" result="lensMap" />
+        <feDisplacementMap id="glassLensDisplacement" in="SourceGraphic" in2="lensMap" scale="110" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+</defs>
+</svg>

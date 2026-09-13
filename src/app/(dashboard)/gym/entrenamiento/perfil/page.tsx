@@ -83,7 +83,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="flex gap-1.5 rounded-2xl bg-white/[0.04] p-1 border border-white/[0.08]">
+      <div className="flex gap-1.5 rounded-2xl bg-white/[0.04] p-1 glass-specular-ring">
         <TabButton active={tab === "entrenamientos"} onClick={() => setTab("entrenamientos")} icon={Trophy} label="Entrenamientos" />
         <TabButton active={tab === "grafica"} onClick={() => setTab("grafica")} icon={LineChartIcon} label="Gráfica" />
       </div>
@@ -113,7 +113,7 @@ export default function ProfilePage() {
             <select
               value={period}
               onChange={(e) => setPeriod(e.target.value as "Semana" | "Mes")}
-              className="rounded-xl bg-white/[0.06] border border-white/[0.12] px-3 py-1.5 text-xs text-white outline-none"
+              className="rounded-xl bg-white/[0.06] glass-specular-ring px-3 py-1.5 text-xs text-white outline-none"
             >
               <option value="Semana" className="bg-[#141420]">Semana</option>
               <option value="Mes" className="bg-[#141420]">Mes</option>

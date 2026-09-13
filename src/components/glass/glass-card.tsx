@@ -48,9 +48,8 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
         style={{
           boxShadow:
             glow && accentColor
-              ? `0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 var(--glass-highlight), 0 0 40px ${accentColor}33`
+              ? `0 8px 32px rgba(0,0,0,0.35), var(--glass-specular), 0 0 40px ${accentColor}33`
               : undefined,
-          borderColor: accentColor ? `${accentColor}40` : undefined,
           ...style,
         }}
         {...props}

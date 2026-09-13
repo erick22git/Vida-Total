@@ -19,7 +19,9 @@ export const GlassInput = forwardRef<HTMLInputElement, GlassInputProps>(
         <input
           ref={ref}
           className={cn(
-            "w-full rounded-2xl bg-white/[0.06] border border-white/[0.12] backdrop-blur-md px-4 py-2.5 text-sm md:text-base text-white placeholder:text-white/35 outline-none transition-all focus:border-white/30 focus:bg-white/[0.09]",
+            // text-base (16px) en todos los viewports — por debajo de 16px,
+            // Safari/Chrome móvil hacen auto-zoom al enfocar el input.
+            "w-full rounded-2xl bg-white/[0.06] glass-specular-ring backdrop-blur-md px-4 py-2.5 text-base text-white placeholder:text-white/35 outline-none transition-all focus:bg-white/[0.09] focus:shadow-[var(--glass-specular-strong)]",
             icon ? "pl-10" : "",
             className,
           )}

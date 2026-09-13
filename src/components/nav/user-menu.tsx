@@ -37,7 +37,7 @@ function Avatar({ user, size = 36 }: { user: SessionUser; size?: number }) {
   }
   return (
     <div
-      className="rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-white text-xs font-semibold shrink-0"
+      className="rounded-full bg-white/10 glass-specular-ring flex items-center justify-center text-white text-xs font-semibold shrink-0"
       style={{ width: size, height: size }}
     >
       {initials(user.name)}

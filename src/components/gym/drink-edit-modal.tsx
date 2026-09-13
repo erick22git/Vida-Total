@@ -171,7 +171,7 @@ export function DrinkEditModal({
 
         <div className="flex flex-col gap-2.5">
           <p className="text-xs font-semibold text-white/50 uppercase tracking-wide">Propiedades de la bebida</p>
-          <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] px-4">
+          <div className="rounded-2xl bg-white/[0.04] glass-specular-ring px-4">
             <PropertyRow
               label="Equilibrio hídrico"
               emoji="💧"

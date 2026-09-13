@@ -116,7 +116,7 @@ export function RestTimer() {
         </button>
         <button
           onClick={reset}
-          className="flex items-center justify-center w-10 h-10 rounded-2xl bg-white/[0.06] border border-white/[0.12] cursor-pointer"
+          className="flex items-center justify-center w-10 h-10 rounded-2xl bg-white/[0.06] glass-specular-ring cursor-pointer"
         >
           <RotateCcw size={16} className="text-white/70" />
         </button>

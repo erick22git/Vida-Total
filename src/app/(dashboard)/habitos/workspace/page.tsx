@@ -204,7 +204,7 @@ export default function WorkspacePage() {
                     <Plus size={15} /> Agregar bloque
                   </button>
                   {blockPickerOpen && (
-                    <div className="absolute left-2 top-9 z-10 flex flex-col gap-1 rounded-2xl bg-[#16161d] border border-white/10 p-1.5 shadow-xl">
+                    <div className="absolute left-2 top-9 z-10 flex flex-col gap-1 rounded-2xl glass-panel p-1.5 shadow-xl">
                       <button
                         onClick={() => handleAddBlock("text")}
                         className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-white/75 hover:bg-white/[0.08] cursor-pointer"
@@ -262,7 +262,7 @@ export default function WorkspacePage() {
                 <button
                   key={t.id}
                   onClick={() => createFromTemplate(t.id)}
-                  className="flex items-center gap-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] px-4 py-3 text-left transition-colors cursor-pointer"
+                  className="flex items-center gap-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.09] glass-specular-ring px-4 py-3 text-left transition-colors cursor-pointer"
                 >
                   <div
                     className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0"

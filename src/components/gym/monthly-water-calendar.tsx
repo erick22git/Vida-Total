@@ -64,7 +64,7 @@ export function MonthlyWaterCalendar({ waterEntries, waterGoalMl }: { waterEntri
   const metGoalDays = validDays.filter((d) => d.pct >= 1).length;
 
   return (
-    <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-4 flex flex-col gap-4">
+    <div className="rounded-2xl bg-white/[0.04] glass-specular-ring p-4 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-white capitalize">{format(month, "MMMM yyyy", { locale: es })}</p>
         <div className="flex items-center gap-1.5">

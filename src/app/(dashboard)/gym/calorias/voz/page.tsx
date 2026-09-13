@@ -203,7 +203,7 @@ export default function VozPage() {
               </p>
             )}
             {transcript && (
-              <p className="text-sm text-white/70 text-center max-w-sm bg-white/[0.05] rounded-2xl px-4 py-3">
+              <p className="text-sm text-white/70 text-center max-w-sm bg-white/[0.05] rounded-2xl glass-specular-ring px-4 py-3">
                 “{transcript}”
               </p>
             )}
@@ -216,7 +216,7 @@ export default function VozPage() {
                 {detected.map((food) => (
                   <label
                     key={food.id}
-                    className="flex items-center gap-3 rounded-xl bg-white/[0.04] px-3 py-2 cursor-pointer"
+                    className="flex items-center gap-3 rounded-xl bg-white/[0.04] glass-specular-ring px-3 py-2 cursor-pointer"
                   >
                     <input
                       type="checkbox"

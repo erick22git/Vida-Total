@@ -128,7 +128,7 @@ export default function AiPlanWizardPage() {
 
       {step === "goal" && (
         <div className="flex flex-col gap-5">
-          <div className="rounded-2xl bg-white/[0.05] border border-white/[0.1] px-4 py-3 text-sm text-white/70">
+          <div className="rounded-2xl bg-white/[0.05] glass-specular-ring px-4 py-3 text-sm text-white/70">
             {goal ? GOALS.find((g) => g.key === goal)?.label : "Elige tu objetivo"}
           </div>
           <h2 className="text-xl font-bold text-center">Elige tu objetivo</h2>
@@ -274,7 +274,7 @@ export default function AiPlanWizardPage() {
           <div className="flex flex-col gap-2">
             {generated.chosen.map((ex) => (
               <GlassCard key={ex.id} padding="sm" interactive={false} className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-xl bg-white/[0.06] glass-specular-ring flex items-center justify-center shrink-0">
                   {ex.imagen ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={ex.imagen} alt="" className="w-full h-full object-cover rounded-xl" />

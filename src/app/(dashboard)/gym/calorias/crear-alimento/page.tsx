@@ -137,7 +137,7 @@ function CrearAlimentoForm() {
       </header>
 
       {fromScan && (
-        <div className="flex items-center gap-3 bg-white/[0.05] rounded-xl px-3 py-2">
+        <div className="flex items-center gap-3 bg-white/[0.05] rounded-xl glass-specular-ring px-3 py-2">
           {scannedPhoto && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={scannedPhoto} alt="Foto capturada" className="w-12 h-12 rounded-xl object-cover shrink-0" />
@@ -162,7 +162,7 @@ function CrearAlimentoForm() {
           <select
             value={categoria}
             onChange={(e) => setCategoria(e.target.value)}
-            className="w-full rounded-2xl bg-white/[0.06] border border-white/[0.12] backdrop-blur-md px-4 py-2.5 text-sm text-white outline-none focus:border-white/30"
+            className="w-full rounded-2xl bg-white/[0.06] glass-specular-ring backdrop-blur-md px-4 py-2.5 text-sm text-white outline-none focus:shadow-[var(--glass-specular-strong)]"
           >
             {FOOD_CATEGORIES.map((c) => (
               <option key={c} value={c} className="bg-[#1c1c22]">
@@ -199,7 +199,7 @@ function CrearAlimentoForm() {
               <select
                 value={unidadPeso}
                 onChange={(e) => setUnidadPeso(e.target.value as "g" | "ml" | "oz")}
-                className="rounded-2xl bg-white/[0.06] border border-white/[0.12] px-2 text-sm text-white outline-none"
+                className="rounded-2xl bg-white/[0.06] glass-specular-ring px-2 text-sm text-white outline-none"
               >
                 <option value="g" className="bg-[#1c1c22]">g</option>
                 <option value="ml" className="bg-[#1c1c22]">ml</option>

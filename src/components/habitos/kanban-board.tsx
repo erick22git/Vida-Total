@@ -23,7 +23,7 @@ export function KanbanBoard() {
           onDrop={() => {
             if (dragTaskId) moveTaskToColumn(dragTaskId, col.id as KanbanColumnId);
           }}
-          className="flex flex-col gap-3 rounded-3xl bg-white/[0.03] border border-white/[0.08] p-3 min-h-[200px] shrink-0 w-[78vw] sm:w-auto snap-start"
+          className="flex flex-col gap-3 rounded-3xl bg-white/[0.03] glass-specular-ring p-3 min-h-[200px] shrink-0 w-[78vw] sm:w-auto snap-start"
         >
           <div className="flex items-center justify-between px-1">
             <p className="text-sm font-semibold text-white/80">{col.title}</p>

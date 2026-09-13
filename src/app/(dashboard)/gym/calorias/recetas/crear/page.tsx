@@ -115,7 +115,7 @@ function CrearRecetaForm() {
       >
         <div className="flex flex-col gap-2">
           <button
-            className="flex items-center gap-3 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] px-4 py-3.5 text-left cursor-pointer"
+            className="flex items-center gap-3 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] glass-specular-ring px-4 py-3.5 text-left cursor-pointer"
             onClick={() => {
               setMode("manual");
               setChoosing(false);
@@ -128,7 +128,7 @@ function CrearRecetaForm() {
             </div>
           </button>
           <button
-            className="flex items-center gap-3 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] px-4 py-3.5 text-left cursor-pointer"
+            className="flex items-center gap-3 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] glass-specular-ring px-4 py-3.5 text-left cursor-pointer"
             onClick={() => {
               setMode("foto");
               setChoosing(false);
@@ -141,7 +141,7 @@ function CrearRecetaForm() {
             </div>
           </button>
           <button
-            className="flex items-center gap-3 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] px-4 py-3.5 text-left cursor-pointer"
+            className="flex items-center gap-3 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] glass-specular-ring px-4 py-3.5 text-left cursor-pointer"
             onClick={() => {
               setMode("enlace");
               setChoosing(false);
@@ -249,7 +249,7 @@ function CrearRecetaForm() {
         ) : (
           <div className="flex flex-col gap-2">
             {ingredientes.map((ing, idx) => (
-              <div key={`${ing.foodId}-${idx}`} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] px-3 py-2">
+              <div key={`${ing.foodId}-${idx}`} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] glass-specular-ring px-3 py-2">
                 <div className="min-w-0">
                   <p className="text-sm text-white truncate">{ing.nombre}</p>
                   <p className="text-[11px] text-white/45">
@@ -356,7 +356,7 @@ function Stepper({
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs text-white/50">{label}</label>
-      <div className="flex items-center gap-2 rounded-2xl bg-white/[0.06] border border-white/[0.12] px-2 py-1.5">
+      <div className="flex items-center gap-2 rounded-2xl bg-white/[0.06] glass-specular-ring px-2 py-1.5">
         <button
           onClick={() => onChange(Math.max(min, value - step))}
           className="flex items-center justify-center w-7 h-7 rounded-full bg-white/[0.08] hover:bg-white/[0.15] cursor-pointer"

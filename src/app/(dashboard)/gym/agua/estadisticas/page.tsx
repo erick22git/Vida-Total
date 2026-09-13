@@ -44,7 +44,7 @@ const TREND_PERIODS = [
 function DayRow({ date, ml, goal }: { date: Date; ml: number; goal: number }) {
   const pct = goal > 0 ? Math.round((ml / goal) * 100) : 0;
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] px-4 py-3">
+    <div className="flex items-center gap-3 rounded-2xl bg-white/[0.04] glass-specular-ring px-4 py-3">
       <div className="flex-1 min-w-0">
         <p className="text-xs text-white/45 mb-1.5 capitalize">{format(date, "d MMMM", { locale: es })}</p>
         <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
@@ -123,7 +123,7 @@ export default function EstadisticasAguaPage() {
 
       {tab === "Resumen" && (
         <div className="flex flex-col gap-5">
-          <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-4 flex flex-col gap-2">
+          <div className="rounded-2xl bg-white/[0.04] glass-specular-ring p-4 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-white">Hoy</span>
               <span className="text-sm font-semibold text-[#3b82f6]">{pctHoy}%</span>
@@ -155,7 +155,7 @@ export default function EstadisticasAguaPage() {
               <button
                 key={r.label}
                 onClick={() => setRange(r)}
-                className="shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold cursor-pointer transition-colors border border-white/10"
+                className="shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold cursor-pointer transition-colors glass-specular-ring"
                 style={{
                   background: range.label === r.label ? "#3b82f6" : "rgba(255,255,255,0.05)",
                   color: range.label === r.label ? "white" : "rgba(255,255,255,0.6)",
@@ -189,7 +189,7 @@ export default function EstadisticasAguaPage() {
                 </div>
               </GlassCard>
 
-              <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
+              <div className="rounded-2xl bg-white/[0.04] glass-specular-ring overflow-hidden">
                 {byDrink.map((d) => (
                   <button
                     key={d.drinkId}

@@ -122,7 +122,7 @@ export function ExerciseRankTab({ exerciseId }: { exerciseId: string }) {
         <Detail label="Siguiente Rango" value={standing.nextTier?.name ?? "—"} />
         <button
           onClick={() => toggleGlobal(exerciseId)}
-          className="flex items-center justify-between rounded-2xl px-3.5 py-2.5 mt-1 bg-white/[0.04] border border-white/[0.1] cursor-pointer"
+          className="flex items-center justify-between rounded-2xl px-3.5 py-2.5 mt-1 bg-white/[0.04] glass-specular-ring cursor-pointer"
         >
           <span className="text-sm text-white/75">Incluir en rango global</span>
           {includedInGlobal ? (

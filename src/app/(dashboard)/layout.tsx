@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/nav/sidebar";
 import { BottomNav } from "@/components/nav/bottom-nav";
-import { UserMenu, type SessionUser } from "@/components/nav/user-menu";
+import { MobileUserMenu } from "@/components/nav/mobile-user-menu";
+import type { SessionUser } from "@/components/nav/user-menu";
 import { UserScopeScript } from "@/components/nav/user-scope-script";
 import { createClient } from "@/lib/supabase/server";
 
@@ -33,16 +34,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   };
 
   return (
-    <div className="flex items-start min-h-screen w-full">
+    <div className="flex items-start min-h-dvh w-full">
       <UserScopeScript userId={user.id} />
       <Sidebar user={sessionUser} />
-      {/* Header móvil: el Sidebar (con el UserMenu) está oculto en < md,
-          así que mostramos el avatar aquí para que siga siendo accesible. */}
-      <div className="md:hidden fixed top-0 right-0 z-40 p-3">
-        <div className="glass-surface rounded-2xl">
-          <UserMenu user={sessionUser} compact />
-        </div>
-      </div>
+      <MobileUserMenu user={sessionUser} />
       <main className="flex-1 min-w-0 md:ml-60 lg:ml-64 px-4 sm:px-6 md:px-8 pt-6 md:pt-10 pb-28 md:pb-12">
         <div className="mx-auto w-full max-w-[900px]">{children}</div>
       </main>

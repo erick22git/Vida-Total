@@ -8,6 +8,7 @@ import { GlassCard } from "@/components/glass/glass-card";
 import { useGymStore } from "@/lib/store/gymStore";
 import { BASE_FOODS, defaultPortions, scaleNutrition } from "@/lib/food-utils";
 import { MEAL_LABELS, type Food, type MealType } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snack1", "snack2"];
 
@@ -208,6 +209,7 @@ function MealCaptureBlock({
 }) {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsOpen = text.trim().length > 0;
 
   const suggestions = useMemo(() => {
     const q = text.trim().toLowerCase();
@@ -229,7 +231,11 @@ function MealCaptureBlock({
   }
 
   return (
-    <GlassCard id={`meal-block-${meal}`} padding="sm" className="relative flex flex-col gap-2.5">
+    <GlassCard
+      id={`meal-block-${meal}`}
+      padding="sm"
+      className={cn("relative flex flex-col gap-2.5", suggestionsOpen ? "z-50" : "z-0")}
+    >
       <h2 className="text-sm font-bold" style={{ color: "var(--gym)" }}>
         {MEAL_LABELS[meal]}
       </h2>
@@ -265,7 +271,7 @@ function MealCaptureBlock({
               }
             }}
             placeholder="Escribe un alimento"
-            className="flex-1 min-w-0 bg-transparent outline-none text-sm text-white placeholder:text-white/35"
+            className="flex-1 min-w-0 bg-transparent outline-none text-base text-white placeholder:text-white/35"
           />
           {text && (
             <button
@@ -281,8 +287,8 @@ function MealCaptureBlock({
           )}
         </div>
 
-        {text.trim() && (
-          <div className="absolute left-0 right-0 top-full mt-2 z-20 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
+        {suggestionsOpen && (
+          <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-2xl glass-panel shadow-2xl overflow-hidden max-h-52 overflow-y-auto">
             <button
               onClick={submitFreeText}
               className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-white/[0.08] cursor-pointer"
@@ -357,7 +363,7 @@ function ConfirmStep({
                 .map((it) => (
                   <div
                     key={it.id}
-                    className="flex items-center gap-2 rounded-2xl bg-white/[0.04] border border-white/[0.08] px-3 py-2.5"
+                    className="flex items-center gap-2 rounded-2xl bg-white/[0.04] glass-specular-ring px-3 py-2.5"
                   >
                     <span className="flex-1 min-w-0 text-sm text-white truncate">{it.nombre}</span>
                     <input
@@ -367,13 +373,13 @@ function ConfirmStep({
                       inputMode="decimal"
                       value={it.cantidad}
                       onChange={(e) => onUpdate(it.id, { cantidad: parseFloat(e.target.value) || 0 })}
-                      className="w-14 shrink-0 rounded-full bg-white/[0.08] border border-white/[0.12] px-2 py-1.5 text-xs text-white text-center outline-none focus:border-white/30"
+                      className="w-16 shrink-0 rounded-full bg-white/[0.08] glass-specular-ring px-2 py-1.5 text-base text-white text-center outline-none focus:shadow-[var(--glass-specular-strong)]"
                     />
                     <input
                       type="text"
                       value={it.porcionNombre}
                       onChange={(e) => onUpdate(it.id, { porcionNombre: e.target.value })}
-                      className="w-24 sm:w-28 shrink-0 rounded-full bg-white/[0.08] border border-white/[0.12] px-2.5 py-1.5 text-xs text-white outline-none focus:border-white/30 truncate"
+                      className="w-28 sm:w-32 shrink-0 rounded-full bg-white/[0.08] glass-specular-ring px-2.5 py-1.5 text-base text-white outline-none focus:shadow-[var(--glass-specular-strong)] truncate"
                     />
                     <button
                       onClick={() => onRemove(it.id)}

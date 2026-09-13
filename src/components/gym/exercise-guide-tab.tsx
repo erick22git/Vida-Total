@@ -7,7 +7,7 @@ import type { Exercise } from "@/lib/types";
 export function ExerciseGuideTab({ exercise }: { exercise: Exercise }) {
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-center w-full aspect-video rounded-3xl bg-white/[0.05] overflow-hidden">
+      <div className="flex items-center justify-center w-full aspect-video rounded-3xl bg-white/[0.05] glass-specular-ring overflow-hidden">
         {exercise.imagen ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={exercise.imagen} alt={exercise.nombre} className="w-full h-full object-cover" />

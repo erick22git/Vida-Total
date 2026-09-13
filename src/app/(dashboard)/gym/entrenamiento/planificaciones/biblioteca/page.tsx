@@ -19,7 +19,7 @@ export default function PlanLibraryPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-white/50">Planes Encontrados · {LIBRARY_PLANS.length} planes encontrados</p>
-        <button className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-white/[0.06] border border-white/[0.12] text-white/70 cursor-pointer">
+        <button className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-white/[0.06] glass-specular-ring text-white/70 cursor-pointer">
           <SlidersHorizontal size={13} /> Filtros
         </button>
       </div>

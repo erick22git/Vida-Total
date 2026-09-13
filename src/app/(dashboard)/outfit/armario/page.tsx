@@ -41,7 +41,7 @@ export default function ArmarioPage() {
       <header className="flex items-center gap-3 pt-2">
         <Link
           href="/outfit"
-          className="flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.06] border border-white/10 text-white/70 hover:text-white transition-colors"
+          className="flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.06] glass-specular-ring text-white/70 hover:text-white transition-colors"
         >
           <ArrowLeft size={17} />
         </Link>

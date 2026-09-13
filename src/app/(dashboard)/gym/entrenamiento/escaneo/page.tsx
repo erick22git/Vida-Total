@@ -20,7 +20,7 @@ export default function BodyScanPage() {
         <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Escaneo Corporal</h1>
       </header>
 
-      <div className="flex gap-1.5 rounded-2xl bg-white/[0.04] p-1 border border-white/[0.08] w-fit mx-auto">
+      <div className="flex gap-1.5 rounded-2xl bg-white/[0.04] p-1 glass-specular-ring w-fit mx-auto">
         <button
           onClick={() => setMode("futuro")}
           className="rounded-xl px-4 py-2 text-sm font-semibold transition-colors cursor-pointer"

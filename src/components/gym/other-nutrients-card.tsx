@@ -38,8 +38,8 @@ export function OtherNutrientsCard({ totals }: { totals: Record<string, number> 
             return (
               <div key={key} className="flex flex-col gap-1">
                 <div className="flex justify-between text-xs">
-                  <span className="text-white/70">{meta.label}</span>
-                  <span className="text-white/45 tabular-nums">
+                  <span className="text-white font-medium">{meta.label}</span>
+                  <span className="text-white tabular-nums">
                     {Math.round(value * 10) / 10} / {meta.goal}
                     {meta.unit}
                   </span>

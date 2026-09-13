@@ -86,7 +86,7 @@ export function ExerciseSummaryTab({
           <select
             value={metric}
             onChange={(e) => setMetric(e.target.value)}
-            className="flex-1 rounded-xl bg-white/[0.06] border border-white/[0.12] px-3 py-2 text-xs text-white outline-none"
+            className="flex-1 rounded-xl bg-white/[0.06] glass-specular-ring px-3 py-2 text-xs text-white outline-none"
           >
             {METRICS.map((m) => (
               <option key={m} value={m} className="bg-[#141420]">
@@ -97,7 +97,7 @@ export function ExerciseSummaryTab({
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            className="w-28 rounded-xl bg-white/[0.06] border border-white/[0.12] px-3 py-2 text-xs text-white outline-none"
+            className="w-28 rounded-xl bg-white/[0.06] glass-specular-ring px-3 py-2 text-xs text-white outline-none"
           >
             {PERIODS.map((p) => (
               <option key={p} value={p} className="bg-[#141420]">

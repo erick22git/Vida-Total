@@ -41,7 +41,7 @@ export function FoodPhoto({
     <div
       className={cn(
         rounded,
-        "flex items-center justify-center shrink-0 bg-white/[0.06] border border-white/[0.08] text-white/40",
+        "flex items-center justify-center shrink-0 bg-white/[0.06] glass-specular-ring text-white/40",
         className,
       )}
       style={{ width: size, height: size, fontSize: size * 0.45 }}

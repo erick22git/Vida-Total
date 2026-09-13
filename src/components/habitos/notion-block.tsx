@@ -111,7 +111,7 @@ export function NotionBlockView({ pageId, block }: { pageId: string; block: Noti
                   }
                 }}
                 placeholder="Agregar item..."
-                className="flex-1 bg-transparent outline-none text-sm text-white/70 placeholder:text-white/25"
+                className="flex-1 bg-transparent outline-none text-base text-white/70 placeholder:text-white/25"
               />
               <button onClick={addChecklistItem} className="text-white/30 hover:text-white cursor-pointer">
                 <Plus size={14} />

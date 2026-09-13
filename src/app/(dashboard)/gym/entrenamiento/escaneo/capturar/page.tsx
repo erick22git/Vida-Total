@@ -88,7 +88,7 @@ function ToolButton({ icon: Icon, label, onClick }: { icon: React.ElementType; l
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center gap-1.5 rounded-2xl py-3 text-[11px] font-medium text-white/65 bg-white/[0.05] border border-white/[0.12] cursor-pointer hover:text-white transition-colors"
+      className="flex flex-col items-center gap-1.5 rounded-2xl py-3 text-[11px] font-medium text-white/65 bg-white/[0.05] glass-specular-ring cursor-pointer hover:text-white transition-colors"
     >
       <Icon size={17} />
       {label}

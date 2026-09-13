@@ -179,7 +179,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
             {optionsOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setOptionsOpen(false)} />
-                <div className="absolute right-0 top-11 z-40 w-44 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden">
+                <div className="absolute right-0 top-11 z-40 w-44 rounded-2xl glass-panel shadow-2xl overflow-hidden">
                   <button
                     className="w-full flex items-center gap-2 text-left px-4 py-3 text-sm text-white hover:bg-white/[0.08] cursor-pointer"
                     onClick={() => {
@@ -346,7 +346,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
           <div className="grid grid-cols-3 gap-2 mb-2">
             <button
               onClick={() => setKeypadOpen(true)}
-              className="rounded-2xl bg-white/[0.06] border border-white/[0.12] px-3 py-2 text-left cursor-pointer"
+              className="rounded-2xl bg-white/[0.06] glass-specular-ring px-3 py-2 text-left cursor-pointer"
             >
               <span className="text-[10px] text-white/40 block">Cantidad</span>
               <span className="text-sm text-white font-medium truncate block">{cantidad}</span>
@@ -354,7 +354,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
 
             <button
               onClick={() => setPortionKeypadOpen(true)}
-              className="rounded-2xl bg-white/[0.06] border border-white/[0.12] px-3 py-2 text-left cursor-pointer"
+              className="rounded-2xl bg-white/[0.06] glass-specular-ring px-3 py-2 text-left cursor-pointer"
             >
               <span className="text-[10px] text-white/40 block">Porción</span>
               <span className="text-sm text-white font-medium truncate block">{selectedPortion?.nombre}</span>
@@ -362,7 +362,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
 
             <button
               onClick={() => setCookedState((v) => (v === "cocido" ? "crudo" : "cocido"))}
-              className="rounded-2xl bg-white/[0.06] border border-white/[0.12] px-3 py-2 text-left cursor-pointer"
+              className="rounded-2xl bg-white/[0.06] glass-specular-ring px-3 py-2 text-left cursor-pointer"
             >
               <span className="text-[10px] text-white/40 block">Tipo de Peso</span>
               <span className="text-sm text-white font-medium capitalize truncate block">{cookedState}</span>
@@ -381,7 +381,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
               {addMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setAddMenuOpen(false)} />
-                  <div className="absolute bottom-full mb-2 right-0 z-40 w-48 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden">
+                  <div className="absolute bottom-full mb-2 right-0 z-40 w-48 rounded-2xl glass-panel shadow-2xl overflow-hidden">
                     {ADD_TARGETS.map((t) => (
                       <button
                         key={t.key}
@@ -398,7 +398,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
               <button
                 onClick={() => setAddMenuOpen((v) => !v)}
                 aria-label="Elegir otra comida"
-                className="h-full w-11 flex items-center justify-center rounded-2xl bg-white/[0.06] border border-white/[0.12] hover:bg-white/[0.1] transition-colors cursor-pointer"
+                className="h-full w-11 flex items-center justify-center rounded-2xl bg-white/[0.06] glass-specular-ring hover:bg-white/[0.1] transition-colors cursor-pointer"
               >
                 <ChevronDown size={16} className="text-white/70" />
               </button>

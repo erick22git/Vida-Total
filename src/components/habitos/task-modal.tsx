@@ -85,7 +85,7 @@ export function TaskModal({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
-          className="w-full rounded-2xl bg-white/[0.06] border border-white/[0.12] backdrop-blur-md px-4 py-2.5 text-sm text-white placeholder:text-white/35 outline-none focus:border-white/30 resize-none"
+          className="w-full rounded-2xl bg-white/[0.06] glass-specular-ring backdrop-blur-md px-4 py-2.5 text-sm text-white placeholder:text-white/35 outline-none focus:shadow-[var(--glass-specular-strong)] resize-none"
         />
 
         <div className="flex flex-col gap-1.5">
@@ -114,7 +114,7 @@ export function TaskModal({
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
-            className="w-full rounded-2xl bg-white/[0.06] border border-white/[0.12] backdrop-blur-md px-4 py-2.5 text-sm text-white outline-none focus:border-white/30 [color-scheme:dark]"
+            className="w-full rounded-2xl bg-white/[0.06] glass-specular-ring backdrop-blur-md px-4 py-2.5 text-base text-white outline-none focus:shadow-[var(--glass-specular-strong)] [color-scheme:dark]"
           />
         </div>
 
@@ -129,7 +129,7 @@ export function TaskModal({
           {subtasks.map((s) => (
             <div
               key={s.id}
-              className="flex items-center justify-between gap-2 bg-white/[0.04] rounded-xl px-3 py-2"
+              className="flex items-center justify-between gap-2 bg-white/[0.04] rounded-xl glass-specular-ring px-3 py-2"
             >
               <span className="text-sm text-white/80">{s.title}</span>
               <button

@@ -35,7 +35,7 @@ export function DayOutfitModal({
                 onSelect(o.id);
                 onClose();
               }}
-              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 cursor-pointer hover:bg-white/[0.08] transition-colors text-left"
+              className="flex items-center gap-3 rounded-2xl glass-specular-ring bg-white/[0.04] px-3 py-2.5 cursor-pointer hover:bg-white/[0.08] transition-colors text-left"
             >
               <OutfitThumbRow outfitId={o.id} size={30} />
               <div className="flex flex-col">

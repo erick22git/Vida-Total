@@ -98,6 +98,7 @@ export default function PlanDetailPage({
             <p className="text-sm text-white/50 -mt-3">Selecciona los ejercicios para {label}.</p>
             <ExercisePicker
               multiple
+              confirmButtonClassName="bottom-20 md:bottom-0 z-30"
               onConfirmSelection={(exs) =>
                 setDraft(
                   exs.map<RoutineExercise>((e) => ({

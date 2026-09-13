@@ -88,7 +88,7 @@ export default function WorkoutSummaryPage() {
 
       <button
         onClick={() => setUpdateRoutineValues((v) => !v)}
-        className="flex items-center justify-between rounded-2xl px-4 py-3 bg-white/[0.04] border border-white/[0.1] cursor-pointer"
+        className="flex items-center justify-between rounded-2xl px-4 py-3 bg-white/[0.04] glass-specular-ring cursor-pointer"
       >
         <span className="text-sm text-white/80">Actualizar valores de la rutina</span>
         {updateRoutineValues ? (

@@ -53,7 +53,7 @@ export function GlassModal({ open, onClose, title, headerStart, children }: Glas
             <div className="flex md:hidden justify-center pt-2.5 pb-1 shrink-0">
               <div className="h-1 w-10 rounded-full bg-white/20" />
             </div>
-            <div className="flex items-center justify-between px-5 py-3 md:py-4 border-b border-white/10 shrink-0">
+            <div className="flex items-center justify-between px-5 py-3 md:py-4 shrink-0 shadow-[inset_0_-1px_0_rgba(255,255,255,0.08)]">
               <div className="flex items-center gap-2 min-w-0">
                 {headerStart}
                 <h3 className="text-base md:text-lg font-semibold text-white truncate">{title}</h3>

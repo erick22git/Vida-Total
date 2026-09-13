@@ -80,13 +80,13 @@ export function RestBar({
       </div>
       <button
         onClick={() => adjustRest(-15)}
-        className="rounded-xl px-2.5 py-1.5 text-xs font-semibold text-white/70 bg-white/[0.07] border border-white/[0.12] cursor-pointer"
+        className="rounded-xl px-2.5 py-1.5 text-xs font-semibold text-white/70 bg-white/[0.07] glass-specular-ring cursor-pointer"
       >
         -15s
       </button>
       <button
         onClick={() => adjustRest(15)}
-        className="rounded-xl px-2.5 py-1.5 text-xs font-semibold text-white/70 bg-white/[0.07] border border-white/[0.12] cursor-pointer"
+        className="rounded-xl px-2.5 py-1.5 text-xs font-semibold text-white/70 bg-white/[0.07] glass-specular-ring cursor-pointer"
       >
         +15s
       </button>

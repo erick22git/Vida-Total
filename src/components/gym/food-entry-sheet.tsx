@@ -181,7 +181,7 @@ export function FoodEntrySheet({
               setPortionMode("porcion");
               setKeypadOpen(true);
             }}
-            className="rounded-2xl bg-white/[0.06] border border-white/[0.12] px-4 py-2.5 text-left cursor-pointer"
+            className="rounded-2xl bg-white/[0.06] glass-specular-ring px-4 py-2.5 text-left cursor-pointer"
           >
             <span className="text-[10px] text-white/40 block">Cantidad</span>
             <span className="text-sm text-white font-medium">
@@ -191,7 +191,7 @@ export function FoodEntrySheet({
           <div className="relative">
             <button
               onClick={() => setPortionMenuOpen((v) => !v)}
-              className="w-full rounded-2xl bg-white/[0.06] border border-white/[0.12] px-4 py-2.5 text-left cursor-pointer flex items-center justify-between"
+              className="w-full rounded-2xl bg-white/[0.06] glass-specular-ring px-4 py-2.5 text-left cursor-pointer flex items-center justify-between"
             >
               <span className="min-w-0">
                 <span className="text-[10px] text-white/40 block">Porción</span>
@@ -204,7 +204,7 @@ export function FoodEntrySheet({
             {portionMenuOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setPortionMenuOpen(false)} />
-                <div className="absolute left-0 right-0 top-full mt-1 z-40 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
+                <div className="absolute left-0 right-0 top-full mt-1 z-40 rounded-2xl glass-panel shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
                   <button
                     className="w-full text-left px-4 py-2.5 text-sm text-[var(--gym)] hover:bg-white/[0.08] cursor-pointer border-b border-white/[0.08]"
                     onClick={() => {
@@ -275,7 +275,7 @@ export function FoodEntrySheet({
         )}
 
         {createPortionOpen && (
-          <div className="flex flex-col gap-2 rounded-2xl bg-white/[0.04] p-3 border border-white/[0.08]">
+          <div className="flex flex-col gap-2 rounded-2xl bg-white/[0.04] p-3 glass-specular-ring">
             <p className="text-xs text-white/50">Nueva porción personalizada para {food.nombre}</p>
             <div className="flex gap-2">
               <GlassInput placeholder="Nombre" value={newPortionName} onChange={(e) => setNewPortionName(e.target.value)} className="flex-1" />
@@ -319,14 +319,14 @@ export function FoodEntrySheet({
           <div className="relative">
             <button
               onClick={() => setMealMenuOpen((v) => !v)}
-              className="flex items-center gap-1 rounded-full bg-white/[0.06] border border-white/[0.1] px-3 py-1.5 text-xs text-white/70 cursor-pointer"
+              className="flex items-center gap-1 rounded-full bg-white/[0.06] glass-specular-ring px-3 py-1.5 text-xs text-white/70 cursor-pointer"
             >
               {MEAL_LABELS[selectedMeal]} <ChevronDown size={12} />
             </button>
             {mealMenuOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setMealMenuOpen(false)} />
-                <div className="absolute bottom-full mb-1 left-0 z-40 w-36 rounded-xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden">
+                <div className="absolute bottom-full mb-1 left-0 z-40 w-36 rounded-xl glass-panel shadow-2xl overflow-hidden">
                   {MEALS.map((m) => (
                     <button
                       key={m}

@@ -193,7 +193,7 @@ export default function MeditacionPage() {
       </header>
 
       {!running && !summary && (
-        <div className="flex gap-2 p-1 rounded-2xl bg-white/[0.04] border border-white/[0.08] w-full sm:w-fit">
+        <div className="flex gap-2 p-1 rounded-2xl bg-white/[0.04] glass-specular-ring w-full sm:w-fit">
           {(["guiada", "respiracion", "libre"] as MeditationType[]).map((t) => (
             <button
               key={t}

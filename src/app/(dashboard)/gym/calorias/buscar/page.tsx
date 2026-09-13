@@ -97,7 +97,7 @@ function BuscarAlimentosContent() {
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-12 z-40 w-56 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden">
+              <div className="absolute right-0 top-12 z-40 w-56 rounded-2xl glass-panel shadow-2xl overflow-hidden">
                 <button
                   className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/[0.08] cursor-pointer"
                   onClick={() => {
@@ -246,7 +246,7 @@ function FoodRow({
 }) {
   return (
     <div
-      className="flex items-center gap-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] px-3 py-2.5 transition-colors cursor-pointer"
+      className="flex items-center gap-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.09] glass-specular-ring px-3 py-2.5 transition-colors cursor-pointer"
       onClick={onClick}
     >
       <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={44} emoji={categoryEmoji(food.categoria)} />

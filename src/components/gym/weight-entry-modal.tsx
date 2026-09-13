@@ -37,7 +37,7 @@ export function WeightEntryModal({
         </p>
 
         <div
-          className="relative h-16 overflow-hidden rounded-2xl bg-white/[0.04] border border-white/[0.1] cursor-ew-resize select-none"
+          className="relative h-16 overflow-hidden rounded-2xl bg-white/[0.04] glass-specular-ring cursor-ew-resize select-none"
           onMouseDown={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             const move = (ev: MouseEvent) => handleDrag(ev.clientX, rect);
@@ -72,13 +72,13 @@ export function WeightEntryModal({
         <div className="flex justify-center gap-2">
           <button
             onClick={() => setKg((k) => Math.round((k - 0.1) * 10) / 10)}
-            className="rounded-xl px-4 py-2 text-sm font-semibold text-white/70 bg-white/[0.06] border border-white/[0.12] cursor-pointer"
+            className="rounded-xl px-4 py-2 text-sm font-semibold text-white/70 bg-white/[0.06] glass-specular-ring cursor-pointer"
           >
             -0.1
           </button>
           <button
             onClick={() => setKg((k) => Math.round((k + 0.1) * 10) / 10)}
-            className="rounded-xl px-4 py-2 text-sm font-semibold text-white/70 bg-white/[0.06] border border-white/[0.12] cursor-pointer"
+            className="rounded-xl px-4 py-2 text-sm font-semibold text-white/70 bg-white/[0.06] glass-specular-ring cursor-pointer"
           >
             +0.1
           </button>

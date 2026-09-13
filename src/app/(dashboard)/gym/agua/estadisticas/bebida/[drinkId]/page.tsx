@@ -21,7 +21,7 @@ const PERIODS = [
 
 function DayRow({ date, ml, color }: { date: Date; ml: number; color: string }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] border border-white/[0.08] px-4 py-3">
+    <div className="flex items-center justify-between rounded-2xl bg-white/[0.04] glass-specular-ring px-4 py-3">
       <span className="text-sm text-white/80 capitalize">{format(date, "eeee d MMMM", { locale: es })}</span>
       <span className="text-sm font-semibold tabular-nums" style={{ color }}>
         {ml} ml

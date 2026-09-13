@@ -95,6 +95,7 @@ export default function ManualPlanCreatorPage() {
             <p className="text-sm text-white/50 -mt-3">Selecciona los ejercicios para {label}.</p>
             <ExercisePicker
               multiple
+              confirmButtonClassName="bottom-20 md:bottom-0 z-30"
               onConfirmSelection={(exs) =>
                 setDayDrafts((d) =>
                   d.map((day, idx) =>
@@ -186,7 +187,7 @@ export default function ManualPlanCreatorPage() {
           onChange={(e) => setNotas(e.target.value)}
           placeholder="Alguna observación sobre este plan..."
           rows={2}
-          className="w-full rounded-2xl bg-white/[0.06] border border-white/[0.12] backdrop-blur-md px-4 py-2.5 text-sm text-white placeholder:text-white/35 outline-none transition-all focus:border-white/30 focus:bg-white/[0.09] resize-none"
+          className="w-full rounded-2xl bg-white/[0.06] glass-specular-ring backdrop-blur-md px-4 py-2.5 text-sm text-white placeholder:text-white/35 outline-none transition-all focus:shadow-[var(--glass-specular-strong)] focus:bg-white/[0.09] resize-none"
         />
       </div>
 

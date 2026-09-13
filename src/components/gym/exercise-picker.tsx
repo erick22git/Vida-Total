@@ -11,6 +11,7 @@ import { MUSCLE_GROUPS, EQUIPMENT_LIST } from "@/lib/data/gym-meta";
 import exercisesData from "@/lib/data/exercises.json";
 import type { Exercise } from "@/lib/types";
 import { useGymStore } from "@/lib/store/gymStore";
+import { cn } from "@/lib/utils";
 
 const exercises = exercisesData as Exercise[];
 
@@ -25,6 +26,7 @@ export function ExercisePicker({
   multiple = false,
   activeExerciseId,
   onInfo,
+  confirmButtonClassName,
 }: {
   /** single-select mode: fired immediately on tap */
   onSelect?: (exercise: Exercise) => void;
@@ -33,6 +35,12 @@ export function ExercisePicker({
   multiple?: boolean;
   activeExerciseId?: string;
   onInfo?: (exercise: Exercise) => void;
+  /** Clases extra para el wrapper `sticky` del botón de confirmar. Cuando
+   * este picker se usa DENTRO de un GlassModal, "bottom-0" es correcto (el
+   * modal ya flota por encima del BottomNav móvil). Cuando se usa inline en
+   * una página (sin modal), el BottomNav (`fixed bottom-0 z-40`) tapa ese
+   * botón — pásale p.ej. "bottom-20 md:bottom-0 z-30" en ese caso. */
+  confirmButtonClassName?: string;
 }) {
   const allExercises = useAllExercises();
   const [query, setQuery] = useState("");
@@ -126,7 +134,7 @@ export function ExercisePicker({
       </button>
 
       {multiple && selected.length > 0 && (
-        <div className="sticky bottom-0 pt-1">
+        <div className={cn("sticky bottom-0 pt-1", confirmButtonClassName)}>
           <GlassButton
             accentColor="var(--gym-2)"
             size="lg"

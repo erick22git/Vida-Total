@@ -52,7 +52,11 @@ export default function NewRoutinePage() {
           <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Nueva rutina</h1>
         </header>
         <p className="text-sm text-white/50 -mt-3">Selecciona los ejercicios para tu rutina.</p>
-        <ExercisePicker multiple onConfirmSelection={(exs) => addExercises(exs.map((e) => e.id))} />
+        <ExercisePicker
+          multiple
+          confirmButtonClassName="bottom-20 md:bottom-0 z-30"
+          onConfirmSelection={(exs) => addExercises(exs.map((e) => e.id))}
+        />
       </div>
     );
   }

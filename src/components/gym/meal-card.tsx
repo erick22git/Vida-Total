@@ -118,6 +118,7 @@ export function MealCard({
     <GlassCard
       padding="md"
       className={cn("flex flex-col gap-3 relative", menuOpen || shareMenuOpen ? "z-50" : "z-0")}
+      style={{ background: "var(--glass-bg-dark)" }}
     >
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
@@ -139,7 +140,7 @@ export function MealCard({
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-9 z-40 w-56 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden py-1">
+                <div className="absolute right-0 top-9 z-40 w-56 rounded-2xl glass-panel shadow-2xl overflow-hidden py-1">
                   <MenuItem
                     icon={<Copy size={14} />}
                     label="Copiar"
@@ -225,7 +226,7 @@ export function MealCard({
                       onClick={() => setShareMenuOpen((v) => !v)}
                     />
                     {shareMenuOpen && (
-                      <div className="absolute right-full top-0 mr-1 w-44 rounded-2xl bg-[#1c1c22] border border-white/[0.12] shadow-2xl overflow-hidden py-1">
+                      <div className="absolute right-full top-0 mr-1 w-44 rounded-2xl glass-panel shadow-2xl overflow-hidden py-1">
                         <MenuItem
                           icon={<ImageIcon size={14} />}
                           label="Como imagen"
@@ -278,7 +279,7 @@ export function MealCard({
       )}
 
       {scaleOpen && (
-        <div className="flex flex-col gap-2 rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3">
+        <div className="flex flex-col gap-2 rounded-2xl bg-white/[0.04] glass-specular-ring p-3">
           <p className="text-xs text-white/60">Escalar todas las porciones de {MEAL_LABELS[meal]}</p>
           <div className="grid grid-cols-4 gap-1.5">
             {[0.5, 1.5, 2, 3].map((factor) => (
@@ -302,7 +303,7 @@ export function MealCard({
       )}
 
       {templateOpen && (
-        <div className="flex flex-col gap-2 rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3">
+        <div className="flex flex-col gap-2 rounded-2xl bg-white/[0.04] glass-specular-ring p-3">
           <p className="text-xs text-white/60">Nombre de la plantilla</p>
           <GlassInput value={templateName} onChange={(e) => setTemplateName(e.target.value)} placeholder="Ej. Desayuno entrenamiento" />
           <div className="flex gap-2">
@@ -410,10 +411,10 @@ export function MealCard({
         }}
         aria-label={`Agregar a ${MEAL_LABELS[meal]}`}
         className={cn(
-          "flex items-center justify-center w-full h-11 rounded-2xl border transition-colors",
+          "flex items-center justify-center w-full h-11 rounded-2xl glass-specular-ring transition-colors",
           disableAdd
-            ? "bg-white/[0.02] border-white/[0.06] cursor-not-allowed"
-            : "bg-white/[0.04] hover:bg-white/[0.09] border-white/[0.10] cursor-pointer",
+            ? "bg-white/[0.02] cursor-not-allowed"
+            : "bg-white/[0.04] hover:bg-white/[0.09] cursor-pointer",
         )}
       >
         <Plus size={18} className={disableAdd ? "text-white/25" : "text-white/60"} />

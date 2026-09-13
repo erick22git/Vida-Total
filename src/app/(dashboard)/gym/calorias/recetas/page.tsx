@@ -113,7 +113,7 @@ export default function RecetasPage() {
         {filtered.map((recipe) => (
           <GlassCard key={recipe.id} padding="md" className="flex gap-3">
             <div
-              className="w-16 h-16 rounded-2xl shrink-0 bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-2xl overflow-hidden"
+              className="w-16 h-16 rounded-2xl shrink-0 bg-white/[0.06] glass-specular-ring flex items-center justify-center text-2xl overflow-hidden"
             >
               {recipe.foto ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -161,7 +161,7 @@ export default function RecetasPage() {
             onChange={(e) => setAiIngredients(e.target.value)}
             placeholder="Ej: pollo, arroz, brócoli, aceite de oliva"
             rows={4}
-            className="w-full rounded-2xl bg-white/[0.06] border border-white/[0.12] backdrop-blur-md px-4 py-3 text-sm text-white placeholder:text-white/35 outline-none focus:border-white/30 resize-none"
+            className="w-full rounded-2xl bg-white/[0.06] glass-specular-ring backdrop-blur-md px-4 py-3 text-sm text-white placeholder:text-white/35 outline-none focus:shadow-[var(--glass-specular-strong)] resize-none"
           />
           <GlassButton className="w-full" disabled={!aiIngredients.trim() || aiGenerating} onClick={handleGenerateAi}>
             {aiGenerating ? "Generando..." : "Generar receta"}

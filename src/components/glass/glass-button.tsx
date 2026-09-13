@@ -34,15 +34,14 @@ export const GlassButton = forwardRef<HTMLButtonElement, GlassButtonProps>(
     };
     if (variant === "solid") {
       baseStyle.background = `linear-gradient(135deg, ${accentColor}, ${accentColor}CC)`;
-      baseStyle.boxShadow = `0 4px 20px ${accentColor}55, inset 0 1px 0 rgba(255,255,255,0.25)`;
-      baseStyle.border = "1px solid rgba(255,255,255,0.15)";
+      baseStyle.boxShadow = `0 4px 20px ${accentColor}55, inset 0 1px 1px rgba(255,255,255,0.35), inset 0 -1px 1px rgba(0,0,0,0.2)`;
     } else if (variant === "outline") {
-      baseStyle.border = `1px solid ${accentColor}`;
       baseStyle.color = accentColor;
       baseStyle.background = "rgba(255,255,255,0.04)";
+      baseStyle.boxShadow = `var(--glass-specular), inset 0 0 0 1px ${accentColor}55`;
     } else {
       baseStyle.background = "rgba(255,255,255,0.06)";
-      baseStyle.border = "1px solid rgba(255,255,255,0.12)";
+      baseStyle.boxShadow = "var(--glass-specular)";
     }
 
     return (

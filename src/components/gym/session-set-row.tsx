@@ -42,7 +42,7 @@ export function SessionSetRow({
       {!soloReps ? (
         <button
           onClick={() => setKgKeypadOpen(true)}
-          className="rounded-lg bg-white/[0.05] border border-white/[0.1] py-1.5 text-sm font-semibold text-white text-center cursor-pointer"
+          className="rounded-lg bg-white/[0.05] glass-specular-ring py-1.5 text-sm font-semibold text-white text-center cursor-pointer"
         >
           {set.peso || 0}
         </button>
@@ -52,7 +52,7 @@ export function SessionSetRow({
 
       <button
         onClick={() => setRepsKeypadOpen(true)}
-        className="rounded-lg bg-white/[0.05] border border-white/[0.1] py-1.5 text-sm font-semibold text-white text-center cursor-pointer"
+        className="rounded-lg bg-white/[0.05] glass-specular-ring py-1.5 text-sm font-semibold text-white text-center cursor-pointer"
       >
         {set.reps || 0}
       </button>

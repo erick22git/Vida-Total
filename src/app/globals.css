@@ -16,9 +16,77 @@
   --voz: #ec4899;
 
   /* glass */
-  --glass-bg: rgba(255, 255, 255, 0.06);
+  /* Subido de 0.06 a 0.12 (corrección de usuario: "más opacidad,
+     que se vean menos transparentes/más presentes") — se probó el
+     rango 0.10-0.14 visualmente contra Home/Gym/Login y 0.12 es el
+     punto donde el cuadro ya se lee sólido sin perder la sensación
+     de vidrio translúcido (con blur+saturate encima). */
+  --glass-bg: rgba(255, 255, 255, 0.12);
   --glass-border: rgba(255, 255, 255, 0.12);
   --glass-highlight: rgba(255, 255, 255, 0.1);
+
+  /* Tinte oscuro opcional para tarjetas de datos (no las burbujas de
+     vidrio "claras" por default) — introducido primero en
+     CalorieArcCard vía `style={{ background: ... }}` inline (que
+     pisa el `background: var(--glass-bg)` de .glass-surface, más
+     claro/blanco). El specular (--glass-specular) es el MISMO en
+     todas las .glass-surface; lo que hacía que el aro entre tarjetas
+     se leyera "blanco" en las tarjetas de comida (meal-card.tsx) y
+     "negro suave" en la de calorías era solo esta base más oscura
+     por debajo del bisel, no un specular distinto. Se centraliza acá
+     para que cualquier tarjeta de datos pueda pedir el mismo
+     tratamiento sin repetir el literal. */
+  --glass-bg-dark: rgba(10, 10, 14, 0.55);
+
+  /* liquid-glass "specular" ring — reemplaza al border sólido:
+     bisel claro arriba + sombra oscura abajo + aro casi
+     imperceptible, en vez de un contorno de 1px uniforme.
+     Ver C:\Erick\Gym\src\glass-engine\glass.css (.glass-layer--specular). */
+  --glass-specular: inset 0 1px 1px rgba(255, 255, 255, 0.16),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  --glass-specular-strong: inset 0 1px 1.5px rgba(255, 255, 255, 0.24),
+    inset 0 -1px 1.5px rgba(0, 0, 0, 0.32), inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+
+  /* panel de vidrio para dropdowns/menús flotantes — reemplaza los
+     bg-[#1c1c22] sólidos. Debe ser realmente transparente (el
+     blur+saturate de .glass-panel::before ya se encarga de que el
+     fondo detrás no sea legible/interfiera, no la opacidad del
+     tinte). Bajado de 0.85 a 0.4: la versión anterior lo hacía casi
+     sólido, ilegible y "feo" (corrección de usuario). */
+  --glass-panel-bg: rgba(20, 20, 26, 0.4);
+
+  /* ---------- Glass engine (BottomNav) ----------
+     Tokens del motor de vidrio vainilla (GlassMaterial/GlassMenu,
+     ver src/glass-engine/glass.ts y menu.ts), portados tal cual
+     desde C:\Erick\Gym\src\glass-engine\core\variables.css.
+     Namespace propio (glass-tint, glass-radius, spring-, menu-)
+     para no colisionar con los tokens glass-bg/glass-panel-bg de
+     arriba, que pertenecen a un sistema distinto (.glass-surface/
+     .glass-panel, usados en toda la app para tarjetas/dropdowns). */
+  --glass-tint: rgba(10, 12, 15, 0.12);
+  --glass-tint-hover: rgba(10, 12, 15, 0.16);
+  --glass-brightness: 0.94;
+  --glass-saturate: 130%;
+  --glass-blur: 10px;
+  --glass-radius: 999px;
+  --white: 255, 255, 255;
+  --black: 0, 0, 0;
+  --shadow: 12, 16, 26;
+  --shadow-small: 0 4px 14px rgba(var(--shadow), 0.15);
+  --shadow-medium: 0 12px 32px rgba(var(--shadow), 0.24);
+  --shadow-inner: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --shadow-inner-dark: inset 0 -2px 5px rgba(0, 0, 0, 0.18);
+  --transition-fast: 0.15s;
+  --z-glass: 5;
+  --z-content: 20;
+  --spring-stiffness: 0.16;
+  --spring-damping: 0.78;
+  --spring-mass: 1;
+  --spring-precision: 0.001;
+  --menu-height: 72px;
+  --menu-padding: 5px;
+  --menu-item-width: 60px;
+  --menu-gap: 4px;
 }
 
 @theme inline {
@@ -89,15 +157,282 @@ body {
   scrollbar-width: none;
 }
 
-/* ---------- Liquid glass base ---------- */
+/* ---------- Liquid glass base ----------
+   Sin border uniforme: el "borde" es una zona difuminada con
+   specular (bisel claro arriba / sombra oscura abajo + aro
+   finísimo) en vez de un contorno sólido de 1px. El interior
+   sigue siendo transparente/de opacidad baja (background +
+   backdrop-filter); el contenido real (texto/íconos) va como
+   hijos normales por encima, nunca hereda el blur porque el
+   blur vive en backdrop-filter del propio contenedor, no en un
+   filter aplicado a sus descendientes. */
 .glass-surface {
   background: var(--glass-bg);
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
-  border: 1px solid var(--glass-border);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 var(--glass-highlight);
+    var(--glass-specular);
+}
+
+/* ---------- Ring-only specular (sin fondo/blur propio) ----------
+   Para controles pequeños (inputs, botones outline/ghost, badges)
+   que ya reciben blur/tinte de su propio bg-white/[0.0x] pero
+   antes usaban `border border-white/[0.12]` — reemplaza ese
+   borde sólido por el mismo tratamiento specular del resto del
+   sistema. */
+.glass-specular-ring {
+  box-shadow: var(--glass-specular);
+}
+
+/* ---------- Panel de dropdown/menú flotante ----------
+   Reemplaza los fondos sólidos (bg-[#1c1c22]) de menús "···",
+   dropdowns y paneles flotantes: backdrop-filter más pronunciado
+   (blur+saturate notorio) sobre un tinte semitransparente, para
+   que el fondo se vea difuminado pero el contenido detrás NO sea
+   legible ni interfiera (mismo balance que ya se calibró para
+   BottomNav/QuantityKeypad, sin volver a un tinte 100% opaco). */
+/* [FIX] La versión anterior aplicaba `filter: url(#glass-refraction-panel)`
+   directamente sobre .glass-panel — pero `filter` (a diferencia de
+   `backdrop-filter`) distorsiona TODO lo que se pinta dentro del propio
+   elemento, incluido su texto/íconos reales, no solo el fondo. Por eso el
+   contenido de los menús "···" se veía ilegible/deformado. La distorsión
+   y el tinte ahora viven en un ::before detrás del contenido (mismo patrón
+   que .glass-menu::before), así solo se distorsiona el FONDO, nunca el
+   contenido real. Además --glass-panel-bg baja de opacidad: debe ser
+   realmente transparente (vidrio), no un panel casi sólido. */
+.glass-panel {
+  /* NO declarar `position` acá: esta regla vive fuera de cualquier
+     `@layer` de Tailwind (este archivo no usa `@layer`), así que es
+     CSS "sin capa" y por la cascada de CSS Layers siempre gana sobre
+     los utilities de Tailwind (que sí están en una capa), sin
+     importar el orden de las clases en `className` ni la
+     especificidad. Con `position: relative` acá, CUALQUIER elemento
+     que combinara `.glass-panel` con el utility `absolute` de
+     Tailwind (el caso real en TODOS los dropdowns "···" de la app)
+     terminaba con `position: relative` en vez de `absolute`: el
+     panel dejaba de estar fuera de flujo y pasaba a ocupar espacio
+     dentro de su contenedor flex, agrandando/desplazando la tarjeta
+     entera al abrir el menú (y exponiendo de más el fondo detrás a
+     través del blur). Todo consumidor real de `.glass-panel` ya trae
+     su propio `absolute` (o `fixed`) por Tailwind, así que no hace
+     falta declarar `position` acá — el elemento en sí ya es un
+     contenedor de posicionamiento válido para el `::before` de abajo. */
+  isolation: isolate;
+  /* Sin ningún canal blanco (corrección de usuario: "todavía hay un
+     filtro bajo que es blanco, quítalo") — a diferencia de
+     --glass-specular-strong (que tiene un bisel superior blanco),
+     acá solo queda sombra oscura + un aro neutro casi imperceptible. */
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.45),
+    inset 0 -1px 1.5px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+.glass-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--glass-panel-bg);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  /* Motor óptico real (no aproximación): refracción
+     (feTurbulence+feDisplacementMap) del canal "panel", portada
+     de C:\Erick\Gym\src\glass-engine — ver public/svg/filters.svg
+     y glass-engine/refraction.ts. Si el fetch del SVG no cargó
+     todavía (o falló), `filter:url(#id-inexistente)` simplemente
+     no resuelve y el resto de las reglas de arriba (background +
+     backdrop-filter blur/saturate) siguen aplicando igual — nunca
+     rompe el render. Va en el ::before (no en .glass-panel), así
+     nunca toca el contenido real.
+     NO se incluye url(#glass-specular-panel): ese filtro usa
+     feSpecularLighting con lighting-color="#ffffff" — agrega luz
+     blanca real sobre el fondo del panel, que era la otra fuente
+     del "filtro blanco" que reportó el usuario. Solo la distorsión
+     (refraction) queda activa aquí. */
+  filter: url(#glass-refraction-panel);
+}
+
+/* Fallback explícito para navegadores sin soporte de filtros SVG vía
+   backdrop-filter/filter (Firefox / Safari más antiguos): blur simple,
+   sin distorsión ni feSpecularLighting real. Mismo patrón que
+   @supports not (backdrop-filter: url(#glassLensDistortion)) del
+   proyecto de referencia (glass-engine/menu.css). */
+@supports not (filter: url(#glass-refraction-panel)) {
+  .glass-panel::before {
+    filter: none;
+  }
+}
+
+/* ============================================================
+   GLASS ENGINE — BottomNav (motor vainilla, no Framer Motion)
+
+   [GLASS ENGINE — CORE — PORTADO TAL CUAL desde
+   C:\Erick\Gym\src\glass-engine\core\glass.css y menu.css]
+   GlassMaterial (glass-engine/glass.ts) envuelve el contenido de
+   un nodo raíz en capas .glass-layer--fill/specular/rainbow y
+   expone su estado como CSS custom properties
+   (--light-intensity/--rainbow-opacity/--rainbow-offset/
+   --border-intensity/--press) que estas reglas consumen.
+   GlassMenu (glass-engine/menu.ts) inyecta él mismo el nodo
+   .glass-selector (la burbuja) como primer hijo de .glass-menu —
+   no es un elemento de React — y lo anima con dos resortes
+   físicos reales.
+   ============================================================ */
+.glass-root {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--glass-radius);
+  box-shadow:
+    var(--shadow-medium),
+    var(--shadow-inner),
+    var(--shadow-inner-dark),
+    0 0 calc(32px * var(--border-intensity, 0)) rgba(var(--white), calc(0.3 * var(--border-intensity, 0))),
+    0 0 calc(8px + 10px * var(--border-intensity, 0)) rgba(var(--white), calc(0.2 * var(--border-intensity, 0))),
+    inset 0 0 calc(1px + 5px * var(--border-intensity, 0)) rgba(var(--white), calc(0.38 * var(--border-intensity, 0)));
+  transform: translateZ(0);
+}
+.glass-content {
+  position: relative;
+  z-index: var(--z-content);
+}
+.glass-material {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: var(--z-glass);
+  will-change: transform;
+  transform: scale(calc(1 - 0.13 * var(--press, 0)), calc(1 + 0.09 * var(--press, 0)));
+}
+.glass-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.glass-layer--fill {
+  background: var(--glass-tint);
+  backdrop-filter: brightness(var(--glass-brightness)) saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  -webkit-backdrop-filter: brightness(var(--glass-brightness)) blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  transition: background var(--transition-fast) ease-out;
+}
+.glass-root:hover .glass-layer--fill {
+  background: var(--glass-tint-hover);
+}
+.glass-layer--specular {
+  box-shadow:
+    inset 0 1px 1px rgba(var(--white), 0.5),
+    inset 0 -1px 1px rgba(var(--black), 0.3),
+    inset 0 0 0 1px rgba(var(--white), calc(0.06 + 0.22 * var(--border-intensity, 0)));
+}
+.glass-layer--rainbow {
+  padding: 6px;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 90, 70, 0.3) 0%,
+    transparent 12%,
+    transparent 88%,
+    rgba(70, 150, 255, 0.3) 100%
+  );
+  transform: translateX(var(--rainbow-offset, 0px));
+  opacity: var(--rainbow-opacity, 0);
+  mix-blend-mode: screen;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.glass-menu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--menu-gap);
+  height: var(--menu-height);
+  padding: var(--menu-padding);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--shadow-small), inset 0 1px 0 rgba(var(--white), 0.06);
+}
+.glass-menu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: rgba(var(--black), 0.025);
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.16)) saturate(165%);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.16)) saturate(165%);
+  filter: url(#glass-refraction-menu) url(#glass-specular-menu);
+}
+.glass-selector {
+  position: absolute;
+  top: var(--menu-padding);
+  left: 0;
+  height: calc(var(--menu-height) - (var(--menu-padding) * 2));
+  opacity: 0;
+  border-radius: var(--glass-radius) / var(--glass-radius);
+  pointer-events: none;
+  transform-origin: left center;
+  will-change: transform;
+  contain: layout style;
+  z-index: 1;
+}
+.glass-selector.glass-root {
+  box-shadow: none;
+}
+.glass-selector .glass-material {
+  overflow: visible;
+}
+.glass-selector .glass-material::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: url(#glassLensDistortion) blur(2px) saturate(160%);
+  -webkit-backdrop-filter: blur(6px) saturate(160%);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 20, 0.25),
+    inset 1px 1px 0.5px rgba(255, 255, 255, 0.4),
+    inset -1px -1px 0.5px rgba(255, 255, 255, 0.12);
+}
+@supports not (backdrop-filter: url(#glassLensDistortion)) {
+  .glass-selector .glass-material::before {
+    backdrop-filter: blur(10px) saturate(160%);
+    -webkit-backdrop-filter: blur(10px) saturate(160%);
+  }
+}
+
+/* ---------- Ítems del menú: ícono siempre visible, label solo en
+   el activo (ver bottom-nav.tsx). El zoom in/out del contenido en
+   hover/activo es puramente CSS — el motor solo mueve la burbuja
+   de fondo. Sin ningún color de módulo (corrección previa del
+   usuario): el activo se distingue por blanco + escala, no por
+   tinte. ---------- */
+.menu-item {
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 200ms ease-out;
+}
+.menu-item-content {
+  transform: scale(1);
+  transition: transform 200ms ease-out;
+}
+.menu-item:hover:not(:disabled) .menu-item-content,
+.menu-item.active .menu-item-content {
+  transform: scale(1.15);
+}
+.menu-item.active {
+  color: #ffffff;
+}
+.menu-item:hover:not(.active):not(:disabled) {
+  color: #e4e5e9;
 }
 
 /* ---------- Water fill wave animation ---------- */

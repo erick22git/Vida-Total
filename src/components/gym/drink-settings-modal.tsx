@@ -10,7 +10,7 @@ function DrinkStatsTile({ drink, oculta, onClick }: { drink: DrinkOption; oculta
     <button
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center gap-1.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] py-3.5 px-2 transition-colors cursor-pointer",
+        "flex flex-col items-center gap-1.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] glass-specular-ring py-3.5 px-2 transition-colors cursor-pointer",
         oculta && "opacity-40",
       )}
     >

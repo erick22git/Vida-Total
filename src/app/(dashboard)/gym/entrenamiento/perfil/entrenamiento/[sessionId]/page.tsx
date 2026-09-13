@@ -113,7 +113,7 @@ export default function WorkoutDetailPage({
           return (
             <GlassCard key={ex.exerciseId} padding="sm" interactive={false} className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-white/[0.06] glass-specular-ring flex items-center justify-center shrink-0">
                   <Dumbbell size={16} className="text-white/30" />
                 </div>
                 <p className="text-sm font-medium text-white">{data?.nombre ?? ex.exerciseId}</p>

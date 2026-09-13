@@ -24,7 +24,7 @@ export function CaloriasMethodNav({ variant = "sticky" }: { variant?: "sticky" |
   const pathname = usePathname();
 
   const pillRow = (
-    <div className="flex items-center gap-1 rounded-full bg-white/[0.06] border border-white/[0.1] p-1 overflow-x-auto no-scrollbar">
+    <div className="flex items-center gap-1 rounded-full bg-white/[0.06] glass-specular-ring p-1 overflow-x-auto no-scrollbar">
       {METHODS.map(({ key, label, href, icon: Icon }) => {
         const active = pathname?.startsWith(href);
         return (

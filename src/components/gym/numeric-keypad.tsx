@@ -91,13 +91,13 @@ export function NumericKeypad({
             <div className="px-4 flex items-center justify-center gap-2 mb-2">
               <button
                 onClick={() => quickAdd(-step)}
-                className="rounded-xl px-4 py-2 text-sm font-semibold text-white/70 bg-white/[0.06] border border-white/[0.12] cursor-pointer"
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-white/70 bg-white/[0.06] glass-specular-ring cursor-pointer"
               >
                 -{step}
               </button>
               <button
                 onClick={() => quickAdd(step)}
-                className="rounded-xl px-4 py-2 text-sm font-semibold text-white/70 bg-white/[0.06] border border-white/[0.12] cursor-pointer"
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-white/70 bg-white/[0.06] glass-specular-ring cursor-pointer"
               >
                 +{step}
               </button>

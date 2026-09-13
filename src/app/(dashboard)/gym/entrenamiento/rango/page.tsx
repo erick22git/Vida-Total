@@ -167,7 +167,7 @@ export default function BodyMapPage() {
                       <button
                         key={sub}
                         onClick={() => setSubgroupSheet({ group: group.key, sub })}
-                        className="flex items-center justify-between rounded-xl px-3 py-2 bg-white/[0.04] cursor-pointer"
+                        className="flex items-center justify-between rounded-xl px-3 py-2 bg-white/[0.04] glass-specular-ring cursor-pointer"
                       >
                         <span className="text-xs text-white/70">{sub}</span>
                         <ChevronRight size={13} className="text-white/30" />
@@ -176,7 +176,7 @@ export default function BodyMapPage() {
                   ) : (
                     <button
                       onClick={() => setSubgroupSheet({ group: group.key, sub: group.key })}
-                      className="flex items-center justify-between rounded-xl px-3 py-2 bg-white/[0.04] cursor-pointer"
+                      className="flex items-center justify-between rounded-xl px-3 py-2 bg-white/[0.04] glass-specular-ring cursor-pointer"
                     >
                       <span className="text-xs text-white/70">Ver ejercicios sugeridos</span>
                       <ChevronRight size={13} className="text-white/30" />
@@ -200,7 +200,7 @@ export default function BodyMapPage() {
               const groupDef = MUSCLE_GROUP_DEFS.find((g) => g.key === subgroupSheet.group);
               const { classified, total, standing } = groupStanding(groupDef?.categories ?? []);
               return (
-                <div className="flex items-center justify-between rounded-2xl px-4 py-3 bg-white/[0.04] border border-white/[0.1]">
+                <div className="flex items-center justify-between rounded-2xl px-4 py-3 bg-white/[0.04] glass-specular-ring">
                   <div>
                     <p className="text-sm font-semibold text-white">{subgroupSheet.sub}</p>
                     <p className="text-xs text-white/40">

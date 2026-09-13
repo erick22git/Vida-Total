@@ -41,7 +41,7 @@ export default function EstadisticasPage() {
       <header className="flex items-center gap-3 pt-2">
         <Link
           href="/outfit"
-          className="flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.06] border border-white/10 text-white/70 hover:text-white transition-colors"
+          className="flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.06] glass-specular-ring text-white/70 hover:text-white transition-colors"
         >
           <ArrowLeft size={17} />
         </Link>
@@ -123,7 +123,7 @@ export default function EstadisticasPage() {
               {colorFrequency.map(([color, freq]) => (
                 <div key={color} className="flex flex-col items-center gap-1">
                   <span
-                    className="w-10 h-10 rounded-full border border-white/15"
+                    className="w-10 h-10 rounded-full glass-specular-ring"
                     style={{ background: color }}
                   />
                   <span className="text-[10px] text-white/40">{freq}</span>

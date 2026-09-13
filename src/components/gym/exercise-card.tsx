@@ -29,7 +29,7 @@ export function ExerciseCard({
       glow={active}
       className="flex flex-col gap-2 cursor-pointer h-full"
     >
-      <div className="flex items-center justify-center w-full aspect-[4/3] rounded-2xl bg-white/[0.05] overflow-hidden">
+      <div className="flex items-center justify-center w-full aspect-[4/3] rounded-2xl bg-white/[0.05] glass-specular-ring overflow-hidden">
         {exercise.imagen ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

@@ -25,7 +25,7 @@ export default function BodyScanResultPage() {
         <p className="text-sm text-white/50">Analiza tu físico</p>
       </header>
 
-      <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden bg-white/[0.05] flex items-center justify-center">
+      <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden bg-white/[0.05] glass-specular-ring flex items-center justify-center">
         <div
           className="absolute inset-0"
           style={{ background: "radial-gradient(circle at 50% 30%, var(--gym-2)33, transparent 70%)" }}

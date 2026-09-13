@@ -65,7 +65,7 @@ export default function AguaPage() {
         </div>
         <button
           onClick={() => setAddDrinkOpen(true)}
-          className="flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] transition-colors cursor-pointer"
+          className="flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white bg-white/[0.06] hover:bg-white/[0.1] glass-specular-ring transition-colors cursor-pointer"
         >
           <Plus size={16} /> Añadir una bebida
         </button>
@@ -83,7 +83,7 @@ export default function AguaPage() {
               .map((w) => (
                 <div
                   key={w.id}
-                  className="flex items-center justify-between text-sm bg-white/[0.04] rounded-xl px-3 py-2"
+                  className="flex items-center justify-between text-sm bg-white/[0.04] rounded-xl glass-specular-ring px-3 py-2"
                 >
                   <span className="text-white/80">
                     {w.drinkEmoji ?? "💧"} {w.drinkNombre ?? "Agua"} · {w.ml} ml

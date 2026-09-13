@@ -119,7 +119,7 @@ export default function ActiveWorkoutPage() {
 
           {exercise && (
             <GlassCard accentColor="var(--gym)" glow className="flex flex-col gap-3">
-              <div className="flex items-center justify-center w-full aspect-video rounded-2xl bg-white/[0.05] overflow-hidden">
+              <div className="flex items-center justify-center w-full aspect-video rounded-2xl bg-white/[0.05] glass-specular-ring overflow-hidden">
                 {exercise.imagen ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={exercise.imagen} alt={exercise.nombre} className="w-full h-full object-cover" />
