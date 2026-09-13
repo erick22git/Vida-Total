@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, ShieldCheck } from "lucide-react";
 import { GlassModal } from "@/components/glass/glass-modal";
 import { createClient } from "@/lib/supabase/client";
 import { setCurrentUserId } from "@/lib/store/user-scope";
@@ -50,7 +51,18 @@ function Avatar({ user, size = 36 }: { user: SessionUser; size?: number }) {
  * detalle de la cuenta y el botón de cerrar sesión. Usado en el Sidebar
  * (desktop) y en el header móvil del layout del dashboard.
  */
-export function UserMenu({ user, compact = false }: { user: SessionUser; compact?: boolean }) {
+export function UserMenu({
+  user,
+  compact = false,
+  isAdmin = false,
+}: {
+  user: SessionUser;
+  compact?: boolean;
+  /** true cuando `profile.role === 'admin'` (ver (dashboard)/layout.tsx) —
+   * muestra el link a /admin. Sin esto, /admin solo era alcanzable
+   * escribiendo la URL a mano, sin ningún botón en la app que lo revelara. */
+  isAdmin?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const router = useRouter();
@@ -90,6 +102,16 @@ export function UserMenu({ user, compact = false }: { user: SessionUser; compact
             <div className="text-base font-semibold text-white">{user.name}</div>
             <div className="text-sm text-white/45">{user.email}</div>
           </div>
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="w-full rounded-2xl px-5 py-3 inline-flex items-center justify-center gap-2 text-sm font-medium text-white bg-white/[0.06] glass-specular-ring hover:bg-white/[0.1] transition-colors cursor-pointer"
+            >
+              <ShieldCheck size={16} />
+              Panel de Administrador
+            </Link>
+          )}
           <button
             type="button"
             onClick={handleSignOut}

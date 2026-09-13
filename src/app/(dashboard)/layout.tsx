@@ -73,8 +73,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     <ProfileProvider profile={profile}>
       <div className="flex items-start min-h-dvh w-full">
         <UserScopeScript userId={user.id} />
-        <Sidebar user={sessionUser} />
-        <MobileUserMenu user={sessionUser} />
+        <Sidebar user={sessionUser} isAdmin={profile?.role === "admin"} />
+        <MobileUserMenu user={sessionUser} isAdmin={profile?.role === "admin"} />
         {/* Sidebar/BottomNav son `position: fixed` (ver esos componentes),
             así que el banner vive DENTRO de <main> (flujo normal de
             documento) en vez de por encima de todo el layout — evita que

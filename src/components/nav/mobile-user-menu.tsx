@@ -8,7 +8,7 @@ import { UserMenu, type SessionUser } from "@/components/nav/user-menu";
  * principal del dashboard. Si se mostrara en todas las páginas (como
  * `fixed top-0 right-0` global) choca con los botones/headers propios de
  * cada pantalla (p.ej. el Escáner, el detalle de rutina, etc.). */
-export function MobileUserMenu({ user }: { user: SessionUser }) {
+export function MobileUserMenu({ user, isAdmin = false }: { user: SessionUser; isAdmin?: boolean }) {
   const pathname = usePathname();
 
   if (pathname !== "/") return null;
@@ -16,7 +16,7 @@ export function MobileUserMenu({ user }: { user: SessionUser }) {
   return (
     <div className="md:hidden fixed top-0 right-0 z-40 p-3">
       <div className="glass-surface rounded-2xl">
-        <UserMenu user={user} compact />
+        <UserMenu user={user} compact isAdmin={isAdmin} />
       </div>
     </div>
   );

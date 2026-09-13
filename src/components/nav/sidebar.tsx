@@ -13,7 +13,7 @@ function isActive(pathname: string, href: string) {
   return pathname.startsWith(href);
 }
 
-export function Sidebar({ user }: { user: SessionUser }) {
+export function Sidebar({ user, isAdmin = false }: { user: SessionUser; isAdmin?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -60,7 +60,7 @@ export function Sidebar({ user }: { user: SessionUser }) {
         </nav>
 
         <div className="mt-auto pt-2 border-t border-white/10">
-          <UserMenu user={user} />
+          <UserMenu user={user} isAdmin={isAdmin} />
           <div className="px-2 pt-2 text-[11px] text-white/35">Vida Total © 2026</div>
         </div>
       </div>
