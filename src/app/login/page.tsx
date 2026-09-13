@@ -2,10 +2,11 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
-import { GlassCard } from "@/components/glass/glass-card";
+import { LoginVidrio } from "@/components/auth/login-vidrio";
+import { AuthCard } from "@/components/auth/auth-card";
 import { createClient } from "@/lib/supabase/client";
+import styles from "@/components/auth/auth-card.module.css";
 
 function GoogleIcon() {
   return (
@@ -47,13 +48,13 @@ function LoginError() {
   if (!error) return null;
   const message = ERROR_MESSAGES[error] ?? "Ocurrió un error inesperado. Intenta de nuevo.";
   return (
-    <div className="w-full rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+    <div className="w-full max-w-[420px] rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 mt-4">
       {message}
     </div>
   );
 }
 
-export default function LoginPage() {
+function GoogleButton() {
   const [loading, setLoading] = useState(false);
 
   async function handleGoogleLogin() {
@@ -74,45 +75,38 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center px-5 py-10 gap-8">
-      <div className="flex items-center gap-2.5">
-        <Sparkles size={26} className="text-white" />
-        <span className="text-2xl font-semibold tracking-tight text-white">Vida Total</span>
+    <div className={styles.googleWrap}>
+      <div className={styles.dividerRow}>
+        <span className={styles.dividerLine} />
+        o continúa con
+        <span className={styles.dividerLine} />
       </div>
-
-      <GlassCard
-        padding="lg"
-        interactive={false}
-        className="w-full max-w-sm flex flex-col items-center gap-6 text-center"
+      <motion.button
+        type="button"
+        whileHover={{ scale: 1.03, filter: "brightness(1.04)" }}
+        whileTap={{ scale: 0.96 }}
+        transition={{ type: "spring", stiffness: 400, damping: 20 }}
+        disabled={loading}
+        onClick={handleGoogleLogin}
+        className="w-full min-h-[48px] rounded-2xl bg-white text-[#1f1f1f] font-medium text-sm md:text-base px-7 py-3.5 inline-flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.25)] border border-white/20 cursor-pointer transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        <div className="flex flex-col gap-1.5">
-          <h1 className="text-lg font-semibold text-white">Bienvenido</h1>
-          <p className="text-sm text-white/55">
-            Inicia sesión para sincronizar tu gym, hábitos, outfit, paz mental, finanzas y voz.
-          </p>
-        </div>
+        <GoogleIcon />
+        {loading ? "Redirigiendo…" : "Continuar con Google"}
+      </motion.button>
+    </div>
+  );
+}
 
+export default function LoginPage() {
+  return (
+    <LoginVidrio>
+      <div className="w-full h-full flex flex-col items-center justify-center px-4 py-8 overflow-y-auto gap-2">
+        <AuthCard />
         <Suspense fallback={null}>
           <LoginError />
         </Suspense>
-
-        <motion.button
-          type="button"
-          whileHover={{ scale: 1.03, filter: "brightness(1.04)" }}
-          whileTap={{ scale: 0.96 }}
-          transition={{ type: "spring", stiffness: 400, damping: 20 }}
-          disabled={loading}
-          onClick={handleGoogleLogin}
-          className="w-full min-h-[48px] rounded-2xl bg-white text-[#1f1f1f] font-medium text-sm md:text-base px-7 py-3.5 inline-flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.25)] border border-white/20 cursor-pointer transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          <GoogleIcon />
-          {loading ? "Redirigiendo…" : "Continuar con Google"}
-        </motion.button>
-
-        <p className="text-[11px] text-white/35">
-          Al continuar aceptas que tus datos se guarden asociados a tu cuenta de Google.
-        </p>
-      </GlassCard>
-    </div>
+        <GoogleButton />
+      </div>
+    </LoginVidrio>
   );
 }
