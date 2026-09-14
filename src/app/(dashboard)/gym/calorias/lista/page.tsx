@@ -428,15 +428,15 @@ function ConfirmStep({
         ))}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-30 p-4 backdrop-blur-xl bg-[color-mix(in_srgb,var(--background)_85%,transparent)] border-t border-white/[0.08]">
+      <div className="fixed bottom-3 left-0 right-0 z-30 px-4">
         <div className="max-w-md mx-auto w-full">
           <button
             onClick={onConfirm}
             disabled={draftItems.length === 0}
-            className="w-full rounded-2xl py-3.5 text-sm font-semibold text-white shadow-2xl cursor-pointer transition-transform active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{ background: "var(--gym)", boxShadow: "0 4px 20px var(--gym)66" }}
+            className="w-full rounded-2xl py-3.5 text-sm font-semibold text-white glass-specular-ring backdrop-blur-xl cursor-pointer transition-transform active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{ background: "var(--glass-bg-dark)", boxShadow: "0 8px 28px rgba(0,0,0,0.45)" }}
           >
-            Añadir al plan
+            Añadir al plan · {Math.round(total.calorias)} kcal
           </button>
         </div>
       </div>

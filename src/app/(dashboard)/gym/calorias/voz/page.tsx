@@ -8,9 +8,38 @@ import { CaloriasMethodNav } from "@/components/gym/calorias-method-nav";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
 import { ManualEntryModal } from "@/components/gym/manual-entry-modal";
-import { useGymStore } from "@/lib/store/gymStore";
 import { BASE_FOODS, defaultPortions, scaleNutrition } from "@/lib/food-utils";
 import type { Food } from "@/lib/types";
+import type { AnalyzedFoodItem } from "@/app/api/food/analyze/route";
+
+// Mismo sessionStorage que usa el Escáner (ver escaner/page.tsx y
+// escaner/resultados/page.tsx) — la Voz reutiliza esa pantalla de
+// confirmación en vez de duplicarla, tal como pidió el usuario ("debe
+// llevar a una pestaña de confirmación como en Lista y Escáner").
+const RESULTS_KEY = "vt-scan-results";
+
+interface DetectedItem {
+  food: Food;
+  grams: number;
+}
+
+/** Busca ocurrencias de "100g" / "100 gr" / "100 gramos" / "1kg" / "200ml"
+ * en el texto dictado, con su posición — para asociarlas al alimento más
+ * cercano en `matchFoodsFromText`. Muy simple a propósito (regex, no NLP
+ * real) — suficiente para el caso común de "un alimento, una cantidad". */
+function parseQuantities(text: string): { grams: number; index: number }[] {
+  const matches: { grams: number; index: number }[] = [];
+  const re = /(\d+(?:[.,]\d+)?)\s*(kilos?|kg|gramos?|gr|g|mililitros?|ml)\b/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) {
+    let value = parseFloat(m[1].replace(",", "."));
+    if (Number.isNaN(value)) continue;
+    const unit = m[2].toLowerCase();
+    if (unit.startsWith("kilo") || unit === "kg") value *= 1000;
+    matches.push({ grams: value, index: m.index });
+  }
+  return matches;
+}
 
 interface SpeechRecognitionLike {
   lang: string;
@@ -33,16 +62,19 @@ function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
 }
 
 /** Very simple fuzzy match: normalizes accents/case and checks token overlap
- * against the local food database — no real AI/NLP involved. */
-function matchFoodsFromText(text: string): Food[] {
+ * against the local food database — no real AI/NLP involved. Also looks for
+ * a spoken quantity ("100g", "1kg", "200ml") and, when found, associates it
+ * with whichever detected food's name sits closest to it in the transcript
+ * — otherwise falls back to that food's default portion. */
+function matchFoodsFromText(text: string): DetectedItem[] {
   const normalize = (s: string) =>
     s
       .toLowerCase()
       .normalize("NFD")
       .replace(/[̀-ͯ]/g, "");
-  const tokens = normalize(text)
-    .split(/[^a-z0-9]+/)
-    .filter((t) => t.length > 2);
+  const normalizedText = normalize(text);
+  const tokens = normalizedText.split(/[^a-z0-9]+/).filter((t) => t.length > 2);
+  const quantities = parseQuantities(normalizedText);
 
   const scored = BASE_FOODS.map((food) => {
     const name = normalize(food.nombre);
@@ -50,16 +82,27 @@ function matchFoodsFromText(text: string): Food[] {
     for (const token of tokens) {
       if (name.includes(token)) score += 1;
     }
-    return { food, score };
+    return { food, score, nameIndex: normalizedText.indexOf(name.split(" ")[0]) };
   }).filter((s) => s.score > 0);
 
   scored.sort((a, b) => b.score - a.score);
   const seen = new Set<string>();
-  const result: Food[] = [];
-  for (const { food } of scored) {
+  const result: DetectedItem[] = [];
+  for (const { food, nameIndex } of scored) {
     if (seen.has(food.id)) continue;
     seen.add(food.id);
-    result.push(food);
+
+    let grams = defaultPortions(food)[0].gramos;
+    if (quantities.length > 0 && nameIndex !== -1) {
+      const nearest = quantities.reduce((best, q) =>
+        Math.abs(q.index - nameIndex) < Math.abs(best.index - nameIndex) ? q : best,
+      );
+      grams = nearest.grams;
+    } else if (quantities.length === 1) {
+      grams = quantities[0].grams;
+    }
+
+    result.push({ food, grams });
     if (result.length >= 6) break;
   }
   return result;
@@ -67,13 +110,12 @@ function matchFoodsFromText(text: string): Food[] {
 
 export default function VozPage() {
   const router = useRouter();
-  const addLoggedFood = useGymStore((s) => s.addLoggedFood);
 
   const [supported, setSupported] = useState(true);
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [transcript, setTranscript] = useState("");
-  const [detected, setDetected] = useState<Food[]>([]);
+  const [detected, setDetected] = useState<DetectedItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [manualOpen, setManualOpen] = useState(false);
 
@@ -127,7 +169,7 @@ export default function VozPage() {
       setTranscript((current) => {
         const matches = matchFoodsFromText(current);
         setDetected(matches);
-        setSelected(new Set(matches.map((f) => f.id)));
+        setSelected(new Set(matches.map((m) => m.food.id)));
         return current;
       });
     }, 300);
@@ -139,25 +181,33 @@ export default function VozPage() {
     setSelected(new Set());
   }
 
+  /** Lleva a la MISMA pantalla de confirmación editable que usa el Escáner
+   * (grams +/-, macros recalculados, selector de comida) en vez de
+   * agregar directo al store — así el usuario puede ajustar los gramos
+   * que Speech Recognition entendió antes de confirmar, igual que en
+   * Lista y Escáner. */
   function confirm() {
-    for (const food of detected) {
-      if (!selected.has(food.id)) continue;
-      const portion = defaultPortions(food)[0];
-      const nutrition = scaleNutrition(food, portion.gramos);
-      addLoggedFood({
-        foodId: food.id,
-        nombre: food.nombre,
-        calorias: nutrition.calorias,
-        proteina: nutrition.proteina,
-        carbos: nutrition.carbos,
-        grasas: nutrition.grasas,
-        meal: "snack1",
-        cantidad: 1,
-        porcionNombre: portion.nombre,
-        photoUrl: food.photoUrl,
+    const items: AnalyzedFoodItem[] = detected
+      .filter((d) => selected.has(d.food.id))
+      .map((d) => {
+        const n = scaleNutrition(d.food, d.grams);
+        return {
+          name: d.food.nombre,
+          estimatedGrams: d.grams,
+          confidence: "media",
+          calories: n.calorias,
+          protein: n.proteina,
+          carbs: n.carbos,
+          fat: n.grasas,
+        };
       });
+    if (items.length === 0) return;
+    try {
+      sessionStorage.setItem(RESULTS_KEY, JSON.stringify({ photo: null, items }));
+    } catch {
+      return;
     }
-    router.push("/gym/calorias");
+    router.push("/gym/calorias/escaner/resultados");
   }
 
   return (
@@ -213,7 +263,7 @@ export default function VozPage() {
             <GlassCard padding="md" className="flex flex-col gap-3">
               <p className="text-sm font-semibold text-white">Alimentos detectados</p>
               <div className="flex flex-col gap-2">
-                {detected.map((food) => (
+                {detected.map(({ food, grams }) => (
                   <label
                     key={food.id}
                     className="flex items-center gap-3 rounded-xl bg-white/[0.04] glass-specular-ring px-3 py-2 cursor-pointer"
@@ -229,10 +279,10 @@ export default function VozPage() {
                           return next;
                         })
                       }
-                      className="accent-[var(--gym)] w-4 h-4"
+                      className="accent-white w-4 h-4"
                     />
                     <span className="flex-1 text-sm text-white">{food.nombre}</span>
-                    <span className="text-xs text-white/45">{food.calorias} kcal</span>
+                    <span className="text-xs text-white/45">{Math.round(grams)} g</span>
                   </label>
                 ))}
               </div>
@@ -241,7 +291,7 @@ export default function VozPage() {
                   <X size={15} /> Descartar
                 </GlassButton>
                 <GlassButton className="flex-1 flex items-center justify-center gap-1.5" disabled={selected.size === 0} onClick={confirm}>
-                  <Check size={15} /> Confirmar
+                  <Check size={15} /> Revisar y confirmar
                 </GlassButton>
               </div>
             </GlassCard>

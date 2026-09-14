@@ -264,7 +264,15 @@ export function BottomNav() {
   return (
     <nav
       ref={containerRef}
-      className={`md:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 pt-1 flex ${
+      // pointer-events-none es clave: este <nav> ocupa TODO el ancho fijo
+      // en la parte de abajo (left-0 right-0) aunque visualmente solo se
+      // vea la burbuja a la izquierda — sin esto, el espacio "vacío" a su
+      // derecha (que igual es parte de su caja) tapaba con z-40 cualquier
+      // botón fijo-abajo de otras pantallas (p.ej. "Añadir al plan" en
+      // Lista), comiéndose el click aunque no hubiera nada visible ahí.
+      // Solo la burbuja en sí (pointer-events-auto más abajo) debe
+      // recibir eventos.
+      className={`md:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 pt-1 flex pointer-events-none ${
         stage === "expanded" ? "justify-center" : "justify-start"
       }`}
     >
@@ -273,7 +281,7 @@ export function BottomNav() {
           key="expanded"
           modules={BOTTOM_NAV_MODULES}
           activeIndex={activeIndex}
-          containerClassName="glass-menu w-full flex items-center justify-between px-1.5"
+          containerClassName="glass-menu w-full flex items-center justify-between px-1.5 pointer-events-auto"
           renderItem={(mod, index, active) => {
             const Icon = ICON_MAP[mod.icon];
             return (
@@ -295,7 +303,7 @@ export function BottomNav() {
         />
       ) : (
         <div
-          className="transition-transform duration-300 ease-out"
+          className="pointer-events-auto transition-transform duration-300 ease-out"
           style={{ transform: stage === "peek" ? PEEK_TRANSLATE : "translateX(0)" }}
         >
           <GlassMenuRow
