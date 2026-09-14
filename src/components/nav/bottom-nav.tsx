@@ -15,7 +15,10 @@ function isActive(pathname: string, href: string) {
 }
 
 const LONG_PRESS_MS = 2000;
-const MOVE_CANCEL_PX = 12;
+// Un dedo apoyado sobre la pantalla durante 2s tiembla naturalmente mucho
+// más que un mouse — 12px cancelaba el long-press casi siempre en un
+// teléfono real antes de completarse.
+const MOVE_CANCEL_PX = 28;
 const AUTO_COLLAPSE_MS = 4000;
 
 const GLASS_BACKGROUND = "color-mix(in srgb, var(--background) 88%, transparent)";
@@ -191,8 +194,20 @@ export function BottomNav() {
 
   useEffect(() => clearLongPressTimer, [clearLongPressTimer]);
 
-  const handleBubblePointerDown = useCallback((event: ReactPointerEvent) => {
+  const handleBubblePointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     pressStart.current = { x: event.clientX, y: event.clientY };
+
+    // Pointer capture ancla el resto del gesto (move/up/cancel) a ESTE
+    // elemento sin importar dónde termine el dedo — en móvil, sin esto,
+    // un mínimo reflow (p.ej. el squeeze del propio GlassMaterial al
+    // presionar) puede hacer que el navegador considere que el puntero
+    // "salió" del elemento y aborte el hold antes de los 2s.
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Algunos navegadores/casos (p.ej. click sintético) pueden rechazar
+      // la captura — no es crítico, el resto de la lógica sigue funcionando.
+    }
 
     longPressTimer.current = setTimeout(() => {
       longPressTimer.current = null;
@@ -219,7 +234,9 @@ export function BottomNav() {
   return (
     <nav
       ref={containerRef}
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 pt-1 flex justify-center"
+      className={`md:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 pt-1 flex ${
+        expanded ? "justify-center" : "justify-start"
+      }`}
     >
       {expanded ? (
         <GlassMenuRow
@@ -261,11 +278,11 @@ export function BottomNav() {
                 tabIndex={0}
                 aria-label={`${mod.label}. Mantén presionado para abrir el menú.`}
                 className="menu-item active relative z-10 flex flex-col items-center justify-center gap-0.5 py-1.5 px-4 rounded-2xl select-none touch-none"
+                style={{ WebkitTouchCallout: "none" }}
                 onPointerDown={handleBubblePointerDown}
                 onPointerMove={handleBubblePointerMove}
                 onPointerUp={clearLongPressTimer}
                 onPointerCancel={clearLongPressTimer}
-                onPointerLeave={clearLongPressTimer}
                 onContextMenu={(event) => event.preventDefault()}
               >
                 <div className="menu-item-content flex flex-col items-center gap-0.5">
