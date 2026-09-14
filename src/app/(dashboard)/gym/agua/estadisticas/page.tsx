@@ -48,7 +48,7 @@ function DayRow({ date, ml, goal }: { date: Date; ml: number; goal: number }) {
       <div className="flex-1 min-w-0">
         <p className="text-xs text-white/45 mb-1.5 capitalize">{format(date, "d MMMM", { locale: es })}</p>
         <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-          <div className="h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, background: "#3b82f6" }} />
+          <div className="h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, background: "rgba(255,255,255,0.85)" }} />
         </div>
       </div>
       <span className="text-sm font-semibold text-white tabular-nums shrink-0">{pct}%</span>
@@ -112,8 +112,8 @@ export default function EstadisticasAguaPage() {
             onClick={() => setTab(t)}
             className="shrink-0 rounded-full px-4 py-2 text-sm font-semibold cursor-pointer transition-colors"
             style={{
-              background: tab === t ? "#3b82f6" : "rgba(255,255,255,0.06)",
-              color: tab === t ? "white" : "rgba(255,255,255,0.6)",
+              background: tab === t ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.06)",
+              color: tab === t ? "black" : "rgba(255,255,255,0.6)",
             }}
           >
             {t}
@@ -126,10 +126,10 @@ export default function EstadisticasAguaPage() {
           <div className="rounded-2xl bg-white/[0.04] glass-specular-ring p-4 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-white">Hoy</span>
-              <span className="text-sm font-semibold text-[#3b82f6]">{pctHoy}%</span>
+              <span className="text-sm font-semibold text-white">{pctHoy}%</span>
             </div>
             <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-              <div className="h-full rounded-full" style={{ width: `${Math.min(100, pctHoy)}%`, background: "#3b82f6" }} />
+              <div className="h-full rounded-full" style={{ width: `${Math.min(100, pctHoy)}%`, background: "rgba(255,255,255,0.85)" }} />
             </div>
           </div>
 
@@ -157,8 +157,8 @@ export default function EstadisticasAguaPage() {
                 onClick={() => setRange(r)}
                 className="shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold cursor-pointer transition-colors glass-specular-ring"
                 style={{
-                  background: range.label === r.label ? "#3b82f6" : "rgba(255,255,255,0.05)",
-                  color: range.label === r.label ? "white" : "rgba(255,255,255,0.6)",
+                  background: range.label === r.label ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.05)",
+                  color: range.label === r.label ? "black" : "rgba(255,255,255,0.6)",
                 }}
               >
                 {r.label}
@@ -168,7 +168,7 @@ export default function EstadisticasAguaPage() {
 
           {byDrink.length > 0 ? (
             <>
-              <GlassCard padding="md" interactive={false} className="flex flex-col items-center">
+              <GlassCard padding="md" interactive={false} className="flex flex-col items-center" style={{ background: "var(--glass-bg-dark)" }}>
                 <div className="relative w-full max-w-[220px] mx-auto">
                   <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
@@ -226,8 +226,8 @@ export default function EstadisticasAguaPage() {
                 onClick={() => setTrendPeriod(p)}
                 className="flex-1 rounded-xl py-1.5 text-xs font-semibold cursor-pointer transition-colors"
                 style={{
-                  background: trendPeriod.label === p.label ? "#3b82f6" : "rgba(255,255,255,0.05)",
-                  color: trendPeriod.label === p.label ? "white" : "rgba(255,255,255,0.6)",
+                  background: trendPeriod.label === p.label ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.05)",
+                  color: trendPeriod.label === p.label ? "black" : "rgba(255,255,255,0.6)",
                   border: "1px solid rgba(255,255,255,0.1)",
                 }}
               >
@@ -236,7 +236,7 @@ export default function EstadisticasAguaPage() {
             ))}
           </div>
 
-          <GlassCard padding="md" interactive={false} className="flex flex-col gap-2">
+          <GlassCard padding="md" interactive={false} className="flex flex-col gap-2" style={{ background: "var(--glass-bg-dark)" }}>
             <h3 className="text-sm font-semibold text-white/85">Agua total por día</h3>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">

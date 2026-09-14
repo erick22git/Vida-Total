@@ -46,18 +46,14 @@ export default function AguaPage() {
         </h1>
       </header>
 
-      <GlassCard accentColor="#3b82f6" glow className="flex flex-col items-center gap-6 py-8">
+      <GlassCard accentColor="#3b82f6" glow className="flex flex-col items-center gap-6 py-8" style={{ background: "var(--glass-bg-dark)" }}>
         <WaterBottle segments={todayByDrink.map((d) => ({ color: d.color, ml: d.ml }))} max={waterGoalMl} />
         <div className="flex gap-3">
           {QUICK_ADDS.map((ml) => (
             <button
               key={ml}
               onClick={() => addWater(ml)}
-              className="rounded-2xl px-4 py-2.5 text-sm font-medium text-white cursor-pointer transition-transform hover:scale-105"
-              style={{
-                background: "linear-gradient(135deg, #3b82f6, #2563ebcc)",
-                boxShadow: "0 4px 20px #3b82f655, inset 0 1px 0 rgba(255,255,255,0.25)",
-              }}
+              className="rounded-2xl px-4 py-2.5 text-sm font-medium text-white cursor-pointer transition-transform hover:scale-105 bg-white/[0.08] hover:bg-white/[0.14] glass-specular-ring"
             >
               +{ml}ml
             </button>
@@ -73,7 +69,7 @@ export default function AguaPage() {
 
       <AddDrinkModal open={addDrinkOpen} onClose={() => setAddDrinkOpen(false)} />
 
-      <GlassCard className="flex flex-col gap-2">
+      <GlassCard className="flex flex-col gap-2" style={{ background: "var(--glass-bg-dark)" }}>
         <p className="text-sm font-semibold text-white/80">Registros de hoy</p>
         {todayEntries.length > 0 ? (
           <div className="flex flex-col gap-1.5">

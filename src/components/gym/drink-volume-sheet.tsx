@@ -58,7 +58,7 @@ export function DrinkVolumeSheet({
               className={cn(
                 "rounded-2xl py-3 text-sm font-medium transition-colors cursor-pointer border",
                 !customMode && selected === v
-                  ? "border-[#3b82f6] text-[#3b82f6] bg-[#3b82f6]/10"
+                  ? "border-white/70 text-white bg-white/[0.14]"
                   : "border-white/[0.08] text-white bg-white/[0.05] hover:bg-white/[0.1]",
               )}
             >
@@ -70,7 +70,7 @@ export function DrinkVolumeSheet({
             className={cn(
               "rounded-2xl py-3 text-sm font-medium transition-colors cursor-pointer border col-span-3",
               customMode
-                ? "border-[#3b82f6] text-[#3b82f6] bg-[#3b82f6]/10"
+                ? "border-white/70 text-white bg-white/[0.14]"
                 : "border-white/[0.08] text-white bg-white/[0.05] hover:bg-white/[0.1]",
             )}
           >
@@ -90,9 +90,9 @@ export function DrinkVolumeSheet({
         )}
 
         <GlassButton
-          className="w-full"
+          className="w-full !text-black"
           size="lg"
-          accentColor="#3b82f6"
+          accentColor="rgba(255,255,255,0.85)"
           disabled={ml <= 0}
           onClick={handleAgregar}
         >

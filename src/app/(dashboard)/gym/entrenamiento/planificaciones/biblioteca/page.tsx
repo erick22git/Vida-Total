@@ -30,7 +30,7 @@ export default function PlanLibraryPage() {
             key={p.id}
             padding="none"
             className="h-52 flex flex-col justify-end p-5 overflow-hidden relative"
-            style={{ background: p.gradient }}
+            style={{ background: "var(--glass-bg-dark)" }}
           >
             <p className="text-xl font-extrabold uppercase text-white leading-tight">{p.nombre}</p>
             <div className="flex items-center gap-3 mt-2 text-xs text-white/70">

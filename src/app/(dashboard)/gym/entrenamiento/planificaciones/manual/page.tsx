@@ -85,7 +85,7 @@ export default function ManualPlanCreatorPage() {
             </button>
             <h1 className="text-xl md:text-2xl font-semibold tracking-tight truncate">Editar: {label}</h1>
           </div>
-          <GlassButton size="sm" accentColor="var(--gym-2)" onClick={() => setEditingDay(null)}>
+          <GlassButton size="sm" accentColor="rgba(255,255,255,0.85)" className="!text-black" onClick={() => setEditingDay(null)}>
             Listo
           </GlassButton>
         </header>
@@ -151,7 +151,7 @@ export default function ManualPlanCreatorPage() {
               className={cn(
                 "rounded-full px-3.5 py-1.5 text-xs font-semibold cursor-pointer transition-colors border",
                 categoria === cat && !nuevaCategoria
-                  ? "bg-[var(--gym)] border-[var(--gym)] text-white"
+                  ? "bg-white/[0.85] border-white text-black"
                   : "bg-white/[0.05] border-white/10 text-white/65 hover:bg-white/[0.1]",
               )}
             >
@@ -163,7 +163,7 @@ export default function ManualPlanCreatorPage() {
             className={cn(
               "flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-semibold cursor-pointer transition-colors border",
               nuevaCategoria
-                ? "bg-[var(--gym)] border-[var(--gym)] text-white"
+                ? "bg-white/[0.85] border-white text-black"
                 : "bg-white/[0.05] border-white/10 text-white/65 hover:bg-white/[0.1]",
             )}
           >
@@ -202,9 +202,10 @@ export default function ManualPlanCreatorPage() {
             <GlassCard
               key={d.key}
               padding="sm"
-              accentColor={isRest ? undefined : "var(--gym)"}
+              accentColor={isRest ? undefined : "rgba(255,255,255,0.85)"}
               onClick={() => setEditingDay(i)}
               className="relative flex flex-col gap-2 h-28 justify-center items-center text-center cursor-pointer"
+              style={{ background: "var(--glass-bg-dark)" }}
             >
               {!isRest && (
                 <button
@@ -227,7 +228,7 @@ export default function ManualPlanCreatorPage() {
                 </>
               ) : (
                 <>
-                  <Dumbbell size={20} className="text-[var(--gym)]" />
+                  <Dumbbell size={20} className="text-white" />
                   <p className="text-sm font-bold text-white">{grupo}</p>
                   <p className="text-[10px] text-white/40">{draft.length} ejercicios</p>
                 </>
@@ -238,7 +239,7 @@ export default function ManualPlanCreatorPage() {
       </div>
 
       <div className="fixed bottom-20 md:bottom-6 left-0 right-0 px-5 md:px-8 md:ml-64">
-        <GlassButton accentColor="var(--gym-2)" size="lg" className="w-full max-w-2xl mx-auto" onClick={handleCreate}>
+        <GlassButton accentColor="rgba(255,255,255,0.85)" className="w-full max-w-2xl mx-auto !text-black" size="lg" onClick={handleCreate}>
           Crear Planificación
         </GlassButton>
       </div>

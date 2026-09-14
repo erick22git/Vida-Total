@@ -45,7 +45,7 @@ export function OtherNutrientsCard({ totals }: { totals: Record<string, number> 
                   </span>
                 </div>
                 <div className="h-1.5 w-full rounded-full bg-white/[0.08] overflow-hidden">
-                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "var(--gym)" }} />
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "rgba(255,255,255,0.85)" }} />
                 </div>
               </div>
             );

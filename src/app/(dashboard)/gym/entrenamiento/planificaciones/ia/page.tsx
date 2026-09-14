@@ -118,7 +118,7 @@ export default function AiPlanWizardPage() {
         <div className="flex-1 h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-400"
-            style={{ width: `${progress}%`, background: "linear-gradient(90deg, #3b82f6, var(--gym-2))" }}
+            style={{ width: `${progress}%`, background: "rgba(255,255,255,0.85)" }}
           />
         </div>
         <button onClick={() => router.push("/gym/entrenamiento/planificaciones")} className="text-white/50 hover:text-white cursor-pointer">
@@ -148,7 +148,7 @@ export default function AiPlanWizardPage() {
               </button>
             ))}
           </div>
-          <GlassButton accentColor="#3b82f6" size="lg" disabled={!goal} onClick={next}>
+          <GlassButton accentColor="rgba(255,255,255,0.85)" className="!text-black" size="lg" disabled={!goal} onClick={next}>
             Continuar
           </GlassButton>
         </div>
@@ -157,7 +157,7 @@ export default function AiPlanWizardPage() {
       {step === "muscles" && (
         <div className="flex flex-col gap-5">
           <h2 className="text-xl font-bold text-center">Músculos a trabajar</h2>
-          <div className="flex items-start gap-2 rounded-2xl px-3.5 py-2.5 text-xs" style={{ background: "#3b82f61f", border: "1px solid #3b82f640", color: "#93c5fd" }}>
+          <div className="flex items-start gap-2 rounded-2xl px-3.5 py-2.5 text-xs" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.8)" }}>
             <Info size={14} className="mt-0.5 shrink-0" />
             <span>Mantén presionado para ver los músculos que se trabajarán en cada grupo.</span>
           </div>
@@ -189,7 +189,7 @@ export default function AiPlanWizardPage() {
               );
             })}
           </div>
-          <GlassButton accentColor="#3b82f6" size="lg" disabled={!muscleChoice} onClick={next}>
+          <GlassButton accentColor="rgba(255,255,255,0.85)" className="!text-black" size="lg" disabled={!muscleChoice} onClick={next}>
             Continuar
           </GlassButton>
         </div>
@@ -214,7 +214,7 @@ export default function AiPlanWizardPage() {
               </button>
             ))}
           </div>
-          <GlassButton accentColor="#3b82f6" size="lg" onClick={next}>
+          <GlassButton accentColor="rgba(255,255,255,0.85)" className="!text-black" size="lg" onClick={next}>
             Continuar
           </GlassButton>
         </div>
@@ -238,7 +238,7 @@ export default function AiPlanWizardPage() {
               </button>
             ))}
           </div>
-          <GlassButton accentColor="#3b82f6" size="lg" onClick={handleGenerate}>
+          <GlassButton accentColor="rgba(255,255,255,0.85)" className="!text-black" size="lg" onClick={handleGenerate}>
             Generar mi plan
           </GlassButton>
         </div>
@@ -252,7 +252,7 @@ export default function AiPlanWizardPage() {
           </div>
 
           {generated.distribution.length > 0 && (
-            <GlassCard accentColor="var(--gym)" className="flex flex-col gap-3">
+            <GlassCard accentColor="rgba(255,255,255,0.85)" className="flex flex-col gap-3" style={{ background: "var(--glass-bg-dark)" }}>
               <p className="text-sm font-semibold text-white/80">Distribución Muscular</p>
               <div className="flex flex-wrap gap-2">
                 {generated.distribution.map((d) => {
@@ -273,7 +273,7 @@ export default function AiPlanWizardPage() {
 
           <div className="flex flex-col gap-2">
             {generated.chosen.map((ex) => (
-              <GlassCard key={ex.id} padding="sm" interactive={false} className="flex items-center gap-3">
+              <GlassCard key={ex.id} padding="sm" interactive={false} className="flex items-center gap-3" style={{ background: "var(--glass-bg-dark)" }}>
                 <div className="w-11 h-11 rounded-xl bg-white/[0.06] glass-specular-ring flex items-center justify-center shrink-0">
                   {ex.imagen ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -292,7 +292,7 @@ export default function AiPlanWizardPage() {
             ))}
           </div>
 
-          <GlassButton accentColor="var(--gym-2)" size="lg" onClick={handleStart}>
+          <GlassButton accentColor="rgba(255,255,255,0.85)" className="!text-black" size="lg" onClick={handleStart}>
             Empezar Entrenamiento
           </GlassButton>
         </div>

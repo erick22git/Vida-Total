@@ -63,7 +63,7 @@ export function CalorieArcCard({
                   className="w-full flex items-center justify-between text-left px-3.5 py-2.5 text-xs text-white hover:bg-white/[0.08] cursor-pointer"
                 >
                   Ver restante
-                  {showRemaining && <Check size={13} className="text-[var(--gym)]" />}
+                  {showRemaining && <Check size={13} className="text-white" />}
                 </button>
                 <button
                   onClick={() => {
@@ -137,9 +137,9 @@ export function CalorieArcCard({
           style={
             hasProgress
               ? {
-                  background: isFinishedToday ? "rgba(255,255,255,0.08)" : "linear-gradient(135deg, var(--gym), color-mix(in srgb, var(--gym) 70%, black))",
-                  color: isFinishedToday ? "rgba(255,255,255,0.6)" : "white",
-                  boxShadow: isFinishedToday ? undefined : "0 4px 20px var(--gym)55",
+                  background: isFinishedToday ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.85)",
+                  color: isFinishedToday ? "rgba(255,255,255,0.6)" : "black",
+                  boxShadow: isFinishedToday ? undefined : "0 4px 20px rgba(255,255,255,0.25)",
                 }
               : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.3)" }
           }

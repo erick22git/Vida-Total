@@ -37,7 +37,7 @@ function PropertyRow({
         <span className="text-sm text-white/85 flex items-center gap-2">
           <span>{emoji}</span> {label}
         </span>
-        <span className="text-sm font-medium text-[#3b82f6]">
+        <span className="text-sm font-medium text-white">
           {value ?? 0}
           {unit}
         </span>
@@ -54,7 +54,8 @@ function PropertyRow({
           />
           <GlassButton
             size="sm"
-            accentColor="#3b82f6"
+            className="!text-black"
+            accentColor="rgba(255,255,255,0.85)"
             onClick={() => {
               const n = parseFloat(draft);
               onSave(Number.isFinite(n) ? Math.max(0, n) : 0);
@@ -141,7 +142,7 @@ export function DrinkEditModal({
                 className={cn(
                   "flex items-center justify-center w-12 h-12 rounded-2xl text-xl transition-colors cursor-pointer border",
                   drink.emoji === emoji
-                    ? "border-[#3b82f6] bg-[#3b82f6]/10"
+                    ? "border-white/70 bg-white/[0.14]"
                     : "border-white/[0.08] bg-white/[0.05] hover:bg-white/[0.1]",
                 )}
               >

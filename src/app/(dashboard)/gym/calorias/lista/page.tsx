@@ -12,6 +12,21 @@ import { cn } from "@/lib/utils";
 
 const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snack1", "snack2"];
 
+// Palabras que no forman parte del nombre del alimento en sí, sino de su
+// estado de preparación — se ignoran al buscar coincidencias en el dataset
+// (para que "pollo crudo" siga encontrando "Pollo") pero se conservan como
+// sufijo visible en el nombre guardado.
+const PREP_QUALIFIERS = ["crudo", "cruda", "cocido", "cocida", "frito", "frita", "asado", "asada", "hervido", "hervida"];
+
+function stripPrepQualifier(text: string): { base: string; qualifier: string | null } {
+  const words = text.trim().split(/\s+/);
+  const last = words[words.length - 1]?.toLowerCase();
+  if (words.length > 1 && last && PREP_QUALIFIERS.includes(last)) {
+    return { base: words.slice(0, -1).join(" "), qualifier: last };
+  }
+  return { base: text, qualifier: null };
+}
+
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
@@ -64,7 +79,7 @@ export default function ListaPage() {
     ]);
   }
 
-  function addFoodItem(meal: MealType, food: Food) {
+  function addFoodItem(meal: MealType, food: Food, qualifier?: string | null) {
     const portion = defaultPortions(food)[0];
     const n = scaleNutrition(food, portion.gramos);
     setDraftItems((prev) => [
@@ -72,7 +87,7 @@ export default function ListaPage() {
       {
         id: uid(),
         meal,
-        nombre: food.nombre,
+        nombre: qualifier ? `${food.nombre} ${qualifier}` : food.nombre,
         cantidad: 1,
         porcionNombre: portion.nombre,
         caloriasPerUnit: n.calorias,
@@ -156,6 +171,8 @@ export default function ListaPage() {
         <span className="w-5" />
       </header>
 
+      <CaloriasMethodNav />
+
       <div className="flex flex-col gap-3">
         {MEALS.map((meal) => (
           <MealCaptureBlock
@@ -164,13 +181,12 @@ export default function ListaPage() {
             items={draftItems.filter((it) => it.meal === meal)}
             allFoods={allFoods}
             onAddFreeText={(nombre) => addFreeTextItem(meal, nombre)}
-            onAddFood={(food) => addFoodItem(meal, food)}
+            onAddFood={(food, qualifier) => addFoodItem(meal, food, qualifier)}
             onRemove={removeDraftItem}
+            onUpdate={updateDraftItem}
           />
         ))}
       </div>
-
-      <CaloriasMethodNav variant="fixed" />
 
       <button
         onClick={() => draftItems.length > 0 && setStep("confirmar")}
@@ -199,23 +215,27 @@ function MealCaptureBlock({
   onAddFreeText,
   onAddFood,
   onRemove,
+  onUpdate,
 }: {
   meal: MealType;
   items: DraftItem[];
   allFoods: Food[];
   onAddFreeText: (nombre: string) => void;
-  onAddFood: (food: Food) => void;
+  onAddFood: (food: Food, qualifier?: string | null) => void;
   onRemove: (id: string) => void;
+  onUpdate: (id: string, patch: Partial<DraftItem>) => void;
 }) {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsOpen = text.trim().length > 0;
 
+  const { base: searchBase, qualifier } = useMemo(() => stripPrepQualifier(text), [text]);
+
   const suggestions = useMemo(() => {
-    const q = text.trim().toLowerCase();
+    const q = searchBase.trim().toLowerCase();
     if (!q) return [];
     return allFoods.filter((f) => f.nombre.toLowerCase().includes(q)).slice(0, 5);
-  }, [text, allFoods]);
+  }, [searchBase, allFoods]);
 
   function submitFreeText() {
     if (!text.trim()) return;
@@ -225,7 +245,7 @@ function MealCaptureBlock({
   }
 
   function submitFood(food: Food) {
-    onAddFood(food);
+    onAddFood(food, qualifier);
     setText("");
     inputRef.current?.focus();
   }
@@ -235,16 +255,23 @@ function MealCaptureBlock({
       id={`meal-block-${meal}`}
       padding="sm"
       className={cn("relative flex flex-col gap-2.5", suggestionsOpen ? "z-50" : "z-0")}
+      style={{ background: "var(--glass-bg-dark)" }}
     >
-      <h2 className="text-sm font-bold" style={{ color: "var(--gym)" }}>
-        {MEAL_LABELS[meal]}
-      </h2>
+      <h2 className="text-sm font-bold text-white/85">{MEAL_LABELS[meal]}</h2>
 
       {items.length > 0 && (
         <div className="flex flex-col gap-1.5">
           {items.map((it) => (
-            <div key={it.id} className="flex items-center justify-between gap-2">
-              <span className="text-sm text-white min-w-0 truncate">• {it.nombre}</span>
+            <div key={it.id} className="flex items-center gap-2">
+              <span className="text-sm text-white min-w-0 truncate flex-1">• {it.nombre}</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={it.porcionNombre}
+                onChange={(e) => onUpdate(it.id, { porcionNombre: e.target.value })}
+                placeholder="ej. 20g"
+                className="w-20 shrink-0 rounded-full bg-white/[0.08] glass-specular-ring px-2 py-1 text-xs text-white text-center outline-none focus:shadow-[var(--glass-specular-strong)]"
+              />
               <button
                 onClick={() => onRemove(it.id)}
                 className="text-white/30 hover:text-white/70 cursor-pointer shrink-0 p-0.5"

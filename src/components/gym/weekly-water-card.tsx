@@ -98,7 +98,7 @@ export function WeeklyWaterCard({
             pct={d.pct}
             ml={d.ml}
             highlight={isToday(d.date)}
-            size={26}
+            size={22}
             showMl={false}
             strokeColor={pctColor(d.pct)}
           />
@@ -114,8 +114,8 @@ export function WeeklyWaterCard({
     <div
       className="rounded-3xl p-5 flex flex-col gap-5"
       style={{
-        background: "linear-gradient(135deg, #3b82f6, #2563eb)",
-        boxShadow: "0 8px 30px #3b82f655",
+        background: "var(--glass-bg-dark)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.35), var(--glass-specular)",
       }}
     >
       <div className="flex justify-between gap-1">

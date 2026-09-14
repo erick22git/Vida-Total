@@ -88,7 +88,7 @@ export default function CaloriasPage() {
           <ArrowLeft size={20} />
         </Link>
         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2">
-          <Flame style={{ color: "var(--gym)" }} /> Calorías
+          <Flame className="text-white" /> Calorías
         </h1>
       </header>
 
@@ -128,8 +128,8 @@ export default function CaloriasPage() {
               className="flex items-center gap-1.5 cursor-pointer bg-transparent border-0 p-0"
               aria-label="Ver racha"
             >
-              <Flame size={18} style={{ color: "var(--gym)" }} fill="var(--gym)" fillOpacity={0.3} />
-              <span className="text-sm font-semibold tabular-nums" style={{ color: "var(--gym)" }}>
+              <Flame size={18} style={{ color: "white" }} fill="white" fillOpacity={0.3} />
+              <span className="text-sm font-semibold tabular-nums text-white">
                 {loggedStreak.current}
               </span>
             </button>
@@ -146,7 +146,7 @@ export default function CaloriasPage() {
                 key={i}
                 onClick={() => setSelectedDate(startOfDay(day.date))}
                 className="flex flex-col items-center gap-1 flex-1 py-1.5 rounded-xl cursor-pointer transition-colors"
-                style={{ background: seleccionado ? "color-mix(in srgb, var(--gym) 18%, transparent)" : "transparent" }}
+                style={{ background: seleccionado ? "rgba(255,255,255,0.12)" : "transparent" }}
               >
                 <span className="text-[10px] uppercase text-white/40 font-medium">
                   {format(day.date, "eeeeee", { locale: es })}
@@ -154,16 +154,16 @@ export default function CaloriasPage() {
                 <span
                   className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold tabular-nums"
                   style={{
-                    background: seleccionado ? "var(--gym)" : "transparent",
-                    color: seleccionado ? "white" : "rgba(255,255,255,0.75)",
-                    boxShadow: today && !seleccionado ? "inset 0 0 0 1.5px var(--gym)" : undefined,
+                    background: seleccionado ? "white" : "transparent",
+                    color: seleccionado ? "black" : "rgba(255,255,255,0.9)",
+                    boxShadow: today && !seleccionado ? "inset 0 0 0 1.5px rgba(255,255,255,0.7)" : undefined,
                   }}
                 >
                   {format(day.date, "d")}
                 </span>
                 <span
                   className="w-1.5 h-1.5 rounded-full"
-                  style={{ background: day.hasEntry ? "var(--gym)" : "rgba(255,255,255,0.15)" }}
+                  style={{ background: day.hasEntry ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.15)" }}
                 />
               </button>
             );
@@ -197,7 +197,7 @@ export default function CaloriasPage() {
                   className="h-1.5 rounded-full transition-all"
                   style={{
                     width: page === i ? 16 : 6,
-                    background: page === i ? "var(--gym)" : "rgba(255,255,255,0.2)",
+                    background: page === i ? "white" : "rgba(255,255,255,0.2)",
                   }}
                 />
               ))}

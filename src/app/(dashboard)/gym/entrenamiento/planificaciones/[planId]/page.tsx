@@ -38,7 +38,7 @@ export default function PlanDetailPage({
     return (
       <div className="flex flex-col gap-6 items-center text-center py-16">
         <p className="text-white/60">Planificación no encontrada.</p>
-        <GlassButton accentColor="var(--gym-2)" onClick={() => router.push("/gym/entrenamiento/planificaciones")}>
+        <GlassButton accentColor="rgba(255,255,255,0.85)" className="!text-black" onClick={() => router.push("/gym/entrenamiento/planificaciones")}>
           Ir a Planificaciones
         </GlassButton>
       </div>
@@ -88,7 +88,7 @@ export default function PlanDetailPage({
             </button>
             <h1 className="text-xl md:text-2xl font-semibold tracking-tight truncate">Editar: {label}</h1>
           </div>
-          <GlassButton size="sm" accentColor="var(--gym-2)" onClick={closeEditor}>
+          <GlassButton size="sm" accentColor="rgba(255,255,255,0.85)" className="!text-black" onClick={closeEditor}>
             Listo
           </GlassButton>
         </header>
@@ -150,12 +150,13 @@ export default function PlanDetailPage({
                 padding="sm"
                 onClick={() => openDay(i)}
                 className="flex items-center gap-3 relative"
+                style={{ background: "var(--glass-bg-dark)" }}
               >
                 <div
                   className="flex items-center justify-center w-10 h-10 rounded-xl shrink-0"
                   style={{
-                    background: isRest ? "rgba(255,255,255,0.06)" : "var(--gym)22",
-                    color: isRest ? "rgba(255,255,255,0.35)" : "var(--gym)",
+                    background: isRest ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.12)",
+                    color: isRest ? "rgba(255,255,255,0.35)" : "white",
                   }}
                 >
                   {isRest ? <Moon size={18} /> : <Dumbbell size={18} />}
@@ -209,9 +210,10 @@ export default function PlanDetailPage({
               <GlassCard
                 key={day.day + i}
                 padding="sm"
-                accentColor={isRest ? undefined : "var(--gym)"}
+                accentColor={isRest ? undefined : "rgba(255,255,255,0.85)"}
                 onClick={() => openDay(i)}
                 className="flex flex-col gap-2 h-28 justify-center items-center text-center cursor-pointer"
+                style={{ background: "var(--glass-bg-dark)" }}
               >
                 <p className="text-xs font-semibold text-white/50">{DAY_LABELS[i]}</p>
                 {isRest ? (
@@ -221,7 +223,7 @@ export default function PlanDetailPage({
                   </>
                 ) : (
                   <>
-                    <Dumbbell size={20} className="text-[var(--gym)]" />
+                    <Dumbbell size={20} className="text-white" />
                     <p className="text-sm font-bold text-white truncate max-w-full px-1">{routine?.nombre ?? day.grupoMuscular}</p>
                   </>
                 )}

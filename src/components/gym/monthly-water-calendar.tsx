@@ -33,7 +33,7 @@ function DayCell({ dayNum, pct, today, future }: { dayNum: string; pct: number; 
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="#3b82f6"
+            stroke="white"
             strokeWidth={stroke}
             strokeDasharray={circumference}
             strokeDashoffset={offset}
@@ -41,7 +41,7 @@ function DayCell({ dayNum, pct, today, future }: { dayNum: string; pct: number; 
           />
         )}
       </svg>
-      <span className={`text-[11px] font-medium ${today ? "text-[#3b82f6] font-bold" : "text-white/70"}`}>{dayNum}</span>
+      <span className={`text-[11px] font-medium ${today ? "text-white font-bold" : "text-white/70"}`}>{dayNum}</span>
     </div>
   );
 }

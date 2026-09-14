@@ -28,13 +28,13 @@ export function WeeklyTrainingRow({ sessions }: { sessions: WorkoutSession[] }) 
             <div
               className="flex items-center justify-center w-7 h-7 rounded-full"
               style={{
-                background: d.trained ? "linear-gradient(135deg, var(--gym), var(--gym-2))" : "rgba(255,255,255,0.06)",
+                background: d.trained ? "white" : "rgba(255,255,255,0.06)",
                 border: today ? "1.5px solid white" : "1px solid rgba(255,255,255,0.1)",
-                boxShadow: d.trained ? "0 0 8px var(--gym-2)55" : undefined,
+                boxShadow: d.trained ? "0 0 8px rgba(255,255,255,0.4)" : undefined,
               }}
             >
               {d.trained ? (
-                <Check size={12} className="text-white" strokeWidth={3} />
+                <Check size={12} className="text-black" strokeWidth={3} />
               ) : (
                 <Dumbbell size={11} className="text-white/25" />
               )}

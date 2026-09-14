@@ -65,10 +65,10 @@ export default function GymHubPage() {
         {/* Calorías */}
         <Link href="/gym/calorias">
           <GlassCard
-            padding="md"
+            padding="sm"
             glow
             accentColor="var(--gym)"
-            className="flex flex-col gap-3 h-full"
+            className="flex flex-col gap-2 h-full justify-center"
             style={{ background: "var(--glass-bg-dark)" }}
           >
             <div className="flex items-center gap-2">
@@ -88,10 +88,10 @@ export default function GymHubPage() {
         {/* Agua */}
         <Link href="/gym/agua">
           <GlassCard
-            padding="md"
+            padding="sm"
             glow
-            accentColor="#3b82f6"
-            className="flex flex-col gap-3 h-full"
+            accentColor="rgba(255,255,255,0.6)"
+            className="flex flex-col gap-2 h-full justify-center"
             style={{ background: "var(--glass-bg-dark)" }}
           >
             <div className="flex items-center gap-2">
@@ -99,7 +99,7 @@ export default function GymHubPage() {
               <p className="text-sm text-white/55">Agua</p>
             </div>
             <div className="flex flex-col items-center gap-0.5">
-              <span className="text-3xl font-bold text-white tabular-nums">{waterPct}%</span>
+              <span className="text-2xl font-bold text-white tabular-nums">{waterPct}%</span>
               <span className="text-xs text-white/45 tabular-nums">
                 {(waterToday / 1000).toFixed(1)} l de {(waterGoalMl / 1000).toFixed(1)} l
               </span>
@@ -130,14 +130,14 @@ export default function GymHubPage() {
                 className="flex items-center justify-center w-10 h-10 rounded-full shrink-0"
                 style={{
                   background: trainedToday
-                    ? "radial-gradient(circle, var(--gym)33, transparent 70%)"
+                    ? "radial-gradient(circle, rgba(255,255,255,0.2), transparent 70%)"
                     : "transparent",
                 }}
               >
                 <Flame
                   size={28}
-                  style={{ color: trainedToday ? "var(--gym)" : "var(--gym-2)" }}
-                  fill={trainedToday ? "var(--gym)" : "none"}
+                  style={{ color: "white" }}
+                  fill={trainedToday ? "white" : "none"}
                   fillOpacity={trainedToday ? 0.25 : 0}
                 />
               </div>
@@ -164,7 +164,7 @@ export default function GymHubPage() {
                 Racha: {kegelStreak} días · Nivel {kegelLevel}
               </p>
             </div>
-            <ProgressBar value={kegelLevel} max={10} color="var(--paz-mental)" />
+            <ProgressBar value={kegelLevel} max={10} color="rgba(255,255,255,0.85)" />
           </GlassCard>
         </Link>
       </section>

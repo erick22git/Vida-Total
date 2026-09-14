@@ -105,15 +105,17 @@ export function CalorieArcMini({
   const rangeHigh = Math.round(calorieGoal * 1.1);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-1">
       <div className="flex items-baseline justify-center gap-1.5">
-        <span className="text-2xl font-bold text-white tabular-nums">{Math.round(totals.calorias).toLocaleString()}</span>
-        <span className="text-xs text-white/35 tabular-nums">/ {calorieGoal.toLocaleString()} kcal</span>
+        <span className="text-xl font-bold text-white tabular-nums">{Math.round(totals.calorias).toLocaleString()}</span>
+        <span className="text-[11px] text-white/35 tabular-nums">/ {calorieGoal.toLocaleString()} kcal</span>
       </div>
 
-      <ArcChart low={rangeLow} high={rangeHigh} compact />
+      <div className="w-3/5 mx-auto">
+        <ArcChart low={rangeLow} high={rangeHigh} compact />
+      </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-1.5">
         <MacroColumn label="Prot" value={totals.proteina} goal={proteinGoal} color={MACRO_COLORS.proteina} compact />
         <MacroColumn label="Carbs" value={totals.carbos} goal={carbsGoal} color={MACRO_COLORS.carbos} compact />
         <MacroColumn label="Grasas" value={totals.grasas} goal={fatGoal} color={MACRO_COLORS.grasas} compact />

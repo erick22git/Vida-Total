@@ -327,7 +327,7 @@ export function MealCard({
         </div>
       )}
 
-      {toast && <p className="text-[11px] text-[var(--gym)] text-center">{toast}</p>}
+      {toast && <p className="text-[11px] text-white/80 text-center">{toast}</p>}
 
       {items.length > 0 && (
         <Reorder.Group
@@ -350,7 +350,7 @@ export function MealCard({
               dragListener={movingId === f.id}
               className={cn(
                 "flex items-center gap-2.5 rounded-2xl bg-white/[0.04] px-2.5 py-2 border transition-colors",
-                movingId === f.id ? "border-[var(--gym)] bg-white/[0.08]" : "border-transparent",
+                movingId === f.id ? "border-white/70 bg-white/[0.08]" : "border-transparent",
               )}
             >
               <button
@@ -358,7 +358,7 @@ export function MealCard({
                 aria-label="Reordenar"
                 className={cn(
                   "flex items-center justify-center w-6 h-6 shrink-0 rounded-lg cursor-grab active:cursor-grabbing",
-                  movingId === f.id ? "text-[var(--gym)]" : "text-white/25 hover:text-white/50",
+                  movingId === f.id ? "text-white" : "text-white/25 hover:text-white/50",
                 )}
               >
                 <GripVertical size={14} />
@@ -392,7 +392,7 @@ export function MealCard({
                 aria-label={f.activo === false ? "Contar este alimento" : "No contar este alimento"}
                 title={f.activo === false ? "Contar este alimento" : "No contar este alimento"}
                 className="flex items-center justify-center w-7 h-7 shrink-0 rounded-full cursor-pointer transition-colors"
-                style={{ color: f.activo === false ? "rgba(255,255,255,0.25)" : "var(--gym)" }}
+                style={{ color: f.activo === false ? "rgba(255,255,255,0.25)" : "white" }}
               >
                 {f.activo === false ? <Circle size={20} /> : <CheckCircle2 size={20} />}
               </button>

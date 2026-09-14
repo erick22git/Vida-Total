@@ -87,7 +87,7 @@ export default function BebidaEstadisticasPage() {
         ))}
       </div>
 
-      <GlassCard padding="md" interactive={false} className="flex flex-col gap-2">
+      <GlassCard padding="md" interactive={false} className="flex flex-col gap-2" style={{ background: "var(--glass-bg-dark)" }}>
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-white/85">Total en el período</h3>
           <span className="text-sm font-bold" style={{ color: drink.color }}>

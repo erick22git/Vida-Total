@@ -88,7 +88,7 @@ export default function EntrenamientoPage() {
             <ArrowLeft size={20} />
           </Link>
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2 truncate">
-            <Dumbbell style={{ color: "var(--gym-2)" }} /> Entrenamiento
+            <Dumbbell className="text-white" /> Entrenamiento
           </h1>
         </div>
         <Link
@@ -113,18 +113,18 @@ export default function EntrenamientoPage() {
             key={d.day}
             padding="none"
             interactive={false}
-            accentColor={i === todayIndex ? "var(--gym-2)" : undefined}
+            accentColor={i === todayIndex ? "rgba(255,255,255,0.9)" : undefined}
             glow={i === todayIndex}
-            className="shrink-0 w-[52px] flex flex-col items-center justify-center gap-0.5 py-2 px-1"
-            style={{ minHeight: 44 }}
+            className="shrink-0 w-[52px] flex flex-col items-center justify-center text-center gap-0.5 py-2 px-1"
+            style={{ minHeight: 44, background: "var(--glass-bg-dark)" }}
           >
             <span
-              className="text-[11px] font-semibold"
-              style={{ color: i === todayIndex ? "var(--gym-2)" : "rgba(255,255,255,0.5)" }}
+              className="text-[11px] font-semibold text-center"
+              style={{ color: i === todayIndex ? "white" : "rgba(255,255,255,0.85)" }}
             >
               {d.day}
             </span>
-            <span className="text-[9px] text-white/60 text-center leading-tight line-clamp-1">
+            <span className="text-[9px] text-white/70 text-center leading-tight line-clamp-1">
               {d.grupoMuscular}
             </span>
           </GlassCard>
@@ -132,13 +132,13 @@ export default function EntrenamientoPage() {
       </div>
 
       <GlassCard
-        accentColor="var(--gym-2)"
+        accentColor="rgba(255,255,255,0.9)"
         glow
         padding="none"
         className="relative flex flex-col gap-4 items-center text-center py-8 overflow-hidden"
         style={{
           background: !todayBgExercise?.imagen
-            ? "linear-gradient(160deg, var(--gym)33, var(--gym-2)22)"
+            ? "linear-gradient(160deg, var(--gym)33, rgba(255,255,255,0.12))"
             : undefined,
         }}
       >
@@ -166,7 +166,8 @@ export default function EntrenamientoPage() {
             <p className="text-xs text-white/50">Tienes un entrenamiento en curso</p>
           )}
           <GlassButton
-            accentColor="var(--gym-2)"
+            accentColor="rgba(255,255,255,0.85)"
+            className="!text-black"
             size="lg"
             onClick={handleStart}
             disabled={isRestDay}
@@ -203,13 +204,13 @@ export default function EntrenamientoPage() {
               <Link key={d.day + i} href={isRest ? "#" : href} className={isRest ? "pointer-events-none" : "shrink-0"}>
                 <GlassCard
                   padding="none"
-                  accentColor={i === todayIndex ? "var(--gym-2)" : undefined}
+                  accentColor={i === todayIndex ? "rgba(255,255,255,0.9)" : undefined}
                   glow={i === todayIndex}
                   className="shrink-0 w-64 h-56 overflow-hidden relative flex flex-col justify-end p-4 cursor-pointer"
                   style={{
                     background: isRest
-                      ? "linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))"
-                      : `linear-gradient(160deg, var(--gym)33, var(--gym-2)22)`,
+                      ? "var(--glass-bg-dark)"
+                      : `linear-gradient(160deg, var(--gym)33, rgba(255,255,255,0.12))`,
                   }}
                 >
                   {bgExercise?.imagen && (
@@ -285,7 +286,7 @@ export default function EntrenamientoPage() {
         </div>
       </div>
 
-      <GlassCard padding="md" className="flex flex-col gap-3">
+      <GlassCard padding="md" className="flex flex-col gap-3" style={{ background: "var(--glass-bg-dark)" }}>
         <button
           className="flex items-center justify-between cursor-pointer"
           onClick={() => setTemplatesOpen((v) => !v)}
@@ -307,7 +308,7 @@ export default function EntrenamientoPage() {
               <div className="flex flex-col gap-2">
                 {routines.map((r) => (
                   <Link key={r.id} href={`/gym/entrenamiento/rutinas/${r.id}`}>
-                    <GlassCard padding="sm" className="flex items-center justify-between">
+                    <GlassCard padding="sm" className="flex items-center justify-between" style={{ background: "var(--glass-bg-dark)" }}>
                       <div>
                         <p className="text-sm font-medium text-white">{r.nombre}</p>
                         <p className="text-xs text-white/40">{r.ejercicios.length} ejercicios</p>
@@ -322,7 +323,7 @@ export default function EntrenamientoPage() {
         )}
       </GlassCard>
 
-      <GlassCard padding="md" className="flex flex-col gap-3">
+      <GlassCard padding="md" className="flex flex-col gap-3" style={{ background: "var(--glass-bg-dark)" }}>
         <button
           className="flex items-center justify-between cursor-pointer"
           onClick={() => setHistoryOpen((v) => !v)}
@@ -339,7 +340,7 @@ export default function EntrenamientoPage() {
           ) : (
             <div className="flex flex-col gap-2">
               {sessions.slice(0, 8).map((s) => (
-                <GlassCard key={s.id} padding="sm" interactive={false} className="flex items-center justify-between">
+                <GlassCard key={s.id} padding="sm" interactive={false} className="flex items-center justify-between" style={{ background: "var(--glass-bg-dark)" }}>
                   <div>
                     <p className="text-sm font-medium text-white">{s.nombre ?? s.grupoMuscular}</p>
                     <p className="text-xs text-white/40">
@@ -363,8 +364,8 @@ export default function EntrenamientoPage() {
 function QuickLink({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) {
   return (
     <Link href={href}>
-      <GlassCard padding="sm" className="flex flex-col items-center gap-1.5 py-3.5">
-        <Icon size={18} style={{ color: "var(--gym-2)" }} />
+      <GlassCard padding="sm" className="flex flex-col items-center gap-1.5 py-3.5" style={{ background: "var(--glass-bg-dark)" }}>
+        <Icon size={18} className="text-white" />
         <span className="text-xs font-medium text-white/70">{label}</span>
       </GlassCard>
     </Link>

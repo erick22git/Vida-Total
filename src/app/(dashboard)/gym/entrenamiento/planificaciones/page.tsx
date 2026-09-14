@@ -58,14 +58,13 @@ export default function PlanificacionesPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => router.push("/gym/entrenamiento/planificaciones/ia")}
-            className="flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-[#3b82f6] cursor-pointer bg-[#3b82f61f] border border-[#3b82f640]"
+            className="flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-white cursor-pointer bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.12] transition-colors"
           >
             <Sparkles size={13} /> IA
           </button>
           <button
             onClick={() => router.push("/gym/entrenamiento/planificaciones/manual")}
-            className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-white cursor-pointer"
-            style={{ background: "linear-gradient(135deg, var(--gym), var(--gym-2))" }}
+            className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-white cursor-pointer bg-white/[0.1] hover:bg-white/[0.18] transition-colors glass-specular-ring"
           >
             <Plus size={14} /> Crear
           </button>
@@ -77,12 +76,12 @@ export default function PlanificacionesPage() {
 
         {activePlan ? (
           <GlassCard
-            accentColor="var(--gym-2)"
+            accentColor="rgba(255,255,255,0.9)"
             glow
             onClick={() => router.push(`/gym/entrenamiento/planificaciones/${activePlan.id}`)}
             className="relative h-56 flex flex-col justify-end p-5 overflow-hidden cursor-pointer"
             style={{
-              background: planBgImage(activePlan) ? undefined : "linear-gradient(160deg, var(--gym)33, var(--gym-2)22)",
+              background: planBgImage(activePlan) ? undefined : "var(--glass-bg-dark)",
             }}
           >
             {planBgImage(activePlan) && (
@@ -115,7 +114,7 @@ export default function PlanificacionesPage() {
             {activePlan.notas && <p className="relative z-10 text-xs text-white/45 mt-1.5 italic">{activePlan.notas}</p>}
           </GlassCard>
         ) : (
-          <GlassCard interactive={false} className="text-center py-8">
+          <GlassCard interactive={false} className="text-center py-8" style={{ background: "var(--glass-bg-dark)" }}>
             <p className="text-sm text-white/40">Aún no tienes un plan activo. Crea uno con el botón de arriba.</p>
           </GlassCard>
         )}
@@ -123,7 +122,7 @@ export default function PlanificacionesPage() {
         {otherPlans.length > 0 && (
           <div className="flex flex-col gap-2.5">
             {otherPlans.map((p) => (
-              <GlassCard key={p.id} padding="sm" className="flex items-center gap-3">
+              <GlassCard key={p.id} padding="sm" className="flex items-center gap-3" style={{ background: "var(--glass-bg-dark)" }}>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-white truncate">{p.nombre}</p>
                   <p className="text-xs text-white/45 truncate">
@@ -140,8 +139,7 @@ export default function PlanificacionesPage() {
                 </button>
                 <button
                   onClick={() => selectPlan(p.id)}
-                  className="shrink-0 rounded-full px-3.5 py-2 text-xs font-semibold text-white cursor-pointer transition-colors"
-                  style={{ background: "var(--gym)" }}
+                  className="shrink-0 rounded-full px-3.5 py-2 text-xs font-semibold text-white cursor-pointer transition-colors bg-white/[0.1] hover:bg-white/[0.18] glass-specular-ring"
                 >
                   Seleccionar
                 </button>
@@ -165,7 +163,7 @@ export default function PlanificacionesPage() {
                   padding="none"
                   onClick={() => router.push(`/gym/entrenamiento/planificaciones/${p.id}`)}
                   className="relative shrink-0 w-48 h-32 flex flex-col justify-end p-3.5 overflow-hidden cursor-pointer"
-                  style={{ background: "linear-gradient(160deg, var(--gym)33, var(--gym-2)22)" }}
+                  style={{ background: "var(--glass-bg-dark)" }}
                 >
                   {p.activo && (
                     <span className="absolute top-2.5 right-2.5">
@@ -181,7 +179,7 @@ export default function PlanificacionesPage() {
                   <GlassCard
                     padding="none"
                     className="shrink-0 w-48 h-32 flex flex-col justify-end p-3.5 overflow-hidden"
-                    style={{ background: p.gradient }}
+                    style={{ background: "var(--glass-bg-dark)" }}
                   >
                     <p className="text-sm font-bold text-white leading-tight">{p.nombre}</p>
                     <p className="text-[11px] text-white/55 flex items-center gap-1 mt-1">
