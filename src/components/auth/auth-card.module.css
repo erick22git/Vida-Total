@@ -372,7 +372,9 @@
 /* ── Mobile ── */
 @media (max-width: 599px) {
   .flipContainer {
-    height: 660px;
+    /* Antes 660px — dejaba una tarjeta enorme con mucho espacio vacío y
+       empujaba el botón de Google fuera de la pantalla sin hacer scroll. */
+    height: 500px;
   }
   .outer,
   .outerWide {
@@ -380,7 +382,10 @@
     max-width: 100%;
   }
   .cardBody {
-    padding: 22px 18px;
+    padding: 16px 16px;
+  }
+  .logoWrap {
+    margin-bottom: 12px;
   }
   .gridTwo {
     grid-template-columns: 1fr;
@@ -390,10 +395,17 @@
     align-items: flex-start;
     gap: 10px;
   }
+  /* iOS Safari hace zoom automático al enfocar un input con font-size
+     menor a 16px — el resto de la tarjeta se puede achicar, pero el
+     texto de los inputs necesita quedarse en 16px mínimo. */
+  .input {
+    font-size: 16px;
+    height: 42px;
+  }
 }
 
 @media (max-width: 360px) {
   .flipContainer {
-    height: 700px;
+    height: 540px;
   }
 }

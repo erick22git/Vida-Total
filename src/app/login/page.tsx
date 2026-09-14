@@ -100,7 +100,7 @@ function GoogleButton() {
 export default function LoginPage() {
   return (
     <LoginVidrio>
-      <div className="w-full h-full flex flex-col items-center justify-center px-4 py-8 overflow-y-auto gap-2">
+      <div className="w-full h-full flex flex-col items-center justify-center px-4 py-4 sm:py-8 overflow-y-auto gap-2">
         <AuthCard />
         <Suspense fallback={null}>
           <LoginError />
