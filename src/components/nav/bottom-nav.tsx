@@ -30,7 +30,7 @@ const BUBBLE_IDLE_MS = 2500;
 // Porcentaje de su propio ancho que la burbuja esconde fuera del borde
 // izquierdo en el estado "peek" — solo deja ver un borde redondeado como
 // indicación de que está ahí, sin ícono ni texto legible.
-const PEEK_TRANSLATE = "translateX(-72%)";
+const PEEK_TRANSLATE = "translateX(-85%)";
 
 const GLASS_BACKGROUND = "color-mix(in srgb, var(--background) 88%, transparent)";
 
