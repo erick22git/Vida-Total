@@ -46,11 +46,20 @@ function PieSesion() {
 }
 
 /**
- * Tarjeta de login con flip 3D — portada de
- * C:\Erick\Gym\src\pages\Login.jsx (mecánica: .login-flip-container /
- * .login-flip-inner / .login-flip-front / .login-flip-back, solo
- * lectura). El frente es el formulario de Login; el reverso alterna
- * entre Registro y Olvidé mi contraseña según `vista`.
+ * Tarjeta de login. Antes usaba un flip 3D (rotateY + perspective,
+ * portado de C:\Erick\Gym\src\pages\Login.jsx) para pasar de Login a
+ * Registro/Olvidé-contraseña — se quitó porque combinar un
+ * `backdrop-filter` (el blur de `.card`) con un padre en
+ * `transform-style: preserve-3d` es una combinación con soporte
+ * inconsistente en WebKit/Safari (la misma familia de bug ya vista en
+ * el BottomNav — ver globals.css): en un iPhone real la tarjeta
+ * giraba pero el compositor la "corregía" de golpe a mitad de la
+ * animación en vez de completar el giro. Ahora es un simple cambio
+ * de contenido (sin animación de transición entre vistas) — más
+ * liviano y sin ese bug. Como ya no hay dos caras montadas a la vez,
+ * la altura de la tarjeta también se ajusta sola al contenido de
+ * cada vista en vez de reservar siempre el alto de la vista más
+ * larga (Registro).
  */
 export function AuthCard() {
   const [vista, setVista] = useState<Vista>("login");
@@ -63,8 +72,6 @@ export function AuthCard() {
     setTimeout(() => setErrorGlow(false), 700);
   }, []);
 
-  const flipped = vista !== "login";
-
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96, y: 16 }}
@@ -72,35 +79,23 @@ export function AuthCard() {
       transition={{ duration: 0.35, ease: "easeOut" }}
       className={`${styles.outer}${vista === "registrar" ? ` ${styles.outerWide}` : ""}`}
     >
-      <div className={styles.flipContainer}>
-        <div className={`${styles.flipInner}${flipped ? ` ${styles.flipped}` : ""}`}>
-          <div className={styles.flipFront}>
-            <div className={styles.card}>
-              <div className={styles.cardBody}>
-                <LogoTitulo titulo={TITULOS.login} shakeKey={shakeKey} errorGlow={errorGlow} />
-                <LoginForm
-                  onRegistrar={() => setVista("registrar")}
-                  onRecuperar={() => setVista("recuperar")}
-                  onError={handleError}
-                />
-                <PieSesion />
-              </div>
-            </div>
-          </div>
-          <div className={styles.flipBack}>
-            <div className={styles.card}>
-              <div className={styles.cardBody}>
-                <LogoTitulo
-                  titulo={vista === "registrar" ? TITULOS.registrar : TITULOS.recuperar}
-                  shakeKey={0}
-                  errorGlow={false}
-                />
-                {vista === "registrar" && <RegisterForm onVolver={() => setVista("login")} />}
-                {vista === "recuperar" && <ForgotPasswordForm onVolver={() => setVista("login")} />}
-                <PieSesion />
-              </div>
-            </div>
-          </div>
+      <div className={styles.card}>
+        <div className={styles.cardBody}>
+          <LogoTitulo
+            titulo={vista === "login" ? TITULOS.login : vista === "registrar" ? TITULOS.registrar : TITULOS.recuperar}
+            shakeKey={shakeKey}
+            errorGlow={errorGlow}
+          />
+          {vista === "login" && (
+            <LoginForm
+              onRegistrar={() => setVista("registrar")}
+              onRecuperar={() => setVista("recuperar")}
+              onError={handleError}
+            />
+          )}
+          {vista === "registrar" && <RegisterForm onVolver={() => setVista("login")} />}
+          {vista === "recuperar" && <ForgotPasswordForm onVolver={() => setVista("login")} />}
+          <PieSesion />
         </div>
       </div>
     </motion.div>

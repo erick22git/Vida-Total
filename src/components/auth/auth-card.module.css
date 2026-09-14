@@ -1,8 +1,10 @@
-/* Flip 3D de la tarjeta de login — portado de
-   C:\Erick\Gym\src\pages\Login.css (solo lectura, mecánica fiel al
-   original: perspective + transform-style: preserve-3d + rotateY(180deg)).
-   Colores/tipografía adaptados al dark-theme de Vida Total (ver
-   src/app/globals.css: --background #0a0a0f) en vez del tema del gym. */
+/* Tarjeta de login. Colores/tipografía adaptados al dark-theme de Vida
+   Total (ver src/app/globals.css: --background #0a0a0f).
+   Nota: esto ya NO usa el flip 3D (rotateY + preserve-3d) que tenía —
+   ver el comentario en auth-card.tsx sobre el bug de WebKit que causaba
+   (combinar backdrop-filter con un padre 3D-transformado). Ahora es un
+   simple crossfade entre vistas, así que la tarjeta se dimensiona sola
+   según el contenido de cada vista en vez de un alto fijo. */
 
 .outer {
   width: 100%;
@@ -13,57 +15,9 @@
   max-width: 460px;
 }
 
-.flipContainer {
-  perspective: 1500px;
-  position: relative;
-  width: 100%;
-  height: 640px;
-}
-
-.flipInner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  transition: transform 700ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.flipInner.flipped {
-  transform: rotateY(180deg);
-}
-
-.flipFront,
-.flipBack {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  background: transparent;
-  /* La cara oculta sigue apilada en el mismo espacio 3D y recibiría
-     clicks sin esto, bloqueando el formulario visible. */
-  pointer-events: none;
-}
-
-.flipInner:not(.flipped) .flipFront {
-  pointer-events: auto;
-}
-
-.flipInner.flipped .flipBack {
-  pointer-events: auto;
-}
-
-.flipBack {
-  transform: rotateY(180deg);
-}
-
 .card {
   width: 100%;
-  height: 100%;
   border-radius: 28px;
-  display: flex;
-  flex-direction: column;
   background: rgba(10, 12, 15, 0.55);
   backdrop-filter: blur(28px) saturate(140%);
   -webkit-backdrop-filter: blur(28px) saturate(140%);
@@ -72,13 +26,9 @@
 }
 
 .cardBody {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: clamp(24px, 5vw, 44px) clamp(20px, 5vw, 38px) clamp(20px, 4vw, 32px);
+  max-height: 82vh;
   overflow-y: auto;
+  padding: clamp(20px, 5vw, 44px) clamp(20px, 5vw, 38px) clamp(18px, 4vw, 32px);
 }
 
 .logoWrap {
@@ -238,8 +188,10 @@
   margin-top: 6px;
   height: 48px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: linear-gradient(180deg, rgba(99, 102, 241, 0.85), rgba(79, 70, 229, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
   color: #ffffff;
   font-size: 14.5px;
   font-weight: 600;
@@ -249,12 +201,11 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  transition: filter 0.15s, transform 0.1s;
+  transition: background 0.15s, transform 0.1s;
 }
 
 .submitBtn:hover:not(:disabled) {
-  filter: brightness(1.08);
+  background: rgba(0, 0, 0, 0.44);
 }
 
 .submitBtn:disabled {
@@ -359,9 +310,6 @@
 
 /* ── Tablet ── */
 @media (max-width: 1023px) and (min-width: 600px) {
-  .flipContainer {
-    height: 600px;
-  }
   .outer,
   .outerWide {
     width: 85vw;
@@ -371,21 +319,21 @@
 
 /* ── Mobile ── */
 @media (max-width: 599px) {
-  .flipContainer {
-    /* Antes 660px — dejaba una tarjeta enorme con mucho espacio vacío y
-       empujaba el botón de Google fuera de la pantalla sin hacer scroll. */
-    height: 500px;
-  }
   .outer,
   .outerWide {
     width: 94vw;
     max-width: 100%;
   }
   .cardBody {
-    padding: 16px 16px;
+    padding: 14px 14px;
+  }
+  .logoIcon {
+    width: 46px;
+    height: 46px;
+    margin-bottom: 8px;
   }
   .logoWrap {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
   .gridTwo {
     grid-template-columns: 1fr;
@@ -401,11 +349,5 @@
   .input {
     font-size: 16px;
     height: 42px;
-  }
-}
-
-@media (max-width: 360px) {
-  .flipContainer {
-    height: 540px;
   }
 }
