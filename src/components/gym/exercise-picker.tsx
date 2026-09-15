@@ -35,11 +35,12 @@ export function ExercisePicker({
   multiple?: boolean;
   activeExerciseId?: string;
   onInfo?: (exercise: Exercise) => void;
-  /** Clases extra para el wrapper `sticky` del botón de confirmar. Cuando
-   * este picker se usa DENTRO de un GlassModal, "bottom-0" es correcto (el
-   * modal ya flota por encima del BottomNav móvil). Cuando se usa inline en
-   * una página (sin modal), el BottomNav (`fixed bottom-0 z-40`) tapa ese
-   * botón — pásale p.ej. "bottom-20 md:bottom-0 z-30" en ese caso. */
+  /** Clases extra para el wrapper `sticky` del botón de confirmar (p.ej.
+   * "z-30" cuando este picker se usa inline en una página, para quedar
+   * por encima de otro contenido con z-index propio). El BottomNav móvil
+   * ya no necesita clearance extra aquí: es `pointer-events-none` salvo
+   * por la burbuja en sí, que además vive semi-oculta contra el borde
+   * izquierdo (ver bottom-nav.tsx) — nunca tapa ni bloquea este botón. */
   confirmButtonClassName?: string;
 }) {
   const allExercises = useAllExercises();

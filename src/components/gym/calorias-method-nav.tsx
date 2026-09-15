@@ -54,7 +54,7 @@ export function CaloriasMethodNav({ variant = "sticky" }: { variant?: "sticky" |
 
   if (variant === "fixed") {
     return (
-      <nav className="fixed bottom-20 md:bottom-6 left-0 right-0 z-30 px-4 py-3 backdrop-blur-xl bg-[color-mix(in_srgb,var(--background)_85%,transparent)] border-t border-white/[0.08]">
+      <nav className="fixed bottom-4 md:bottom-6 left-0 right-0 z-30 px-4 py-3 backdrop-blur-xl bg-[color-mix(in_srgb,var(--background)_85%,transparent)] border-t border-white/[0.08]">
         {pillRow}
       </nav>
     );

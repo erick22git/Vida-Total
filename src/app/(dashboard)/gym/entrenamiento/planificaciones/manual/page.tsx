@@ -95,7 +95,7 @@ export default function ManualPlanCreatorPage() {
             <p className="text-sm text-white/50 -mt-3">Selecciona los ejercicios para {label}.</p>
             <ExercisePicker
               multiple
-              confirmButtonClassName="bottom-20 md:bottom-0 z-30"
+              confirmButtonClassName="z-30"
               onConfirmSelection={(exs) =>
                 setDayDrafts((d) =>
                   d.map((day, idx) =>
@@ -238,7 +238,7 @@ export default function ManualPlanCreatorPage() {
         })}
       </div>
 
-      <div className="fixed bottom-20 md:bottom-6 left-0 right-0 px-5 md:px-8 md:ml-64">
+      <div className="fixed bottom-4 md:bottom-6 left-0 right-0 px-5 md:px-8 md:ml-64">
         <GlassButton accentColor="rgba(255,255,255,0.85)" className="w-full max-w-2xl mx-auto !text-black" size="lg" onClick={handleCreate}>
           Crear Planificación
         </GlassButton>

@@ -54,7 +54,7 @@ export default function NewRoutinePage() {
         <p className="text-sm text-white/50 -mt-3">Selecciona los ejercicios para tu rutina.</p>
         <ExercisePicker
           multiple
-          confirmButtonClassName="bottom-20 md:bottom-0 z-30"
+          confirmButtonClassName="z-30"
           onConfirmSelection={(exs) => addExercises(exs.map((e) => e.id))}
         />
       </div>

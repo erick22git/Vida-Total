@@ -341,7 +341,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
         }}
       />
 
-      <div className="fixed bottom-20 md:bottom-0 left-0 right-0 z-30 p-4 backdrop-blur-xl bg-[color-mix(in_srgb,var(--background)_85%,transparent)] border-t border-white/[0.08] flex flex-col gap-2">
+      <div className="fixed bottom-0 left-0 right-0 z-30 p-4 backdrop-blur-xl bg-[color-mix(in_srgb,var(--background)_85%,transparent)] border-t border-white/[0.08] flex flex-col gap-2">
         <div className="max-w-md mx-auto w-full relative">
           <div className="grid grid-cols-3 gap-2 mb-2">
             <button
