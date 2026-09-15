@@ -33,13 +33,13 @@ export function CaloriasMethodNav({ variant = "sticky" }: { variant?: "sticky" |
             href={href}
             className={cn(
               "flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs md:text-sm font-medium whitespace-nowrap transition-all shrink-0",
-              active ? "text-white" : "text-white/50 hover:text-white/80",
+              active ? "text-black" : "text-white/50 hover:text-white/80",
             )}
             style={
               active
                 ? {
-                    background: "linear-gradient(135deg, var(--gym), var(--gym)CC)",
-                    boxShadow: "0 2px 12px var(--gym)55",
+                    background: "rgba(255,255,255,0.85)",
+                    boxShadow: "0 2px 12px rgba(255,255,255,0.25)",
                   }
                 : undefined
             }

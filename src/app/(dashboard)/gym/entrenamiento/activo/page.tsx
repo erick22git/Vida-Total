@@ -94,8 +94,8 @@ export default function ActiveWorkoutPage() {
         <SessionTimer startedAt={sessionStartedAt} />
         <button
           onClick={() => router.push("/gym/entrenamiento/activo/resumen")}
-          className="rounded-full px-4 py-1.5 text-sm font-semibold text-white cursor-pointer"
-          style={{ background: "linear-gradient(135deg, var(--gym), var(--gym-2))" }}
+          className="rounded-full px-4 py-1.5 text-sm font-semibold text-white glass-specular-ring cursor-pointer"
+          style={{ background: "rgba(255,255,255,0.12)" }}
         >
           Terminar
         </button>

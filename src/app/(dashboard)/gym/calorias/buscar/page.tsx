@@ -147,7 +147,7 @@ function BuscarAlimentosContent() {
             className="flex-1 rounded-xl py-2 text-xs md:text-sm font-medium transition-colors cursor-pointer"
             style={
               tab === t.key
-                ? { background: "var(--gym)", color: "white" }
+                ? { background: "rgba(255,255,255,0.85)", color: "black" }
                 : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)" }
             }
           >

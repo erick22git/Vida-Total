@@ -42,7 +42,7 @@ export default function AguaPage() {
           <ArrowLeft size={20} />
         </Link>
         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2">
-          <Droplets style={{ color: "#3b82f6" }} /> Agua
+          <Droplets className="text-white" /> Agua
         </h1>
       </header>
 
