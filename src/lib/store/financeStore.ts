@@ -11,11 +11,31 @@ import {
   type Transaction,
 } from "@/lib/types/finance";
 import rawCategories from "@/lib/data/finance-categories.json";
+import { getCurrentUserId } from "./user-scope";
+import {
+  syncInsertTransaction,
+  syncUpdateTransaction,
+  syncDeleteTransaction,
+  syncUpsertBudget,
+  syncDeleteBudget,
+  syncInsertGoal,
+  syncUpdateGoal,
+  syncDeleteGoal,
+  hydrateFinanceStoreFromSupabase,
+  type FinanceHydratedState,
+} from "@/lib/sync/finance-sync";
 
 export const CATEGORIES = rawCategories as Category[];
 
+/**
+ * Id único usado tanto como key local como primary key de la fila remota en
+ * Supabase (columnas `uuid` — ver supabase/migrations/0002_module_data_sync.sql).
+ * Antes generaba un string base36 corto que no era un UUID válido; se
+ * cambió a `crypto.randomUUID()` por el mismo motivo que gymStore.ts (ver
+ * `uid()` ahí) — el mismo id sirve como key local y remota, sin mapeo.
+ */
 function uid() {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+  return crypto.randomUUID();
 }
 
 export function todayISO() {
@@ -55,79 +75,124 @@ interface FinanceState {
   updateGoal: (id: string, patch: Partial<SavingsGoal>) => void;
   deleteGoal: (id: string) => void;
   addToGoal: (id: string, amount: number) => void;
+
+  // ---------- Remote sync (Supabase) — interno, no UI pública ----------
+  /** Reemplaza slices del estado con lo traído de Supabase al loguearse.
+   * Ver `hydrateFinanceStoreFromSupabase` (src/lib/sync/finance-sync.ts) y
+   * su único llamador en `UserScopeScript`. Mismo patrón que
+   * `_hydrateFromRemote` en gymStore.ts. */
+  _hydrateFromRemote: (patch: Partial<FinanceState>) => void;
 }
 
 export const useFinanceStore = create<FinanceState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       // Config
       currency: "PEN",
       setCurrency: (currency) => set({ currency }),
 
       // Transacciones
       transactions: [],
-      addTransaction: (tx) =>
+      addTransaction: (tx) => {
+        const created: Transaction = {
+          ...tx,
+          id: uid(),
+          currency: tx.currency ?? get().currency,
+        };
         set((state) => ({
-          transactions: [
-            {
-              ...tx,
-              id: uid(),
-              currency: tx.currency ?? state.currency,
-            },
-            ...state.transactions,
-          ],
-        })),
-      updateTransaction: (id, patch) =>
+          transactions: [created, ...state.transactions],
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertTransaction(created, uidUser);
+      },
+      updateTransaction: (id, patch) => {
         set((state) => ({
           transactions: state.transactions.map((t) =>
             t.id === id ? { ...t, ...patch } : t,
           ),
-        })),
-      deleteTransaction: (id) =>
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdateTransaction(id, patch, uidUser);
+      },
+      deleteTransaction: (id) => {
         set((state) => ({
           transactions: state.transactions.filter((t) => t.id !== id),
-        })),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncDeleteTransaction(id, uidUser);
+      },
 
       // Presupuestos
       budgets: [],
-      addBudget: (budget) =>
+      addBudget: (budget) => {
+        const created: Budget = { ...budget, id: uid() };
         set((state) => ({
-          budgets: [...state.budgets, { ...budget, id: uid() }],
-        })),
-      updateBudget: (id, patch) =>
+          budgets: [...state.budgets, created],
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpsertBudget(created, uidUser);
+      },
+      updateBudget: (id, patch) => {
+        let updated: Budget | null = null;
         set((state) => ({
-          budgets: state.budgets.map((b) => (b.id === id ? { ...b, ...patch } : b)),
-        })),
-      deleteBudget: (id) =>
+          budgets: state.budgets.map((b) => {
+            if (b.id !== id) return b;
+            updated = { ...b, ...patch };
+            return updated;
+          }),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser && updated) syncUpsertBudget(updated, uidUser);
+      },
+      deleteBudget: (id) => {
         set((state) => ({
           budgets: state.budgets.filter((b) => b.id !== id),
-        })),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncDeleteBudget(id, uidUser);
+      },
 
       // Metas de ahorro
       goals: [],
-      addGoal: (goal) =>
+      addGoal: (goal) => {
+        const created: SavingsGoal = { ...goal, id: uid(), currentAmount: goal.currentAmount ?? 0 };
         set((state) => ({
-          goals: [
-            ...state.goals,
-            { ...goal, id: uid(), currentAmount: goal.currentAmount ?? 0 },
-          ],
-        })),
-      updateGoal: (id, patch) =>
+          goals: [...state.goals, created],
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertGoal(created, uidUser);
+      },
+      updateGoal: (id, patch) => {
         set((state) => ({
           goals: state.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)),
-        })),
-      deleteGoal: (id) =>
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdateGoal(id, patch, uidUser);
+      },
+      deleteGoal: (id) => {
         set((state) => ({
           goals: state.goals.filter((g) => g.id !== id),
-        })),
-      addToGoal: (id, amount) =>
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncDeleteGoal(id, uidUser);
+      },
+      addToGoal: (id, amount) => {
+        let nextCurrentAmount: number | null = null;
         set((state) => ({
-          goals: state.goals.map((g) =>
-            g.id === id
-              ? { ...g, currentAmount: Math.max(0, g.currentAmount + amount) }
-              : g,
-          ),
-        })),
+          goals: state.goals.map((g) => {
+            if (g.id !== id) return g;
+            nextCurrentAmount = Math.max(0, g.currentAmount + amount);
+            return { ...g, currentAmount: nextCurrentAmount };
+          }),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser && nextCurrentAmount !== null) {
+          syncUpdateGoal(id, { currentAmount: nextCurrentAmount }, uidUser);
+        }
+      },
+
+      // Remote sync (Supabase)
+      _hydrateFromRemote: (patch) => set(patch),
     }),
     {
       name: "vida-total-finance-store",
@@ -135,6 +200,82 @@ export const useFinanceStore = create<FinanceState>()(
     },
   ),
 );
+
+// ============================================================================
+// Remote sync (Supabase) — hidratación (login / segundo dispositivo)
+// ============================================================================
+//
+// Mismo mecanismo que `hydrateGymStore` en gymStore.ts: se trae lo que haya
+// en Supabase para el usuario y se MEZCLA (nunca reemplaza) con lo que ya
+// hay en el store, para no perder historial local en el primer login de un
+// usuario que ya venía usando la app antes de que existiera esta capa de
+// sync (Supabase arranca sin filas para él). Lo que era solo local se sube
+// (backfill) para que también quede en la nube.
+
+/**
+ * Mezcla un array remoto con uno local por `id`: conserva TODAS las filas
+ * remotas y agrega las locales que el remoto todavía no conoce. Idéntica a
+ * `mergeById` en gymStore.ts (no se comparte el helper entre stores porque
+ * ninguno de los dos exporta el suyo; ver gymStore.ts para la explicación
+ * completa de por qué NUNCA se reemplaza el array local por el remoto).
+ */
+function mergeById<T extends { id: string }>(remote: T[], local: T[]): { merged: T[]; localOnly: T[] } {
+  const remoteIds = new Set(remote.map((r) => r.id));
+  const localOnly = local.filter((l) => !remoteIds.has(l.id));
+  return { merged: [...remote, ...localOnly], localOnly };
+}
+
+/** Clave natural de un presupuesto: coincide con el `unique(user_id,
+ * category_id, budget_month)` de la tabla `budgets` — un presupuesto es
+ * el mismo si tiene la misma categoría y mes, sin importar qué `id` haya
+ * generado cada dispositivo. */
+function budgetKey(b: Budget): string {
+  return `${b.categoryId}__${b.month}`;
+}
+
+/**
+ * Igual que `mergeById`, pero para `budgets`: se mezcla por (categoryId,
+ * month) en vez de por `id`, porque dos presupuestos creados para la misma
+ * categoría+mes en dispositivos distintos representan el MISMO presupuesto
+ * (la tabla remota los colapsaría igual vía su `unique`) — mezclar por `id`
+ * los duplicaría en la UI (que asume un presupuesto por categoría+mes, ver
+ * `presupuestos/page.tsx`). Ante conflicto, el remoto gana (mismo criterio
+ * que `mergeById`: el remoto siempre se conserva tal cual).
+ */
+function mergeBudgets(remote: Budget[], local: Budget[]): { merged: Budget[]; localOnly: Budget[] } {
+  const remoteKeys = new Set(remote.map(budgetKey));
+  const localOnly = local.filter((l) => !remoteKeys.has(budgetKey(l)));
+  return { merged: [...remote, ...localOnly], localOnly };
+}
+
+/**
+ * Trae las 3 tablas de Finanzas de Supabase para `userId`, las MEZCLA
+ * (nunca reemplaza) con lo que ya hay en el store, y sube (backfill)
+ * cualquier dato que solo existiera localmente. Pensado para llamarse UNA
+ * vez por sesión de login, apenas se conoce el userId (ver
+ * `UserScopeScript`). Tolerante a fallos: si Supabase no responde, cada
+ * tabla cae de vuelta a `[]` y el merge deja todo el estado local intacto.
+ */
+export async function hydrateFinanceStore(userId: string): Promise<void> {
+  const remote: FinanceHydratedState = await hydrateFinanceStoreFromSupabase(userId);
+  const local = useFinanceStore.getState();
+
+  const transactions = mergeById(remote.transactions, local.transactions);
+  const budgets = mergeBudgets(remote.budgets, local.budgets);
+  const goals = mergeById(remote.goals, local.goals);
+
+  const patch: Partial<FinanceState> = {
+    transactions: transactions.merged,
+    budgets: budgets.merged,
+    goals: goals.merged,
+  };
+  useFinanceStore.getState()._hydrateFromRemote(patch);
+
+  // Backfill: sube a Supabase lo que era solo local.
+  for (const tx of transactions.localOnly) syncInsertTransaction(tx, userId);
+  for (const budget of budgets.localOnly) syncUpsertBudget(budget, userId);
+  for (const goal of goals.localOnly) syncInsertGoal(goal, userId);
+}
 
 // ---------- Selectors / helpers ----------
 
