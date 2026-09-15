@@ -75,7 +75,7 @@ export default function EntrenamientoPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageBackdrop
-        src="/backgrounds/entrenamiento.png"
+        src="/backgrounds/entrenamiento.webp"
         positionClass="object-[50%_70%] md:object-[50%_60%] lg:object-[50%_50%]"
       />
 

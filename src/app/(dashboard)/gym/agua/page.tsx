@@ -30,7 +30,7 @@ export default function AguaPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageBackdrop
-        src="/backgrounds/agua.png"
+        src="/backgrounds/agua.webp"
         positionClass="object-[60%_40%] md:object-[55%_45%] lg:object-[50%_50%]"
       />
 

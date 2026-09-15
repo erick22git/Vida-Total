@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
+import { PageBackdrop } from "@/components/layout/page-backdrop";
 import { WeatherIcon } from "@/components/outfit/weather-icon";
 import { WEATHER_CONDITION_LABELS } from "@/lib/outfit-utils";
 import { useOutfitStore } from "@/lib/store/outfitStore";
@@ -50,6 +51,11 @@ export default function OutfitHubPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <PageBackdrop src="/backgrounds/outfit.webp" />
+
+      {/* `relative`: sin position, estos hijos se pintan debajo del
+      PageBackdrop (fixed) sin importar el orden en el DOM. */}
+      <div className="relative flex flex-col gap-6">
       <header className="flex flex-col gap-1 pt-2">
         <p className="text-white/50 text-sm md:text-base">Módulo</p>
         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2">
@@ -92,6 +98,7 @@ export default function OutfitHubPage() {
           </Link>
         ))}
       </section>
+      </div>
     </div>
   );
 }

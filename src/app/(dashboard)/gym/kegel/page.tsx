@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { PageBackdrop } from "@/components/layout/page-backdrop";
 import { useGymStore } from "@/lib/store/gymStore";
 
 const TOTAL_REPS = 10;
@@ -70,6 +71,11 @@ export default function KegelPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <PageBackdrop src="/backgrounds/kegel.webp" />
+
+      {/* `relative`: sin position, estos hijos se pintan debajo del
+      PageBackdrop (fixed) sin importar el orden en el DOM. */}
+      <div className="relative flex flex-col gap-6">
       <header className="flex items-center gap-3 pt-2">
         <Link href="/gym" className="text-white/50 hover:text-white transition-colors">
           <ArrowLeft size={20} />
@@ -150,6 +156,7 @@ export default function KegelPage() {
           </GlassButton>
         </div>
       )}
+      </div>
     </div>
   );
 }

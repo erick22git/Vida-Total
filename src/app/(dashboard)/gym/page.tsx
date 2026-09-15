@@ -48,7 +48,7 @@ export default function GymHubPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageBackdrop
-        src="/backgrounds/gym.png"
+        src="/backgrounds/gym.webp"
         positionClass="object-[75%_center] md:object-[65%_center] lg:object-[50%_center]"
       />
 

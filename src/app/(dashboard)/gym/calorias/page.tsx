@@ -74,7 +74,7 @@ export default function CaloriasPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageBackdrop
-        src="/backgrounds/calorias.png"
+        src="/backgrounds/calorias.webp"
         positionClass="object-[60%_center] md:object-[50%_center] lg:object-[50%_center]"
       />
 

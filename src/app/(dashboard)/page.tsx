@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Flame, Droplets, Dumbbell, Sparkles, Shirt, Leaf, Wallet, CalendarCheck2, Rows3, ArrowUpRight, ArrowDownRight, Mic } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { PageBackdrop } from "@/components/layout/page-backdrop";
 import {
   useGymStore,
   useTodayLoggedFoods,
@@ -54,6 +55,11 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <PageBackdrop src="/backgrounds/home.webp" />
+
+      {/* `relative`: sin position, estos hijos se pintan debajo del
+      PageBackdrop (fixed) sin importar el orden en el DOM. */}
+      <div className="relative flex flex-col gap-6">
       <header className="flex flex-col gap-1 pt-2">
         <p className="text-white/50 text-sm md:text-base">Hola de nuevo</p>
         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
@@ -236,6 +242,7 @@ export default function HomePage() {
           </GlassCard>
         </Link>
       </section>
+      </div>
     </div>
   );
 }
