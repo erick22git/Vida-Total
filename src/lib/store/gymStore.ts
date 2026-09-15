@@ -25,10 +25,58 @@ import type {
 import { DEFAULT_TRACKED_NUTRIENTS } from "@/lib/types";
 import { DEFAULT_WEEKLY_PLAN } from "@/lib/data/weekly-plan";
 import type { DrinkOverride } from "@/lib/data/drinks";
+import { getCurrentUserId } from "./user-scope";
+import {
+  syncInsertLoggedFood,
+  syncUpdateLoggedFood,
+  syncDeleteLoggedFood,
+  syncReorderLoggedFoods,
+  syncInsertLoggedFoodsBulk,
+  syncDeleteLoggedFoodsWhere,
+  syncUpdateLoggedFoodsBulk,
+  syncInsertMealTemplate,
+  syncInsertCustomFood,
+  syncUpdateCustomFood,
+  syncAddFavoriteFood,
+  syncRemoveFavoriteFood,
+  syncInsertCustomPortion,
+  syncInsertRecipe,
+  syncUpdateRecipe,
+  syncDeleteRecipe,
+  syncInsertWaterEntry,
+  syncDeleteWaterEntry,
+  syncInsertWorkoutSession,
+  syncInsertRoutine,
+  syncUpdateRoutine,
+  syncDeleteRoutine,
+  syncInsertPlan,
+  syncUpdatePlan,
+  syncSetActivePlan,
+  syncInsertCustomExercise,
+  syncInsertWeightEntry,
+  syncDeleteWeightEntry,
+  upsertGymSettings,
+  upsertGymWorkoutState,
+  hydrateGymStoreFromSupabase,
+  type GymHydratedState,
+} from "@/lib/sync/gym-sync";
 
+/**
+ * Id único usado tanto como key local (React, lookups en el store) como
+ * primary key de la fila remota en Supabase (columnas `uuid` — ver
+ * supabase/migrations/0002_module_data_sync.sql). Antes generaba un string
+ * base36 corto que NO era un UUID válido; se cambió a `crypto.randomUUID()`
+ * para que el mismo id sirva en ambos lados sin mantener un mapeo
+ * id-local <-> id-remoto.
+ */
 function uid() {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+  return crypto.randomUUID();
 }
+
+/** true mientras se aplica un patch de `_hydrateFromRemote` — evita que la
+ * suscripción de sync de gym_settings/gym_workout_state (ver abajo de este
+ * archivo) reenvíe a Supabase los mismos datos que se acaban de traer. */
+let isHydratingFromRemote = false;
 
 /**
  * Timestamp that falls on `date`'s calendar day, keeping the current
@@ -42,7 +90,7 @@ function timestampForDate(date: Date): number {
   return d.getTime();
 }
 
-interface GymState {
+export interface GymState {
   // ---------- Nutrition ----------
   calorieGoal: number;
   proteinGoal: number;
@@ -183,6 +231,14 @@ interface GymState {
     showFinishDayButton: boolean;
   };
   setDashboardPref: (key: keyof GymState["dashboardPrefs"], value: boolean) => void;
+
+  // ---------- Remote sync (Supabase) — interno, no UI pública ----------
+  /** Reemplaza slices del estado con lo traído de Supabase al loguearse.
+   * Ver `hydrateGymStoreFromSupabase` (src/lib/sync/gym-sync.ts) y su único
+   * llamador en `UserScopeScript`. No se persiste (es una función, zustand
+   * `persist` solo serializa datos vía JSON.stringify) ni se expone como
+   * API pública del store más allá de este uso interno. */
+  _hydrateFromRemote: (patch: Partial<GymState>) => void;
 }
 
 export const useGymStore = create<GymState>()(
@@ -196,20 +252,32 @@ export const useGymStore = create<GymState>()(
       loggedFoods: [],
       addLoggedFood: (food) => {
         const created: LoggedFood = { activo: true, ...food, id: uid(), timestamp: Date.now() };
-        set((state) => ({
-          loggedFoods: [...state.loggedFoods, created],
-        }));
+        const uidUser = getCurrentUserId();
+        let orden = 0;
+        set((state) => {
+          orden = state.loggedFoods.filter(
+            (f) => f.meal === created.meal && isSameDay(new Date(f.timestamp), new Date(created.timestamp)),
+          ).length;
+          return { loggedFoods: [...state.loggedFoods, created] };
+        });
+        if (uidUser) syncInsertLoggedFood(created, orden, uidUser);
         return created;
       },
-      removeLoggedFood: (id) =>
+      removeLoggedFood: (id) => {
         set((state) => ({
           loggedFoods: state.loggedFoods.filter((f) => f.id !== id),
-        })),
-      updateLoggedFood: (id, patch) =>
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncDeleteLoggedFood(id, uidUser);
+      },
+      updateLoggedFood: (id, patch) => {
         set((state) => ({
           loggedFoods: state.loggedFoods.map((f) => (f.id === id ? { ...f, ...patch } : f)),
-        })),
-      reorderMealFoods: (meal, orderedIds, date) =>
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdateLoggedFood(id, patch, uidUser);
+      },
+      reorderMealFoods: (meal, orderedIds, date) => {
         set((state) => {
           const day = date ?? new Date();
           const inMeal = (f: LoggedFood) => f.meal === meal && isSameDay(new Date(f.timestamp), day);
@@ -217,7 +285,10 @@ export const useGymStore = create<GymState>()(
           const map = new Map(state.loggedFoods.filter(inMeal).map((f) => [f.id, f] as const));
           const reordered = orderedIds.map((id) => map.get(id)).filter((f): f is LoggedFood => !!f);
           return { loggedFoods: [...others, ...reordered] };
-        }),
+        });
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncReorderLoggedFoods(orderedIds, uidUser);
+      },
 
       // Meal actions (menu "···")
       mealClipboard: null,
@@ -229,18 +300,31 @@ export const useGymStore = create<GymState>()(
           );
           return { mealClipboard: items.length ? items : null };
         }),
-      pasteMeal: (meal, date) =>
+      pasteMeal: (meal, date) => {
+        const day = date ?? new Date();
+        let pasted: LoggedFood[] = [];
+        let baseOrden = 0;
         set((state) => {
           if (!state.mealClipboard || state.mealClipboard.length === 0) return state;
-          const day = date ?? new Date();
-          const pasted = state.mealClipboard.map((f) => ({
+          baseOrden = state.loggedFoods.filter(
+            (f) => f.meal === meal && isSameDay(new Date(f.timestamp), day),
+          ).length;
+          pasted = state.mealClipboard.map((f) => ({
             ...f,
             id: uid(),
             meal,
             timestamp: timestampForDate(day),
           }));
           return { loggedFoods: [...state.loggedFoods, ...pasted] };
-        }),
+        });
+        const uidUser = getCurrentUserId();
+        if (uidUser && pasted.length > 0) {
+          syncInsertLoggedFoodsBulk(
+            pasted.map((food, i) => ({ food, orden: baseOrden + i })),
+            uidUser,
+          );
+        }
+      },
       repeatMeal: (meal, date) => {
         const state = get();
         const day = date ?? new Date();
@@ -251,42 +335,58 @@ export const useGymStore = create<GymState>()(
         const lastTimestamp = past[0].timestamp;
         const lastDay = new Date(lastTimestamp);
         const lastMealItems = past.filter((f) => isSameDay(new Date(f.timestamp), lastDay));
+        const baseOrden = state.loggedFoods.filter(
+          (f) => f.meal === meal && isSameDay(new Date(f.timestamp), day),
+        ).length;
+        const repeated = lastMealItems.map((f) => ({ ...f, id: uid(), timestamp: timestampForDate(day) }));
         set((s) => ({
-          loggedFoods: [
-            ...s.loggedFoods,
-            ...lastMealItems.map((f) => ({ ...f, id: uid(), timestamp: timestampForDate(day) })),
-          ],
+          loggedFoods: [...s.loggedFoods, ...repeated],
         }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) {
+          syncInsertLoggedFoodsBulk(
+            repeated.map((food, i) => ({ food, orden: baseOrden + i })),
+            uidUser,
+          );
+        }
         return true;
       },
-      clearMeal: (meal, date) =>
+      clearMeal: (meal, date) => {
+        const day = date ?? new Date();
+        let removedIds: string[] = [];
         set((state) => {
-          const day = date ?? new Date();
+          const toRemove = state.loggedFoods.filter((f) => f.meal === meal && isSameDay(new Date(f.timestamp), day));
+          removedIds = toRemove.map((f) => f.id);
           return {
             loggedFoods: state.loggedFoods.filter(
               (f) => !(f.meal === meal && isSameDay(new Date(f.timestamp), day)),
             ),
           };
-        }),
-      scaleMealPortions: (meal, factor, date) =>
-        set((state) => {
-          const day = date ?? new Date();
-          return {
-            loggedFoods: state.loggedFoods.map((f) =>
-              f.meal === meal && isSameDay(new Date(f.timestamp), day)
-                ? {
-                    ...f,
-                    calorias: Math.round(f.calorias * factor),
-                    proteina: Math.round(f.proteina * factor * 10) / 10,
-                    carbos: Math.round(f.carbos * factor * 10) / 10,
-                    grasas: Math.round(f.grasas * factor * 10) / 10,
-                    cantidad: f.cantidad ? Math.round(f.cantidad * factor * 100) / 100 : f.cantidad,
-                    gramos: f.gramos ? Math.round(f.gramos * factor * 10) / 10 : f.gramos,
-                  }
-                : f,
-            ),
-          };
-        }),
+        });
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncDeleteLoggedFoodsWhere(removedIds, uidUser);
+      },
+      scaleMealPortions: (meal, factor, date) => {
+        const day = date ?? new Date();
+        const updates: { id: string; patch: Partial<LoggedFood> }[] = [];
+        set((state) => ({
+          loggedFoods: state.loggedFoods.map((f) => {
+            if (!(f.meal === meal && isSameDay(new Date(f.timestamp), day))) return f;
+            const patch: Partial<LoggedFood> = {
+              calorias: Math.round(f.calorias * factor),
+              proteina: Math.round(f.proteina * factor * 10) / 10,
+              carbos: Math.round(f.carbos * factor * 10) / 10,
+              grasas: Math.round(f.grasas * factor * 10) / 10,
+              cantidad: f.cantidad ? Math.round(f.cantidad * factor * 100) / 100 : f.cantidad,
+              gramos: f.gramos ? Math.round(f.gramos * factor * 10) / 10 : f.gramos,
+            };
+            updates.push({ id: f.id, patch });
+            return { ...f, ...patch };
+          }),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdateLoggedFoodsBulk(updates, uidUser);
+      },
       mealTemplates: [],
       saveMealAsTemplate: (meal, nombre, date) => {
         const state = get();
@@ -315,24 +415,38 @@ export const useGymStore = create<GymState>()(
           createdAt: Date.now(),
         };
         set((s) => ({ mealTemplates: [template, ...s.mealTemplates] }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertMealTemplate(template, uidUser);
         return template;
       },
-      applyMealTemplate: (templateId, meal) =>
+      applyMealTemplate: (templateId, meal) => {
+        let created: LoggedFood[] = [];
+        let baseOrden = 0;
         set((state) => {
           const template = state.mealTemplates.find((t) => t.id === templateId);
           if (!template) return state;
+          const day = new Date();
+          baseOrden = state.loggedFoods.filter(
+            (f) => f.meal === meal && isSameDay(new Date(f.timestamp), day),
+          ).length;
+          created = template.items.map((item) => ({
+            ...item,
+            id: uid(),
+            timestamp: Date.now(),
+            meal,
+          }));
           return {
-            loggedFoods: [
-              ...state.loggedFoods,
-              ...template.items.map((item) => ({
-                ...item,
-                id: uid(),
-                timestamp: Date.now(),
-                meal,
-              })),
-            ],
+            loggedFoods: [...state.loggedFoods, ...created],
           };
-        }),
+        });
+        const uidUser = getCurrentUserId();
+        if (uidUser && created.length > 0) {
+          syncInsertLoggedFoodsBulk(
+            created.map((food, i) => ({ food, orden: baseOrden + i })),
+            uidUser,
+          );
+        }
+      },
 
       // Nutrient tracking preferences
       trackedNutrients: DEFAULT_TRACKED_NUTRIENTS,
@@ -345,73 +459,107 @@ export const useGymStore = create<GymState>()(
       // Custom foods & favorites
       customFoods: [],
       addCustomFood: (food) => {
-        const created: Food = { ...food, id: `custom-${uid()}`, creadoPorUsuario: true };
+        const created: Food = { ...food, id: uid(), creadoPorUsuario: true };
         set((state) => ({ customFoods: [created, ...state.customFoods] }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertCustomFood(created, uidUser);
         return created;
       },
-      updateCustomFood: (id, patch) =>
+      updateCustomFood: (id, patch) => {
         set((state) => ({
           customFoods: state.customFoods.map((f) => (f.id === id ? { ...f, ...patch } : f)),
-        })),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdateCustomFood(id, patch, uidUser);
+      },
       favoriteFoodIds: [],
-      toggleFavoriteFood: (foodId) =>
+      toggleFavoriteFood: (foodId) => {
+        const wasFavorite = get().favoriteFoodIds.includes(foodId);
         set((state) => ({
-          favoriteFoodIds: state.favoriteFoodIds.includes(foodId)
+          favoriteFoodIds: wasFavorite
             ? state.favoriteFoodIds.filter((id) => id !== foodId)
             : [...state.favoriteFoodIds, foodId],
-        })),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) {
+          if (wasFavorite) syncRemoveFavoriteFood(foodId, uidUser);
+          else syncAddFavoriteFood(foodId, uidUser);
+        }
+      },
       customPortionsByFood: {},
-      addCustomPortion: (foodId, portion) =>
+      addCustomPortion: (foodId, portion) => {
         set((state) => ({
           customPortionsByFood: {
             ...state.customPortionsByFood,
             [foodId]: [...(state.customPortionsByFood[foodId] ?? []), portion],
           },
-        })),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertCustomPortion(foodId, portion, uidUser);
+      },
 
       // Recipes
       recipes: [],
       addRecipe: (recipe) => {
-        const created: Recipe = { ...recipe, id: `recipe-${uid()}`, createdAt: Date.now() };
+        const created: Recipe = { ...recipe, id: uid(), createdAt: Date.now() };
         set((state) => ({ recipes: [created, ...state.recipes] }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertRecipe(created, uidUser);
         return created;
       },
-      updateRecipe: (id, patch) =>
+      updateRecipe: (id, patch) => {
         set((state) => ({
           recipes: state.recipes.map((r) => (r.id === id ? { ...r, ...patch } : r)),
-        })),
-      toggleFavoriteRecipe: (id) =>
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdateRecipe(id, patch, uidUser);
+      },
+      toggleFavoriteRecipe: (id) => {
+        let nextFavorito = false;
         set((state) => ({
-          recipes: state.recipes.map((r) =>
-            r.id === id ? { ...r, favorito: !r.favorito } : r,
-          ),
-        })),
-      deleteRecipe: (id) =>
-        set((state) => ({ recipes: state.recipes.filter((r) => r.id !== id) })),
+          recipes: state.recipes.map((r) => {
+            if (r.id !== id) return r;
+            nextFavorito = !r.favorito;
+            return { ...r, favorito: nextFavorito };
+          }),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdateRecipe(id, { favorito: nextFavorito }, uidUser);
+      },
+      deleteRecipe: (id) => {
+        set((state) => ({ recipes: state.recipes.filter((r) => r.id !== id) }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncDeleteRecipe(id, uidUser);
+      },
 
       // Water
       waterGoalMl: 2500,
       waterEntries: [],
-      addWater: (ml, drink) =>
+      addWater: (ml, drink) => {
+        const created: WaterEntry = {
+          id: uid(),
+          ml,
+          timestamp: Date.now(),
+          drinkId: drink?.id,
+          drinkNombre: drink?.nombre,
+          drinkEmoji: drink?.emoji,
+        };
         set((state) => ({
-          waterEntries: [
-            ...state.waterEntries,
-            {
-              id: uid(),
-              ml,
-              timestamp: Date.now(),
-              drinkId: drink?.id,
-              drinkNombre: drink?.nombre,
-              drinkEmoji: drink?.emoji,
-            },
-          ],
-        })),
-      removeWaterEntry: (id) =>
+          waterEntries: [...state.waterEntries, created],
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertWaterEntry(created, uidUser);
+      },
+      removeWaterEntry: (id) => {
         set((state) => ({
           waterEntries: state.waterEntries.filter((w) => w.id !== id),
-        })),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncDeleteWaterEntry(id, uidUser);
+      },
 
-      // Bebidas
+      // Bebidas (drinkOverrides/hiddenDrinkIds sincronizan solos vía la
+      // suscripción de gym_settings al final de este archivo)
       drinkOverrides: {},
       setDrinkOverride: (id, patch) =>
         set((state) => ({
@@ -596,13 +744,14 @@ export const useGymStore = create<GymState>()(
           return { restEndsAt: Math.max(Date.now(), next) };
         }),
       clearRest: () => set({ restingExerciseId: null, restEndsAt: null }),
-      finishWorkout: (opts) =>
+      finishWorkout: (opts) => {
+        let finished: WorkoutSession | null = null;
         set((state) => {
           if (!state.activeSession) return state;
           const durationSeconds = state.sessionStartedAt
             ? Math.round((Date.now() - state.sessionStartedAt) / 1000)
             : undefined;
-          const finished: WorkoutSession = {
+          finished = {
             ...state.activeSession,
             nombre: opts?.nombre ?? state.activeSession.nombre,
             completado: true,
@@ -628,7 +777,10 @@ export const useGymStore = create<GymState>()(
             streak,
             lastWorkoutCompletedDate: today.toISOString(),
           };
-        }),
+        });
+        const uidUser = getCurrentUserId();
+        if (uidUser && finished) syncInsertWorkoutSession(finished, uidUser);
+      },
       cancelWorkout: () =>
         set({
           activeSession: null,
@@ -649,20 +801,34 @@ export const useGymStore = create<GymState>()(
           timesCompleted: 0,
         };
         set((state) => ({ routines: [routine, ...state.routines] }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertRoutine(routine, uidUser);
         return routine;
       },
-      updateRoutine: (id, patch) =>
+      updateRoutine: (id, patch) => {
         set((state) => ({
           routines: state.routines.map((r) => (r.id === id ? { ...r, ...patch } : r)),
-        })),
-      deleteRoutine: (id) =>
-        set((state) => ({ routines: state.routines.filter((r) => r.id !== id) })),
-      incrementRoutineCompleted: (id) =>
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdateRoutine(id, patch, uidUser);
+      },
+      deleteRoutine: (id) => {
+        set((state) => ({ routines: state.routines.filter((r) => r.id !== id) }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncDeleteRoutine(id, uidUser);
+      },
+      incrementRoutineCompleted: (id) => {
+        let nextTimesCompleted = 0;
         set((state) => ({
-          routines: state.routines.map((r) =>
-            r.id === id ? { ...r, timesCompleted: r.timesCompleted + 1 } : r,
-          ),
-        })),
+          routines: state.routines.map((r) => {
+            if (r.id !== id) return r;
+            nextTimesCompleted = r.timesCompleted + 1;
+            return { ...r, timesCompleted: nextTimesCompleted };
+          }),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdateRoutine(id, { timesCompleted: nextTimesCompleted }, uidUser);
+      },
 
       // Training plans
       plans: [],
@@ -670,36 +836,53 @@ export const useGymStore = create<GymState>()(
       createPlan: (plan) => {
         const created: TrainingPlan = { ...plan, id: uid(), createdAt: Date.now() };
         set((state) => ({ plans: [created, ...state.plans] }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertPlan(created, uidUser);
         return created;
       },
-      setActivePlan: (id) =>
+      setActivePlan: (id) => {
+        const allIds = get().plans.map((p) => p.id);
         set((state) => ({
           activePlanId: id,
           plans: state.plans.map((p) => ({ ...p, activo: p.id === id })),
-        })),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncSetActivePlan(allIds, id, uidUser);
+      },
       applyPlanToWeek: (id) => {
         const plan = get().plans.find((p) => p.id === id);
         if (!plan) return;
+        // weeklyPlan/activePlanId viven en gym_workout_state y sincronizan
+        // solos vía la suscripción al final de este archivo.
         set({ weeklyPlan: plan.dias, activePlanId: id });
       },
-      updatePlanDay: (planId, dayIndex, patch) =>
+      updatePlanDay: (planId, dayIndex, patch) => {
+        let patchedDias: WeeklyPlanDay[] | null = null;
         set((state) => {
-          const plans = state.plans.map((p) =>
-            p.id === planId
-              ? { ...p, dias: p.dias.map((d, i) => (i === dayIndex ? { ...d, ...patch } : d)) }
-              : p,
-          );
+          const plans = state.plans.map((p) => {
+            if (p.id !== planId) return p;
+            const dias = p.dias.map((d, i) => (i === dayIndex ? { ...d, ...patch } : d));
+            patchedDias = dias;
+            return { ...p, dias };
+          });
           const patchedPlan = plans.find((p) => p.id === planId);
           const weeklyPlan =
             state.activePlanId === planId && patchedPlan ? patchedPlan.dias : state.weeklyPlan;
           return { plans, weeklyPlan };
-        }),
-      updatePlan: (id, patch) =>
+        });
+        const uidUser = getCurrentUserId();
+        if (uidUser && patchedDias) syncUpdatePlan(planId, { dias: patchedDias }, uidUser);
+      },
+      updatePlan: (id, patch) => {
         set((state) => ({
           plans: state.plans.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-        })),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdatePlan(id, patch, uidUser);
+      },
 
-      // Rank preferences
+      // Rank preferences (excludedFromGlobalRank vive en gym_workout_state,
+      // sincroniza solo vía la suscripción al final de este archivo)
       excludedFromGlobalRank: [],
       toggleExerciseGlobalRank: (exerciseId) =>
         set((state) => ({
@@ -711,30 +894,39 @@ export const useGymStore = create<GymState>()(
       // Custom exercises
       customExercises: [],
       addCustomExercise: (ex) => {
-        const created: Exercise = { ...ex, id: `custom-${uid()}` };
+        const created: Exercise = { ...ex, id: uid() };
         set((state) => ({ customExercises: [...state.customExercises, created] }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertCustomExercise(created, uidUser);
         return created;
       },
 
       // Weight tracker
       weightEntries: [],
-      addWeightEntry: (kg, date) =>
+      addWeightEntry: (kg, date) => {
+        const created: WeightEntry = { id: uid(), kg, date: date ?? new Date().toISOString() };
         set((state) => ({
-          weightEntries: [
-            { id: uid(), kg, date: date ?? new Date().toISOString() },
-            ...state.weightEntries,
-          ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-        })),
-      removeWeightEntry: (id) =>
+          weightEntries: [created, ...state.weightEntries].sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+          ),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertWeightEntry(created, uidUser);
+      },
+      removeWeightEntry: (id) => {
         set((state) => ({
           weightEntries: state.weightEntries.filter((w) => w.id !== id),
-        })),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncDeleteWeightEntry(id, uidUser);
+      },
 
       // Streak
       streak: 0,
       lastWorkoutCompletedDate: null,
 
-      // Kegel
+      // Kegel (todos estos campos viven en gym_workout_state y sincronizan
+      // solos vía la suscripción al final de este archivo)
       kegelLevel: 1,
       kegelStreak: 0,
       kegelLastSessionDate: null,
@@ -772,6 +964,13 @@ export const useGymStore = create<GymState>()(
         set((state) => ({
           dashboardPrefs: { ...state.dashboardPrefs, [key]: value },
         })),
+
+      // Remote sync (Supabase)
+      _hydrateFromRemote: (patch) => {
+        isHydratingFromRemote = true;
+        set(patch);
+        isHydratingFromRemote = false;
+      },
     }),
     {
       name: "vida-total-gym-store",
@@ -803,6 +1002,199 @@ export const useGymStore = create<GymState>()(
     },
   ),
 );
+
+// ============================================================================
+// Remote sync (Supabase) — wiring
+// ============================================================================
+//
+// Dos mecanismos distintos, a propósito:
+//
+// 1) Entidades (loggedFoods, customFoods, recipes, routines, etc.): cada
+//    acción del store de arriba llama directamente a su función `syncXxx`
+//    correspondiente (src/lib/sync/gym-sync.ts) justo después de `set(...)`,
+//    fire-and-forget. Se pudo instrumentar así porque siempre pasan por una
+//    acción nombrada del store.
+//
+// 2) "Settings" (gym_settings y gym_workout_state): varios de estos campos
+//    (p.ej. calorieGoal/proteinGoal/carbsGoal/fatGoal) se mutan hoy con
+//    `useGymStore.setState(...)` directo desde componentes de UI, sin pasar
+//    por una acción del store — instrumentar acción por acción no los
+//    cubriría. En su lugar, nos suscribimos al store completo y comparamos
+//    referencias de los campos relevantes (zustand hace merge shallow en
+//    `set`, así que un campo que no cambió conserva la MISMA referencia
+//    entre el estado anterior y el nuevo — comparar con `!==` alcanza, sin
+//    necesitar un deep-equal). Esto también nos da el debounce pedido
+//    (~800ms) en un solo lugar en vez de repetirlo en cada setter.
+
+const SETTINGS_KEYS = [
+  "calorieGoal",
+  "proteinGoal",
+  "carbsGoal",
+  "fatGoal",
+  "waterGoalMl",
+  "trackedNutrients",
+  "showRemaining",
+  "dashboardPrefs",
+  "dayFinishedDate",
+  "drinkOverrides",
+  "hiddenDrinkIds",
+] as const satisfies readonly (keyof GymState)[];
+
+const WORKOUT_STATE_KEYS = [
+  "activePlanId",
+  "weeklyPlan",
+  "excludedFromGlobalRank",
+  "streak",
+  "lastWorkoutCompletedDate",
+  "kegelLevel",
+  "kegelStreak",
+  "kegelLastSessionDate",
+  "kegelTotalSessions",
+] as const satisfies readonly (keyof GymState)[];
+
+function pick<K extends keyof GymState>(state: GymState, keys: readonly K[]): Pick<GymState, K> {
+  const result = {} as Pick<GymState, K>;
+  for (const key of keys) result[key] = state[key];
+  return result;
+}
+
+const DEBOUNCE_MS = 800;
+let settingsDebounce: ReturnType<typeof setTimeout> | null = null;
+let workoutStateDebounce: ReturnType<typeof setTimeout> | null = null;
+
+if (typeof window !== "undefined") {
+  useGymStore.subscribe((state, prevState) => {
+    if (isHydratingFromRemote) return;
+    const uidUser = getCurrentUserId();
+    if (!uidUser) return;
+
+    if (SETTINGS_KEYS.some((key) => state[key] !== prevState[key])) {
+      if (settingsDebounce) clearTimeout(settingsDebounce);
+      const snapshot = pick(state, SETTINGS_KEYS);
+      settingsDebounce = setTimeout(() => {
+        void upsertGymSettings(uidUser, snapshot);
+      }, DEBOUNCE_MS);
+    }
+
+    if (WORKOUT_STATE_KEYS.some((key) => state[key] !== prevState[key])) {
+      if (workoutStateDebounce) clearTimeout(workoutStateDebounce);
+      const snapshot = pick(state, WORKOUT_STATE_KEYS);
+      workoutStateDebounce = setTimeout(() => {
+        void upsertGymWorkoutState(uidUser, snapshot);
+      }, DEBOUNCE_MS);
+    }
+  });
+}
+
+/**
+ * Mezcla un array remoto con uno local por `id`: conserva TODAS las filas
+ * remotas y agrega las locales que el remoto todavía no conoce — nunca
+ * borra datos locales. Fundamental para la primera sincronización de un
+ * usuario que ya venía usando la app antes de que existiera esta capa: en
+ * ese caso las 14 tablas de Supabase están vacías (no hay ninguna fila
+ * para `userId` todavía), y un merge ingenuo tipo "el remoto manda"
+ * reemplazaría meses de historial local por arrays vacíos en el primer
+ * login. Devuelve también las filas que eran solo locales, para que el
+ * llamador las suba a Supabase (backfill) y dejen de ser solo-locales.
+ */
+function mergeById<T extends { id: string }>(remote: T[], local: T[]): { merged: T[]; localOnly: T[] } {
+  const remoteIds = new Set(remote.map((r) => r.id));
+  const localOnly = local.filter((l) => !remoteIds.has(l.id));
+  return { merged: [...remote, ...localOnly], localOnly };
+}
+
+/** Igual que `mergeById` pero para arrays de ids simples (favoriteFoodIds). */
+function mergeIds(remote: string[], local: string[]): { merged: string[]; localOnly: string[] } {
+  const remoteSet = new Set(remote);
+  const localOnly = local.filter((id) => !remoteSet.has(id));
+  return { merged: [...remote, ...localOnly], localOnly };
+}
+
+/**
+ * Trae las 14 tablas de Gym de Supabase para `userId`, las MEZCLA (nunca
+ * reemplaza) con lo que ya hay en el store, y sube (backfill) cualquier
+ * dato que solo existiera localmente — así un usuario que ya tenía meses
+ * de historial en este dispositivo termina con esos datos también en la
+ * nube en su primer login post-sync, en vez de perderlos. Pensado para
+ * llamarse UNA vez por sesión de login, apenas se conoce el userId (ver
+ * `UserScopeScript`). Tolerante a fallos: si Supabase no responde, cada
+ * tabla cae de vuelta a `[]`/`{}` y el merge deja todo el estado local
+ * intacto (mezclar con vacío no quita nada).
+ */
+export async function hydrateGymStore(userId: string): Promise<void> {
+  const remote: GymHydratedState = await hydrateGymStoreFromSupabase(userId);
+  const local = useGymStore.getState();
+
+  const loggedFoods = mergeById(remote.loggedFoods, local.loggedFoods);
+  const mealTemplates = mergeById(remote.mealTemplates, local.mealTemplates);
+  const customFoods = mergeById(remote.customFoods, local.customFoods);
+  const favoriteFoodIds = mergeIds(remote.favoriteFoodIds, local.favoriteFoodIds);
+  const recipes = mergeById(remote.recipes, local.recipes);
+  const waterEntries = mergeById(remote.waterEntries, local.waterEntries);
+  const sessions = mergeById(remote.sessions, local.sessions);
+  const routines = mergeById(remote.routines, local.routines);
+  const plans = mergeById(remote.plans, local.plans);
+  const customExercises = mergeById(remote.customExercises, local.customExercises);
+  const weightEntries = mergeById(remote.weightEntries, local.weightEntries);
+
+  // customPortionsByFood: Record<foodId, FoodPortion[]> — no tiene `id`
+  // propio, se deduplica por (nombre, gramos) dentro de cada food.
+  const customPortionsByFood: Record<string, FoodPortion[]> = { ...remote.customPortionsByFood };
+  const localOnlyPortions: { foodId: string; portion: FoodPortion }[] = [];
+  for (const [foodId, localPortions] of Object.entries(local.customPortionsByFood)) {
+    const remotePortions = customPortionsByFood[foodId] ?? [];
+    const known = new Set(remotePortions.map((p) => `${p.nombre}__${p.gramos}`));
+    const extra = localPortions.filter((p) => !known.has(`${p.nombre}__${p.gramos}`));
+    if (extra.length > 0) {
+      customPortionsByFood[foodId] = [...remotePortions, ...extra];
+      for (const portion of extra) localOnlyPortions.push({ foodId, portion });
+    } else if (remotePortions.length > 0) {
+      customPortionsByFood[foodId] = remotePortions;
+    }
+  }
+
+  const patch: Partial<GymState> = {
+    loggedFoods: loggedFoods.merged,
+    mealTemplates: mealTemplates.merged,
+    customFoods: customFoods.merged,
+    favoriteFoodIds: favoriteFoodIds.merged,
+    customPortionsByFood,
+    recipes: recipes.merged,
+    waterEntries: waterEntries.merged,
+    sessions: sessions.merged,
+    routines: routines.merged,
+    plans: plans.merged,
+    customExercises: customExercises.merged,
+    weightEntries: weightEntries.merged,
+    ...remote.settings,
+    ...remote.workoutState,
+  };
+  useGymStore.getState()._hydrateFromRemote(patch);
+
+  // Backfill: sube a Supabase lo que era solo local, para que un usuario
+  // con historial previo a esta capa de sync termine de verdad con sus
+  // datos en la nube (y no solo "conservados localmente para siempre").
+  // orden de logged_foods: se recalcula agrupando por (meal, día) igual
+  // que hace `addLoggedFood` al insertar uno nuevo.
+  const ordenSeen = new Map<string, number>();
+  for (const food of loggedFoods.localOnly) {
+    const groupKey = `${food.meal}__${new Date(food.timestamp).toDateString()}`;
+    const orden = ordenSeen.get(groupKey) ?? 0;
+    ordenSeen.set(groupKey, orden + 1);
+    syncInsertLoggedFood(food, orden, userId);
+  }
+  for (const template of mealTemplates.localOnly) syncInsertMealTemplate(template, userId);
+  for (const food of customFoods.localOnly) syncInsertCustomFood(food, userId);
+  for (const foodId of favoriteFoodIds.localOnly) syncAddFavoriteFood(foodId, userId);
+  for (const { foodId, portion } of localOnlyPortions) syncInsertCustomPortion(foodId, portion, userId);
+  for (const recipe of recipes.localOnly) syncInsertRecipe(recipe, userId);
+  for (const entry of waterEntries.localOnly) syncInsertWaterEntry(entry, userId);
+  for (const session of sessions.localOnly) syncInsertWorkoutSession(session, userId);
+  for (const routine of routines.localOnly) syncInsertRoutine(routine, userId);
+  for (const plan of plans.localOnly) syncInsertPlan(plan, userId);
+  for (const exercise of customExercises.localOnly) syncInsertCustomExercise(exercise, userId);
+  for (const entry of weightEntries.localOnly) syncInsertWeightEntry(entry, userId);
+}
 
 // ---------- Selectors / helpers ----------
 
