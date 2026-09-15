@@ -12,9 +12,37 @@ import type {
   Task,
   TimeBlock,
 } from "@/lib/types/habits";
+import { getCurrentUserId } from "./user-scope";
+import {
+  syncInsertTask,
+  syncUpdateTask,
+  syncDeleteTask,
+  syncInsertHabit,
+  syncUpdateHabit,
+  syncDeleteHabit,
+  syncInsertTimeBlock,
+  syncUpdateTimeBlock,
+  syncDeleteTimeBlock,
+  syncInsertNotionPage,
+  syncUpdateNotionPage,
+  syncDeleteNotionPage,
+  syncUpsertKanbanColumn,
+  syncUpsertKanbanColumns,
+  hydrateHabitsStoreFromSupabase,
+  type HabitsHydratedState,
+} from "@/lib/sync/habits-sync";
 
+/**
+ * Id único usado tanto como key local como primary key de la fila remota
+ * en Supabase (columnas `uuid` — ver
+ * supabase/migrations/0002_module_data_sync.sql). Antes generaba un string
+ * base36 corto que NO era un UUID válido; se cambió a `crypto.randomUUID()`
+ * — mismo fix que gymStore.ts (ver `src/lib/sync/habits-sync.ts`). Los ids
+ * semilla en DEFAULT_HABITS/DEFAULT_KANBAN/DEFAULT_PAGES de abajo (p.ej.
+ * "h-agua") no pasan por esta función y quedan como están.
+ */
 function uid() {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+  return crypto.randomUUID();
 }
 
 export function todayISO() {
@@ -120,6 +148,13 @@ interface HabitsState {
   kanbanColumns: KanbanColumn[];
   moveTaskToColumn: (taskId: string, columnId: KanbanColumnId) => void;
   ensureTaskInKanban: (taskId: string) => void;
+
+  // ---------- Remote sync (Supabase) — interno, no UI pública ----------
+  /** Reemplaza slices del estado con lo traído de Supabase al loguearse.
+   * Ver `hydrateHabitsStoreFromSupabase` (src/lib/sync/habits-sync.ts) y su
+   * único llamador en `UserScopeScript`. No se persiste ni se expone como
+   * API pública del store más allá de este uso interno. */
+  _hydrateFromRemote: (patch: Partial<HabitsState>) => void;
 }
 
 export const useHabitsStore = create<HabitsState>()(
@@ -128,82 +163,101 @@ export const useHabitsStore = create<HabitsState>()(
       // Tasks
       tasks: [],
       addTask: (task) => {
-        const id = uid();
-        set((state) => ({
-          tasks: [
-            ...state.tasks,
-            {
-              id,
-              title: task.title,
-              description: task.description,
-              priority: task.priority ?? "media",
-              dueDate: task.dueDate,
-              timeSlot: task.timeSlot,
-              isCompleted: false,
-              subtasks: task.subtasks ?? [],
-              tags: task.tags ?? [],
-              color: task.color ?? "var(--habitos)",
-              icon: task.icon ?? "CheckCircle2",
-            },
-          ],
-        }));
-        get().ensureTaskInKanban(id);
-        return id;
+        const created: Task = {
+          id: uid(),
+          title: task.title,
+          description: task.description,
+          priority: task.priority ?? "media",
+          dueDate: task.dueDate,
+          timeSlot: task.timeSlot,
+          isCompleted: false,
+          subtasks: task.subtasks ?? [],
+          tags: task.tags ?? [],
+          color: task.color ?? "var(--habitos)",
+          icon: task.icon ?? "CheckCircle2",
+        };
+        set((state) => ({ tasks: [...state.tasks, created] }));
+        get().ensureTaskInKanban(created.id);
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertTask(created, uidUser);
+        return created.id;
       },
-      updateTask: (id, patch) =>
+      updateTask: (id, patch) => {
         set((state) => ({
           tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
-        })),
-      removeTask: (id) =>
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdateTask(id, patch, uidUser);
+      },
+      removeTask: (id) => {
         set((state) => ({
           tasks: state.tasks.filter((t) => t.id !== id),
           kanbanColumns: state.kanbanColumns.map((c) => ({
             ...c,
             taskIds: c.taskIds.filter((tid) => tid !== id),
           })),
-        })),
-      toggleTaskCompleted: (id) =>
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) {
+          syncDeleteTask(id, uidUser);
+          syncUpsertKanbanColumns(get().kanbanColumns, uidUser);
+        }
+      },
+      toggleTaskCompleted: (id) => {
+        let nextCompleted = false;
         set((state) => ({
-          tasks: state.tasks.map((t) =>
-            t.id === id ? { ...t, isCompleted: !t.isCompleted } : t,
-          ),
-        })),
-      addSubtask: (taskId, title) =>
+          tasks: state.tasks.map((t) => {
+            if (t.id !== id) return t;
+            nextCompleted = !t.isCompleted;
+            return { ...t, isCompleted: nextCompleted };
+          }),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdateTask(id, { isCompleted: nextCompleted }, uidUser);
+      },
+      addSubtask: (taskId, title) => {
+        let nextSubtasks: Subtask[] | null = null;
         set((state) => ({
-          tasks: state.tasks.map((t) =>
-            t.id === taskId
-              ? {
-                  ...t,
-                  subtasks: [...t.subtasks, { id: uid(), title, done: false } as Subtask],
-                }
-              : t,
-          ),
-        })),
-      toggleSubtask: (taskId, subtaskId) =>
+          tasks: state.tasks.map((t) => {
+            if (t.id !== taskId) return t;
+            nextSubtasks = [...t.subtasks, { id: uid(), title, done: false } as Subtask];
+            return { ...t, subtasks: nextSubtasks };
+          }),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser && nextSubtasks) syncUpdateTask(taskId, { subtasks: nextSubtasks }, uidUser);
+      },
+      toggleSubtask: (taskId, subtaskId) => {
+        let nextSubtasks: Subtask[] | null = null;
         set((state) => ({
-          tasks: state.tasks.map((t) =>
-            t.id === taskId
-              ? {
-                  ...t,
-                  subtasks: t.subtasks.map((s) =>
-                    s.id === subtaskId ? { ...s, done: !s.done } : s,
-                  ),
-                }
-              : t,
-          ),
-        })),
-      removeSubtask: (taskId, subtaskId) =>
+          tasks: state.tasks.map((t) => {
+            if (t.id !== taskId) return t;
+            nextSubtasks = t.subtasks.map((s) =>
+              s.id === subtaskId ? { ...s, done: !s.done } : s,
+            );
+            return { ...t, subtasks: nextSubtasks };
+          }),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser && nextSubtasks) syncUpdateTask(taskId, { subtasks: nextSubtasks }, uidUser);
+      },
+      removeSubtask: (taskId, subtaskId) => {
+        let nextSubtasks: Subtask[] | null = null;
         set((state) => ({
-          tasks: state.tasks.map((t) =>
-            t.id === taskId
-              ? { ...t, subtasks: t.subtasks.filter((s) => s.id !== subtaskId) }
-              : t,
-          ),
-        })),
+          tasks: state.tasks.map((t) => {
+            if (t.id !== taskId) return t;
+            nextSubtasks = t.subtasks.filter((s) => s.id !== subtaskId);
+            return { ...t, subtasks: nextSubtasks };
+          }),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser && nextSubtasks) syncUpdateTask(taskId, { subtasks: nextSubtasks }, uidUser);
+      },
 
       // Habits
       habits: DEFAULT_HABITS,
-      toggleHabitToday: (id) =>
+      toggleHabitToday: (id) => {
+        let patch: { completedDates: string[]; streak: number } | null = null;
         set((state) => {
           const today = todayISO();
           return {
@@ -211,11 +265,11 @@ export const useHabitsStore = create<HabitsState>()(
               if (h.id !== id) return h;
               const already = h.completedDates.includes(today);
               if (already) {
-                return {
-                  ...h,
+                patch = {
                   completedDates: h.completedDates.filter((d) => d !== today),
                   streak: Math.max(0, h.streak - 1),
                 };
+                return { ...h, ...patch };
               }
               const lastDate = h.completedDates[h.completedDates.length - 1];
               let streak = h.streak;
@@ -225,68 +279,82 @@ export const useHabitsStore = create<HabitsState>()(
               } else {
                 streak = 1;
               }
-              return {
-                ...h,
-                completedDates: [...h.completedDates, today],
-                streak,
-              };
+              patch = { completedDates: [...h.completedDates, today], streak };
+              return { ...h, ...patch };
             }),
           };
-        }),
-      addHabit: (habit) =>
-        set((state) => ({
-          habits: [
-            ...state.habits,
-            {
-              id: uid(),
-              name: habit.name,
-              icon: habit.icon ?? "Star",
-              color: habit.color ?? "var(--habitos)",
-              frequency: habit.frequency ?? "diario",
-              streak: 0,
-              completedDates: [],
-            },
-          ],
-        })),
-      removeHabit: (id) =>
-        set((state) => ({ habits: state.habits.filter((h) => h.id !== id) })),
+        });
+        const uidUser = getCurrentUserId();
+        if (uidUser && patch) syncUpdateHabit(id, patch, uidUser);
+      },
+      addHabit: (habit) => {
+        const created: Habit = {
+          id: uid(),
+          name: habit.name,
+          icon: habit.icon ?? "Star",
+          color: habit.color ?? "var(--habitos)",
+          frequency: habit.frequency ?? "diario",
+          streak: 0,
+          completedDates: [],
+        };
+        set((state) => ({ habits: [...state.habits, created] }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertHabit(created, uidUser);
+      },
+      removeHabit: (id) => {
+        set((state) => ({ habits: state.habits.filter((h) => h.id !== id) }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncDeleteHabit(id, uidUser);
+      },
 
       // Timeline
       timeBlocks: [],
-      addTimeBlock: (block) =>
-        set((state) => ({ timeBlocks: [...state.timeBlocks, { ...block, id: uid() }] })),
-      updateTimeBlock: (id, patch) =>
+      addTimeBlock: (block) => {
+        const created: TimeBlock = { ...block, id: uid() };
+        set((state) => ({ timeBlocks: [...state.timeBlocks, created] }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertTimeBlock(created, uidUser);
+      },
+      updateTimeBlock: (id, patch) => {
         set((state) => ({
           timeBlocks: state.timeBlocks.map((b) => (b.id === id ? { ...b, ...patch } : b)),
-        })),
-      removeTimeBlock: (id) =>
-        set((state) => ({ timeBlocks: state.timeBlocks.filter((b) => b.id !== id) })),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdateTimeBlock(id, patch, uidUser);
+      },
+      removeTimeBlock: (id) => {
+        set((state) => ({ timeBlocks: state.timeBlocks.filter((b) => b.id !== id) }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncDeleteTimeBlock(id, uidUser);
+      },
 
       // Workspace
       pages: DEFAULT_PAGES,
       activePageId: DEFAULT_PAGES[0]?.id ?? null,
       setActivePageId: (id) => set({ activePageId: id }),
       addPage: (page) => {
-        const id = uid();
+        const created: NotionPage = {
+          id: uid(),
+          title: page.title,
+          icon: page.icon ?? "FileText",
+          blocks: page.blocks ?? [],
+        };
         set((state) => ({
-          pages: [
-            ...state.pages,
-            {
-              id,
-              title: page.title,
-              icon: page.icon ?? "FileText",
-              blocks: page.blocks ?? [],
-            },
-          ],
-          activePageId: id,
+          pages: [...state.pages, created],
+          activePageId: created.id,
         }));
-        return id;
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncInsertNotionPage(created, uidUser);
+        return created.id;
       },
-      updatePage: (id, patch) =>
+      updatePage: (id, patch) => {
         set((state) => ({
           pages: state.pages.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-        })),
-      removePage: (id) =>
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdateNotionPage(id, patch, uidUser);
+      },
+      removePage: (id) => {
         set((state) => {
           const pages = state.pages.filter((p) => p.id !== id);
           return {
@@ -294,38 +362,50 @@ export const useHabitsStore = create<HabitsState>()(
             activePageId:
               state.activePageId === id ? pages[0]?.id ?? null : state.activePageId,
           };
-        }),
-      addBlock: (pageId, block) =>
+        });
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncDeleteNotionPage(id, uidUser);
+      },
+      addBlock: (pageId, block) => {
+        let nextBlocks: NotionBlock[] | null = null;
         set((state) => ({
-          pages: state.pages.map((p) =>
-            p.id === pageId
-              ? { ...p, blocks: [...p.blocks, { ...block, id: uid() }] }
-              : p,
-          ),
-        })),
-      updateBlock: (pageId, blockId, patch) =>
+          pages: state.pages.map((p) => {
+            if (p.id !== pageId) return p;
+            nextBlocks = [...p.blocks, { ...block, id: uid() }];
+            return { ...p, blocks: nextBlocks };
+          }),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser && nextBlocks) syncUpdateNotionPage(pageId, { blocks: nextBlocks }, uidUser);
+      },
+      updateBlock: (pageId, blockId, patch) => {
+        let nextBlocks: NotionBlock[] | null = null;
         set((state) => ({
-          pages: state.pages.map((p) =>
-            p.id === pageId
-              ? {
-                  ...p,
-                  blocks: p.blocks.map((b) => (b.id === blockId ? { ...b, ...patch } : b)),
-                }
-              : p,
-          ),
-        })),
-      removeBlock: (pageId, blockId) =>
+          pages: state.pages.map((p) => {
+            if (p.id !== pageId) return p;
+            nextBlocks = p.blocks.map((b) => (b.id === blockId ? { ...b, ...patch } : b));
+            return { ...p, blocks: nextBlocks };
+          }),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser && nextBlocks) syncUpdateNotionPage(pageId, { blocks: nextBlocks }, uidUser);
+      },
+      removeBlock: (pageId, blockId) => {
+        let nextBlocks: NotionBlock[] | null = null;
         set((state) => ({
-          pages: state.pages.map((p) =>
-            p.id === pageId
-              ? { ...p, blocks: p.blocks.filter((b) => b.id !== blockId) }
-              : p,
-          ),
-        })),
+          pages: state.pages.map((p) => {
+            if (p.id !== pageId) return p;
+            nextBlocks = p.blocks.filter((b) => b.id !== blockId);
+            return { ...p, blocks: nextBlocks };
+          }),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser && nextBlocks) syncUpdateNotionPage(pageId, { blocks: nextBlocks }, uidUser);
+      },
 
       // Kanban
       kanbanColumns: DEFAULT_KANBAN,
-      moveTaskToColumn: (taskId, columnId) =>
+      moveTaskToColumn: (taskId, columnId) => {
         set((state) => ({
           kanbanColumns: state.kanbanColumns.map((c) => ({
             ...c,
@@ -334,17 +414,27 @@ export const useHabitsStore = create<HabitsState>()(
                 ? [...c.taskIds.filter((id) => id !== taskId), taskId]
                 : c.taskIds.filter((id) => id !== taskId),
           })),
-        })),
-      ensureTaskInKanban: (taskId) =>
-        set((state) => {
-          const alreadyPlaced = state.kanbanColumns.some((c) => c.taskIds.includes(taskId));
-          if (alreadyPlaced) return state;
-          return {
-            kanbanColumns: state.kanbanColumns.map((c) =>
-              c.id === "por-hacer" ? { ...c, taskIds: [...c.taskIds, taskId] } : c,
-            ),
-          };
-        }),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpsertKanbanColumns(get().kanbanColumns, uidUser);
+      },
+      ensureTaskInKanban: (taskId) => {
+        const alreadyPlaced = get().kanbanColumns.some((c) => c.taskIds.includes(taskId));
+        if (alreadyPlaced) return;
+        let target: KanbanColumn | null = null;
+        set((state) => ({
+          kanbanColumns: state.kanbanColumns.map((c) => {
+            if (c.id !== "por-hacer") return c;
+            target = { ...c, taskIds: [...c.taskIds, taskId] };
+            return target;
+          }),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser && target) syncUpsertKanbanColumn(target, uidUser);
+      },
+
+      // Remote sync (Supabase)
+      _hydrateFromRemote: (patch) => set(patch),
     }),
     {
       name: "vida-total-habits-store",
@@ -352,6 +442,100 @@ export const useHabitsStore = create<HabitsState>()(
     },
   ),
 );
+
+// ============================================================================
+// Remote sync (Supabase) — merge + backfill (ver gymStore.ts, misma lógica)
+// ============================================================================
+
+/**
+ * Mezcla un array remoto con uno local por `id`: conserva TODAS las filas
+ * remotas y agrega las locales que el remoto todavía no conoce — nunca
+ * borra datos locales. Ver la explicación completa en `mergeById` de
+ * `gymStore.ts` (misma función, duplicada acá para no crear una
+ * dependencia cruzada entre los dos stores por una función de 4 líneas).
+ */
+function mergeById<T extends { id: string }>(remote: T[], local: T[]): { merged: T[]; localOnly: T[] } {
+  const remoteIds = new Set(remote.map((r) => r.id));
+  const localOnly = local.filter((l) => !remoteIds.has(l.id));
+  return { merged: [...remote, ...localOnly], localOnly };
+}
+
+/**
+ * Mezcla las 3 columnas fijas de kanban_columns por `column_id` (no por
+ * `id` genérico — esta tabla no tiene una columna `id`, ver
+ * `syncUpsertKanbanColumn` en habits-sync.ts). Para cada columna: si hay
+ * fila remota, se usa su `title` y se combinan los `taskIds` (remoto +
+ * cualquier id local que el remoto no traiga todavía); si no hay fila
+ * remota para esa columna, se conserva la columna local tal cual (se
+ * subirá en el backfill).
+ */
+function mergeKanbanColumns(remote: KanbanColumn[], local: KanbanColumn[]): KanbanColumn[] {
+  const remoteByColumnId = new Map(remote.map((c) => [c.id, c] as const));
+  return local.map((localCol) => {
+    const remoteCol = remoteByColumnId.get(localCol.id);
+    if (!remoteCol) return localCol;
+    const remoteTaskIds = new Set(remoteCol.taskIds);
+    const localOnlyTaskIds = localCol.taskIds.filter((id) => !remoteTaskIds.has(id));
+    return {
+      id: remoteCol.id,
+      title: remoteCol.title,
+      taskIds: [...remoteCol.taskIds, ...localOnlyTaskIds],
+    };
+  });
+}
+
+/**
+ * Trae las 5 tablas de Hábitos de Supabase para `userId`, las MEZCLA
+ * (nunca reemplaza) con lo que ya hay en el store, y sube (backfill)
+ * cualquier dato que solo existiera localmente. Mismo diseño que
+ * `hydrateGymStore` en gymStore.ts — leer ese archivo para el razonamiento
+ * completo. Pensado para llamarse UNA vez por sesión de login, apenas se
+ * conoce el userId (ver `UserScopeScript`).
+ */
+export async function hydrateHabitsStore(userId: string): Promise<void> {
+  const remote: HabitsHydratedState = await hydrateHabitsStoreFromSupabase(userId);
+  const local = useHabitsStore.getState();
+
+  const tasks = mergeById(remote.tasks, local.tasks);
+  const habits = mergeById(remote.habits, local.habits);
+  const timeBlocks = mergeById(remote.timeBlocks, local.timeBlocks);
+  const notionPages = mergeById(remote.notionPages, local.pages);
+  const kanbanColumns = mergeKanbanColumns(remote.kanbanColumns, local.kanbanColumns);
+
+  // Cualquier tarea que haya quedado sin columna (p.ej. se creó en otro
+  // dispositivo antes de que existiera esta capa de sync, o llegó por el
+  // merge de arriba) se coloca en "por-hacer" — mismo criterio que
+  // `ensureTaskInKanban` usa para tareas nuevas.
+  const placedTaskIds = new Set(kanbanColumns.flatMap((c) => c.taskIds));
+  const orphanTaskIds = tasks.merged.map((t) => t.id).filter((id) => !placedTaskIds.has(id));
+  const kanbanColumnsWithOrphans =
+    orphanTaskIds.length === 0
+      ? kanbanColumns
+      : kanbanColumns.map((c) =>
+          c.id === "por-hacer" ? { ...c, taskIds: [...c.taskIds, ...orphanTaskIds] } : c,
+        );
+
+  const patch: Partial<HabitsState> = {
+    tasks: tasks.merged,
+    habits: habits.merged,
+    timeBlocks: timeBlocks.merged,
+    pages: notionPages.merged,
+    kanbanColumns: kanbanColumnsWithOrphans,
+  };
+  useHabitsStore.getState()._hydrateFromRemote(patch);
+
+  // Backfill: sube a Supabase lo que era solo local.
+  for (const task of tasks.localOnly) syncInsertTask(task, userId);
+  for (const habit of habits.localOnly) syncInsertHabit(habit, userId);
+  for (const block of timeBlocks.localOnly) syncInsertTimeBlock(block, userId);
+  for (const page of notionPages.localOnly) syncInsertNotionPage(page, userId);
+  // kanban_columns es un singleton de 3 filas fijas por usuario — se
+  // vuelve a upsertear siempre (barato, 3 filas) con el resultado ya
+  // mezclado, así el backfill de columnas que todavía no existían en
+  // remoto (o cuyos taskIds tenían ids solo-locales) queda cubierto sin
+  // necesidad de trackear un "localOnly" aparte para esta tabla.
+  syncUpsertKanbanColumns(kanbanColumnsWithOrphans, userId);
+}
 
 // ---------- Selectors / helpers ----------
 
