@@ -6,7 +6,7 @@ import { GlassModal } from "@/components/glass/glass-modal";
 import { GlassInput } from "@/components/glass/glass-input";
 import { FoodPhoto } from "@/components/gym/food-photo";
 import { FoodEntrySheet } from "@/components/gym/food-entry-sheet";
-import { BASE_FOODS } from "@/lib/food-utils";
+import { mergeFoods } from "@/lib/food-utils";
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import { MEAL_LABELS, type Food, type MealType } from "@/lib/types";
 import { useGymStore } from "@/lib/store/gymStore";
@@ -24,7 +24,7 @@ export function FoodSearchModal({
   const [pickedFood, setPickedFood] = useState<Food | null>(null);
   const customFoods = useGymStore((s) => s.customFoods);
 
-  const foods = useMemo<Food[]>(() => [...customFoods, ...BASE_FOODS], [customFoods]);
+  const foods = useMemo<Food[]>(() => mergeFoods(customFoods), [customFoods]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();

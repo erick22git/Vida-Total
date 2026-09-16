@@ -23,6 +23,7 @@ import type {
   WorkoutSet,
 } from "@/lib/types";
 import { DEFAULT_TRACKED_NUTRIENTS } from "@/lib/types";
+import { BASE_FOODS } from "@/lib/food-utils";
 import { DEFAULT_WEEKLY_PLAN } from "@/lib/data/weekly-plan";
 import type { DrinkOverride } from "@/lib/data/drinks";
 import { getCurrentUserId } from "./user-scope";
@@ -130,6 +131,14 @@ export interface GymState {
   customFoods: Food[];
   addCustomFood: (food: Omit<Food, "id" | "creadoPorUsuario">) => Food;
   updateCustomFood: (id: string, patch: Partial<Food>) => void;
+  /** A diferencia de `updateCustomFood` (que solo actualiza un alimento que
+   * el usuario ya creó), esta acción también permite editar/verificar un
+   * alimento de la BASE (USDA/regional): si `id` no existe todavía en
+   * `customFoods`, crea ahí un "override" con ese mismo id (copiando el
+   * alimento base + el patch) que lo tapa en toda la app (ver `mergeFoods`
+   * en food-utils.ts). Es el único camino por el que `verificado` puede
+   * pasar a `true`. */
+  upsertFoodOverride: (id: string, patch: Partial<Food>) => void;
   favoriteFoodIds: string[];
   toggleFavoriteFood: (foodId: string) => void;
   customPortionsByFood: Record<string, FoodPortion[]>;
@@ -471,6 +480,26 @@ export const useGymStore = create<GymState>()(
         }));
         const uidUser = getCurrentUserId();
         if (uidUser) syncUpdateCustomFood(id, patch, uidUser);
+      },
+      upsertFoodOverride: (id, patch) => {
+        const alreadyCustom = get().customFoods.some((f) => f.id === id);
+        set((state) => {
+          if (alreadyCustom) {
+            return { customFoods: state.customFoods.map((f) => (f.id === id ? { ...f, ...patch } : f)) };
+          }
+          const base = BASE_FOODS.find((f) => f.id === id);
+          if (!base) return {};
+          return { customFoods: [{ ...base, ...patch }, ...state.customFoods] };
+        });
+        // Nota: `custom_foods.id` en Supabase es `uuid` (ver migración
+        // 0002_module_data_sync.sql) — un override de un alimento base usa
+        // el mismo id de texto que el alimento (p.ej. "pechuga-pollo"), que
+        // no es un uuid válido, así que por ahora este tipo de override es
+        // SOLO LOCAL (localStorage), no se sincroniza entre dispositivos.
+        // TODO: si esto se vuelve un problema real, agregar una tabla
+        // aparte (p.ej. food_overrides con food_id text) para sincronizarlo.
+        const uidUser = getCurrentUserId();
+        if (uidUser && alreadyCustom) syncUpdateCustomFood(id, patch, uidUser);
       },
       favoriteFoodIds: [],
       toggleFavoriteFood: (foodId) => {

@@ -22,7 +22,7 @@ import { OtherNutrientsCard } from "@/components/gym/other-nutrients-card";
 import { MealCard } from "@/components/gym/meal-card";
 import { PageBackdrop } from "@/components/layout/page-backdrop";
 import { useGymStore, useLoggedFoodsForDate } from "@/lib/store/gymStore";
-import { activeLoggedFoods, BASE_FOODS, nutrientTotalsForLoggedFoods } from "@/lib/food-utils";
+import { activeLoggedFoods, mergeFoods, nutrientTotalsForLoggedFoods } from "@/lib/food-utils";
 import { computeLoggedDaysStreak, dayHasLoggedFood } from "@/lib/gym/streaks";
 import type { Food, MealType } from "@/lib/types";
 
@@ -65,7 +65,7 @@ export default function CaloriasPage() {
     { calorias: 0, proteina: 0, carbos: 0, grasas: 0 },
   );
 
-  const allFoods = useMemo<Food[]>(() => [...customFoods, ...BASE_FOODS], [customFoods]);
+  const allFoods = useMemo<Food[]>(() => mergeFoods(customFoods), [customFoods]);
   const otherNutrientTotals = useMemo(
     () => nutrientTotalsForLoggedFoods(activeLoggedFoods(foodsForDate), allFoods),
     [foodsForDate, allFoods],

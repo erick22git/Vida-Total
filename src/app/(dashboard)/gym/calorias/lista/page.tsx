@@ -6,7 +6,7 @@ import { ArrowLeft, Check, Clock, CornerUpLeft, Plus, X } from "lucide-react";
 import { CaloriasMethodNav } from "@/components/gym/calorias-method-nav";
 import { GlassCard } from "@/components/glass/glass-card";
 import { useGymStore } from "@/lib/store/gymStore";
-import { BASE_FOODS, defaultPortions, scaleNutrition } from "@/lib/food-utils";
+import { mergeFoods, defaultPortions, scaleNutrition } from "@/lib/food-utils";
 import { MEAL_LABELS, type Food, type MealType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -60,7 +60,7 @@ export default function ListaPage() {
   const [step, setStep] = useState<"captura" | "confirmar">("captura");
   const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
 
-  const allFoods = useMemo<Food[]>(() => [...customFoods, ...BASE_FOODS], [customFoods]);
+  const allFoods = useMemo<Food[]>(() => mergeFoods(customFoods), [customFoods]);
 
   /** Bloque 10: antes esto agregaba un LoggedFood fantasma con 0 kcal —
    * nunca aparecía en ninguna lista de alimentos y no había forma de

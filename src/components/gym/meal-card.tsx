@@ -27,7 +27,7 @@ import { FoodEntrySheet } from "@/components/gym/food-entry-sheet";
 import type { Food, LoggedFood, MealType } from "@/lib/types";
 import { MEAL_LABELS } from "@/lib/types";
 import { useGymStore } from "@/lib/store/gymStore";
-import { activeLoggedFoods, BASE_FOODS } from "@/lib/food-utils";
+import { activeLoggedFoods, mergeFoods } from "@/lib/food-utils";
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import { cn } from "@/lib/utils";
 
@@ -81,7 +81,7 @@ export function MealCard({
     setItems(foods);
   }
 
-  const allFoods = useMemo<Food[]>(() => [...customFoods, ...BASE_FOODS], [customFoods]);
+  const allFoods = useMemo<Food[]>(() => mergeFoods(customFoods), [customFoods]);
 
   const total = activeLoggedFoods(foods).reduce(
     (acc, f) => ({

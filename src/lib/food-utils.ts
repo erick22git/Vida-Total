@@ -2,17 +2,28 @@ import foodsData from "@/lib/data/foods.json";
 import foodsRegionalData from "@/lib/data/foods-regional.json";
 import type { Food, FoodPortion, LoggedFood, TrackableNutrient } from "@/lib/types";
 
-/** `verificado` viene del propio dato en foods.json (ver
- * scripts/correct-nutrition-usda.ts, que lo marca `true` para cada
- * alimento cuyos valores fueron cruzados contra USDA y `false` para los
- * que quedaron pendientes de revisión manual) — ya NO se fuerza a `true`
- * para toda la base. Un alimento sin el campo (dataset viejo, todavía no
- * pasó por el script) se trata como no verificado, no como verificado por
- * default. */
+/** `verificado: true` significa específicamente "un admin revisó estos
+ * datos y confirmó que están bien" — nunca "un script encontró una fuente".
+ * Ningún script de corrección/importación (ver scripts/correct-nutrition-usda.ts)
+ * puede setear este campo; el único camino es la acción manual "Marcar como
+ * verificada" en la pantalla de configuración de cada alimento. Un alimento
+ * sin el campo se trata como no verificado por default. */
 export const BASE_FOODS = ([...(foodsData as Food[]), ...(foodsRegionalData as Food[])]).map((f) => ({
   ...f,
   verificado: f.verificado ?? false,
 }));
+
+/** Combina los alimentos personalizados del usuario con la base (USDA +
+ * regional), dejando que un `customFoods` con el mismo `id` que un alimento
+ * base lo tape (override) en vez de aparecer duplicado en las listas — así
+ * es como "Configurar/Verificar" un alimento base termina reflejándose en
+ * toda la app: la pantalla de edición guarda un override en `customFoods`
+ * con el mismo id que el alimento base (ver `upsertFoodOverride` en
+ * gymStore.ts), y este merge hace que ese override gane siempre. */
+export function mergeFoods(customFoods: Food[]): Food[] {
+  const overriddenIds = new Set(customFoods.map((f) => f.id));
+  return [...customFoods, ...BASE_FOODS.filter((f) => !overriddenIds.has(f.id))];
+}
 
 /** Extracts the gram weight implied by a food's default `porcion` label, e.g. "100 g" -> 100. */
 export function parsePorcionGramos(food: Food): number {

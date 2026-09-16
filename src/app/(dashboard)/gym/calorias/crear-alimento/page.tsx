@@ -8,7 +8,7 @@ import { GlassButton } from "@/components/glass/glass-button";
 import { GlassCard } from "@/components/glass/glass-card";
 import { useGymStore } from "@/lib/store/gymStore";
 import { FOOD_CATEGORIES } from "@/lib/types";
-import { MICRONUTRIENT_LABELS } from "@/lib/food-utils";
+import { MICRONUTRIENT_LABELS, mergeFoods } from "@/lib/food-utils";
 
 function Field({
   label,
@@ -51,9 +51,13 @@ function CrearAlimentoForm() {
   const editId = searchParams.get("editId");
 
   const addCustomFood = useGymStore((s) => s.addCustomFood);
-  const updateCustomFood = useGymStore((s) => s.updateCustomFood);
+  const upsertFoodOverride = useGymStore((s) => s.upsertFoodOverride);
   const customFoods = useGymStore((s) => s.customFoods);
-  const editingFood = editId ? customFoods.find((f) => f.id === editId) : undefined;
+  // Bloque 11 (corrección): esta pantalla de "Verificación / Configurar
+  // calorías" se usa tanto para alimentos creados por el usuario como para
+  // alimentos base (USDA/regional) — por eso busca en la lista combinada
+  // (mergeFoods), no solo en customFoods.
+  const editingFood = editId ? mergeFoods(customFoods).find((f) => f.id === editId) : undefined;
   const isEditing = !!editId;
 
   // Bloque 10/11: al "Configurar calorías" de un alimento sin datos reales
@@ -144,7 +148,10 @@ function CrearAlimentoForm() {
   function handleSave() {
     if (!canSave) return;
     if (isEditing && editId) {
-      updateCustomFood(editId, buildPatch());
+      // Guardar cambios sin tocar `verificado`: si el alimento ya estaba
+      // verificado, sigue así; si no, editar valores NO lo marca como
+      // verificado por sí solo — eso requiere el paso explícito de abajo.
+      upsertFoodOverride(editId, buildPatch());
       router.push(`/gym/calorias/alimento/${editId}`);
       return;
     }
@@ -152,9 +159,13 @@ function CrearAlimentoForm() {
     router.push(`/gym/calorias/alimento/${created.id}`);
   }
 
+  // TODO: restringir esta acción a rol admin cuando exista el sistema de
+  // roles (ver panel de administrador pendiente). Por ahora, mientras no
+  // hay un rol "admin" real distinto del usuario normal, queda visible y
+  // funcional para cualquier usuario logueado.
   function handleMarkVerified() {
     if (!editId) return;
-    updateCustomFood(editId, { verificado: true });
+    upsertFoodOverride(editId, { verificado: true });
     setConfirmVerify(false);
   }
 

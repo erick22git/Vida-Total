@@ -198,17 +198,15 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
                   >
                     <Share2 size={14} /> Compartir
                   </button>
-                  {food.creadoPorUsuario && (
-                    <button
-                      className="w-full flex items-center gap-2 text-left px-4 py-3 text-sm text-white hover:bg-white/[0.08] cursor-pointer border-t border-white/[0.06]"
-                      onClick={() => {
-                        setOptionsOpen(false);
-                        router.push(`/gym/calorias/crear-alimento?editId=${food.id}`);
-                      }}
-                    >
-                      <Sparkles size={14} /> Configurar calorías
-                    </button>
-                  )}
+                  <button
+                    className="w-full flex items-center gap-2 text-left px-4 py-3 text-sm text-white hover:bg-white/[0.08] cursor-pointer border-t border-white/[0.06]"
+                    onClick={() => {
+                      setOptionsOpen(false);
+                      router.push(`/gym/calorias/crear-alimento?editId=${food.id}`);
+                    }}
+                  >
+                    <Sparkles size={14} /> Verificación
+                  </button>
                 </div>
               </>
             )}
@@ -219,7 +217,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
       <div className="flex flex-col items-center gap-2">
         <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={104} rounded="rounded-full" emoji={categoryEmoji(food.categoria)} />
         {food.verificado && (
-          <span className="flex items-center gap-1 text-[11px] text-[var(--gym)]">
+          <span className="flex items-center gap-1 text-[11px] text-emerald-400">
             <Check size={12} /> Verificado
           </span>
         )}

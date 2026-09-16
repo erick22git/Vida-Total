@@ -6,7 +6,7 @@ import { GlassModal } from "@/components/glass/glass-modal";
 import { GlassInput } from "@/components/glass/glass-input";
 import { FoodPhoto } from "@/components/gym/food-photo";
 import { useGymStore } from "@/lib/store/gymStore";
-import { BASE_FOODS, defaultPortions, scaleNutrition } from "@/lib/food-utils";
+import { mergeFoods, defaultPortions, scaleNutrition } from "@/lib/food-utils";
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import type { Food, RecipeIngredient } from "@/lib/types";
 
@@ -21,7 +21,7 @@ export function RecipeIngredientPicker({
 }) {
   const customFoods = useGymStore((s) => s.customFoods);
   const [query, setQuery] = useState("");
-  const allFoods = useMemo<Food[]>(() => [...customFoods, ...BASE_FOODS], [customFoods]);
+  const allFoods = useMemo<Food[]>(() => mergeFoods(customFoods), [customFoods]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();

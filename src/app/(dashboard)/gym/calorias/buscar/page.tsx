@@ -10,7 +10,7 @@ import { CaloriasMethodNav } from "@/components/gym/calorias-method-nav";
 import { FoodPhoto } from "@/components/gym/food-photo";
 import { ManualEntryModal } from "@/components/gym/manual-entry-modal";
 import { useGymStore, useRecentFoods } from "@/lib/store/gymStore";
-import { BASE_FOODS } from "@/lib/food-utils";
+import { mergeFoods } from "@/lib/food-utils";
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import type { Food, MealType } from "@/lib/types";
 
@@ -39,7 +39,7 @@ function BuscarAlimentosContent() {
   const recentFoods = useRecentFoods(8);
   const loggedFoods = useGymStore((s) => s.loggedFoods);
 
-  const allFoods = useMemo<Food[]>(() => [...customFoods, ...BASE_FOODS], [customFoods]);
+  const allFoods = useMemo<Food[]>(() => mergeFoods(customFoods), [customFoods]);
 
   const results = useMemo(() => {
     let list = allFoods;
@@ -257,7 +257,7 @@ function FoodRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <span className="text-sm font-medium text-white truncate">{food.nombre}</span>
-          {food.verificado && <BadgeCheck size={13} className="text-[var(--gym)] shrink-0" />}
+          {food.verificado && <BadgeCheck size={13} className="text-emerald-400 shrink-0" />}
         </div>
         {food.configurado === false ? (
           <span className="text-xs text-amber-400/80 font-medium">Sin configurar</span>
