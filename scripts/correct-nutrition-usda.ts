@@ -18,6 +18,15 @@
  * ahí habría sido tan inventado como el dato actual. Estos alimentos se
  * dejan explícitamente como "no verificado / requiere revisión manual" en
  * el reporte en vez de fabricar una fuente para ellos.
+ *
+ * IMPORTANTE: este script NUNCA toca el campo `verificado` de ningún
+ * alimento. "Verificado" significa que Erick (admin) revisó manualmente
+ * esos datos y confirmó que están bien — no que un script encontró una
+ * fuente. El único lugar donde `verificado` puede pasar a `true` es la
+ * acción manual "Marcar como verificada" en la pantalla de configuración
+ * de un alimento (ver crear-alimento/page.tsx). Este script solo deja
+ * registrado en el reporte si encontró o no una fuente con la que
+ * comparar, para que Erick decida qué revisar primero.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { config } from "dotenv";
@@ -97,12 +106,10 @@ async function main() {
 
     if (entry === undefined) {
       noVerificado.push({ id: food.id, nombre: food.nombre, motivo: "sin entrada en el mapa de queries (revisar scripts/nutrition-query-map.mjs)" });
-      food.verificado = false;
       continue;
     }
     if (entry === null) {
       noVerificado.push({ id: food.id, nombre: food.nombre, motivo: "plato compuesto/regional sin equivalente genérico en USDA (ver nota BEDCA en este script)" });
-      food.verificado = false;
       continue;
     }
 
@@ -121,7 +128,6 @@ async function main() {
     } catch (err) {
       console.log("ERROR:", err);
       noVerificado.push({ id: food.id, nombre: food.nombre, motivo: `error de red/API: ${String(err)}` });
-      food.verificado = false;
       await sleep(1200);
       continue;
     }
@@ -130,7 +136,6 @@ async function main() {
       console.log("SIN RESULTADO");
       const motivo = isFdcPin ? `fdcId fijo ${entry.fdcId} no encontrado o sin datos de energía` : `sin resultados en USDA para "${entry}"`;
       noVerificado.push({ id: food.id, nombre: food.nombre, motivo });
-      food.verificado = false;
       await sleep(1200);
       continue;
     }
@@ -153,7 +158,6 @@ async function main() {
     if (caloriasDiff <= DIFF_THRESHOLD || caloriasAbsDiff < 5) {
       console.log(`OK (diferencia ${(caloriasDiff * 100).toFixed(0)}%, dentro de tolerancia)`);
       sinCorreccion.push(food.id);
-      food.verificado = true;
       await sleep(1200);
       continue;
     }
@@ -191,7 +195,6 @@ async function main() {
       }
     }
 
-    food.verificado = true;
     await sleep(1200);
   }
 
@@ -204,9 +207,11 @@ async function main() {
   lines.push("");
   lines.push(`Alimentos corregidos: ${new Set(corrected.map((c) => c.id)).size} de ${foods.length}`);
   lines.push(`Alimentos sin corrección (dentro de ${DIFF_THRESHOLD * 100}% de tolerancia): ${sinCorreccion.length}`);
-  lines.push(`Alimentos no verificados (revisión manual): ${noVerificado.length}`);
+  lines.push(`Alimentos sin fuente encontrada (requieren revisión manual): ${noVerificado.length}`);
   lines.push("");
-  lines.push("**IMPORTANTE: `src/lib/data/foods.json` ya fue modificado localmente con estas correcciones. NO se subió a git — revisa esta tabla primero y avisa si quieres que se suba tal cual, o que se ajuste algo.**");
+  lines.push(
+    "**IMPORTANTE: `src/lib/data/foods.json` ya fue modificado localmente con estas correcciones. NO se subió a git — revisa esta tabla primero y avisa si quieres que se suba tal cual, o que se ajuste algo. Este script nunca marca ningún alimento como `verificado: true` — ese campo solo lo cambia Erick manualmente desde la pantalla de configuración de cada alimento, después de revisar los datos.**",
+  );
   lines.push("");
   lines.push("## Alimentos corregidos");
   lines.push("");
@@ -216,7 +221,7 @@ async function main() {
     lines.push(`| ${c.nombre} (\`${c.id}\`) | ${c.campo} | ${c.antes} | ${c.despues} | ${c.fuente} |`);
   }
   lines.push("");
-  lines.push("## No verificados (requieren revisión manual)");
+  lines.push("## Sin fuente encontrada (requieren revisión manual)");
   lines.push("");
   lines.push("| Alimento | Motivo |");
   lines.push("|---|---|");

@@ -8,7 +8,7 @@
     "proteina": 6.03,
     "carbos": 54.85,
     "grasas": 0.77,
-    "verificado": true,
+    "verificado": false,
     "configurado": true,
     "fuente": "FatSecret, ficha pública \"Marraqueta\" (dato proporcionado directamente por el usuario)"
   }
