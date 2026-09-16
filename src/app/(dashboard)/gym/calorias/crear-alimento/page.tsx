@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { X, ChevronDown, ChevronUp } from "lucide-react";
+import { X, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassCard } from "@/components/glass/glass-card";
@@ -48,32 +48,52 @@ function CrearAlimentoForm() {
   const searchParams = useSearchParams();
   const prefillBarcode = searchParams.get("barcode") ?? "";
   const fromScan = searchParams.get("fromScan") === "1";
+  const editId = searchParams.get("editId");
 
   const addCustomFood = useGymStore((s) => s.addCustomFood);
+  const updateCustomFood = useGymStore((s) => s.updateCustomFood);
+  const customFoods = useGymStore((s) => s.customFoods);
+  const editingFood = editId ? customFoods.find((f) => f.id === editId) : undefined;
+  const isEditing = !!editId;
 
-  const [marca, setMarca] = useState("");
-  const [nombre, setNombre] = useState("");
-  const [categoria, setCategoria] = useState<string>(FOOD_CATEGORIES[0]);
-  const [barcode, setBarcode] = useState(prefillBarcode);
+  // Bloque 10/11: al "Configurar calorías" de un alimento sin datos reales
+  // (creado, p.ej., desde texto libre en Lista con `configurado: false`),
+  // esta misma pantalla se reusa en modo edición. Precarga sus valores
+  // actuales vía inicializador perezoso de useState (no un useEffect +
+  // setState — `editingFood` ya está disponible en el primer render, viene
+  // de un store de Zustand ya hidratado, no de un fetch async, así que no
+  // hace falta sincronizar nada después del montaje).
+  const numToStr = (n: number | undefined) => (n ? String(n) : "");
 
-  const [porcionNombre, setPorcionNombre] = useState("unidad");
+  const [marca, setMarca] = useState(() => editingFood?.marca ?? "");
+  const [nombre, setNombre] = useState(() => editingFood?.nombre ?? "");
+  const [categoria, setCategoria] = useState<string>(() => editingFood?.categoria ?? FOOD_CATEGORIES[0]);
+  const [barcode, setBarcode] = useState(() => editingFood?.barcode ?? prefillBarcode);
+
+  const [porcionNombre, setPorcionNombre] = useState(() => editingFood?.porcion ?? "unidad");
   const [peso, setPeso] = useState("100");
   const [unidadPeso, setUnidadPeso] = useState<"g" | "ml" | "oz">("g");
 
-  const [calorias, setCalorias] = useState("");
-  const [grasas, setGrasas] = useState("");
-  const [grasasSaturadas, setGrasasSaturadas] = useState("");
-  const [grasasTrans, setGrasasTrans] = useState("");
-  const [colesterol, setColesterol] = useState("");
-  const [sodio, setSodio] = useState("");
-  const [carbos, setCarbos] = useState("");
-  const [fibra, setFibra] = useState("");
-  const [azucares, setAzucares] = useState("");
-  const [azucaresAnadidos, setAzucaresAnadidos] = useState("");
-  const [proteina, setProteina] = useState("");
+  const [calorias, setCalorias] = useState(() => numToStr(editingFood?.calorias));
+  const [grasas, setGrasas] = useState(() => numToStr(editingFood?.grasas));
+  const [grasasSaturadas, setGrasasSaturadas] = useState(() => numToStr(editingFood?.grasasSaturadas));
+  const [grasasTrans, setGrasasTrans] = useState(() => numToStr(editingFood?.grasasTrans));
+  const [colesterol, setColesterol] = useState(() => numToStr(editingFood?.colesterol));
+  const [sodio, setSodio] = useState(() => numToStr(editingFood?.sodio));
+  const [carbos, setCarbos] = useState(() => numToStr(editingFood?.carbos));
+  const [fibra, setFibra] = useState(() => numToStr(editingFood?.fibra));
+  const [azucares, setAzucares] = useState(() => numToStr(editingFood?.azucares));
+  const [azucaresAnadidos, setAzucaresAnadidos] = useState(() => numToStr(editingFood?.azucaresAnadidos));
+  const [proteina, setProteina] = useState(() => numToStr(editingFood?.proteina));
 
   const [microOpen, setMicroOpen] = useState(false);
-  const [micro, setMicro] = useState<Record<string, string>>({});
+  const [micro, setMicro] = useState<Record<string, string>>(() => {
+    if (!editingFood?.micronutrientes) return {};
+    const asStrings: Record<string, string> = {};
+    for (const [k, v] of Object.entries(editingFood.micronutrientes)) asStrings[k] = String(v);
+    return asStrings;
+  });
+  const [confirmVerify, setConfirmVerify] = useState(false);
   const [scannedPhoto] = useState<string | null>(() => {
     if (typeof window === "undefined" || !fromScan) return null;
     try {
@@ -87,20 +107,18 @@ function CrearAlimentoForm() {
 
   const canSave = nombre.trim().length > 0 && porcionNombre.trim().length > 0 && calorias.trim().length > 0;
 
-  function handleSave() {
-    if (!canSave) return;
+  function buildPatch() {
     const pesoNum = parseFloat(peso) || 100;
     const microValues: Record<string, number> = {};
     for (const [key, v] of Object.entries(micro)) {
       const n = parseFloat(v);
       if (!isNaN(n) && v.trim() !== "") microValues[key] = n;
     }
-
-    const created = addCustomFood({
+    return {
       nombre: nombre.trim(),
       marca: marca.trim() || undefined,
       categoria,
-      porcion: `${porcionNombre.trim()} (${pesoNum} ${unidadPeso})`,
+      porcion: isEditing ? porcionNombre.trim() : `${porcionNombre.trim()} (${pesoNum} ${unidadPeso})`,
       pesoGramos: unidadPeso === "g" || unidadPeso === "ml" ? pesoNum : pesoNum * 28.35,
       calorias: parseFloat(calorias) || 0,
       proteina: parseFloat(proteina) || 0,
@@ -116,9 +134,28 @@ function CrearAlimentoForm() {
       barcode: barcode.trim() || undefined,
       micronutrientes: Object.keys(microValues).length > 0 ? microValues : undefined,
       photoUrl: scannedPhoto,
-    });
+      // Esta pantalla siempre exige calorías > 0 antes de dejar guardar
+      // (ver `canSave`) — llegar hasta acá ya significa que el alimento
+      // tiene datos reales cargados.
+      configurado: true,
+    };
+  }
 
+  function handleSave() {
+    if (!canSave) return;
+    if (isEditing && editId) {
+      updateCustomFood(editId, buildPatch());
+      router.push(`/gym/calorias/alimento/${editId}`);
+      return;
+    }
+    const created = addCustomFood(buildPatch());
     router.push(`/gym/calorias/alimento/${created.id}`);
+  }
+
+  function handleMarkVerified() {
+    if (!editId) return;
+    updateCustomFood(editId, { verificado: true });
+    setConfirmVerify(false);
   }
 
   const vitaminas = Object.entries(MICRONUTRIENT_LABELS).filter(([, v]) => v.group === "vitamina");
@@ -127,7 +164,9 @@ function CrearAlimentoForm() {
   return (
     <div className="flex flex-col gap-5 pb-28">
       <header className="flex items-center justify-between pt-2">
-        <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Crear Alimento</h1>
+        <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
+          {isEditing ? "Configurar Alimento" : "Crear Alimento"}
+        </h1>
         <button
           onClick={() => router.back()}
           className="flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.15] transition-colors cursor-pointer"
@@ -143,6 +182,14 @@ function CrearAlimentoForm() {
             <img src={scannedPhoto} alt="Foto capturada" className="w-12 h-12 rounded-xl object-cover shrink-0" />
           )}
           <p className="text-xs text-white/50">Completa los datos del alimento detectado.</p>
+        </div>
+      )}
+
+      {isEditing && editingFood?.configurado === false && (
+        <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/25 rounded-xl px-3 py-2.5">
+          <p className="text-xs text-amber-300/90">
+            Este alimento todavía no tiene valores reales cargados. Complétalos abajo antes de poder registrarlo en una comida.
+          </p>
         </div>
       )}
 
@@ -276,10 +323,49 @@ function CrearAlimentoForm() {
         )}
       </GlassCard>
 
+      {isEditing && (
+        <GlassCard padding="md" className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={16} className="text-[var(--gym)]" />
+            <h2 className="text-sm font-semibold text-white">Verificación</h2>
+          </div>
+          {editingFood?.verificado ? (
+            <p className="text-xs text-white/50">
+              Este alimento ya está marcado como verificado — el check verde aparece junto a su nombre en las listas.
+            </p>
+          ) : confirmVerify ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs text-white/70">
+                ¿Confirmas que estos datos nutricionales son correctos? Una vez marcado, aparecerá con el check de
+                &quot;Verificado&quot; para ti y para cualquiera que use esta cuenta.
+              </p>
+              <div className="flex gap-2">
+                <GlassButton size="sm" className="flex-1" onClick={handleMarkVerified}>
+                  Sí, marcar como verificada
+                </GlassButton>
+                <GlassButton size="sm" variant="ghost" className="flex-1" onClick={() => setConfirmVerify(false)}>
+                  Cancelar
+                </GlassButton>
+              </div>
+            </div>
+          ) : (
+            <GlassButton
+              variant="outline"
+              size="sm"
+              className="w-fit flex items-center gap-1.5"
+              disabled={!canSave}
+              onClick={() => setConfirmVerify(true)}
+            >
+              <ShieldCheck size={14} /> Marcar como verificada
+            </GlassButton>
+          )}
+        </GlassCard>
+      )}
+
       <div className="fixed bottom-0 left-0 right-0 z-30 p-4 backdrop-blur-xl bg-[color-mix(in_srgb,var(--background)_85%,transparent)] border-t border-white/[0.08]">
         <div className="max-w-md mx-auto">
           <GlassButton className="w-full" size="lg" disabled={!canSave} onClick={handleSave}>
-            Crear Alimento
+            {isEditing ? "Guardar cambios" : "Crear Alimento"}
           </GlassButton>
         </div>
       </div>

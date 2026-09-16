@@ -135,6 +135,13 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
   );
 
   function handleAdd(target: (typeof ADD_TARGETS)[number]) {
+    // Bloque 10: un alimento sin datos reales cargados no puede registrarse
+    // en una comida (se vería como si 0 kcal fuera un valor real) — se
+    // manda directo a completarlo primero.
+    if (food && food.configurado === false) {
+      router.push(`/gym/calorias/crear-alimento?editId=${food.id}`);
+      return;
+    }
     addLoggedFood({
       foodId: food!.id,
       nombre: food!.nombre,
@@ -191,6 +198,17 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
                   >
                     <Share2 size={14} /> Compartir
                   </button>
+                  {food.creadoPorUsuario && (
+                    <button
+                      className="w-full flex items-center gap-2 text-left px-4 py-3 text-sm text-white hover:bg-white/[0.08] cursor-pointer border-t border-white/[0.06]"
+                      onClick={() => {
+                        setOptionsOpen(false);
+                        router.push(`/gym/calorias/crear-alimento?editId=${food.id}`);
+                      }}
+                    >
+                      <Sparkles size={14} /> Configurar calorías
+                    </button>
+                  )}
                 </div>
               </>
             )}
@@ -210,12 +228,21 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-4 gap-2">
-        <MacroCard label="Kcal" value={Math.round(nutrition.calorias)} color="var(--gym)" />
-        <MacroCard label="Proteínas" value={`${Math.round(nutrition.proteina)}g`} color={MACRO_COLORS.proteina} />
-        <MacroCard label="Carbos" value={`${Math.round(nutrition.carbos)}g`} color={MACRO_COLORS.carbos} />
-        <MacroCard label="Grasas" value={`${Math.round(nutrition.grasas)}g`} color={MACRO_COLORS.grasas} />
-      </div>
+      {food.configurado === false ? (
+        <GlassCard padding="md" className="flex flex-col items-center gap-2 text-center">
+          <p className="text-sm font-semibold text-amber-300/90">Sin configurar</p>
+          <p className="text-xs text-white/50">
+            Este alimento todavía no tiene calorías ni macros reales cargados. Complétalos para poder registrarlo.
+          </p>
+        </GlassCard>
+      ) : (
+        <div className="grid grid-cols-4 gap-2">
+          <MacroCard label="Kcal" value={Math.round(nutrition.calorias)} color="var(--gym)" />
+          <MacroCard label="Proteínas" value={`${Math.round(nutrition.proteina)}g`} color={MACRO_COLORS.proteina} />
+          <MacroCard label="Carbos" value={`${Math.round(nutrition.carbos)}g`} color={MACRO_COLORS.carbos} />
+          <MacroCard label="Grasas" value={`${Math.round(nutrition.grasas)}g`} color={MACRO_COLORS.grasas} />
+        </div>
+      )}
 
       <GlassCard padding="md" className="flex items-center gap-3" glow>
         <div
@@ -375,7 +402,8 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
               size="lg"
               onClick={() => handleAdd(ADD_TARGETS[defaultTargetIdx])}
             >
-              <Plus size={16} /> Agregar a {ADD_TARGETS[defaultTargetIdx].label}
+              <Plus size={16} />{" "}
+              {food.configurado === false ? "Configurar alimento" : `Agregar a ${ADD_TARGETS[defaultTargetIdx].label}`}
             </GlassButton>
             <div className="relative shrink-0">
               {addMenuOpen && (

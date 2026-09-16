@@ -14,7 +14,7 @@ import { BASE_FOODS } from "@/lib/food-utils";
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import type { Food, MealType } from "@/lib/types";
 
-type Tab = "base" | "favoritos" | "creados";
+type Tab = "base" | "favoritos" | "creados" | "verificados";
 
 export default function BuscarAlimentosPage() {
   return (
@@ -45,6 +45,7 @@ function BuscarAlimentosContent() {
     let list = allFoods;
     if (tab === "favoritos") list = list.filter((f) => favoriteFoodIds.includes(f.id));
     if (tab === "creados") list = list.filter((f) => f.creadoPorUsuario);
+    if (tab === "verificados") list = list.filter((f) => f.verificado);
 
     const q = query.trim().toLowerCase();
     if (q) list = list.filter((f) => f.nombre.toLowerCase().includes(q));
@@ -139,6 +140,7 @@ function BuscarAlimentosContent() {
             { key: "base", label: "Base de Datos" },
             { key: "favoritos", label: "Favoritos" },
             { key: "creados", label: "Creados" },
+            { key: "verificados", label: "Verificados" },
           ] as { key: Tab; label: string }[]
         ).map((t) => (
           <button
@@ -222,7 +224,9 @@ function BuscarAlimentosContent() {
                 ? "Aún no tienes alimentos favoritos. Toca el corazón en cualquier alimento para agregarlo."
                 : tab === "creados"
                   ? "Aún no has creado alimentos. Usa el menú ··· para crear uno."
-                  : "No se encontraron alimentos."}
+                  : tab === "verificados"
+                    ? "Ningún alimento está marcado como verificado todavía."
+                    : "No se encontraron alimentos."}
             </p>
           )}
         </div>
@@ -255,9 +259,13 @@ function FoodRow({
           <span className="text-sm font-medium text-white truncate">{food.nombre}</span>
           {food.verificado && <BadgeCheck size={13} className="text-[var(--gym)] shrink-0" />}
         </div>
-        <span className="text-xs text-white/45">
-          {food.porcion} · {Math.round(food.calorias)} kcal
-        </span>
+        {food.configurado === false ? (
+          <span className="text-xs text-amber-400/80 font-medium">Sin configurar</span>
+        ) : (
+          <span className="text-xs text-white/45">
+            {food.porcion} · {Math.round(food.calorias)} kcal
+          </span>
+        )}
       </div>
       <button
         onClick={(e) => {

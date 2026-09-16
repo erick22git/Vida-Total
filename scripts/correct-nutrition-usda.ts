@@ -97,10 +97,12 @@ async function main() {
 
     if (entry === undefined) {
       noVerificado.push({ id: food.id, nombre: food.nombre, motivo: "sin entrada en el mapa de queries (revisar scripts/nutrition-query-map.mjs)" });
+      food.verificado = false;
       continue;
     }
     if (entry === null) {
       noVerificado.push({ id: food.id, nombre: food.nombre, motivo: "plato compuesto/regional sin equivalente genérico en USDA (ver nota BEDCA en este script)" });
+      food.verificado = false;
       continue;
     }
 
@@ -119,6 +121,7 @@ async function main() {
     } catch (err) {
       console.log("ERROR:", err);
       noVerificado.push({ id: food.id, nombre: food.nombre, motivo: `error de red/API: ${String(err)}` });
+      food.verificado = false;
       await sleep(1200);
       continue;
     }
@@ -127,6 +130,7 @@ async function main() {
       console.log("SIN RESULTADO");
       const motivo = isFdcPin ? `fdcId fijo ${entry.fdcId} no encontrado o sin datos de energía` : `sin resultados en USDA para "${entry}"`;
       noVerificado.push({ id: food.id, nombre: food.nombre, motivo });
+      food.verificado = false;
       await sleep(1200);
       continue;
     }
@@ -149,6 +153,7 @@ async function main() {
     if (caloriasDiff <= DIFF_THRESHOLD || caloriasAbsDiff < 5) {
       console.log(`OK (diferencia ${(caloriasDiff * 100).toFixed(0)}%, dentro de tolerancia)`);
       sinCorreccion.push(food.id);
+      food.verificado = true;
       await sleep(1200);
       continue;
     }
@@ -186,6 +191,7 @@ async function main() {
       }
     }
 
+    food.verificado = true;
     await sleep(1200);
   }
 

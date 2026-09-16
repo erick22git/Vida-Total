@@ -103,7 +103,19 @@ export interface Food {
   micronutrientes?: FoodMicronutrients;
   photoUrl?: string | null;
   barcode?: string;
-  verificado?: boolean; // predefined food from the base dataset
+  /** true = sus valores fueron cruzados contra una fuente real (USDA,
+   * revisión manual del usuario) y confirmados. NUNCA asumir `true` por
+   * default para un alimento nuevo — antes se hardcodeaba así para toda
+   * la base (ver food-utils.ts), lo que hacía aparecer el check verde de
+   * "Verificado" en alimentos que nadie había verificado de verdad. */
+  verificado?: boolean;
+  /** false = el alimento existe (tiene id, aparece en listas) pero sus
+   * valores nutricionales todavía no fueron completados con datos reales
+   * — p.ej. algo capturado por texto libre en Lista sin coincidencia en
+   * la base. Ausente/true = tiene valores reales cargados. Un alimento
+   * con `configurado: false` no debe registrarse en una comida hasta que
+   * el usuario lo complete (ver /gym/calorias/crear-alimento?editId=). */
+  configurado?: boolean;
   creadoPorUsuario?: boolean;
   porciones?: FoodPortion[]; // alternate selectable units
 }

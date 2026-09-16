@@ -1,9 +1,16 @@
 import foodsData from "@/lib/data/foods.json";
 import type { Food, FoodPortion, LoggedFood, TrackableNutrient } from "@/lib/types";
 
+/** `verificado` viene del propio dato en foods.json (ver
+ * scripts/correct-nutrition-usda.ts, que lo marca `true` para cada
+ * alimento cuyos valores fueron cruzados contra USDA y `false` para los
+ * que quedaron pendientes de revisión manual) — ya NO se fuerza a `true`
+ * para toda la base. Un alimento sin el campo (dataset viejo, todavía no
+ * pasó por el script) se trata como no verificado, no como verificado por
+ * default. */
 export const BASE_FOODS = (foodsData as Food[]).map((f) => ({
   ...f,
-  verificado: true,
+  verificado: f.verificado ?? false,
 }));
 
 /** Extracts the gram weight implied by a food's default `porcion` label, e.g. "100 g" -> 100. */

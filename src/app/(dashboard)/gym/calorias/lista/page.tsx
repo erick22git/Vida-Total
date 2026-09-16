@@ -54,6 +54,7 @@ interface DraftItem {
 export default function ListaPage() {
   const router = useRouter();
   const addLoggedFood = useGymStore((s) => s.addLoggedFood);
+  const addCustomFood = useGymStore((s) => s.addCustomFood);
   const customFoods = useGymStore((s) => s.customFoods);
 
   const [step, setStep] = useState<"captura" | "confirmar">("captura");
@@ -61,8 +62,26 @@ export default function ListaPage() {
 
   const allFoods = useMemo<Food[]>(() => [...customFoods, ...BASE_FOODS], [customFoods]);
 
+  /** Bloque 10: antes esto agregaba un LoggedFood fantasma con 0 kcal —
+   * nunca aparecía en ninguna lista de alimentos y no había forma de
+   * corregirlo después. Ahora, cuando lo escrito no matchea nada del
+   * dataset, se crea un `customFoods` real con `configurado: false`
+   * (aparece en Buscar > Creados, con badge "Sin configurar") y el draft
+   * lo referencia por `matchedFoodId` — así el usuario puede completarlo
+   * después desde la ficha del alimento (menú ··· > "Configurar
+   * calorías") en vez de quedar con un registro de calorías inventado. */
   function addFreeTextItem(meal: MealType, nombre: string) {
     if (!nombre.trim()) return;
+    const placeholder = addCustomFood({
+      nombre: nombre.trim(),
+      categoria: "Otros",
+      porcion: "1 unidad",
+      calorias: 0,
+      proteina: 0,
+      carbos: 0,
+      grasas: 0,
+      configurado: false,
+    });
     setDraftItems((prev) => [
       ...prev,
       {
@@ -75,6 +94,7 @@ export default function ListaPage() {
         proteinaPerUnit: 0,
         carbosPerUnit: 0,
         grasasPerUnit: 0,
+        matchedFoodId: placeholder.id,
       },
     ]);
   }
