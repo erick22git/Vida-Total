@@ -1,4 +1,5 @@
 import foodsData from "@/lib/data/foods.json";
+import foodsRegionalData from "@/lib/data/foods-regional.json";
 import type { Food, FoodPortion, LoggedFood, TrackableNutrient } from "@/lib/types";
 
 /** `verificado` viene del propio dato en foods.json (ver
@@ -8,7 +9,7 @@ import type { Food, FoodPortion, LoggedFood, TrackableNutrient } from "@/lib/typ
  * para toda la base. Un alimento sin el campo (dataset viejo, todavía no
  * pasó por el script) se trata como no verificado, no como verificado por
  * default. */
-export const BASE_FOODS = (foodsData as Food[]).map((f) => ({
+export const BASE_FOODS = ([...(foodsData as Food[]), ...(foodsRegionalData as Food[])]).map((f) => ({
   ...f,
   verificado: f.verificado ?? false,
 }));

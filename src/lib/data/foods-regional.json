@@ -1,0 +1,15 @@
+[
+  {
+    "id": "pan-marraqueta",
+    "nombre": "Pan Marraqueta",
+    "categoria": "Cereal",
+    "porcion": "100 g",
+    "calorias": 272,
+    "proteina": 6.03,
+    "carbos": 54.85,
+    "grasas": 0.77,
+    "verificado": true,
+    "configurado": true,
+    "fuente": "FatSecret, ficha pública \"Marraqueta\" (dato proporcionado directamente por el usuario)"
+  }
+]
