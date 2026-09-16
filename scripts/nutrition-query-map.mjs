@@ -1,29 +1,43 @@
-// Bloque 3: mapa manual id-de-alimento -> query en inglés para buscar en
-// USDA FoodData Central (base de datos en inglés, no indexa bien nombres en
-// español). `null` = no tiene un equivalente genérico razonable en USDA
-// (plato compuesto/regional) — para esos se intenta BEDCA (en español) y si
-// tampoco aparece, quedan marcados "estimado" en el reporte, sin tocar el
-// dato actual.
+// Bloque 3/8: mapa manual id-de-alimento -> query en inglés (o fdcId fijo)
+// para buscar en USDA FoodData Central (base en inglés, no indexa bien
+// nombres en español). `null` = no tiene un equivalente genérico razonable
+// en USDA (plato compuesto/regional) — queda marcado "estimado"/revisión
+// manual, sin tocar el dato actual.
+//
+// Valor `{ fdcId }`: para alimentos donde ninguna query de texto es lo
+// bastante específica para evitar un mal match de forma confiable (Bloque
+// 8 encontró varios: "pan blanco" traía harina cruda, "arroz blanco"
+// traía la variedad glutinosa/pegajosa, "champiñones" traía shiitake en
+// vez del champiñón blanco común, "empanada" traía frijoles horneados) —
+// se fija el fdcId exacto ya verificado a mano en vez de depender de la
+// heurística de búsqueda.
 export const USDA_QUERY_MAP = {
   "pechuga-pollo": "chicken breast grilled cooked",
-  "arroz-blanco": "rice white cooked",
+  "arroz-blanco": { fdcId: 169753 }, // "Rice, white, long-grain, regular, cooked, enriched, with salt" — antes traía la variedad "glutinous" (pegajosa), que no es el arroz blanco común
   "arroz-integral": "rice brown cooked",
   "crema-arroz": "cream of rice cooked",
   huevo: "egg whole raw",
   "clara-huevo": "egg white raw",
   avena: "oats rolled dry",
   platano: "banana raw",
+  // USDA no tiene una entrada "Apples, raw" genérica sin variedad — solo
+  // variedades específicas (fuji, gala, honeycrisp, granny smith, red
+  // delicious, golden delicious...). Fuji se queda como proxy razonable:
+  // las variedades comunes varían entre sí por ~10%, mucho menos que el
+  // umbral de corrección del 15%. La app no distingue variedades de
+  // manzana, así que no hay una opción "más correcta" sin agregar esa
+  // distinción al modelo de datos.
   manzana: "apples fuji with skin raw",
   naranja: "oranges raw navel",
   fresas: "strawberries raw",
   palta: "avocado raw",
   "pan-integral": "bread whole wheat",
-  "pan-blanco": "bread white",
+  "pan-blanco": { fdcId: 174924 }, // "Bread, white, commercially prepared (includes soft bread crumbs)" — antes traía HARINA cruda ("Flour, bread, white..."), no pan horneado
   "tortilla-maiz": "tortilla corn",
   "papa-cocida": "potato boiled",
   camote: "sweet potato cooked boiled",
   "carne-molida": "beef ground 90% lean raw",
-  "lomo-cerdo": "pork loin raw",
+  "lomo-cerdo": { fdcId: 167842 }, // "Pork, fresh, loin, top loin (roasts), boneless, separable lean and fat, cooked, roasted" — antes traía datos CRUDOS ("Pork, loin, boneless, raw"), pero el alimento se sirve cocido
   salmon: "salmon atlantic raw",
   "atun-lata": "tuna canned in water",
   merluza: null, // "hake" no existe como entrada propia en USDA (no es un pescado común en EE.UU.) — las búsquedas devuelven coincidencias irrelevantes (p.ej. tocino horneado)
@@ -93,7 +107,7 @@ export const USDA_QUERY_MAP = {
   "pescado-frito": "fish fried",
   anticuchos: null,
   tamal: null,
-  empanada: "empanada beef baked",
+  empanada: { fdcId: 167660 }, // "Restaurant, Latino, empanadas, beef, prepared" — match directo real; antes la query traía "Beans, baked, canned, with beef" (completamente distinto)
   "causa-rellena": null,
   "papa-a-la-huancaina": null,
   "choclo-con-queso": null,
@@ -108,7 +122,7 @@ export const USDA_QUERY_MAP = {
   hummus: "hummus",
   aceitunas: null, // la búsqueda sigue trayendo tomate enlatado antes que las aceitunas reales (USDA FDC #169094/#169095) por la heurística de preferir Foundation — requiere revisión manual o forzar el fdcId a mano
   pepinillo: "pickles cucumber",
-  champinones: "mushrooms cooked",
+  champinones: { fdcId: 168537 }, // "Mushrooms, white, cooked, boiled, drained, with salt" — el champiñón blanco común, no shiitake (lo que traía la query de texto). "Salteados" implica algo de aceite que esta entrada (hervido) no captura — igual es mucho más cercano que la especie equivocada.
   berenjena: "eggplant cooked",
   calabaza: "squash winter cooked",
 };

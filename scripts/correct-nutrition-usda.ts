@@ -21,7 +21,7 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { config } from "dotenv";
-import { lookupUsdaNutrition, isUsdaConfigured } from "../src/lib/nutrition/usda";
+import { lookupUsdaNutrition, isUsdaConfigured, getUsdaFoodDetail, normalizeUsdaFood } from "../src/lib/nutrition/usda";
 import { USDA_QUERY_MAP } from "./nutrition-query-map.mjs";
 
 config({ path: ".env.local", quiet: true });
@@ -93,21 +93,29 @@ async function main() {
   const sinCorreccion: string[] = [];
 
   for (const food of foods) {
-    const query = (USDA_QUERY_MAP as Record<string, string | null>)[food.id];
+    const entry = (USDA_QUERY_MAP as Record<string, string | { fdcId: number } | null | undefined>)[food.id];
 
-    if (query === undefined) {
+    if (entry === undefined) {
       noVerificado.push({ id: food.id, nombre: food.nombre, motivo: "sin entrada en el mapa de queries (revisar scripts/nutrition-query-map.mjs)" });
       continue;
     }
-    if (query === null) {
+    if (entry === null) {
       noVerificado.push({ id: food.id, nombre: food.nombre, motivo: "plato compuesto/regional sin equivalente genérico en USDA (ver nota BEDCA en este script)" });
       continue;
     }
 
-    process.stdout.write(`${food.id} (${food.nombre}) -> "${query}" ... `);
+    const isFdcPin = typeof entry === "object";
+    process.stdout.write(
+      isFdcPin ? `${food.id} (${food.nombre}) -> fdcId fijo ${entry.fdcId} ... ` : `${food.id} (${food.nombre}) -> "${entry}" ... `,
+    );
     let result;
     try {
-      result = await lookupUsdaNutrition(query);
+      if (isFdcPin) {
+        const detail = await getUsdaFoodDetail(entry.fdcId);
+        result = detail ? normalizeUsdaFood(detail) : null;
+      } else {
+        result = await lookupUsdaNutrition(entry);
+      }
     } catch (err) {
       console.log("ERROR:", err);
       noVerificado.push({ id: food.id, nombre: food.nombre, motivo: `error de red/API: ${String(err)}` });
@@ -117,7 +125,8 @@ async function main() {
 
     if (!result) {
       console.log("SIN RESULTADO");
-      noVerificado.push({ id: food.id, nombre: food.nombre, motivo: `sin resultados en USDA para "${query}"` });
+      const motivo = isFdcPin ? `fdcId fijo ${entry.fdcId} no encontrado o sin datos de energía` : `sin resultados en USDA para "${entry}"`;
+      noVerificado.push({ id: food.id, nombre: food.nombre, motivo });
       await sleep(1200);
       continue;
     }
