@@ -35,10 +35,38 @@ export function MacroColumn({
   );
 }
 
+/** Bloque 12: amarillo mientras el consumo del día no llega al mínimo del
+ * rango objetivo, verde dentro del rango, rojo al superar el máximo. `low`/
+ * `high` ya vienen de `calorieGoal * 0.9/1.1` (ver calorie-arc-card.tsx /
+ * CalorieArcMini) — nunca hardcodeados acá. */
+const RANGE_COLORS = {
+  bajo: "#eab308", // amarillo — todavía no llega al mínimo
+  enRango: "#22c55e", // verde — dentro del rango objetivo
+  sobre: "#ef4444", // rojo — superó el máximo
+};
+
+export function calorieRangeColor(value: number, low: number, high: number): string {
+  if (value < low) return RANGE_COLORS.bajo;
+  if (value > high) return RANGE_COLORS.sobre;
+  return RANGE_COLORS.enRango;
+}
+
 /** Shallow "smile" arc with two range markers — replaces the circular ring per
- * the Fitia-style reference design. Points are placed along the same quadratic
- * Bézier used to draw the curve so they sit exactly on it. */
-export function ArcChart({ low, high, compact = false }: { low: number; high: number; compact?: boolean }) {
+ * el Fitia-style reference design. Points are placed along the same quadratic
+ * Bézier used to draw the curve so they sit exactly on it. `value` (el
+ * consumo acumulado del día) determina el color de la curva — ver
+ * `calorieRangeColor`. */
+export function ArcChart({
+  low,
+  high,
+  value,
+  compact = false,
+}: {
+  low: number;
+  high: number;
+  value: number;
+  compact?: boolean;
+}) {
   const P0 = { x: 20, y: 58 };
   const P1 = { x: 160, y: 18 };
   const P2 = { x: 300, y: 58 };
@@ -51,15 +79,17 @@ export function ArcChart({ low, high, compact = false }: { low: number; high: nu
   };
   const pointA = bezier(0.3);
   const pointB = bezier(0.7);
+  const color = calorieRangeColor(value, low, high);
 
   return (
     <svg viewBox="0 0 320 90" className="w-full h-auto">
       <path
         d={`M ${P0.x} ${P0.y} Q ${P1.x} ${P1.y} ${P2.x} ${P2.y}`}
         fill="none"
-        stroke="rgba(255,255,255,0.22)"
+        stroke={color}
         strokeWidth={2}
         strokeLinecap="round"
+        style={{ transition: "stroke 0.4s ease" }}
       />
       {[pointA, pointB].map((p, i) => (
         <circle key={i} cx={p.x} cy={p.y} r={4} fill="white" fillOpacity={0.85} />
@@ -112,7 +142,7 @@ export function CalorieArcMini({
       </div>
 
       <div className="w-3/5 mx-auto">
-        <ArcChart low={rangeLow} high={rangeHigh} compact />
+        <ArcChart low={rangeLow} high={rangeHigh} value={totals.calorias} compact />
       </div>
 
       <div className="grid grid-cols-3 gap-1.5">

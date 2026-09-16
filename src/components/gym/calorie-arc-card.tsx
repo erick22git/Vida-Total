@@ -121,7 +121,7 @@ export function CalorieArcCard({
         <span className="text-lg text-white/35 tabular-nums">/ {calorieGoal.toLocaleString()}</span>
       </div>
 
-      <ArcChart low={rangeLow} high={rangeHigh} />
+      <ArcChart low={rangeLow} high={rangeHigh} value={totals.calorias} />
 
       <div className="grid grid-cols-3 gap-3">
         <MacroColumn label="Proteínas" value={totals.proteina} goal={proteinGoal} color={MACRO_COLORS.proteina} />
