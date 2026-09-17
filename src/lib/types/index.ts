@@ -22,6 +22,7 @@ export type MuscleGroup =
   | "Biceps"
   | "Triceps"
   | "Piernas"
+  | "Pantorrilla"
   | "Abdomen"
   | "Gluteos"
   | "Abductores"

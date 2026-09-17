@@ -810,7 +810,7 @@
   {
     "id": "elevacion-talones",
     "nombre": "Elevación de talones (gemelos de pie)",
-    "categoria": "Piernas",
+    "categoria": "Pantorrilla",
     "musculoPrimario": "Gemelos",
     "musculosSecundarios": [],
     "equipo": "Máquina",
@@ -2116,7 +2116,7 @@
   {
     "id": "elevacion-talones-sentado",
     "nombre": "Elevación de talones sentado",
-    "categoria": "Piernas",
+    "categoria": "Pantorrilla",
     "musculoPrimario": "Gemelos",
     "musculosSecundarios": [],
     "equipo": "Máquina",
@@ -2132,7 +2132,7 @@
   {
     "id": "elevacion-talones-burro",
     "nombre": "Elevación de talones burro (donkey calf raise)",
-    "categoria": "Piernas",
+    "categoria": "Pantorrilla",
     "musculoPrimario": "Gemelos",
     "musculosSecundarios": [],
     "equipo": "Máquina",
