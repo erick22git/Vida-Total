@@ -20,7 +20,6 @@ import { es } from "date-fns/locale";
 import { CalorieArcCard } from "@/components/gym/calorie-arc-card";
 import { OtherNutrientsCard } from "@/components/gym/other-nutrients-card";
 import { MealCard } from "@/components/gym/meal-card";
-import { PageBackdrop } from "@/components/layout/page-backdrop";
 import { useGymStore, useLoggedFoodsForDate } from "@/lib/store/gymStore";
 import { activeLoggedFoods, mergeFoods, nutrientTotalsForLoggedFoods } from "@/lib/food-utils";
 import { computeLoggedDaysStreak, dayHasLoggedFood } from "@/lib/gym/streaks";
@@ -72,17 +71,9 @@ export default function CaloriasPage() {
   );
 
   return (
+    // El fondo de foto ya lo pone gym/calorias/layout.tsx (compartido por
+    // todas las pantallas de Calorías).
     <div className="flex flex-col gap-6">
-      <PageBackdrop
-        src="/backgrounds/calorias.webp"
-        positionClass="object-[60%_center] md:object-[50%_center] lg:object-[50%_center]"
-      />
-
-      {/* `relative` es necesario: sin position, estos hijos son "no
-      posicionados" y CSS los pinta DEBAJO de cualquier hermano posicionado
-      (como el PageBackdrop fixed) sin importar el orden en el DOM — por
-      eso el header y la barra de fecha desaparecían detrás de la foto. */}
-      <div className="relative flex flex-col gap-6">
       <header className="flex items-center gap-3 pt-2">
         <Link href="/gym" className="text-white/50 hover:text-white transition-colors">
           <ArrowLeft size={20} />
@@ -220,7 +211,6 @@ export default function CaloriasPage() {
           />
         ))}
       </section>
-      </div>
     </div>
   );
 }

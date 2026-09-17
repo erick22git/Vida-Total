@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { ChevronRight, Mic, HandHeart, Presentation, Flame } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
-import { PageBackdrop } from "@/components/layout/page-backdrop";
 import { GlassBadge } from "@/components/glass/glass-badge";
 import {
   useVoiceStreak,
@@ -37,12 +36,9 @@ export default function VozHubPage() {
   const todayLesson = useTodayVoiceLesson();
 
   return (
+    // El fondo de foto ya lo pone voz/layout.tsx (compartido por todas las
+    // pantallas de Voz).
     <div className="flex flex-col gap-6">
-      <PageBackdrop src="/backgrounds/voz.webp" />
-
-      {/* `relative`: sin position, estos hijos se pintan debajo del
-      PageBackdrop (fixed) sin importar el orden en el DOM. */}
-      <div className="relative flex flex-col gap-6">
       <header className="flex flex-col gap-1 pt-2">
         <p className="text-white/50 text-sm md:text-base">Módulo</p>
         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2">
@@ -106,7 +102,6 @@ export default function VozHubPage() {
           </Link>
         ))}
       </section>
-      </div>
     </div>
   );
 }

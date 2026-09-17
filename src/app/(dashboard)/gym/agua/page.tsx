@@ -9,7 +9,6 @@ import { GlassCard } from "@/components/glass/glass-card";
 import { WaterBottle } from "@/components/gym/water-bottle";
 import { WeeklyWaterCard } from "@/components/gym/weekly-water-card";
 import { AddDrinkModal } from "@/components/gym/add-drink-modal";
-import { PageBackdrop } from "@/components/layout/page-backdrop";
 import { totalsByDrink } from "@/lib/gym/water-stats";
 import { useGymStore, useTodayWaterEntries } from "@/lib/store/gymStore";
 
@@ -28,15 +27,9 @@ export default function AguaPage() {
   const todayByDrink = useMemo(() => totalsByDrink(todayEntries, drinkOverrides), [todayEntries, drinkOverrides]);
 
   return (
+    // El fondo de foto ya lo pone gym/agua/layout.tsx (compartido por todas
+    // las pantallas de Agua).
     <div className="flex flex-col gap-6">
-      <PageBackdrop
-        src="/backgrounds/agua.webp"
-        positionClass="object-[60%_40%] md:object-[55%_45%] lg:object-[50%_50%]"
-      />
-
-      {/* `relative`: sin position, estos hijos se pintan debajo del
-      PageBackdrop (fixed) sin importar el orden en el DOM. */}
-      <div className="relative flex flex-col gap-6">
       <header className="flex items-center gap-3 pt-2">
         <Link href="/gym" className="text-white/50 hover:text-white transition-colors">
           <ArrowLeft size={20} />
@@ -114,7 +107,6 @@ export default function AguaPage() {
           </button>
         </div>
         <WeeklyWaterCard waterEntries={waterEntries} waterGoalMl={waterGoalMl} />
-      </div>
       </div>
     </div>
   );

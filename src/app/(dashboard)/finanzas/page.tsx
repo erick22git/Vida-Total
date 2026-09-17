@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { GlassCard } from "@/components/glass/glass-card";
-import { PageBackdrop } from "@/components/layout/page-backdrop";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassBadge } from "@/components/glass/glass-badge";
 import { GlassModal } from "@/components/glass/glass-modal";
@@ -79,8 +78,9 @@ export default function FinanzasHubPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 relative pb-20">
-      <PageBackdrop src="/backgrounds/finanzas.webp" />
+    // El fondo de foto ya lo pone finanzas/layout.tsx (compartido por todas
+    // las pantallas de Finanzas).
+    <div className="flex flex-col gap-6 pb-20">
       <header className="flex flex-col gap-1 pt-2">
         <p className="text-white/50 text-sm md:text-base">Módulo</p>
         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2">
