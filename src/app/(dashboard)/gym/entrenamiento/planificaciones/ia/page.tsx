@@ -7,9 +7,13 @@ import { GlassButton } from "@/components/glass/glass-button";
 import { GlassCard } from "@/components/glass/glass-card";
 import { BodySilhouetteFront, BodySilhouetteBack, type BodyZone } from "@/components/gym/body-silhouette";
 import { MUSCLE_COLOR, FUNNY_ROUTINE_NAMES } from "@/lib/data/gym-meta";
+import { PLAN_LIBRARY_CATEGORIES } from "@/lib/data/plan-library";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { useGymStore } from "@/lib/store/gymStore";
-import type { MuscleGroup, RoutineExercise, SetType } from "@/lib/types";
+import { dominantMuscleGroup } from "@/lib/gym-utils";
+import type { MuscleGroup, Routine, RoutineExercise, SetType, WeeklyPlanDay } from "@/lib/types";
+
+const DAY_KEYS = ["L", "M", "X", "J", "V", "S", "D"];
 
 type Step = "goal" | "muscles" | "days" | "equipment" | "result";
 const STEPS: Step[] = ["goal", "muscles", "days", "equipment", "result"];
@@ -51,6 +55,9 @@ export default function AiPlanWizardPage() {
   const allExercises = useAllExercises();
   const saveRoutine = useGymStore((s) => s.saveRoutine);
   const startWorkoutFromRoutine = useGymStore((s) => s.startWorkoutFromRoutine);
+  const createPlan = useGymStore((s) => s.createPlan);
+  const setActivePlan = useGymStore((s) => s.setActivePlan);
+  const applyPlanToWeek = useGymStore((s) => s.applyPlanToWeek);
 
   const [stepIndex, setStepIndex] = useState(0);
   const [goal, setGoal] = useState<string | null>(null);
@@ -105,10 +112,43 @@ export default function AiPlanWizardPage() {
     next();
   }
 
-  function handleStart() {
-    if (!generated) return;
+  // Bloque 19: antes esta pantalla solo dejaba "Empezar Entrenamiento", que
+  // de paso guardaba la rutina pero nunca la dejaba como una Planificación
+  // real (visible en /gym/entrenamiento/planificaciones) — no había forma
+  // de simplemente guardar el plan generado sin arrancar a entrenar ya
+  // mismo. Ambos botones ahora arman el mismo TrainingPlan (la rutina
+  // generada repartida en los primeros `daysPerWeek` días de la semana,
+  // el resto como descanso) y solo difieren en a dónde navegan después.
+  function buildAndSavePlan(): { routine: Routine } | null {
+    if (!generated) return null;
     const routine = saveRoutine(generated.nombre, generated.ejercicios);
-    startWorkoutFromRoutine(routine);
+    const grupo = dominantMuscleGroup(generated.ejercicios, allExercises) ?? "Cardio";
+    const dias: WeeklyPlanDay[] = DAY_KEYS.map((day, i) =>
+      i < daysPerWeek ? { day, grupoMuscular: grupo, routineId: routine.id } : { day, grupoMuscular: "Descanso" as const },
+    );
+    const plan = createPlan({
+      nombre: generated.nombre,
+      contexto: `Gimnasio · ${daysPerWeek} días/semana`,
+      categoria: PLAN_LIBRARY_CATEGORIES[0],
+      notas: "",
+      dias,
+      daysPerWeek,
+      minsPerSession: 60,
+    });
+    setActivePlan(plan.id);
+    applyPlanToWeek(plan.id);
+    return { routine };
+  }
+
+  function handleSavePlan() {
+    if (!buildAndSavePlan()) return;
+    router.push("/gym/entrenamiento/planificaciones");
+  }
+
+  function handleStart() {
+    const result = buildAndSavePlan();
+    if (!result) return;
+    startWorkoutFromRoutine(result.routine);
     router.push("/gym/entrenamiento/activo");
   }
 
@@ -292,9 +332,14 @@ export default function AiPlanWizardPage() {
             ))}
           </div>
 
-          <GlassButton accentColor="rgba(255,255,255,0.85)" className="!text-black" size="lg" onClick={handleStart}>
-            Empezar Entrenamiento
-          </GlassButton>
+          <div className="flex flex-col gap-2">
+            <GlassButton accentColor="rgba(255,255,255,0.85)" className="!text-black" size="lg" onClick={handleStart}>
+              Empezar Entrenamiento
+            </GlassButton>
+            <GlassButton variant="outline" size="lg" onClick={handleSavePlan}>
+              Guardar Plan
+            </GlassButton>
+          </div>
         </div>
       )}
     </div>
