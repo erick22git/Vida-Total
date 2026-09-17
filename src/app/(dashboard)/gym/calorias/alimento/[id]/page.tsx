@@ -29,6 +29,10 @@ import type { CookedState, FoodPortion, MealType } from "@/lib/types";
  * Kept consistent with src/components/gym/food-entry-sheet.tsx. */
 const COOKED_FACTOR = 0.7;
 
+/** Ver recetas/crear/page.tsx: mismo key de sessionStorage usado para pasar
+ * el formulario de la receta en progreso ida y vuelta a esta pantalla. */
+const RECIPE_DRAFT_KEY = "vt-recipe-draft";
+
 const ADD_TARGETS: { key: string; label: string; meal: MealType }[] = [
   { key: "desayuno", label: "Desayuno", meal: "desayuno" },
   { key: "almuerzo", label: "Almuerzo", meal: "almuerzo" },
@@ -51,6 +55,11 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
+  // Si llegamos acá desde "Agregar ingrediente" al crear una receta (ver
+  // recetas/crear/page.tsx), el botón principal configura cantidad/porción
+  // de este alimento para la receta en vez de registrarlo en una comida.
+  const returnTo = searchParams.get("returnTo");
+  const isForRecipe = returnTo === "recipe";
 
   const customFoods = useGymStore((s) => s.customFoods);
   const favoriteFoodIds = useGymStore((s) => s.favoriteFoodIds);
@@ -158,6 +167,44 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
     setAddedTarget(target.key);
     setAddMenuOpen(false);
     setTimeout(() => router.push("/gym/calorias"), 550);
+  }
+
+  function handleAddToRecipe() {
+    if (!food) return;
+    // Misma regla que al agregar a una comida: sin datos reales cargados no
+    // se puede sumar a la receta — se manda a completarlo primero, pero
+    // conservando `returnTo=recipe` para volver acá (no a la lista de
+    // comidas) una vez guardado.
+    if (food.configurado === false) {
+      router.push(`/gym/calorias/crear-alimento?editId=${food.id}&returnTo=recipe`);
+      return;
+    }
+    try {
+      const raw = sessionStorage.getItem(RECIPE_DRAFT_KEY);
+      const draft = raw ? JSON.parse(raw) : { recipeId: null, ingredientes: [] };
+      draft.ingredientes = [
+        ...(draft.ingredientes ?? []),
+        {
+          foodId: food.id,
+          nombre: food.nombre,
+          cantidad,
+          porcionNombre: selectedPortion?.nombre ?? "porción",
+          gramos,
+          calorias: nutrition.calorias,
+          proteina: nutrition.proteina,
+          carbos: nutrition.carbos,
+          grasas: nutrition.grasas,
+        },
+      ];
+      sessionStorage.setItem(RECIPE_DRAFT_KEY, JSON.stringify(draft));
+      router.push(draft.recipeId ? `/gym/calorias/recetas/crear?recipeId=${draft.recipeId}` : "/gym/calorias/recetas/crear");
+    } catch {
+      // Si por algún motivo no hay draft en sessionStorage (p.ej. se llegó
+      // acá con la URL directa, sin pasar por "Agregar ingrediente"), no
+      // hay a qué volver con el ingrediente — simplemente volvemos a Crear
+      // Receta vacío en vez de romper la navegación.
+      router.push("/gym/calorias/recetas/crear");
+    }
   }
 
   return (
@@ -394,6 +441,11 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
             </button>
           </div>
 
+          {isForRecipe ? (
+            <GlassButton className="w-full flex items-center justify-center gap-2" size="lg" onClick={handleAddToRecipe}>
+              <Plus size={16} /> {food.configurado === false ? "Configurar alimento" : "Agregar a la receta"}
+            </GlassButton>
+          ) : (
           <div className="flex items-stretch gap-2">
             <GlassButton
               className="flex-1 flex items-center justify-center gap-2"
@@ -430,6 +482,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
               </button>
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>

@@ -9,10 +9,44 @@ import { GlassCard } from "@/components/glass/glass-card";
 import { GlassModal } from "@/components/glass/glass-modal";
 import { RecipeIngredientPicker } from "@/components/gym/recipe-ingredient-picker";
 import { useGymStore } from "@/lib/store/gymStore";
-import { MEAL_LABELS, type MealType, type RecipeIngredient } from "@/lib/types";
+import { MEAL_LABELS, type Food, type MealType, type RecipeIngredient } from "@/lib/types";
 
 type CreationMode = "manual" | "foto" | "enlace" | null;
 const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snack1", "snack2"];
+
+/** Al tocar "Agregar" en Ingredientes, en vez de sumar el alimento directo
+ * con una porción default, se navega a la pantalla de detalle de ese
+ * alimento para configurar cantidad/porción (y calorías, si hace falta) —
+ * ver RecipeIngredientPicker. Como eso es un cambio de ruta completo, el
+ * formulario en progreso (que solo vive en useState local) se guarda acá
+ * antes de salir y se restaura al volver, igual que ya se hacía con la
+ * foto escaneada del código de barras (`vt-scanned-photo`). */
+const RECIPE_DRAFT_KEY = "vt-recipe-draft";
+
+type RecipeDraft = {
+  recipeId: string | null;
+  mode: CreationMode;
+  nombre: string;
+  foto: string | null;
+  porciones: number;
+  tiempoPrepMin: number;
+  tipos: MealType[];
+  ingredientes: RecipeIngredient[];
+  instrucciones: string[];
+  enlace: string;
+};
+
+function readAndClearRecipeDraft(): RecipeDraft | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(RECIPE_DRAFT_KEY);
+    if (!raw) return null;
+    sessionStorage.removeItem(RECIPE_DRAFT_KEY);
+    return JSON.parse(raw) as RecipeDraft;
+  } catch {
+    return null;
+  }
+}
 
 export default function CrearRecetaPage() {
   return (
@@ -34,22 +68,52 @@ function CrearRecetaForm() {
 
   const existing = recipeId ? recipes.find((r) => r.id === recipeId) : undefined;
 
-  const [mode, setMode] = useState<CreationMode>(existing ? "manual" : initialMode);
-  const [choosing, setChoosing] = useState(!existing && !initialMode);
+  // Si venimos de vuelta de configurar un ingrediente (ver
+  // goToConfigureIngredient abajo), `draft` trae el formulario completo tal
+  // como estaba antes de salir — tiene prioridad sobre `existing` para que
+  // no se pierdan ediciones en progreso.
+  const [draft] = useState(() => readAndClearRecipeDraft());
 
-  const [nombre, setNombre] = useState(existing?.nombre ?? "");
-  const [foto, setFoto] = useState<string | null>(existing?.foto ?? null);
-  const [porciones, setPorciones] = useState(existing?.porciones ?? 2);
-  const [tiempoPrepMin, setTiempoPrepMin] = useState(existing?.tiempoPrepMin ?? 20);
-  const [tipos, setTipos] = useState<MealType[]>(existing?.tipos ?? []);
-  const [ingredientes, setIngredientes] = useState<RecipeIngredient[]>(existing?.ingredientes ?? []);
-  const [instrucciones, setInstrucciones] = useState<string[]>(existing?.instrucciones ?? [""]);
-  const [enlace, setEnlace] = useState(existing?.enlace ?? "");
+  const [mode, setMode] = useState<CreationMode>(draft?.mode ?? (existing ? "manual" : initialMode));
+  const [choosing, setChoosing] = useState(!draft && !existing && !initialMode);
+
+  const [nombre, setNombre] = useState(draft?.nombre ?? existing?.nombre ?? "");
+  const [foto, setFoto] = useState<string | null>(draft?.foto ?? existing?.foto ?? null);
+  const [porciones, setPorciones] = useState(draft?.porciones ?? existing?.porciones ?? 2);
+  const [tiempoPrepMin, setTiempoPrepMin] = useState(draft?.tiempoPrepMin ?? existing?.tiempoPrepMin ?? 20);
+  const [tipos, setTipos] = useState<MealType[]>(draft?.tipos ?? existing?.tipos ?? []);
+  const [ingredientes, setIngredientes] = useState<RecipeIngredient[]>(draft?.ingredientes ?? existing?.ingredientes ?? []);
+  const [instrucciones, setInstrucciones] = useState<string[]>(draft?.instrucciones ?? existing?.instrucciones ?? [""]);
+  const [enlace, setEnlace] = useState(draft?.enlace ?? existing?.enlace ?? "");
   const [pickerOpen, setPickerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // Note: form fields are seeded from `existing` at initial mount via useState above.
-  // If `recipeId` changes without a remount, the form intentionally keeps the
-  // in-progress edits rather than silently overwriting them.
+  // Note: form fields are seeded from `existing`/`draft` at initial mount via
+  // useState above. If `recipeId` changes without a remount, the form
+  // intentionally keeps the in-progress edits rather than silently
+  // overwriting them.
+
+  function goToConfigureIngredient(food: Food) {
+    const toSave: RecipeDraft = {
+      recipeId: existing?.id ?? null,
+      mode,
+      nombre,
+      foto,
+      porciones,
+      tiempoPrepMin,
+      tipos,
+      ingredientes,
+      instrucciones,
+      enlace,
+    };
+    try {
+      sessionStorage.setItem(RECIPE_DRAFT_KEY, JSON.stringify(toSave));
+    } catch {
+      // sessionStorage puede fallar en modo privado — si pasa, simplemente
+      // no se restaura el formulario al volver, pero no rompe la navegación.
+    }
+    setPickerOpen(false);
+    router.push(`/gym/calorias/alimento/${food.id}?returnTo=recipe`);
+  }
 
   const totales = ingredientes.reduce(
     (acc, i) => ({
@@ -331,11 +395,7 @@ function CrearRecetaForm() {
         </div>
       </div>
 
-      <RecipeIngredientPicker
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onSelect={(ingredient) => setIngredientes((prev) => [...prev, ingredient])}
-      />
+      <RecipeIngredientPicker open={pickerOpen} onClose={() => setPickerOpen(false)} onPick={goToConfigureIngredient} />
     </div>
   );
 }

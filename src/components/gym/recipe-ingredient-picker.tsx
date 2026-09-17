@@ -6,18 +6,23 @@ import { GlassModal } from "@/components/glass/glass-modal";
 import { GlassInput } from "@/components/glass/glass-input";
 import { FoodPhoto } from "@/components/gym/food-photo";
 import { useGymStore } from "@/lib/store/gymStore";
-import { mergeFoods, defaultPortions, scaleNutrition } from "@/lib/food-utils";
+import { mergeFoods } from "@/lib/food-utils";
 import { categoryEmoji } from "@/lib/food-category-emoji";
-import type { Food, RecipeIngredient } from "@/lib/types";
+import type { Food } from "@/lib/types";
 
+/** A diferencia de antes, elegir un alimento acá NO lo agrega directo con
+ * una porción default — abre la pantalla de detalle de ese alimento
+ * (`onPick`, ver crear/page.tsx) para poder configurar cantidad/porción
+ * (y calorías, si el alimento todavía no está configurado) antes de
+ * sumarlo a la receta. */
 export function RecipeIngredientPicker({
   open,
   onClose,
-  onSelect,
+  onPick,
 }: {
   open: boolean;
   onClose: () => void;
-  onSelect: (ingredient: RecipeIngredient) => void;
+  onPick: (food: Food) => void;
 }) {
   const customFoods = useGymStore((s) => s.customFoods);
   const [query, setQuery] = useState("");
@@ -30,21 +35,8 @@ export function RecipeIngredientPicker({
   }, [allFoods, query]);
 
   function handlePick(food: Food) {
-    const portion = defaultPortions(food)[0];
-    const nutrition = scaleNutrition(food, portion.gramos);
-    onSelect({
-      foodId: food.id,
-      nombre: food.nombre,
-      cantidad: 1,
-      porcionNombre: portion.nombre,
-      gramos: portion.gramos,
-      calorias: nutrition.calorias,
-      proteina: nutrition.proteina,
-      carbos: nutrition.carbos,
-      grasas: nutrition.grasas,
-    });
     setQuery("");
-    onClose();
+    onPick(food);
   }
 
   return (

@@ -49,6 +49,10 @@ function CrearAlimentoForm() {
   const prefillBarcode = searchParams.get("barcode") ?? "";
   const fromScan = searchParams.get("fromScan") === "1";
   const editId = searchParams.get("editId");
+  // Ver alimento/[id]/page.tsx: si llegamos acá porque un alimento sin
+  // configurar se estaba por agregar a una receta, hay que volver a esa
+  // pantalla (no a la del alimento suelto) una vez guardado.
+  const returnTo = searchParams.get("returnTo");
 
   const addCustomFood = useGymStore((s) => s.addCustomFood);
   const upsertFoodOverride = useGymStore((s) => s.upsertFoodOverride);
@@ -147,16 +151,17 @@ function CrearAlimentoForm() {
 
   function handleSave() {
     if (!canSave) return;
+    const returnSuffix = returnTo ? `?returnTo=${returnTo}` : "";
     if (isEditing && editId) {
       // Guardar cambios sin tocar `verificado`: si el alimento ya estaba
       // verificado, sigue así; si no, editar valores NO lo marca como
       // verificado por sí solo — eso requiere el paso explícito de abajo.
       upsertFoodOverride(editId, buildPatch());
-      router.push(`/gym/calorias/alimento/${editId}`);
+      router.push(`/gym/calorias/alimento/${editId}${returnSuffix}`);
       return;
     }
     const created = addCustomFood(buildPatch());
-    router.push(`/gym/calorias/alimento/${created.id}`);
+    router.push(`/gym/calorias/alimento/${created.id}${returnSuffix}`);
   }
 
   // TODO: restringir esta acción a rol admin cuando exista el sistema de
