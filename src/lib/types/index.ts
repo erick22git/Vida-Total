@@ -403,3 +403,23 @@ export interface TrainingPlan {
   daysPerWeek: number;
   minsPerSession: number;
 }
+
+/** Bloque 13: registro de qué plan estuvo activo en qué rango de fechas —
+ * se abre una entrada nueva (y se cierra la anterior con `fechaFin`) cada
+ * vez que `setActivePlan` cambia de plan. `fechaFin: null` significa "sigue
+ * siendo el plan activo hoy". */
+export interface PlanActivation {
+  planId: string;
+  fechaInicio: string; // ISO
+  fechaFin: string | null;
+}
+
+/** Bloque 13: una foto de progreso por mes calendario ("yyyy-MM"), asociada
+ * automáticamente al plan que estaba activo cuando se subió. */
+export interface ProgressPhoto {
+  id: string;
+  monthKey: string; // "yyyy-MM"
+  photoUrl: string;
+  planId?: string;
+  createdAt: number;
+}

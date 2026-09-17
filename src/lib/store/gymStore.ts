@@ -10,6 +10,8 @@ import type {
   MealTemplate,
   MealType,
   MuscleGroup,
+  PlanActivation,
+  ProgressPhoto,
   Recipe,
   Routine,
   RoutineExercise,
@@ -56,6 +58,8 @@ import {
   syncInsertCustomExercise,
   syncInsertWeightEntry,
   syncDeleteWeightEntry,
+  syncUpsertProgressPhoto,
+  syncDeleteProgressPhoto,
   upsertGymSettings,
   upsertGymWorkoutState,
   hydrateGymStoreFromSupabase,
@@ -227,6 +231,16 @@ export interface GymState {
   weightEntries: WeightEntry[];
   addWeightEntry: (kg: number, date?: string) => void;
   removeWeightEntry: (id: string) => void;
+
+  // ---------- Progreso (Bloque 13) ----------
+  /** Qué plan estuvo activo en qué rango de fechas — se actualiza solo
+   * dentro de `setActivePlan`, nunca hace falta llamarlo aparte. */
+  planHistory: PlanActivation[];
+  progressPhotos: ProgressPhoto[];
+  /** Sube (o reemplaza, si ya había una) la foto de progreso del mes
+   * indicado, asociándola al plan activo en este momento. */
+  setProgressPhoto: (monthKey: string, photoUrl: string) => void;
+  removeProgressPhoto: (id: string) => void;
 
   // ---------- Streak ----------
   streak: number;
@@ -887,10 +901,23 @@ export const useGymStore = create<GymState>()(
       },
       setActivePlan: (id) => {
         const allIds = get().plans.map((p) => p.id);
-        set((state) => ({
-          activePlanId: id,
-          plans: state.plans.map((p) => ({ ...p, activo: p.id === id })),
-        }));
+        set((state) => {
+          // Bloque 13: cierra la entrada de historial abierta (si el plan
+          // realmente cambió) y abre una nueva para `id` — así queda un
+          // registro de qué plan estuvo activo en qué rango de fechas.
+          const planHistory =
+            state.activePlanId === id
+              ? state.planHistory
+              : [
+                  ...state.planHistory.map((h) => (h.fechaFin === null ? { ...h, fechaFin: new Date().toISOString() } : h)),
+                  { planId: id, fechaInicio: new Date().toISOString(), fechaFin: null },
+                ];
+          return {
+            activePlanId: id,
+            plans: state.plans.map((p) => ({ ...p, activo: p.id === id })),
+            planHistory,
+          };
+        });
         const uidUser = getCurrentUserId();
         if (uidUser) syncSetActivePlan(allIds, id, uidUser);
       },
@@ -964,6 +991,37 @@ export const useGymStore = create<GymState>()(
         }));
         const uidUser = getCurrentUserId();
         if (uidUser) syncDeleteWeightEntry(id, uidUser);
+      },
+
+      // Progreso (Bloque 13)
+      planHistory: [],
+      progressPhotos: [],
+      setProgressPhoto: (monthKey, photoUrl) => {
+        const activePlanId = get().activePlanId;
+        let saved: ProgressPhoto | null = null;
+        set((state) => {
+          const existing = state.progressPhotos.find((p) => p.monthKey === monthKey);
+          const created: ProgressPhoto = {
+            id: existing?.id ?? uid(),
+            monthKey,
+            photoUrl,
+            planId: activePlanId ?? undefined,
+            createdAt: existing?.createdAt ?? Date.now(),
+          };
+          saved = created;
+          return {
+            progressPhotos: existing
+              ? state.progressPhotos.map((p) => (p.monthKey === monthKey ? created : p))
+              : [created, ...state.progressPhotos],
+          };
+        });
+        const uidUser = getCurrentUserId();
+        if (uidUser && saved) syncUpsertProgressPhoto(saved, uidUser);
+      },
+      removeProgressPhoto: (id) => {
+        set((state) => ({ progressPhotos: state.progressPhotos.filter((p) => p.id !== id) }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncDeleteProgressPhoto(id, uidUser);
       },
 
       // Streak
@@ -1095,6 +1153,7 @@ const WORKOUT_STATE_KEYS = [
   "kegelStreak",
   "kegelLastSessionDate",
   "kegelTotalSessions",
+  "planHistory",
 ] as const satisfies readonly (keyof GymState)[];
 
 function pick<K extends keyof GymState>(state: GymState, keys: readonly K[]): Pick<GymState, K> {
@@ -1136,7 +1195,7 @@ if (typeof window !== "undefined") {
  * remotas y agrega las locales que el remoto todavía no conoce — nunca
  * borra datos locales. Fundamental para la primera sincronización de un
  * usuario que ya venía usando la app antes de que existiera esta capa: en
- * ese caso las 14 tablas de Supabase están vacías (no hay ninguna fila
+ * ese caso las 15 tablas de Supabase están vacías (no hay ninguna fila
  * para `userId` todavía), y un merge ingenuo tipo "el remoto manda"
  * reemplazaría meses de historial local por arrays vacíos en el primer
  * login. Devuelve también las filas que eran solo locales, para que el
@@ -1156,7 +1215,7 @@ function mergeIds(remote: string[], local: string[]): { merged: string[]; localO
 }
 
 /**
- * Trae las 14 tablas de Gym de Supabase para `userId`, las MEZCLA (nunca
+ * Trae las 15 tablas de Gym de Supabase para `userId`, las MEZCLA (nunca
  * reemplaza) con lo que ya hay en el store, y sube (backfill) cualquier
  * dato que solo existiera localmente — así un usuario que ya tenía meses
  * de historial en este dispositivo termina con esos datos también en la
@@ -1181,6 +1240,7 @@ export async function hydrateGymStore(userId: string): Promise<void> {
   const plans = mergeById(remote.plans, local.plans);
   const customExercises = mergeById(remote.customExercises, local.customExercises);
   const weightEntries = mergeById(remote.weightEntries, local.weightEntries);
+  const progressPhotos = mergeById(remote.progressPhotos, local.progressPhotos);
 
   // customPortionsByFood: Record<foodId, FoodPortion[]> — no tiene `id`
   // propio, se deduplica por (nombre, gramos) dentro de cada food.
@@ -1211,6 +1271,7 @@ export async function hydrateGymStore(userId: string): Promise<void> {
     plans: plans.merged,
     customExercises: customExercises.merged,
     weightEntries: weightEntries.merged,
+    progressPhotos: progressPhotos.merged,
     ...remote.settings,
     ...remote.workoutState,
   };
@@ -1239,6 +1300,7 @@ export async function hydrateGymStore(userId: string): Promise<void> {
   for (const plan of plans.localOnly) syncInsertPlan(plan, userId);
   for (const exercise of customExercises.localOnly) syncInsertCustomExercise(exercise, userId);
   for (const entry of weightEntries.localOnly) syncInsertWeightEntry(entry, userId);
+  for (const photo of progressPhotos.localOnly) syncUpsertProgressPhoto(photo, userId);
 }
 
 // ---------- Selectors / helpers ----------

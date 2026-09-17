@@ -35,6 +35,8 @@ import type {
   MealTemplate,
   MealType,
   MuscleGroup,
+  PlanActivation,
+  ProgressPhoto,
   Recipe,
   Routine,
   RoutineExercise,
@@ -222,6 +224,7 @@ export interface GymWorkoutStateRow {
   kegel_streak: number;
   kegel_last_session_date: string | null;
   kegel_total_sessions: number;
+  plan_history: PlanActivation[];
 }
 
 export interface GymWorkoutStatePatch {
@@ -234,6 +237,7 @@ export interface GymWorkoutStatePatch {
   kegelStreak: number;
   kegelLastSessionDate: string | null;
   kegelTotalSessions: number;
+  planHistory: PlanActivation[];
 }
 
 export async function upsertGymWorkoutState(userId: string, s: GymWorkoutStatePatch): Promise<void> {
@@ -248,6 +252,7 @@ export async function upsertGymWorkoutState(userId: string, s: GymWorkoutStatePa
     kegel_streak: s.kegelStreak,
     kegel_last_session_date: isoStringToDateOnly(s.kegelLastSessionDate),
     kegel_total_sessions: s.kegelTotalSessions,
+    plan_history: s.planHistory,
   };
   await safeWrite("upsert gym_workout_state", () =>
     createClient().from("gym_workout_state").upsert(row, { onConflict: "user_id" }),
@@ -269,6 +274,7 @@ async function fetchGymWorkoutState(userId: string): Promise<Partial<GymWorkoutS
     kegelStreak: row.kegel_streak,
     kegelLastSessionDate: dateOnlyToIsoString(row.kegel_last_session_date),
     kegelTotalSessions: row.kegel_total_sessions,
+    planHistory: row.plan_history ?? [],
   };
 }
 
@@ -1125,6 +1131,58 @@ export function syncDeleteWeightEntry(id: string, userId: string): void {
 }
 
 // ============================================================================
+// progress_photos (Bloque 13)
+// ============================================================================
+
+interface ProgressPhotoRow {
+  id: string;
+  user_id: string;
+  month_key: string;
+  photo_url: string;
+  plan_id: string | null;
+  created_at?: string;
+}
+
+function progressPhotoToRow(p: ProgressPhoto, userId: string): ProgressPhotoRow {
+  return {
+    id: p.id,
+    user_id: userId,
+    month_key: p.monthKey,
+    photo_url: p.photoUrl,
+    plan_id: p.planId ?? null,
+  };
+}
+
+function rowToProgressPhoto(row: ProgressPhotoRow): ProgressPhoto {
+  return {
+    id: row.id,
+    monthKey: row.month_key,
+    photoUrl: row.photo_url,
+    planId: row.plan_id ?? undefined,
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+  };
+}
+
+async function fetchProgressPhotos(userId: string): Promise<ProgressPhoto[]> {
+  const rows = await safeFetchList<ProgressPhotoRow>("progress_photos", () =>
+    createClient().from("progress_photos").select("*").eq("user_id", userId),
+  );
+  return rows.map(rowToProgressPhoto);
+}
+
+export function syncUpsertProgressPhoto(photo: ProgressPhoto, userId: string): void {
+  void safeWrite("upsert progress_photos", () =>
+    createClient().from("progress_photos").upsert(progressPhotoToRow(photo, userId), { onConflict: "user_id,month_key" }),
+  );
+}
+
+export function syncDeleteProgressPhoto(id: string, userId: string): void {
+  void safeWrite("delete progress_photos", () =>
+    createClient().from("progress_photos").delete().eq("id", id).eq("user_id", userId),
+  );
+}
+
+// ============================================================================
 // Hidratación completa desde Supabase (login / segundo dispositivo)
 // ============================================================================
 
@@ -1141,6 +1199,7 @@ export interface GymHydratedState {
   plans: TrainingPlan[];
   customExercises: Exercise[];
   weightEntries: WeightEntry[];
+  progressPhotos: ProgressPhoto[];
   // Los campos de gym_settings/gym_workout_state solo se incluyen si ya
   // existe una fila remota para ese usuario — si no, se dejan los valores
   // locales/por defecto tal cual (la primera escritura creará la fila).
@@ -1149,7 +1208,7 @@ export interface GymHydratedState {
 }
 
 /**
- * Trae las 14 tablas de Gym para `userId` y devuelve un objeto listo para
+ * Trae las 15 tablas de Gym para `userId` y devuelve un objeto listo para
  * mezclar (merge) en el estado del store. No escribe nada — el store decide
  * cómo aplicar el patch (ver `_hydrateFromRemote` en gymStore.ts).
  *
@@ -1172,6 +1231,7 @@ export async function hydrateGymStoreFromSupabase(userId: string): Promise<GymHy
     plans,
     customExercises,
     weightEntries,
+    progressPhotos,
     settings,
     workoutState,
   ] = await Promise.all([
@@ -1187,6 +1247,7 @@ export async function hydrateGymStoreFromSupabase(userId: string): Promise<GymHy
     fetchTrainingPlans(userId),
     fetchCustomExercises(userId),
     fetchWeightEntries(userId),
+    fetchProgressPhotos(userId),
     fetchGymSettings(userId),
     fetchGymWorkoutState(userId),
   ]);
@@ -1204,6 +1265,7 @@ export async function hydrateGymStoreFromSupabase(userId: string): Promise<GymHy
     plans,
     customExercises,
     weightEntries,
+    progressPhotos,
     settings,
     workoutState,
   };

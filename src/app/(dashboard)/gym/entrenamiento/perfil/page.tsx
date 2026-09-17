@@ -2,7 +2,16 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Camera, Scale, TrendingUp, LineChart as LineChartIcon, Trophy, ChevronRight } from "lucide-react";
+import {
+  ArrowLeft,
+  Camera,
+  Scale,
+  TrendingUp,
+  LineChart as LineChartIcon,
+  Trophy,
+  ChevronRight,
+  Image as ImageIcon,
+} from "lucide-react";
 import { format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
@@ -78,6 +87,11 @@ export default function ProfilePage() {
           <Link href="/gym/entrenamiento/perfil/peso" className="flex-1">
             <GlassCard padding="sm" className="flex items-center justify-center gap-2 py-3">
               <Scale size={15} /> <span className="text-sm font-medium">Peso</span>
+            </GlassCard>
+          </Link>
+          <Link href="/gym/entrenamiento/perfil/fotos" className="flex-1">
+            <GlassCard padding="sm" className="flex items-center justify-center gap-2 py-3">
+              <ImageIcon size={15} /> <span className="text-sm font-medium">Fotos</span>
             </GlassCard>
           </Link>
         </div>
