@@ -7,6 +7,7 @@ import { es } from "date-fns/locale";
 import { HelpCircle } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassModal } from "@/components/glass/glass-modal";
+import { effectiveWeight, peakWeight } from "@/lib/gym-utils";
 import type { WorkoutSession } from "@/lib/types";
 
 const METRICS = ["Media de volumen por sesión", "Peso máximo", "Repeticiones totales"];
@@ -37,7 +38,7 @@ export function ExerciseSummaryTab({
       exerciseSessions.map((s) => {
         const log = s.ejercicios.find((e) => e.exerciseId === exerciseId)!;
         const completedSets = log.sets.filter((set) => set.completado);
-        const volume = completedSets.reduce((sum, set) => sum + set.peso * set.reps, 0);
+        const volume = completedSets.reduce((sum, set) => sum + effectiveWeight(set) * set.reps, 0);
         return {
           date: format(new Date(s.date), "d MMM", { locale: es }),
           volumen: metric === METRICS[0] ? (completedSets.length ? Math.round(volume / completedSets.length) : 0) : volume,
@@ -56,11 +57,12 @@ export function ExerciseSummaryTab({
       let sessionVolume = 0;
       for (const set of log.sets) {
         if (!set.completado) continue;
-        const vol = set.peso * set.reps;
+        const peso = effectiveWeight(set);
+        const vol = peso * set.reps;
         sessionVolume += vol;
         if (vol > bestSetVolume) bestSetVolume = vol;
-        if (set.peso > maxPeso) maxPeso = set.peso;
-        const epley = set.peso * (1 + set.reps / 30);
+        if (peakWeight(set) > maxPeso) maxPeso = peakWeight(set);
+        const epley = peso * (1 + set.reps / 30);
         if (epley > oneRepMax) oneRepMax = epley;
       }
       if (sessionVolume > bestSessionVolume) bestSessionVolume = sessionVolume;

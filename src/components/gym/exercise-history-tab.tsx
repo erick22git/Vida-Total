@@ -58,7 +58,11 @@ export function ExerciseHistoryTab({
                     <span style={{ color: SET_TYPE_META[s.tipo ?? "normal"].color }} className="font-semibold">
                       {(s.tipo ?? "normal") === "normal" ? i + 1 : SET_TYPE_META[s.tipo ?? "normal"].short}
                     </span>
-                    <span className="text-white/75">{s.peso}</span>
+                    <span className="text-white/75 truncate">
+                      {s.tipo === "descendente" && s.pesosDescendentes && s.pesosDescendentes.length > 0
+                        ? s.pesosDescendentes.join("→")
+                        : s.peso}
+                    </span>
                     <span className="text-white/75">{s.reps}</span>
                   </div>
                 ))}

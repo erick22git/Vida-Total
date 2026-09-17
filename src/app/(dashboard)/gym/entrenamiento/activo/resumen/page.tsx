@@ -9,6 +9,7 @@ import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassInput } from "@/components/glass/glass-input";
 import { useGymStore } from "@/lib/store/gymStore";
+import { effectiveWeight } from "@/lib/gym-utils";
 
 export default function WorkoutSummaryPage() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function WorkoutSummaryPage() {
 
   const mins = Math.floor(durationSeconds / 60);
   const volume = activeSession.ejercicios.reduce(
-    (sum, ex) => sum + ex.sets.filter((s) => s.completado).reduce((a, s) => a + s.peso * s.reps, 0),
+    (sum, ex) => sum + ex.sets.filter((s) => s.completado).reduce((a, s) => a + effectiveWeight(s) * s.reps, 0),
     0,
   );
   const seriesCount = activeSession.ejercicios.reduce(

@@ -6,6 +6,7 @@ import type { WorkoutSet } from "@/lib/types";
 import { SET_TYPE_META } from "@/components/gym/set-type";
 import { SetTypeModal } from "@/components/gym/set-type-modal";
 import { NumericKeypad } from "@/components/gym/numeric-keypad";
+import { DropsetWeightsModal } from "@/components/gym/dropset-weights-modal";
 
 export function SessionSetRow({
   index,
@@ -21,7 +22,9 @@ export function SessionSetRow({
   const [typeModalOpen, setTypeModalOpen] = useState(false);
   const [kgKeypadOpen, setKgKeypadOpen] = useState(false);
   const [repsKeypadOpen, setRepsKeypadOpen] = useState(false);
+  const [dropsetModalOpen, setDropsetModalOpen] = useState(false);
   const meta = SET_TYPE_META[set.tipo ?? "normal"];
+  const isDropset = set.tipo === "descendente";
 
   return (
     <div
@@ -40,12 +43,24 @@ export function SessionSetRow({
       </button>
 
       {!soloReps ? (
-        <button
-          onClick={() => setKgKeypadOpen(true)}
-          className="rounded-lg bg-white/[0.05] glass-specular-ring py-1.5 text-sm font-semibold text-white text-center cursor-pointer"
-        >
-          {set.peso || 0}
-        </button>
+        isDropset ? (
+          <button
+            onClick={() => setDropsetModalOpen(true)}
+            className="rounded-lg bg-white/[0.05] glass-specular-ring py-1.5 text-[11px] font-semibold text-white text-center cursor-pointer truncate px-1"
+            title="Pesos de cada bajada del dropset"
+          >
+            {set.pesosDescendentes && set.pesosDescendentes.length > 0
+              ? set.pesosDescendentes.join(" · ")
+              : "Configurar"}
+          </button>
+        ) : (
+          <button
+            onClick={() => setKgKeypadOpen(true)}
+            className="rounded-lg bg-white/[0.05] glass-specular-ring py-1.5 text-sm font-semibold text-white text-center cursor-pointer"
+          >
+            {set.peso || 0}
+          </button>
+        )
       ) : (
         <span className="text-center text-xs text-white/25">—</span>
       )}
@@ -77,6 +92,12 @@ export function SessionSetRow({
         onClose={() => setTypeModalOpen(false)}
         value={set.tipo ?? "normal"}
         onSelect={(tipo) => onChange({ tipo })}
+      />
+      <DropsetWeightsModal
+        open={dropsetModalOpen}
+        onClose={() => setDropsetModalOpen(false)}
+        initialWeights={set.pesosDescendentes ?? []}
+        onSave={(weights) => onChange({ pesosDescendentes: weights, peso: weights[0] ?? 0 })}
       />
       <NumericKeypad
         open={kgKeypadOpen}

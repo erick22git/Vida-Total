@@ -1,5 +1,27 @@
 import type { Exercise, MuscleGroup, Rank, RoutineExercise, WorkoutSession, WorkoutSet } from "@/lib/types";
 
+/** Bloque 15: un dropset guarda un peso por cada bajada en
+ * `pesosDescendentes` en vez de un solo `peso` — para volumen/mejor serie
+ * (que no distinguen reps por bajada) se usa el promedio de esas bajadas
+ * como el "peso" representativo de la serie completa. */
+export function effectiveWeight(set: WorkoutSet): number {
+  if (set.pesosDescendentes && set.pesosDescendentes.length > 0) {
+    return set.pesosDescendentes.reduce((a, b) => a + b, 0) / set.pesosDescendentes.length;
+  }
+  return set.peso;
+}
+
+/** El peso más pesado realmente levantado en la serie — para un dropset es
+ * la primera bajada (la más pesada), no el promedio que usa
+ * `effectiveWeight` para volumen/1RM. Records de "peso máximo" deben usar
+ * este, no `effectiveWeight`. */
+export function peakWeight(set: WorkoutSet): number {
+  if (set.pesosDescendentes && set.pesosDescendentes.length > 0) {
+    return Math.max(...set.pesosDescendentes);
+  }
+  return set.peso;
+}
+
 export function getExerciseVolume(
   exerciseId: string,
   sessions: WorkoutSession[],
@@ -9,7 +31,7 @@ export function getExerciseVolume(
     for (const ex of session.ejercicios) {
       if (ex.exerciseId !== exerciseId) continue;
       for (const set of ex.sets) {
-        if (set.completado) total += set.peso * set.reps;
+        if (set.completado) total += effectiveWeight(set) * set.reps;
       }
     }
   }
@@ -72,9 +94,10 @@ export function getBestSet(
       if (ex.exerciseId !== exerciseId) continue;
       for (const set of ex.sets) {
         if (!set.completado) continue;
-        const volumen = set.peso * set.reps;
+        const peso = effectiveWeight(set);
+        const volumen = peso * set.reps;
         if (!best || volumen > best.volumen) {
-          best = { peso: set.peso, reps: set.reps, volumen };
+          best = { peso, reps: set.reps, volumen };
         }
       }
     }

@@ -9,6 +9,7 @@ import { GlassCard } from "@/components/glass/glass-card";
 import { useGymStore } from "@/lib/store/gymStore";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { MUSCLE_COLOR } from "@/lib/data/gym-meta";
+import { effectiveWeight } from "@/lib/gym-utils";
 
 export default function WorkoutDetailPage({
   params,
@@ -49,7 +50,7 @@ export default function WorkoutDetailPage({
   }
 
   const volume = session.ejercicios.reduce(
-    (sum, e) => sum + e.sets.filter((s) => s.completado).reduce((a, s) => a + s.peso * s.reps, 0),
+    (sum, e) => sum + e.sets.filter((s) => s.completado).reduce((a, s) => a + effectiveWeight(s) * s.reps, 0),
     0,
   );
   const seriesCount = session.ejercicios.reduce((sum, e) => sum + e.sets.filter((s) => s.completado).length, 0);
@@ -119,11 +120,19 @@ export default function WorkoutDetailPage({
                 <p className="text-sm font-medium text-white">{data?.nombre ?? ex.exerciseId}</p>
               </div>
               <div className="grid grid-cols-3 gap-1.5 pl-1">
-                {ex.sets.filter((s) => s.completado).map((s, i) => (
-                  <span key={s.id} className="text-xs text-white/55">
-                    Set {i + 1}: {s.peso}kg x {s.reps}
-                  </span>
-                ))}
+                {ex.sets
+                  .filter((s) => s.completado)
+                  .map((s, i) =>
+                    s.tipo === "descendente" && s.pesosDescendentes && s.pesosDescendentes.length > 0 ? (
+                      <span key={s.id} className="text-xs text-white/55" title="Dropset">
+                        Set {i + 1}: <span style={{ color: "#a855f7" }}>{s.pesosDescendentes.join("→")}kg</span> x {s.reps}
+                      </span>
+                    ) : (
+                      <span key={s.id} className="text-xs text-white/55">
+                        Set {i + 1}: {s.peso}kg x {s.reps}
+                      </span>
+                    ),
+                  )}
               </div>
             </GlassCard>
           );
