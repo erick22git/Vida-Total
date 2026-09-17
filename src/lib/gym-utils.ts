@@ -158,7 +158,7 @@ export function getMuscleDistribution(
 /**
  * Best-guess single muscle group label for a set of routine exercises —
  * whichever category accounts for the most series. Used to summarize a
- * training-plan day ("Pecho", "Piernas", ...) once exercises are assigned to
+ * training-plan day ("Pecho", "Cuadriceps", ...) once exercises are assigned to
  * it, without needing a separate free-text field on the plan.
  */
 export function dominantMuscleGroup(

@@ -711,7 +711,7 @@
   {
     "id": "sentadilla-barra",
     "nombre": "Sentadilla con barra",
-    "categoria": "Piernas",
+    "categoria": "Cuadriceps",
     "musculoPrimario": "Cuádriceps",
     "musculosSecundarios": [
       "Gluteos",
@@ -729,7 +729,7 @@
   {
     "id": "prensa-piernas",
     "nombre": "Prensa de piernas",
-    "categoria": "Piernas",
+    "categoria": "Cuadriceps",
     "musculoPrimario": "Cuádriceps",
     "musculosSecundarios": [
       "Gluteos"
@@ -746,7 +746,7 @@
   {
     "id": "zancadas",
     "nombre": "Zancadas (lunges)",
-    "categoria": "Piernas",
+    "categoria": "Cuadriceps",
     "musculoPrimario": "Cuádriceps",
     "musculosSecundarios": [
       "Gluteos"
@@ -763,7 +763,7 @@
   {
     "id": "peso-muerto-piernas-rigidas",
     "nombre": "Peso muerto con piernas rígidas",
-    "categoria": "Piernas",
+    "categoria": "Femoral",
     "musculoPrimario": "Isquiotibiales",
     "musculosSecundarios": [
       "Gluteos"
@@ -780,7 +780,7 @@
   {
     "id": "extension-cuadriceps",
     "nombre": "Extensión de cuádriceps en máquina",
-    "categoria": "Piernas",
+    "categoria": "Cuadriceps",
     "musculoPrimario": "Cuádriceps",
     "musculosSecundarios": [],
     "equipo": "Máquina",
@@ -795,7 +795,7 @@
   {
     "id": "curl-femoral",
     "nombre": "Curl femoral tumbado",
-    "categoria": "Piernas",
+    "categoria": "Femoral",
     "musculoPrimario": "Isquiotibiales",
     "musculosSecundarios": [],
     "equipo": "Máquina",
@@ -825,7 +825,7 @@
   {
     "id": "sentadilla-bulgara",
     "nombre": "Sentadilla búlgara",
-    "categoria": "Piernas",
+    "categoria": "Cuadriceps",
     "musculoPrimario": "Cuádriceps",
     "musculosSecundarios": [
       "Gluteos"
@@ -842,7 +842,7 @@
   {
     "id": "sentadilla-goblet",
     "nombre": "Sentadilla goblet",
-    "categoria": "Piernas",
+    "categoria": "Cuadriceps",
     "musculoPrimario": "Cuádriceps",
     "musculosSecundarios": [
       "Gluteos"
@@ -2004,7 +2004,7 @@
   {
     "id": "sentadilla-hack",
     "nombre": "Sentadilla hack en máquina",
-    "categoria": "Piernas",
+    "categoria": "Cuadriceps",
     "musculoPrimario": "Cuadriceps",
     "musculosSecundarios": [
       "Gemelos",
@@ -2024,7 +2024,7 @@
   {
     "id": "sentadilla-hack-barra",
     "nombre": "Sentadilla hack con barra",
-    "categoria": "Piernas",
+    "categoria": "Cuadriceps",
     "musculoPrimario": "Cuadriceps",
     "musculosSecundarios": [
       "Gemelos",
@@ -2044,7 +2044,7 @@
   {
     "id": "sentadilla-frontal",
     "nombre": "Sentadilla frontal con barra",
-    "categoria": "Piernas",
+    "categoria": "Cuadriceps",
     "musculoPrimario": "Cuadriceps",
     "musculosSecundarios": [
       "Abdomen",
@@ -2064,7 +2064,7 @@
   {
     "id": "zancadas-caminando-barra",
     "nombre": "Zancadas caminando con barra",
-    "categoria": "Piernas",
+    "categoria": "Cuadriceps",
     "musculoPrimario": "Cuadriceps",
     "musculosSecundarios": [
       "Gemelos",
@@ -2084,7 +2084,7 @@
   {
     "id": "curl-femoral-de-pie",
     "nombre": "Curl femoral de pie en máquina",
-    "categoria": "Piernas",
+    "categoria": "Femoral",
     "musculoPrimario": "Isquiotibiales",
     "musculosSecundarios": [],
     "equipo": "Máquina",
@@ -2100,7 +2100,7 @@
   {
     "id": "curl-femoral-sentado",
     "nombre": "Curl femoral sentado en máquina",
-    "categoria": "Piernas",
+    "categoria": "Femoral",
     "musculoPrimario": "Isquiotibiales",
     "musculosSecundarios": [],
     "equipo": "Máquina",
@@ -2148,7 +2148,7 @@
   {
     "id": "zancada-estatica-mancuernas",
     "nombre": "Zancada estática con mancuernas",
-    "categoria": "Piernas",
+    "categoria": "Cuadriceps",
     "musculoPrimario": "Cuadriceps",
     "musculosSecundarios": [
       "Gluteos",
@@ -2167,7 +2167,7 @@
   {
     "id": "sentadilla-multipower",
     "nombre": "Sentadilla en multipower",
-    "categoria": "Piernas",
+    "categoria": "Cuadriceps",
     "musculoPrimario": "Cuadriceps",
     "musculosSecundarios": [
       "Gemelos",
@@ -2188,7 +2188,7 @@
   {
     "id": "sentadilla-peso-corporal",
     "nombre": "Sentadilla con peso corporal",
-    "categoria": "Piernas",
+    "categoria": "Cuadriceps",
     "musculoPrimario": "Cuadriceps",
     "musculosSecundarios": [
       "Gluteos",
@@ -2207,7 +2207,7 @@
   {
     "id": "sentadilla-al-cajon",
     "nombre": "Sentadilla al cajón (box squat)",
-    "categoria": "Piernas",
+    "categoria": "Cuadriceps",
     "musculoPrimario": "Cuadriceps",
     "musculosSecundarios": [
       "Aductores de cadera",

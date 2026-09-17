@@ -42,12 +42,12 @@ const GOAL_TO_SETS: Record<string, { sets: number; reps: string; repsNum: number
 };
 
 const MUSCLE_TO_CATEGORIES: Record<string, MuscleGroup[]> = {
-  completo: ["Pecho", "Espalda", "Hombros", "Biceps", "Triceps", "Piernas", "Pantorrilla", "Gluteos", "Abdomen", "Abductores", "Aductores"],
+  completo: ["Pecho", "Espalda", "Hombros", "Biceps", "Triceps", "Cuadriceps", "Femoral", "Pantorrilla", "Gluteos", "Abdomen", "Abductores", "Aductores"],
   traccion: ["Espalda", "Biceps"],
   empuje: ["Pecho", "Hombros", "Triceps"],
   superior: ["Pecho", "Espalda", "Hombros", "Biceps", "Triceps"],
-  inferior: ["Piernas", "Pantorrilla", "Gluteos", "Abductores", "Aductores"],
-  custom: ["Pecho", "Espalda", "Piernas"],
+  inferior: ["Cuadriceps", "Femoral", "Pantorrilla", "Gluteos", "Abductores", "Aductores"],
+  custom: ["Pecho", "Espalda", "Cuadriceps"],
 };
 
 export default function AiPlanWizardPage() {

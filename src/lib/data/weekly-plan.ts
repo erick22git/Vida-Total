@@ -3,7 +3,7 @@ import type { WeeklyPlanDay } from "@/lib/types";
 export const DEFAULT_WEEKLY_PLAN: WeeklyPlanDay[] = [
   { day: "L", grupoMuscular: "Pecho" },
   { day: "M", grupoMuscular: "Espalda" },
-  { day: "X", grupoMuscular: "Piernas" },
+  { day: "X", grupoMuscular: "Cuadriceps" },
   { day: "J", grupoMuscular: "Hombros" },
   { day: "V", grupoMuscular: "Biceps" },
   { day: "S", grupoMuscular: "Gluteos" },
