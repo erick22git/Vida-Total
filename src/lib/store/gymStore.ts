@@ -180,6 +180,12 @@ export interface GymState {
   ) => void;
   startWorkoutFromRoutine: (routine: Routine) => void;
   setActiveExerciseIndex: (i: number) => void;
+  /** Bloque 16: reordenar por arrastre el carrusel de ejercicios de la
+   * sesión activa. Recibe el arreglo completo ya reordenado (mismo patrón
+   * que `Reorder.Group.onReorder` de framer-motion) y ajusta
+   * `activeExerciseIndex` para seguir apuntando al mismo ejercicio que
+   * estaba activo, aunque haya cambiado de posición. */
+  reorderActiveExercises: (next: WorkoutExerciseLog[]) => void;
   addSetToExercise: (exerciseId: string) => void;
   updateSet: (exerciseId: string, setId: string, patch: Partial<WorkoutSet>) => void;
   removeSet: (exerciseId: string, setId: string) => void;
@@ -666,6 +672,16 @@ export const useGymStore = create<GymState>()(
           restEndsAt: null,
         })),
       setActiveExerciseIndex: (i) => set({ activeExerciseIndex: i }),
+      reorderActiveExercises: (next) =>
+        set((state) => {
+          if (!state.activeSession) return state;
+          const currentId = state.activeSession.ejercicios[state.activeExerciseIndex]?.exerciseId;
+          const newIndex = next.findIndex((ex) => ex.exerciseId === currentId);
+          return {
+            activeSession: { ...state.activeSession, ejercicios: next },
+            activeExerciseIndex: newIndex >= 0 ? newIndex : state.activeExerciseIndex,
+          };
+        }),
       addSetToExercise: (exerciseId) =>
         set((state) => {
           if (!state.activeSession) return state;

@@ -32,6 +32,7 @@ export default function ActiveWorkoutPage() {
   const activeExerciseIndex = useGymStore((s) => s.activeExerciseIndex);
   const sessionStartedAt = useGymStore((s) => s.sessionStartedAt);
   const setActiveExerciseIndex = useGymStore((s) => s.setActiveExerciseIndex);
+  const reorderActiveExercises = useGymStore((s) => s.reorderActiveExercises);
   const addSetToExercise = useGymStore((s) => s.addSetToExercise);
   const updateSet = useGymStore((s) => s.updateSet);
   const replaceExercise = useGymStore((s) => s.replaceExercise);
@@ -115,6 +116,7 @@ export default function ActiveWorkoutPage() {
             allExercises={allExercises}
             activeIndex={activeExerciseIndex}
             onSelect={setActiveExerciseIndex}
+            onReorder={reorderActiveExercises}
           />
 
           {exercise && (
