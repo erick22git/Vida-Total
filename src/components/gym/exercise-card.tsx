@@ -11,10 +11,17 @@ export function ExerciseCard({
   exercise,
   onClick,
   active,
+  activeColor = "var(--gym)",
 }: {
   exercise: Exercise;
   onClick?: () => void;
   active?: boolean;
+  /** Color del glow/borde cuando `active`. Por default el acento naranja
+   * del módulo (usado p.ej. para marcar el ejercicio en curso durante una
+   * sesión activa) — el selector múltiple de la creación de rutina pasa
+   * verde acá para que "seleccionado para agregar" se vea distinto de
+   * "ejercicio actual". */
+  activeColor?: string;
 }) {
   const sessions = useGymStore((s) => s.sessions);
   const sp = getExerciseSP(exercise.id, sessions);
@@ -25,7 +32,7 @@ export function ExerciseCard({
     <GlassCard
       padding="sm"
       onClick={onClick}
-      accentColor={active ? "var(--gym)" : undefined}
+      accentColor={active ? activeColor : undefined}
       glow={active}
       className="flex flex-col gap-2 cursor-pointer h-full"
     >

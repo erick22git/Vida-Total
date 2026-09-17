@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, SlidersHorizontal, Plus, Info } from "lucide-react";
+import { Search, SlidersHorizontal, Plus, Info, Check } from "lucide-react";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
 import { ExerciseCard } from "@/components/gym/exercise-card";
@@ -62,6 +62,10 @@ export function ExercisePicker({
   }, [allExercises, muscleFilter, equipFilter, query]);
 
   function handleCardClick(ex: Exercise) {
+    // Bloque 14: feedback háptico breve al asignar/agregar un ejercicio —
+    // no todos los navegadores/dispositivos soportan Vibration API, de ahí
+    // el optional chaining.
+    navigator.vibrate?.(15);
     if (multiple) {
       setSelected((s) => (s.includes(ex.id) ? s.filter((id) => id !== ex.id) : [...s, ex.id]));
     } else {
@@ -100,13 +104,24 @@ export function ExercisePicker({
       </div>
 
       <div className={`grid grid-cols-2 md:grid-cols-3 gap-3 overflow-y-auto pr-1 ${multiple ? "max-h-[48vh]" : "max-h-[55vh]"}`}>
-        {filtered.map((ex) => (
+        {filtered.map((ex) => {
+          const isSelectedForAdd = multiple && selected.includes(ex.id);
+          return (
           <div key={ex.id} className="relative">
             <ExerciseCard
               exercise={ex}
-              active={multiple ? selected.includes(ex.id) : ex.id === activeExerciseId}
+              active={multiple ? isSelectedForAdd : ex.id === activeExerciseId}
+              activeColor={multiple ? "#22c55e" : undefined}
               onClick={() => handleCardClick(ex)}
             />
+            {isSelectedForAdd && (
+              <span
+                className="absolute top-2 left-2 flex items-center justify-center w-5 h-5 rounded-full text-white"
+                style={{ background: "#22c55e", boxShadow: "0 0 8px #22c55e99" }}
+              >
+                <Check size={12} strokeWidth={3} />
+              </span>
+            )}
             {onInfo && (
               <button
                 onClick={(e) => {
@@ -119,7 +134,8 @@ export function ExercisePicker({
               </button>
             )}
           </div>
-        ))}
+          );
+        })}
         {filtered.length === 0 && (
           <p className="col-span-full text-sm text-white/40 text-center py-8">
             No se encontraron ejercicios.
@@ -137,7 +153,7 @@ export function ExercisePicker({
       {multiple && selected.length > 0 && (
         <div className={cn("sticky bottom-0 pt-1", confirmButtonClassName)}>
           <GlassButton
-            accentColor="var(--gym-2)"
+            accentColor="#22c55e"
             size="lg"
             className="w-full"
             onClick={() => {
