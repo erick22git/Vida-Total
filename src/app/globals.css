@@ -455,6 +455,44 @@ body {
   }
 }
 
+/* ---------- Bloque 12: curva de kcal fuera de rango ---------- */
+@keyframes calorie-arc-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-1.5px);
+  }
+  40% {
+    transform: translateX(1.5px);
+  }
+  60% {
+    transform: translateX(-1px);
+  }
+  80% {
+    transform: translateX(1px);
+  }
+}
+
+.calorie-arc-shake {
+  animation: calorie-arc-shake 0.5s ease-in-out infinite;
+}
+
+@keyframes calorie-arc-glow {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.calorie-arc-glow {
+  animation: calorie-arc-glow 1.6s ease-in-out infinite;
+}
+
 /* ---------- Paz Mental: ambient breathing gradient ---------- */
 @keyframes breathing-gradient {
   0% {

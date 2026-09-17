@@ -35,27 +35,39 @@ export function MacroColumn({
   );
 }
 
-/** Bloque 12: amarillo mientras el consumo del día no llega al mínimo del
- * rango objetivo, verde dentro del rango, rojo al superar el máximo. `low`/
- * `high` ya vienen de `calorieGoal * 0.9/1.1` (ver calorie-arc-card.tsx /
- * CalorieArcMini) — nunca hardcodeados acá. */
+/** Bloque 12: plomo mientras no se anotó nada, amarillo mientras el consumo
+ * del día no llega al mínimo del rango objetivo, verde dentro del rango,
+ * rojo al superar el máximo. `low`/`high` ya vienen de
+ * `calorieGoal * 0.9/1.1` (ver calorie-arc-card.tsx / CalorieArcMini) —
+ * nunca hardcodeados acá. */
 const RANGE_COLORS = {
+  vacio: "#6b7280", // plomo — todavía no anotó nada en ese tramo de la curva
   bajo: "#eab308", // amarillo — todavía no llega al mínimo
   enRango: "#22c55e", // verde — dentro del rango objetivo
   sobre: "#ef4444", // rojo — superó el máximo
 };
 
-export function calorieRangeColor(value: number, low: number, high: number): string {
-  if (value < low) return RANGE_COLORS.bajo;
-  if (value > high) return RANGE_COLORS.sobre;
-  return RANGE_COLORS.enRango;
+/** Fracción [0,1] de la curva que debe pintarse, de izquierda (0 kcal) a
+ * derecha, según el consumo acumulado. La punta izquierda de la curva
+ * (t=0) es 0 kcal; los dos marcadores sobre la curva (t=0.3 y t=0.7, ver
+ * `pointA`/`pointB` en `ArcChart`) representan `low` y `high`. Más allá de
+ * `high` se sigue llenando de rojo hasta un techo (`high` + el ancho del
+ * rango bueno) — pasado ese techo la curva queda completamente roja. */
+function calorieFillFraction(value: number, low: number, high: number): number {
+  if (value <= 0) return 0;
+  if (value <= low) return low > 0 ? (value / low) * 0.3 : 0.3;
+  if (value <= high) return 0.3 + ((value - low) / (high - low || 1)) * 0.4;
+  const veryHigh = high + (high - low || high);
+  if (value <= veryHigh) return 0.7 + ((value - high) / (veryHigh - high || 1)) * 0.3;
+  return 1;
 }
 
 /** Shallow "smile" arc with two range markers — replaces the circular ring per
  * el Fitia-style reference design. Points are placed along the same quadratic
  * Bézier used to draw the curve so they sit exactly on it. `value` (el
- * consumo acumulado del día) determina el color de la curva — ver
- * `calorieRangeColor`. */
+ * consumo acumulado del día) determina cuánto de la curva, y de qué color,
+ * se pinta desde la izquierda (0 kcal) — ver `calorieFillFraction`. Si se
+ * supera `high`, la curva vibra y muestra una luz roja suave detrás. */
 export function ArcChart({
   low,
   high,
@@ -79,18 +91,72 @@ export function ArcChart({
   };
   const pointA = bezier(0.3);
   const pointB = bezier(0.7);
-  const color = calorieRangeColor(value, low, high);
+
+  // Progreso a lo largo de la curva: plomo = todavía no anotado, y de ahí
+  // amarillo -> verde -> rojo según lo que se va acumulando en el día. La
+  // punta izquierda (t=0) es 0 kcal. Cada tramo de color se dibuja con el
+  // truco de `pathLength=1` (normaliza la longitud del path a 1 unidad sin
+  // importar la geometría real), así el dasharray/offset queda en
+  // fracciones simples en vez de tener que medir el largo real del bezier.
+  const fraction = calorieFillFraction(value, low, high);
+  const yellowLen = Math.max(0, Math.min(fraction, 0.3));
+  const greenLen = Math.max(0, Math.min(fraction - 0.3, 0.4));
+  const redLen = Math.max(0, Math.min(fraction - 0.7, 0.3));
+  const isOver = value > high;
+  const pathD = `M ${P0.x} ${P0.y} Q ${P1.x} ${P1.y} ${P2.x} ${P2.y}`;
 
   return (
-    <svg viewBox="0 0 320 90" className="w-full h-auto">
-      <path
-        d={`M ${P0.x} ${P0.y} Q ${P1.x} ${P1.y} ${P2.x} ${P2.y}`}
-        fill="none"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-        style={{ transition: "stroke 0.4s ease" }}
-      />
+    <svg viewBox="0 0 320 90" className="w-full h-auto overflow-visible">
+      <g className={isOver ? "calorie-arc-shake" : undefined}>
+        {isOver && (
+          <path
+            d={pathD}
+            fill="none"
+            stroke={RANGE_COLORS.sobre}
+            strokeWidth={10}
+            strokeLinecap="round"
+            className="calorie-arc-glow"
+            style={{ filter: "blur(6px)" }}
+          />
+        )}
+        <path d={pathD} fill="none" stroke={RANGE_COLORS.vacio} strokeWidth={2} strokeLinecap="round" />
+        {yellowLen > 0 && (
+          <path
+            d={pathD}
+            fill="none"
+            stroke={RANGE_COLORS.bajo}
+            strokeWidth={2}
+            strokeLinecap="round"
+            pathLength={1}
+            strokeDasharray={`${yellowLen} 10`}
+            style={{ transition: "stroke-dasharray 0.4s ease" }}
+          />
+        )}
+        {greenLen > 0 && (
+          <path
+            d={pathD}
+            fill="none"
+            stroke={RANGE_COLORS.enRango}
+            strokeWidth={2}
+            strokeLinecap="round"
+            pathLength={1}
+            strokeDasharray={`0.3 ${greenLen} 10`}
+            style={{ transition: "stroke-dasharray 0.4s ease" }}
+          />
+        )}
+        {redLen > 0 && (
+          <path
+            d={pathD}
+            fill="none"
+            stroke={RANGE_COLORS.sobre}
+            strokeWidth={2}
+            strokeLinecap="round"
+            pathLength={1}
+            strokeDasharray={`0.7 ${redLen} 10`}
+            style={{ transition: "stroke-dasharray 0.4s ease" }}
+          />
+        )}
+      </g>
       {[pointA, pointB].map((p, i) => (
         <circle key={i} cx={p.x} cy={p.y} r={4} fill="white" fillOpacity={0.85} />
       ))}
