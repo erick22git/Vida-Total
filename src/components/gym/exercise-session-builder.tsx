@@ -112,8 +112,9 @@ export function ExerciseSessionBuilder({
     longPressFired.current = false;
     longPressTimer.current = setTimeout(() => {
       longPressFired.current = true;
+      navigator.vibrate?.(20);
       setMovingId(id);
-    }, 450);
+    }, 350);
   }
 
   function cancelLongPress() {
@@ -153,6 +154,8 @@ export function ExerciseSessionBuilder({
               key={ex.exerciseId}
               value={ex}
               dragListener={isMoving}
+              dragTransition={{ bounceStiffness: 500, bounceDamping: 32 }}
+              transition={{ type: "spring", stiffness: 600, damping: 34 }}
               onPointerDown={() => startLongPress(ex.exerciseId)}
               onPointerUp={cancelLongPress}
               onPointerLeave={cancelLongPress}
@@ -165,11 +168,11 @@ export function ExerciseSessionBuilder({
               <div
                 className="w-14 h-14 rounded-full flex items-center justify-center overflow-hidden bg-white/[0.06] transition-transform"
                 style={{
-                  border: ex.exerciseId === active?.exerciseId ? "2px solid var(--gym-2)" : "2px solid transparent",
+                  border: ex.exerciseId === active?.exerciseId ? "2px solid white" : "2px solid transparent",
                   boxShadow: isMoving
-                    ? "0 0 0 3px var(--gym-2)66"
+                    ? "0 0 0 3px rgba(255,255,255,0.5)"
                     : ex.exerciseId === active?.exerciseId
-                      ? "0 0 16px var(--gym-2)66"
+                      ? "0 0 16px rgba(255,255,255,0.55)"
                       : undefined,
                   transform: isMoving ? "scale(1.08)" : undefined,
                 }}

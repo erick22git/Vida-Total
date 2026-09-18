@@ -21,6 +21,7 @@ export type MuscleGroup =
   | "Hombros"
   | "Biceps"
   | "Triceps"
+  | "Antebrazo"
   | "Cuadriceps"
   | "Femoral"
   | "Pantorrilla"

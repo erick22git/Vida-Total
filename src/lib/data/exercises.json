@@ -2782,5 +2782,59 @@
       "Realiza el movimiento lento durante varias repeticiones y cambia de lado."
     ],
     "imagen": "/exercises/gifs/circulos-cadera-pie.jpg"
+  },
+  {
+    "id": "curl-muneca-barra-sentado",
+    "nombre": "Curl de muñeca sentado con barra (palmas arriba)",
+    "categoria": "Antebrazo",
+    "musculoPrimario": "Antebrazo",
+    "musculosSecundarios": [],
+    "equipo": "Barra",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate sujetando una barra con ambas manos, palmas hacia arriba, separadas al ancho de hombros.",
+      "Apoya los antebrazos sobre los muslos con las muñecas justo en el borde de las rodillas.",
+      "Baja la barra lo más posible dejando caer solo las muñecas, sin mover los antebrazos.",
+      "Sube la barra flexionando las muñecas al máximo, aprieta un segundo arriba.",
+      "Repite de forma controlada."
+    ],
+    "imagen": "/exercises/gifs/curl-muneca-barra-sentado.jpg"
+  },
+  {
+    "id": "curl-muneca-mancuerna-sentado",
+    "nombre": "Curl de muñeca sentado con mancuerna (palmas abajo)",
+    "categoria": "Antebrazo",
+    "musculoPrimario": "Antebrazo",
+    "musculosSecundarios": [],
+    "equipo": "Mancuerna",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate en el borde de un banco con una mancuerna en cada mano, palmas hacia abajo.",
+      "Apoya los antebrazos sobre los muslos dejando las muñecas colgando fuera de las rodillas.",
+      "Sube las muñecas hacia arriba contrayendo el antebrazo.",
+      "Baja lentamente hasta estirar por completo.",
+      "Repite de forma controlada."
+    ],
+    "imagen": "/exercises/gifs/curl-muneca-mancuerna-sentado.jpg"
+  },
+  {
+    "id": "farmers-walk",
+    "nombre": "Farmer's walk (caminata del granjero)",
+    "categoria": "Antebrazo",
+    "musculoPrimario": "Antebrazo",
+    "musculosSecundarios": [
+      "Trapecio",
+      "Abdomen",
+      "Cuadriceps"
+    ],
+    "equipo": "Mancuernas",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Toma una mancuerna o pesa pesada en cada mano, de pie entre ellas.",
+      "Levántalas manteniendo la espalda recta y el pecho arriba.",
+      "Camina con pasos cortos y rápidos una distancia determinada, agarrando fuerte todo el trayecto.",
+      "Suelta el peso de forma controlada al terminar."
+    ],
+    "imagen": "/exercises/gifs/farmers-walk.jpg"
   }
 ]

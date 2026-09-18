@@ -17,6 +17,7 @@ const CATEGORY_TO_ZONES: Partial<Record<MuscleGroup, BodyZone[]>> = {
   Hombros: ["hombros"],
   Biceps: ["biceps"],
   Triceps: ["triceps"],
+  Antebrazo: ["antebrazos"],
   Cuadriceps: ["cuadriceps"],
   Femoral: ["isquios"],
   Pantorrilla: ["gemelos"],
@@ -33,7 +34,7 @@ interface MuscleGroupDef {
 }
 
 const MUSCLE_GROUP_DEFS: MuscleGroupDef[] = [
-  { key: "Brazos", categories: ["Biceps", "Triceps"], subgroups: ["Bíceps", "Antebrazos", "Tríceps"] },
+  { key: "Brazos", categories: ["Biceps", "Triceps", "Antebrazo"], subgroups: ["Bíceps", "Antebrazos", "Tríceps"] },
   { key: "Piernas", categories: ["Cuadriceps", "Femoral", "Pantorrilla", "Gluteos", "Abductores", "Aductores"] },
   { key: "Espalda", categories: ["Espalda"] },
   { key: "Pecho", categories: ["Pecho"] },

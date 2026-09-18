@@ -116,13 +116,13 @@ export function ExercisePicker({
             <ExerciseCard
               exercise={ex}
               active={multiple ? isSelectedForAdd : ex.id === activeExerciseId}
-              activeColor={multiple ? "#22c55e" : undefined}
+              activeColor={multiple ? "rgba(255,255,255,0.9)" : undefined}
               onClick={() => handleCardClick(ex)}
             />
             {isSelectedForAdd && (
               <span
-                className="absolute top-2 left-2 flex items-center justify-center w-5 h-5 rounded-full text-white"
-                style={{ background: "#22c55e", boxShadow: "0 0 8px #22c55e99" }}
+                className="absolute top-2 left-2 flex items-center justify-center w-5 h-5 rounded-full text-black"
+                style={{ background: "white", boxShadow: "0 0 8px rgba(255,255,255,0.6)" }}
               >
                 <Check size={12} strokeWidth={3} />
               </span>
