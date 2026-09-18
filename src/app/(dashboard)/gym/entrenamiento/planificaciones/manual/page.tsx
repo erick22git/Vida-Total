@@ -39,6 +39,13 @@ export default function ManualPlanCreatorPage() {
   const [categoria, setCategoria] = useState(PLAN_LIBRARY_CATEGORIES[0]);
   const [nuevaCategoria, setNuevaCategoria] = useState(false);
   const [notas, setNotas] = useState("");
+  const hasActivePlan = existingPlans.some((p) => p.activo);
+  // Antes esto se forzaba siempre a true — no había forma de armar un plan
+  // nuevo (p.ej. para el mes que viene) sin desactivar de inmediato el que
+  // ya estabas usando. Si todavía no hay ningún plan activo, no tiene
+  // sentido dejar la opción destildada (te quedarías sin plan actual), así
+  // que ahí queda forzada y deshabilitada.
+  const [usarComoActual, setUsarComoActual] = useState(true);
 
   const categoriasDisponibles = useMemo(
     () => Array.from(new Set([...PLAN_LIBRARY_CATEGORIES, ...existingPlans.map((p) => p.categoria)])),
@@ -68,8 +75,10 @@ export default function ManualPlanCreatorPage() {
       daysPerWeek: daysActive,
       minsPerSession: 60,
     });
-    setActivePlan(plan.id);
-    applyPlanToWeek(plan.id);
+    if (usarComoActual || !hasActivePlan) {
+      setActivePlan(plan.id);
+      applyPlanToWeek(plan.id);
+    }
     router.push("/gym/entrenamiento/planificaciones");
   }
 
@@ -190,6 +199,30 @@ export default function ManualPlanCreatorPage() {
           className="w-full rounded-2xl bg-white/[0.06] glass-specular-ring backdrop-blur-md px-4 py-2.5 text-sm text-white placeholder:text-white/35 outline-none transition-all focus:shadow-[var(--glass-specular-strong)] focus:bg-white/[0.09] resize-none"
         />
       </div>
+
+      <button
+        onClick={() => hasActivePlan && setUsarComoActual((v) => !v)}
+        disabled={!hasActivePlan}
+        className="flex items-center justify-between gap-3 rounded-2xl bg-white/[0.05] glass-specular-ring px-4 py-3 text-left cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        <div>
+          <p className="text-sm font-medium text-white">Usar como mi plan actual</p>
+          <p className="text-xs text-white/45">
+            {hasActivePlan
+              ? "Con esto activado, empezarás a entrenar según este plan apenas lo crees."
+              : "Todavía no tienes un plan activo, así que este se activará solo."}
+          </p>
+        </div>
+        <div
+          className="relative w-11 h-6 rounded-full shrink-0 transition-colors"
+          style={{ background: usarComoActual || !hasActivePlan ? "var(--gym)" : "rgba(255,255,255,0.15)" }}
+        >
+          <div
+            className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform"
+            style={{ transform: usarComoActual || !hasActivePlan ? "translateX(22px)" : "translateX(2px)" }}
+          />
+        </div>
+      </button>
 
       <p className="text-sm text-white/50 -mt-1">Toca un día para agregarle ejercicios.</p>
 

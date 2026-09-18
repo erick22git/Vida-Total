@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Check } from "lucide-react";
 import { GlassModal } from "@/components/glass/glass-modal";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
@@ -22,6 +22,8 @@ export function EditPlanModal({
   categorias: string[];
 }) {
   const updatePlan = useGymStore((s) => s.updatePlan);
+  const setActivePlan = useGymStore((s) => s.setActivePlan);
+  const applyPlanToWeek = useGymStore((s) => s.applyPlanToWeek);
 
   const [nombre, setNombre] = useState(plan?.nombre ?? "");
   const [categoria, setCategoria] = useState(plan?.categoria ?? "");
@@ -38,6 +40,12 @@ export function EditPlanModal({
       notas: notas.trim(),
     });
     onClose();
+  }
+
+  function handleUseAsActive() {
+    if (!plan) return;
+    setActivePlan(plan.id);
+    applyPlanToWeek(plan.id);
   }
 
   return (
@@ -100,6 +108,19 @@ export function EditPlanModal({
             rows={3}
             className="w-full rounded-2xl bg-white/[0.06] glass-specular-ring backdrop-blur-md px-4 py-2.5 text-sm text-white placeholder:text-white/35 outline-none transition-all focus:shadow-[var(--glass-specular-strong)] focus:bg-white/[0.09] resize-none"
           />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">Plan actual</span>
+          {plan.activo ? (
+            <p className="flex items-center gap-1.5 text-xs text-emerald-400">
+              <Check size={13} /> Ya es tu plan actual — estás entrenando según este.
+            </p>
+          ) : (
+            <GlassButton variant="outline" size="sm" className="w-fit" onClick={handleUseAsActive}>
+              Usar como mi plan actual
+            </GlassButton>
+          )}
         </div>
 
         <GlassButton className="w-full" size="lg" accentColor="var(--gym-2)" onClick={handleSave}>

@@ -26,6 +26,8 @@ export default function PlanDetailPage({
   const saveRoutine = useGymStore((s) => s.saveRoutine);
   const updateRoutine = useGymStore((s) => s.updateRoutine);
   const updatePlanDay = useGymStore((s) => s.updatePlanDay);
+  const setActivePlan = useGymStore((s) => s.setActivePlan);
+  const applyPlanToWeek = useGymStore((s) => s.applyPlanToWeek);
 
   const plan = plans.find((p) => p.id === planId);
 
@@ -129,14 +131,28 @@ export default function PlanDetailPage({
           </button>
           <h1 className="text-xl md:text-2xl font-semibold tracking-tight truncate">{plan.nombre}</h1>
         </div>
-        <button
-          onClick={() => setView((v) => (v === "list" ? "grid" : "list"))}
-          className="text-white/50 hover:text-white p-1.5 cursor-pointer shrink-0"
-          title={view === "list" ? "Ver como grilla" : "Ver como lista"}
-          aria-label="Cambiar vista"
-        >
-          {view === "list" ? <LayoutGrid size={18} /> : <List size={18} />}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {!plan.activo && (
+            <GlassButton
+              size="sm"
+              accentColor="#22c55e"
+              onClick={() => {
+                setActivePlan(plan.id);
+                applyPlanToWeek(plan.id);
+              }}
+            >
+              Usar este plan
+            </GlassButton>
+          )}
+          <button
+            onClick={() => setView((v) => (v === "list" ? "grid" : "list"))}
+            className="text-white/50 hover:text-white p-1.5 cursor-pointer shrink-0"
+            title={view === "list" ? "Ver como grilla" : "Ver como lista"}
+            aria-label="Cambiar vista"
+          >
+            {view === "list" ? <LayoutGrid size={18} /> : <List size={18} />}
+          </button>
+        </div>
       </header>
 
       {view === "list" ? (
