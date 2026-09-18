@@ -1,13 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import { Search, SlidersHorizontal, Plus, Info, Check } from "lucide-react";
 import { GlassInput } from "@/components/glass/glass-input";
 import { ExerciseCard } from "@/components/gym/exercise-card";
 import { FilterModal } from "@/components/gym/filter-modal";
 import { CreateExerciseModal } from "@/components/gym/create-exercise-modal";
-import { MUSCLE_GROUPS, EQUIPMENT_LIST } from "@/lib/data/gym-meta";
+import { MUSCLE_FILTER_OPTIONS, MUSCLE_GROUP_COMPOSITES, EQUIPMENT_LIST } from "@/lib/data/gym-meta";
 import exercisesData from "@/lib/data/exercises.json";
 import type { Exercise } from "@/lib/types";
 import { useGymStore } from "@/lib/store/gymStore";
@@ -51,13 +50,12 @@ export function ExercisePicker({
   const [equipModalOpen, setEquipModalOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
-  // Se incrementa solo al AGREGAR un ejercicio (no al sacarlo) — dispara el
-  // flash negro->blanco->transparente del botón "Agregar" al cambiar de key.
-  const [flashKey, setFlashKey] = useState(0);
 
   const filtered = useMemo(() => {
     return allExercises.filter((ex) => {
-      const matchesMuscle = muscleFilter.length === 0 || muscleFilter.includes(ex.categoria);
+      const matchesMuscle =
+        muscleFilter.length === 0 ||
+        muscleFilter.some((f) => (MUSCLE_GROUP_COMPOSITES[f] ?? [f]).includes(ex.categoria));
       const matchesEquip = equipFilter.length === 0 || equipFilter.includes(ex.equipo);
       const matchesQuery = ex.nombre.toLowerCase().includes(query.trim().toLowerCase());
       return matchesMuscle && matchesEquip && matchesQuery;
@@ -70,9 +68,7 @@ export function ExercisePicker({
     // el optional chaining.
     navigator.vibrate?.(15);
     if (multiple) {
-      const adding = !selected.includes(ex.id);
-      setSelected((s) => (adding ? [...s, ex.id] : s.filter((id) => id !== ex.id)));
-      if (adding) setFlashKey((k) => k + 1);
+      setSelected((s) => (s.includes(ex.id) ? s.filter((id) => id !== ex.id) : [...s, ex.id]));
     } else {
       onSelect?.(ex);
     }
@@ -155,41 +151,31 @@ export function ExercisePicker({
         <Plus size={15} /> Crear Ejercicio
       </button>
 
-      {multiple && selected.length > 0 && (
+      {multiple && (
         <div className={cn("sticky bottom-0 pt-1", confirmButtonClassName)}>
-          {/* Sin relleno ni borde sólido: transparente, con un brillo blanco
-          difuminado (box-shadow, no un `border`) marcando dónde iría el
-          marco, más una sombra suave para que flote sobre el fondo. Al
-          agregar un ejercicio (no al sacarlo) hace un flash rápido negro ->
-          blanco -> transparente sobre esa base. */}
-          <motion.button
+          {/* Transparente siempre — filtro negro suave mientras no elegiste
+          ningún ejercicio (deshabilitado), cambia una sola vez a un brillo
+          blanco suave apenas seleccionás el primero. Sin flash repetido:
+          antes destellaba en cada toque y terminaba pareciendo que
+          parpadeaba. */}
+          <button
             onClick={() => {
               const chosen = allExercises.filter((e) => selected.includes(e.id));
               onConfirmSelection?.(chosen);
               setSelected([]);
             }}
-            whileTap={{ scale: 0.97 }}
-            className="relative w-full overflow-hidden rounded-2xl py-3.5 text-base font-medium text-white cursor-pointer"
+            disabled={selected.length === 0}
+            className="w-full rounded-2xl py-3.5 text-base font-medium text-white cursor-pointer disabled:cursor-not-allowed transition-[box-shadow,background-color] duration-300"
             style={{
-              background: "rgba(255,255,255,0.04)",
-              boxShadow: "0 0 22px 1px rgba(255,255,255,0.35), 0 10px 24px rgba(0,0,0,0.35)",
+              background: selected.length > 0 ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.25)",
+              boxShadow:
+                selected.length > 0
+                  ? "0 0 22px 1px rgba(255,255,255,0.35), 0 10px 24px rgba(0,0,0,0.35)"
+                  : "0 0 14px 1px rgba(0,0,0,0.35), 0 10px 24px rgba(0,0,0,0.35)",
             }}
           >
-            <motion.span
-              key={flashKey}
-              aria-hidden
-              className="absolute inset-0 pointer-events-none"
-              initial={{ opacity: 0 }}
-              animate={{
-                opacity: [0, 1, 1, 0],
-                backgroundColor: ["rgba(0,0,0,0)", "rgba(0,0,0,0.3)", "rgba(255,255,255,0.22)", "rgba(255,255,255,0)"],
-              }}
-              transition={{ duration: 0.55, times: [0, 0.15, 0.55, 1] }}
-            />
-            <span className="relative z-10">
-              Agregar {selected.length} ejercicio{selected.length > 1 ? "s" : ""}
-            </span>
-          </motion.button>
+            Agregar {selected.length} ejercicio{selected.length !== 1 ? "s" : ""}
+          </button>
         </div>
       )}
 
@@ -198,7 +184,7 @@ export function ExercisePicker({
         onClose={() => setMuscleModalOpen(false)}
         title="Filtrar por músculo"
         allLabel="Todos los músculos"
-        options={MUSCLE_GROUPS.map((m) => ({ value: m.value, label: m.label, icon: m.icon }))}
+        options={MUSCLE_FILTER_OPTIONS}
         selected={muscleFilter}
         onToggle={(v) => toggle(muscleFilter, setMuscleFilter, v)}
         accentColor="var(--gym)"

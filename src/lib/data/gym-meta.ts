@@ -17,6 +17,22 @@ export const MUSCLE_GROUPS: { value: MuscleGroup; label: string; icon: string }[
   { value: "Cardio", label: "Cardio", icon: "HeartPulse" },
 ];
 
+/** Grupos "combo" para el filtro por músculo — no son un `MuscleGroup` real
+ * de ningún ejercicio, expanden a varias categorías reales a la vez (ver
+ * `MUSCLE_GROUP_COMPOSITES`). Van al final de la lista, debajo de Cardio. */
+export const MUSCLE_FILTER_OPTIONS: { value: string; label: string; icon: string }[] = [
+  ...MUSCLE_GROUPS,
+  { value: "torso-completo", label: "Torso completo", icon: "User" },
+  { value: "pierna-completa", label: "Pierna completa", icon: "Footprints" },
+  { value: "brazos-completo", label: "Brazos", icon: "BicepsFlexed" },
+];
+
+export const MUSCLE_GROUP_COMPOSITES: Record<string, MuscleGroup[]> = {
+  "torso-completo": ["Pecho", "Espalda", "Hombros", "Abdomen"],
+  "pierna-completa": ["Cuadriceps", "Femoral", "Pantorrilla", "Gluteos", "Abductores", "Aductores"],
+  "brazos-completo": ["Biceps", "Triceps", "Antebrazo"],
+};
+
 export const EQUIPMENT_LIST: string[] = [
   "Barra",
   "Mancuernas",

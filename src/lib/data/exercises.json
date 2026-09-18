@@ -825,10 +825,11 @@
   {
     "id": "sentadilla-bulgara",
     "nombre": "Sentadilla búlgara",
-    "categoria": "Cuadriceps",
-    "musculoPrimario": "Cuádriceps",
+    "categoria": "Femoral",
+    "musculoPrimario": "Isquiotibiales",
     "musculosSecundarios": [
-      "Gluteos"
+      "Gluteos",
+      "Cuadriceps"
     ],
     "equipo": "Mancuernas",
     "nivel": "Intermedio",

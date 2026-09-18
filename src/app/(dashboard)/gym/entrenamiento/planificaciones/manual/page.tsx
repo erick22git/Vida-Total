@@ -284,9 +284,23 @@ export default function ManualPlanCreatorPage() {
       </div>
 
       <div className="fixed bottom-4 md:bottom-6 left-0 right-0 px-5 md:px-8 md:ml-64">
-        <GlassButton accentColor="rgba(255,255,255,0.85)" className="w-full max-w-2xl mx-auto !text-black" size="lg" onClick={handleCreate}>
+        {/* Transparente siempre — filtro negro suave mientras ningún día
+        tiene ejercicios (deshabilitado), cambia a un brillo blanco suave
+        apenas se completa el primer día. */}
+        <button
+          onClick={handleCreate}
+          disabled={daysActive === 0}
+          className="w-full max-w-2xl mx-auto block rounded-2xl py-3.5 text-base font-medium text-white cursor-pointer disabled:cursor-not-allowed transition-[box-shadow,background-color] duration-300"
+          style={{
+            background: daysActive > 0 ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.25)",
+            boxShadow:
+              daysActive > 0
+                ? "0 0 22px 1px rgba(255,255,255,0.35), 0 10px 24px rgba(0,0,0,0.35)"
+                : "0 0 14px 1px rgba(0,0,0,0.35), 0 10px 24px rgba(0,0,0,0.35)",
+          }}
+        >
           Crear Planificación
-        </GlassButton>
+        </button>
       </div>
     </div>
   );
