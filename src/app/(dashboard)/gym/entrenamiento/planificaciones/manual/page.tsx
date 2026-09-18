@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 import { ArrowLeft, Moon, Dumbbell, Plus, X } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
@@ -39,6 +40,11 @@ export default function ManualPlanCreatorPage() {
   const [categoria, setCategoria] = useState(PLAN_LIBRARY_CATEGORIES[0]);
   const [nuevaCategoria, setNuevaCategoria] = useState(false);
   const [notas, setNotas] = useState("");
+  // Bloque 13: fecha desde la que arranca este plan — por default hoy,
+  // pero editable (p.ej. si lo estás armando de antemano para que empiece
+  // el lunes que viene). Es lo que queda registrado en `planHistory`, y
+  // también lo que cierra automáticamente el `fechaFin` del plan anterior.
+  const [fechaInicio, setFechaInicio] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const hasActivePlan = existingPlans.some((p) => p.activo);
   // Antes esto se forzaba siempre a true — no había forma de armar un plan
   // nuevo (p.ej. para el mes que viene) sin desactivar de inmediato el que
@@ -76,7 +82,8 @@ export default function ManualPlanCreatorPage() {
       minsPerSession: 60,
     });
     if (usarComoActual || !hasActivePlan) {
-      setActivePlan(plan.id);
+      const inicioISO = new Date(`${fechaInicio}T00:00:00`).toISOString();
+      setActivePlan(plan.id, inicioISO);
       applyPlanToWeek(plan.id);
     }
     router.push("/gym/entrenamiento/planificaciones");
@@ -198,6 +205,11 @@ export default function ManualPlanCreatorPage() {
           rows={2}
           className="w-full rounded-2xl bg-white/[0.06] glass-specular-ring backdrop-blur-md px-4 py-2.5 text-sm text-white placeholder:text-white/35 outline-none transition-all focus:shadow-[var(--glass-specular-strong)] focus:bg-white/[0.09] resize-none"
         />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">Inicio del plan</span>
+        <GlassInput type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} />
       </div>
 
       <button

@@ -213,7 +213,11 @@ export interface GymState {
   plans: TrainingPlan[];
   activePlanId: string | null;
   createPlan: (plan: Omit<TrainingPlan, "id" | "createdAt">) => TrainingPlan;
-  setActivePlan: (id: string) => void;
+  /** `fechaInicio` (ISO) es opcional — por default es "ahora", pero al crear
+   * un plan manualmente el usuario puede elegir una fecha de inicio propia
+   * (ver planificaciones/manual/page.tsx), que es la que queda registrada
+   * en `planHistory` (Bloque 13). */
+  setActivePlan: (id: string, fechaInicio?: string) => void;
   applyPlanToWeek: (id: string) => void;
   updatePlanDay: (planId: string, dayIndex: number, patch: Partial<WeeklyPlanDay>) => void;
   /** Edita nombre/categoría/notas de un plan (no toca sus días). */
@@ -899,18 +903,22 @@ export const useGymStore = create<GymState>()(
         if (uidUser) syncInsertPlan(created, uidUser);
         return created;
       },
-      setActivePlan: (id) => {
+      setActivePlan: (id, fechaInicio) => {
         const allIds = get().plans.map((p) => p.id);
         set((state) => {
           // Bloque 13: cierra la entrada de historial abierta (si el plan
           // realmente cambió) y abre una nueva para `id` — así queda un
-          // registro de qué plan estuvo activo en qué rango de fechas.
+          // registro de qué plan estuvo activo en qué rango de fechas. El
+          // plan anterior termina justo cuando empieza el nuevo (no
+          // necesariamente "ahora" — si `fechaInicio` viene editada a mano,
+          // p.ej. un plan creado para empezar la próxima semana).
+          const inicio = fechaInicio ?? new Date().toISOString();
           const planHistory =
             state.activePlanId === id
               ? state.planHistory
               : [
-                  ...state.planHistory.map((h) => (h.fechaFin === null ? { ...h, fechaFin: new Date().toISOString() } : h)),
-                  { planId: id, fechaInicio: new Date().toISOString(), fechaFin: null },
+                  ...state.planHistory.map((h) => (h.fechaFin === null ? { ...h, fechaFin: inicio } : h)),
+                  { planId: id, fechaInicio: inicio, fechaFin: null },
                 ];
           return {
             activePlanId: id,
