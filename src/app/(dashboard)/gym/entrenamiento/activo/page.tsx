@@ -24,11 +24,13 @@ import { PillActionButton } from "@/components/gym/pill-action-button";
 import { SessionTimer } from "@/components/gym/session-timer";
 import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
 import { useGymStore } from "@/lib/store/gymStore";
+import { previaLabelFor } from "@/lib/gym-utils";
 
 export default function ActiveWorkoutPage() {
   const router = useRouter();
   const allExercises = useAllExercises();
   const activeSession = useGymStore((s) => s.activeSession);
+  const sessions = useGymStore((s) => s.sessions);
   const activeExerciseIndex = useGymStore((s) => s.activeExerciseIndex);
   const sessionStartedAt = useGymStore((s) => s.sessionStartedAt);
   const setActiveExerciseIndex = useGymStore((s) => s.setActiveExerciseIndex);
@@ -64,6 +66,12 @@ export default function ActiveWorkoutPage() {
   const completedSets = currentLog.sets.filter((s) => s.completado).length;
   const soloReps = currentLog.sets[0]?.soloReps;
   const restSeconds = currentLog.restSeconds ?? 90;
+  // "Previa": con cuánto peso x reps hiciste cada serie la última vez que
+  // entrenaste este ejercicio (sessions viene ordenado del más reciente al
+  // más viejo, así que el primer match ya es el último entrenamiento).
+  const lastLog = sessions.find((sess) => sess.ejercicios.some((e) => e.exerciseId === currentLog.exerciseId))?.ejercicios.find(
+    (e) => e.exerciseId === currentLog.exerciseId,
+  );
 
   const totalSetsAll = activeSession.ejercicios.reduce((sum, e) => sum + e.sets.length, 0);
   const doneSetsAll = activeSession.ejercicios.reduce(
@@ -146,8 +154,9 @@ export default function ActiveWorkoutPage() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 px-1 text-[11px] font-semibold text-white/40 uppercase tracking-wide">
+            <div className="grid grid-cols-[auto_auto_1fr_1fr_1fr_auto] gap-2 px-1 text-[11px] font-semibold text-white/40 uppercase tracking-wide">
               <span className="w-8 text-center">Serie</span>
+              <span className="w-12 text-center">Previa</span>
               <span className="text-center">{soloReps ? "" : "Kg"}</span>
               <span className="text-center">Reps</span>
               <span className="text-center">IA</span>
@@ -159,6 +168,7 @@ export default function ActiveWorkoutPage() {
                 index={i}
                 set={set}
                 soloReps={soloReps}
+                previa={previaLabelFor(lastLog?.sets[i], soloReps)}
                 onChange={(patch) => handleSetChange(set.id, patch)}
               />
             ))}

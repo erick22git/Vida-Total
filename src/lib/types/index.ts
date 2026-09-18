@@ -359,6 +359,11 @@ export interface RoutineSetPlan {
   peso: number;
   reps: number;
   tipo: SetType;
+  /** Igual que `WorkoutSet.pesosDescendentes` — se puede dejar planeado un
+   * dropset (y cuántas bajadas tendrá) ya desde la creación del plan/rutina,
+   * no solo durante la sesión en vivo. Se copia tal cual a `WorkoutSet`
+   * cuando el plan arranca una sesión (ver `startWorkoutFromRoutine`). */
+  pesosDescendentes?: number[];
 }
 
 export interface RoutineExercise {

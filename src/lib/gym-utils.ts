@@ -1,4 +1,4 @@
-import type { Exercise, MuscleGroup, Rank, RoutineExercise, WorkoutSession, WorkoutSet } from "@/lib/types";
+import type { Exercise, MuscleGroup, Rank, RoutineExercise, SetType, WorkoutSession, WorkoutSet } from "@/lib/types";
 
 /** Bloque 15: un dropset guarda un peso por cada bajada en
  * `pesosDescendentes` en vez de un solo `peso` — para volumen/mejor serie
@@ -9,6 +9,22 @@ export function effectiveWeight(set: WorkoutSet): number {
     return set.pesosDescendentes.reduce((a, b) => a + b, 0) / set.pesosDescendentes.length;
   }
   return set.peso;
+}
+
+/** Texto "Previa" (peso x reps, o la secuencia de bajadas si era dropset)
+ * para mostrar al lado de una serie: con cuánto la hiciste la última vez.
+ * Compartido entre RoutineSetTable (planificando) y SessionSetRow (sesión
+ * en vivo) para que el formato sea idéntico en los dos lugares. */
+export function previaLabelFor(
+  prevSet: { peso: number; reps: number; tipo?: SetType; pesosDescendentes?: number[] } | undefined,
+  soloReps?: boolean,
+): string {
+  if (!prevSet) return "-";
+  if (soloReps) return `${prevSet.reps}`;
+  if (prevSet.tipo === "descendente" && prevSet.pesosDescendentes && prevSet.pesosDescendentes.length > 0) {
+    return `${prevSet.pesosDescendentes.join("→")}x${prevSet.reps}`;
+  }
+  return `${prevSet.peso}x${prevSet.reps}`;
 }
 
 /** El peso más pesado realmente levantado en la serie — para un dropset es

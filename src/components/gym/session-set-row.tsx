@@ -13,11 +13,15 @@ export function SessionSetRow({
   set,
   soloReps,
   onChange,
+  previa,
 }: {
   index: number;
   set: WorkoutSet;
   soloReps?: boolean;
   onChange: (patch: Partial<WorkoutSet>) => void;
+  /** Con cuánto peso x reps hiciste esta MISMA serie (por posición) la
+   * última vez que entrenaste este ejercicio — "-" si no hay historial. */
+  previa?: string;
 }) {
   const [typeModalOpen, setTypeModalOpen] = useState(false);
   const [kgKeypadOpen, setKgKeypadOpen] = useState(false);
@@ -28,7 +32,7 @@ export function SessionSetRow({
 
   return (
     <div
-      className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 items-center rounded-2xl px-2.5 py-2.5 transition-colors"
+      className="grid grid-cols-[auto_auto_1fr_1fr_1fr_auto] gap-2 items-center rounded-2xl px-2.5 py-2.5 transition-colors"
       style={{
         background: set.completado ? "#3b82f61f" : "rgba(255,255,255,0.04)",
         border: `1px solid ${set.completado ? "#3b82f666" : "rgba(255,255,255,0.08)"}`,
@@ -41,6 +45,8 @@ export function SessionSetRow({
       >
         {(set.tipo ?? "normal") === "normal" ? index + 1 : meta.short}
       </button>
+
+      <span className="w-12 text-center text-[11px] text-white/35 tabular-nums">{previa ?? "-"}</span>
 
       {!soloReps ? (
         isDropset ? (
@@ -91,7 +97,10 @@ export function SessionSetRow({
         open={typeModalOpen}
         onClose={() => setTypeModalOpen(false)}
         value={set.tipo ?? "normal"}
-        onSelect={(tipo) => onChange({ tipo })}
+        onSelect={(tipo) => {
+          onChange({ tipo });
+          if (tipo === "descendente") setDropsetModalOpen(true);
+        }}
       />
       <DropsetWeightsModal
         open={dropsetModalOpen}

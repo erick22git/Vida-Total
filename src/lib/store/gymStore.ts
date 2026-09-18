@@ -680,6 +680,7 @@ export const useGymStore = create<GymState>()(
                 fallo: false,
                 tipo: s.tipo,
                 soloReps: rex.soloReps,
+                pesosDescendentes: s.pesosDescendentes,
               })),
             })),
             completado: false,

@@ -5,7 +5,9 @@ import { Plus, Trash2, Check } from "lucide-react";
 import type { RoutineSetPlan, SetType } from "@/lib/types";
 import { SET_TYPE_META } from "@/components/gym/set-type";
 import { SetTypeModal } from "@/components/gym/set-type-modal";
+import { DropsetWeightsModal } from "@/components/gym/dropset-weights-modal";
 import { useGymStore } from "@/lib/store/gymStore";
+import { previaLabelFor } from "@/lib/gym-utils";
 
 export function RoutineSetTable({
   sets,
@@ -23,6 +25,7 @@ export function RoutineSetTable({
   onSetChecked?: () => void;
 }) {
   const [typeModalIndex, setTypeModalIndex] = useState<number | null>(null);
+  const [dropsetModalIndex, setDropsetModalIndex] = useState<number | null>(null);
   // Local-only "confirmed in plan" state per row — this is a planning screen,
   // not a live session, so completion here is just a visual affordance
   // (matching `activo`'s checkmark) and isn't persisted with the routine.
@@ -79,13 +82,9 @@ export function RoutineSetTable({
       </div>
       {sets.map((s, i) => {
         const meta = SET_TYPE_META[s.tipo];
-        const prevSet = lastLog?.sets[i];
-        const previaLabel = prevSet
-          ? soloReps
-            ? `${prevSet.reps}`
-            : `${prevSet.peso}x${prevSet.reps}`
-          : "-";
+        const previaLabel = previaLabelFor(lastLog?.sets[i], soloReps);
         const isChecked = checked.has(i);
+        const isDropset = s.tipo === "descendente";
         return (
           <div
             key={i}
@@ -103,15 +102,24 @@ export function RoutineSetTable({
               {s.tipo === "normal" ? i + 1 : meta.short}
             </button>
             <span className="w-12 text-center text-[11px] text-white/35 tabular-nums">{previaLabel}</span>
-            {!soloReps && (
-              <input
-                type="number"
-                value={s.peso || ""}
-                placeholder="0"
-                onChange={(e) => updateSet(i, { peso: parseFloat(e.target.value) || 0 })}
-                className="w-full rounded-lg bg-white/[0.05] glass-specular-ring px-2 py-1.5 text-base text-white text-center outline-none"
-              />
-            )}
+            {!soloReps &&
+              (isDropset ? (
+                <button
+                  onClick={() => setDropsetModalIndex(i)}
+                  className="w-full rounded-lg bg-white/[0.05] glass-specular-ring py-1.5 text-[11px] font-semibold text-white text-center cursor-pointer truncate px-1"
+                  title="Pesos de cada bajada del dropset"
+                >
+                  {s.pesosDescendentes && s.pesosDescendentes.length > 0 ? s.pesosDescendentes.join(" · ") : "Configurar"}
+                </button>
+              ) : (
+                <input
+                  type="number"
+                  value={s.peso || ""}
+                  placeholder="0"
+                  onChange={(e) => updateSet(i, { peso: parseFloat(e.target.value) || 0 })}
+                  className="w-full rounded-lg bg-white/[0.05] glass-specular-ring px-2 py-1.5 text-base text-white text-center outline-none"
+                />
+              ))}
             <input
               type="number"
               value={s.reps || ""}
@@ -140,7 +148,22 @@ export function RoutineSetTable({
                 open
                 onClose={() => setTypeModalIndex(null)}
                 value={s.tipo}
-                onSelect={(tipo) => updateSet(i, { tipo })}
+                onSelect={(tipo) => {
+                  updateSet(i, { tipo });
+                  // El dropset queda "activado" de verdad recién cuando se
+                  // configuran las bajadas — por eso elegir el tipo acá
+                  // encadena directo a ese modal, en vez de dejarlo
+                  // marcado sin ninguna bajada cargada.
+                  if (tipo === "descendente") setDropsetModalIndex(i);
+                }}
+              />
+            )}
+            {dropsetModalIndex === i && (
+              <DropsetWeightsModal
+                open
+                onClose={() => setDropsetModalIndex(null)}
+                initialWeights={s.pesosDescendentes ?? []}
+                onSave={(weights) => updateSet(i, { pesosDescendentes: weights, peso: weights[0] ?? 0 })}
               />
             )}
           </div>

@@ -157,7 +157,7 @@ export function ExercisePicker({
 
       {multiple && selected.length > 0 && (
         <div className={cn("sticky bottom-0 pt-1", confirmButtonClassName)}>
-          {/* Sin relleno verde ni borde sólido: transparente, con un brillo
+          {/* Sin relleno ni borde sólido: transparente, con un brillo blanco
           difuminado (box-shadow, no un `border`) marcando dónde iría el
           marco, más una sombra suave para que flote sobre el fondo. Al
           agregar un ejercicio (no al sacarlo) hace un flash rápido negro ->
@@ -171,8 +171,8 @@ export function ExercisePicker({
             whileTap={{ scale: 0.97 }}
             className="relative w-full overflow-hidden rounded-2xl py-3.5 text-base font-medium text-white cursor-pointer"
             style={{
-              background: "rgba(34,197,94,0.05)",
-              boxShadow: "0 0 22px 1px rgba(34,197,94,0.45), 0 10px 24px rgba(0,0,0,0.35)",
+              background: "rgba(255,255,255,0.04)",
+              boxShadow: "0 0 22px 1px rgba(255,255,255,0.35), 0 10px 24px rgba(0,0,0,0.35)",
             }}
           >
             <motion.span
