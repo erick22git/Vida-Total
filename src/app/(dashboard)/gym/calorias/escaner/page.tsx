@@ -41,7 +41,7 @@ export default function EscanerPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
 
-  // Modo Foto: análisis con Gemini Vision.
+  // Modo Foto: análisis con IA de visión (Groq).
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<AnalyzeErrorKind | null>(null);
@@ -175,7 +175,7 @@ export default function EscanerPage() {
     }
   }
 
-  /** Fallback: same behavior the "Foto" mode had before Gemini was wired up —
+  /** Fallback: same behavior the "Foto" mode had before AI analysis was wired up —
    * navigate to "Crear Alimento" with the photo attached so the user completes
    * the data manually. Used when AI analysis isn't available or fails. */
   const goToManualCreate = useCallback(() => {
@@ -238,7 +238,7 @@ export default function EscanerPage() {
     } catch (err) {
       const isAbort = err instanceof DOMException && err.name === "AbortError";
       const offline = typeof navigator !== "undefined" && navigator.onLine === false;
-      console.warn("[escaner] gemini analyze error", err);
+      console.warn("[escaner] analyze error", err);
       if (isAbort) setAnalyzeError("timeout");
       else if (offline || err instanceof TypeError) setAnalyzeError("network");
       else setAnalyzeError("unknown");
@@ -413,7 +413,7 @@ export default function EscanerPage() {
             {analyzeError === "network" &&
               "El reconocimiento por foto requiere conexión a internet, a diferencia del resto de la app. Revisa tu conexión e inténtalo de nuevo."}
             {analyzeError === "timeout" &&
-              "Gemini no respondió a tiempo. Puedes reintentar o completar el alimento manualmente."}
+              "La IA no respondió a tiempo. Puedes reintentar o completar el alimento manualmente."}
             {analyzeError === "unknown" &&
               "Ocurrió un problema al analizar la foto. Puedes reintentar o completar el alimento manualmente."}
           </p>

@@ -24,7 +24,7 @@ interface EditableItem {
   name: string;
   grams: number;
   confidence: "alta" | "media" | "baja";
-  // Per-gram rates, derived once from Gemini's estimate — used to recompute
+  // Per-gram rates, derived once from the AI estimate — used to recompute
   // totals proportionally whenever the user edits the grams.
   caloriesPerGram: number;
   proteinPerGram: number;
