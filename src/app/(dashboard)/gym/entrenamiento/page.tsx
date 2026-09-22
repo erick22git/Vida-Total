@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   Dumbbell,
@@ -40,6 +40,16 @@ export default function EntrenamientoPage() {
   const plans = useGymStore((s) => s.plans);
   const activePlanId = useGymStore((s) => s.activePlanId);
   const activePlan = activePlanId ? plans.find((p) => p.id === activePlanId) : undefined;
+  const onboardingCompleted = useGymStore((s) => s.onboardingCompleted);
+
+  // Alguien totalmente nuevo (sin plan, sin rutinas propias, nunca entrenó)
+  // pasa primero por el formulario inicial en vez de ver el panel vacío.
+  // No molesta a nadie que ya tenga datos, aunque nunca haya "completado"
+  // el onboarding — cualquiera de esas tres condiciones ya alcanza.
+  const isTotallyNew = !onboardingCompleted && plans.length === 0 && routines.length === 0 && sessions.length === 0;
+  useEffect(() => {
+    if (isTotallyNew) router.replace("/gym/entrenamiento/onboarding");
+  }, [isTotallyNew, router]);
   const startWorkout = useGymStore((s) => s.startWorkout);
   const startWorkoutFromRoutine = useGymStore((s) => s.startWorkoutFromRoutine);
   const cancelWorkout = useGymStore((s) => s.cancelWorkout);
@@ -99,6 +109,10 @@ export default function EntrenamientoPage() {
     }
     router.push("/gym/entrenamiento/activo");
   }
+
+  // El useEffect de arriba ya redirige — esto solo evita un parpadeo del
+  // panel vacío mientras la redirección ocurre.
+  if (isTotallyNew) return null;
 
   return (
     // El fondo de foto ya lo pone gym/entrenamiento/layout.tsx (compartido

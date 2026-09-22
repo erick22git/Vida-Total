@@ -95,6 +95,13 @@ function timestampForDate(date: Date): number {
   return d.getTime();
 }
 
+export interface GymProfile {
+  pesoKg?: number;
+  alturaCm?: number;
+  lesiones?: string;
+  objetivo?: string;
+}
+
 export interface GymState {
   // ---------- Nutrition ----------
   calorieGoal: number;
@@ -177,6 +184,13 @@ export interface GymState {
   sessionStartedAt: number | null;
   restingExerciseId: string | null;
   restEndsAt: number | null;
+  /** Formulario inicial (peso/altura/lesiones/objetivo) para quien entra a
+   * Entrenamiento sin ninguna rutina/plan todavía. Local por ahora (no
+   * sincroniza entre dispositivos — para eso haría falta una tabla/columna
+   * nueva en Supabase, igual que se hizo para `progress_photos`). */
+  gymProfile: GymProfile | null;
+  onboardingCompleted: boolean;
+  saveGymProfile: (profile: GymProfile) => void;
   /** Momento (Date.now()) en que arrancó el "traspaso" al ejercicio activo
    * actual — se activa al avanzar automáticamente de un ejercicio a otro
    * (terminaste el anterior), y se registra en `transicionSegundos` del
@@ -658,6 +672,9 @@ export const useGymStore = create<GymState>()(
       sessionStartedAt: null,
       restingExerciseId: null,
       restEndsAt: null,
+      gymProfile: null,
+      onboardingCompleted: false,
+      saveGymProfile: (profile) => set({ gymProfile: profile, onboardingCompleted: true }),
       transitionStartedAt: null,
       startTransition: () => set({ transitionStartedAt: Date.now() }),
       acceptTransition: () =>
