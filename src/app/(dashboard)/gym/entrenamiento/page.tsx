@@ -36,10 +36,19 @@ export default function EntrenamientoPage() {
   const sessions = useGymStore((s) => s.sessions);
   const routines = useGymStore((s) => s.routines);
   const activeSession = useGymStore((s) => s.activeSession);
+  const sessionStartedAt = useGymStore((s) => s.sessionStartedAt);
   const startWorkout = useGymStore((s) => s.startWorkout);
   const startWorkoutFromRoutine = useGymStore((s) => s.startWorkoutFromRoutine);
+  const cancelWorkout = useGymStore((s) => s.cancelWorkout);
   const streak = useGymStore((s) => s.streak);
   const allExercises = useAllExercises();
+
+  // Bug: `activeSession` no expiraba nunca. Si quedaba un entrenamiento sin
+  // terminar de OTRO día, esta pantalla seguía ofreciendo "Continuar
+  // entrenamiento" con los ejercicios de ese día viejo en vez de mostrar el
+  // plan de hoy — daba la sensación de que "no aparecía" el plan actual.
+  const sessionIsFromToday = !sessionStartedAt || new Date(sessionStartedAt).toDateString() === new Date().toDateString();
+  const staleSession = !!activeSession && !sessionIsFromToday;
 
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -55,18 +64,35 @@ export default function EntrenamientoPage() {
         .find((e) => e?.imagen)
     : allExercises.find((e) => e.categoria === todayPlan.grupoMuscular && e.imagen);
 
+  function startTodaysPlan() {
+    const routine = todayPlan.routineId ? routines.find((r) => r.id === todayPlan.routineId) : undefined;
+    if (routine) {
+      startWorkoutFromRoutine(routine);
+    } else {
+      const grupo = todayPlan.grupoMuscular as MuscleGroup;
+      const pool = allExercises.filter((e) => e.categoria === grupo).slice(0, 5);
+      const ids = pool.length > 0 ? pool.map((e) => e.id) : [allExercises[0].id];
+      startWorkout(grupo, ids);
+    }
+  }
+
   function handleStart() {
     if (isRestDay) return;
-    if (!activeSession) {
-      const routine = todayPlan.routineId ? routines.find((r) => r.id === todayPlan.routineId) : undefined;
-      if (routine) {
-        startWorkoutFromRoutine(routine);
-      } else {
-        const grupo = todayPlan.grupoMuscular as MuscleGroup;
-        const pool = allExercises.filter((e) => e.categoria === grupo).slice(0, 5);
-        const ids = pool.length > 0 ? pool.map((e) => e.id) : [allExercises[0].id];
-        startWorkout(grupo, ids);
+    if (staleSession) {
+      const seguir = confirm(
+        "Tienes un entrenamiento sin terminar de otro día. Aceptar = continuar ese entrenamiento. Cancelar = descartarlo y empezar el plan de hoy.",
+      );
+      if (seguir) {
+        router.push("/gym/entrenamiento/activo");
+        return;
       }
+      cancelWorkout();
+      startTodaysPlan();
+      router.push("/gym/entrenamiento/activo");
+      return;
+    }
+    if (!activeSession) {
+      startTodaysPlan();
     }
     router.push("/gym/entrenamiento/activo");
   }
@@ -155,8 +181,13 @@ export default function EntrenamientoPage() {
         <div className="relative z-10 flex flex-col gap-4 items-center px-4">
           <p className="text-sm text-white/60">Hoy toca</p>
           <h2 className="text-3xl font-bold text-white">{todayPlan.grupoMuscular}</h2>
-          {activeSession && (
+          {activeSession && !staleSession && (
             <p className="text-xs text-white/50">Tienes un entrenamiento en curso</p>
+          )}
+          {staleSession && (
+            <p className="text-xs" style={{ color: "#f59e0b" }}>
+              Tienes un entrenamiento sin terminar de otro día
+            </p>
           )}
           <GlassButton
             accentColor="rgba(255,255,255,0.85)"
@@ -166,7 +197,7 @@ export default function EntrenamientoPage() {
             disabled={isRestDay}
           >
             <Play size={18} />
-            {activeSession ? "Continuar entrenamiento" : "Iniciar entrenamiento"}
+            {activeSession && !staleSession ? "Continuar entrenamiento" : "Iniciar entrenamiento"}
           </GlassButton>
         </div>
       </GlassCard>
