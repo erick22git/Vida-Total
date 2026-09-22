@@ -9,7 +9,9 @@ import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picke
 import { ExerciseSessionBuilder } from "@/components/gym/exercise-session-builder";
 import { useGymStore } from "@/lib/store/gymStore";
 import { dominantMuscleGroup } from "@/lib/gym-utils";
-import type { RoutineExercise } from "@/lib/types";
+import { MUSCLE_GROUPS } from "@/lib/data/gym-meta";
+import { cn } from "@/lib/utils";
+import type { RoutineExercise, MuscleGroup } from "@/lib/types";
 
 const DAY_LABELS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
@@ -42,6 +44,9 @@ export default function PlanDetailPage({
   const [view, setView] = useState<"list" | "grid">("list");
   const [menuDay, setMenuDay] = useState<number | null>(null);
   const [editingDay, setEditingDay] = useState<number | null>(initialDay);
+  // Grupo muscular manual para el día en edición (opcional) — null = seguir
+  // infiriendo automáticamente de los ejercicios, como antes.
+  const [dayMuscleOverride, setDayMuscleOverride] = useState<MuscleGroup | null>(null);
   const [draft, setDraft] = useState<RoutineExercise[]>(() => {
     if (initialDay === null || !plan) return [];
     const day = plan.dias[initialDay];
@@ -65,6 +70,7 @@ export default function PlanDetailPage({
     const day = plan!.dias[i];
     const routine = day.routineId ? routines.find((r) => r.id === day.routineId) : undefined;
     setDraft(routine?.ejercicios ?? []);
+    setDayMuscleOverride(null);
     setEditingDay(i);
   }
 
@@ -81,11 +87,11 @@ export default function PlanDetailPage({
       updatePlanDay(plan!.id, editingDay, { grupoMuscular: "Descanso", routineId: undefined });
     } else if (day.routineId) {
       updateRoutine(day.routineId, { ejercicios: draft });
-      const grupo = dominantMuscleGroup(draft, allExercises) ?? "Cardio";
+      const grupo = dayMuscleOverride ?? dominantMuscleGroup(draft, allExercises) ?? "Cardio";
       updatePlanDay(plan!.id, editingDay, { grupoMuscular: grupo });
     } else {
       const routine = saveRoutine(`${plan!.nombre} - ${label}`, draft);
-      const grupo = dominantMuscleGroup(draft, allExercises) ?? "Cardio";
+      const grupo = dayMuscleOverride ?? dominantMuscleGroup(draft, allExercises) ?? "Cardio";
       updatePlanDay(plan!.id, editingDay, { grupoMuscular: grupo, routineId: routine.id });
     }
     setEditingDay(null);
@@ -110,6 +116,39 @@ export default function PlanDetailPage({
             Listo
           </GlassButton>
         </header>
+
+        {draft.length > 0 && (
+          <div className="flex flex-col gap-1.5 -mt-2">
+            <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">Grupo muscular (opcional)</span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setDayMuscleOverride(null)}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors border",
+                  dayMuscleOverride === null
+                    ? "bg-white/[0.85] border-white text-black"
+                    : "bg-white/[0.05] border-white/10 text-white/65 hover:bg-white/[0.1]",
+                )}
+              >
+                Automático ({dominantMuscleGroup(draft, allExercises) ?? "-"})
+              </button>
+              {MUSCLE_GROUPS.map((m) => (
+                <button
+                  key={m.value}
+                  onClick={() => setDayMuscleOverride(m.value)}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors border",
+                    dayMuscleOverride === m.value
+                      ? "bg-white/[0.85] border-white text-black"
+                      : "bg-white/[0.05] border-white/10 text-white/65 hover:bg-white/[0.1]",
+                  )}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {draft.length === 0 ? (
           <>

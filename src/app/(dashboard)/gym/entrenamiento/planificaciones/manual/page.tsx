@@ -12,8 +12,9 @@ import { ExerciseSessionBuilder } from "@/components/gym/exercise-session-builde
 import { useGymStore } from "@/lib/store/gymStore";
 import { dominantMuscleGroup } from "@/lib/gym-utils";
 import { PLAN_LIBRARY_CATEGORIES } from "@/lib/data/plan-library";
+import { MUSCLE_GROUPS } from "@/lib/data/gym-meta";
 import { cn } from "@/lib/utils";
-import type { RoutineExercise, WeeklyPlanDay } from "@/lib/types";
+import type { RoutineExercise, WeeklyPlanDay, MuscleGroup } from "@/lib/types";
 
 const DAYS = [
   { key: "L", label: "Lunes" },
@@ -35,6 +36,9 @@ export default function ManualPlanCreatorPage() {
   const allExercises = useAllExercises();
 
   const [dayDrafts, setDayDrafts] = useState<RoutineExercise[][]>(DAYS.map(() => []));
+  // Grupo muscular manual por día (opcional) — si queda en null, se sigue
+  // infiriendo automáticamente de los ejercicios elegidos, como antes.
+  const [dayMuscleOverride, setDayMuscleOverride] = useState<(MuscleGroup | null)[]>(DAYS.map(() => null));
   const [editingDay, setEditingDay] = useState<number | null>(null);
   const [nombre, setNombre] = useState("Mi Plan Personalizado");
   const [categoria, setCategoria] = useState(PLAN_LIBRARY_CATEGORIES[0]);
@@ -62,6 +66,7 @@ export default function ManualPlanCreatorPage() {
 
   function clearDay(i: number) {
     setDayDrafts((d) => d.map((day, idx) => (idx === i ? [] : day)));
+    setDayMuscleOverride((d) => d.map((g, idx) => (idx === i ? null : g)));
   }
 
   function handleCreate() {
@@ -69,7 +74,7 @@ export default function ManualPlanCreatorPage() {
       const draft = dayDrafts[i];
       if (draft.length === 0) return { day: d.key, grupoMuscular: "Descanso" as const };
       const routine = saveRoutine(`${nombre.trim() || "Mi Plan Personalizado"} - ${d.label}`, draft);
-      const grupo = dominantMuscleGroup(draft, allExercises) ?? "Cardio";
+      const grupo = dayMuscleOverride[i] ?? dominantMuscleGroup(draft, allExercises) ?? "Cardio";
       return { day: d.key, grupoMuscular: grupo, routineId: routine.id };
     });
     const plan = createPlan({
@@ -105,6 +110,39 @@ export default function ManualPlanCreatorPage() {
             Listo
           </GlassButton>
         </header>
+
+        {draft.length > 0 && (
+          <div className="flex flex-col gap-1.5 -mt-2">
+            <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">Grupo muscular (opcional)</span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setDayMuscleOverride((d) => d.map((g, idx) => (idx === editingDay ? null : g)))}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors border",
+                  dayMuscleOverride[editingDay] === null
+                    ? "bg-white/[0.85] border-white text-black"
+                    : "bg-white/[0.05] border-white/10 text-white/65 hover:bg-white/[0.1]",
+                )}
+              >
+                Automático ({dominantMuscleGroup(draft, allExercises) ?? "-"})
+              </button>
+              {MUSCLE_GROUPS.map((m) => (
+                <button
+                  key={m.value}
+                  onClick={() => setDayMuscleOverride((d) => d.map((g, idx) => (idx === editingDay ? m.value : g)))}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors border",
+                    dayMuscleOverride[editingDay] === m.value
+                      ? "bg-white/[0.85] border-white text-black"
+                      : "bg-white/[0.05] border-white/10 text-white/65 hover:bg-white/[0.1]",
+                  )}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {draft.length === 0 ? (
           <>
@@ -242,7 +280,7 @@ export default function ManualPlanCreatorPage() {
         {DAYS.map((d, i) => {
           const draft = dayDrafts[i];
           const isRest = draft.length === 0;
-          const grupo = isRest ? null : dominantMuscleGroup(draft, allExercises);
+          const grupo = isRest ? null : (dayMuscleOverride[i] ?? dominantMuscleGroup(draft, allExercises));
           return (
             <GlassCard
               key={d.key}
