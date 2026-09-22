@@ -346,6 +346,11 @@ export interface WorkoutExerciseLog {
    * 1 de B, descanso, serie 2 de A, serie 2 de B...). `undefined` = no
    * agrupado. Se copia desde `RoutineExercise.grupo` al iniciar la sesión. */
   grupo?: string;
+  /** Segundos que tardaste en pasar de máquina/ejercicio anterior a este
+   * (desde que se activó automáticamente hasta que tocaste "Aceptar, ya
+   * estoy en la máquina"). `undefined` si nunca se midió (p.ej. el primer
+   * ejercicio de la sesión, o uno cambiado a mano desde el carrusel). */
+  transicionSegundos?: number;
 }
 
 export interface WorkoutSession {

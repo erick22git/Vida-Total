@@ -177,6 +177,14 @@ export interface GymState {
   sessionStartedAt: number | null;
   restingExerciseId: string | null;
   restEndsAt: number | null;
+  /** Momento (Date.now()) en que arrancó el "traspaso" al ejercicio activo
+   * actual — se activa al avanzar automáticamente de un ejercicio a otro
+   * (terminaste el anterior), y se registra en `transicionSegundos` del
+   * ejercicio al que llegaste cuando el usuario toca "Aceptar". `null`
+   * cuando no hay ningún traspaso en curso. */
+  transitionStartedAt: number | null;
+  startTransition: () => void;
+  acceptTransition: () => void;
   startWorkout: (
     grupoMuscular: MuscleGroup,
     exerciseIds: string[],
@@ -650,6 +658,23 @@ export const useGymStore = create<GymState>()(
       sessionStartedAt: null,
       restingExerciseId: null,
       restEndsAt: null,
+      transitionStartedAt: null,
+      startTransition: () => set({ transitionStartedAt: Date.now() }),
+      acceptTransition: () =>
+        set((state) => {
+          if (!state.activeSession || !state.transitionStartedAt) return { transitionStartedAt: null };
+          const elapsed = Math.round((Date.now() - state.transitionStartedAt) / 1000);
+          const currentId = state.activeSession.ejercicios[state.activeExerciseIndex]?.exerciseId;
+          return {
+            transitionStartedAt: null,
+            activeSession: {
+              ...state.activeSession,
+              ejercicios: state.activeSession.ejercicios.map((ex) =>
+                ex.exerciseId === currentId ? { ...ex, transicionSegundos: elapsed } : ex,
+              ),
+            },
+          };
+        }),
       startWorkout: (grupoMuscular, exerciseIds, routineId) =>
         set(() => ({
           activeSession: {
@@ -672,6 +697,7 @@ export const useGymStore = create<GymState>()(
           sessionStartedAt: Date.now(),
           restingExerciseId: null,
           restEndsAt: null,
+          transitionStartedAt: null,
         })),
       startWorkoutFromRoutine: (routine) =>
         set(() => ({
@@ -703,6 +729,7 @@ export const useGymStore = create<GymState>()(
           sessionStartedAt: Date.now(),
           restingExerciseId: null,
           restEndsAt: null,
+          transitionStartedAt: null,
         })),
       setActiveExerciseIndex: (i) => set({ activeExerciseIndex: i }),
       reorderActiveExercises: (next) =>
@@ -914,6 +941,7 @@ export const useGymStore = create<GymState>()(
             sessionStartedAt: null,
             restingExerciseId: null,
             restEndsAt: null,
+            transitionStartedAt: null,
             streak,
             lastWorkoutCompletedDate: today.toISOString(),
           };
@@ -928,6 +956,7 @@ export const useGymStore = create<GymState>()(
           sessionStartedAt: null,
           restingExerciseId: null,
           restEndsAt: null,
+          transitionStartedAt: null,
         }),
 
       // Routines

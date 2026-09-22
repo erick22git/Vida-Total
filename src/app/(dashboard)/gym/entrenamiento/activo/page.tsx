@@ -20,6 +20,7 @@ import { GlassInput } from "@/components/glass/glass-input";
 import { SessionSetRow } from "@/components/gym/session-set-row";
 import { SessionExerciseCarousel } from "@/components/gym/session-exercise-carousel";
 import { RestBar } from "@/components/gym/rest-bar";
+import { TransitionBar } from "@/components/gym/transition-bar";
 import { RestDurationModal, formatRestDuration } from "@/components/gym/rest-duration-modal";
 import { PillActionButton } from "@/components/gym/pill-action-button";
 import { SessionTimer } from "@/components/gym/session-timer";
@@ -45,6 +46,7 @@ export default function ActiveWorkoutPage() {
   const setExerciseNote = useGymStore((s) => s.setExerciseNote);
   const setExerciseRest = useGymStore((s) => s.setExerciseRest);
   const startRest = useGymStore((s) => s.startRest);
+  const startTransition = useGymStore((s) => s.startTransition);
   const cancelWorkout = useGymStore((s) => s.cancelWorkout);
   const addExercisesToSession = useGymStore((s) => s.addExercisesToSession);
   const removeExerciseFromSession = useGymStore((s) => s.removeExerciseFromSession);
@@ -141,7 +143,10 @@ export default function ActiveWorkoutPage() {
     if (groupFullyDone) {
       const lastGroupIndex = Math.max(...groupMembers.map(({ i }) => i));
       if (lastGroupIndex < total - 1) {
-        setTimeout(() => setActiveExerciseIndex(lastGroupIndex + 1), 500);
+        setTimeout(() => {
+          setActiveExerciseIndex(lastGroupIndex + 1);
+          startTransition();
+        }, 500);
       }
     }
   }
@@ -259,6 +264,7 @@ export default function ActiveWorkoutPage() {
       </div>
 
       <AnimatePresence>
+        <TransitionBar key="transition-bar" />
         <RestBar key="rest-bar" />
       </AnimatePresence>
 
