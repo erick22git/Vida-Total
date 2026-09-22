@@ -43,10 +43,20 @@ export function RestBar({
 
   useEffect(() => {
     if (!restEndsAt) return;
+    // Vibra una sola vez por descanso, apenas se cumple el tiempo — la guarda
+    // evita repetir la vibración en cada tick de los 250ms que siguen hasta
+    // que el store/prop terminan de propagar restEndsAt=null.
+    let vibrated = false;
     const tick = () => {
       const rem = Math.max(0, Math.round((restEndsAt - Date.now()) / 1000));
       setRemaining(rem);
-      if (rem <= 0) clearRestRef.current();
+      if (rem <= 0) {
+        if (!vibrated) {
+          vibrated = true;
+          navigator.vibrate?.(3000);
+        }
+        clearRestRef.current();
+      }
     };
     tick();
     const id = setInterval(tick, 250);

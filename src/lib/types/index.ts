@@ -324,6 +324,13 @@ export interface WorkoutSet {
    * solo número, como el volumen total), pero la lista completa vive acá
    * para mostrarla en el historial. */
   pesosDescendentes?: number[];
+  /** Momento (Date.now()) en que se marcó completada — usado para calcular
+   * `descansoTomado` de la siguiente serie. */
+  completadoAt?: number;
+  /** Segundos reales de descanso tomados ANTES de esta serie (tiempo entre
+   * que se marcó completa la serie anterior y esta). `undefined` en la
+   * primera serie del ejercicio, donde no hay descanso previo que medir. */
+  descansoTomado?: number;
 }
 
 export interface WorkoutExerciseLog {
@@ -331,6 +338,9 @@ export interface WorkoutExerciseLog {
   sets: WorkoutSet[];
   nota?: string;
   restSeconds?: number;
+  /** true si este ejercicio se agregó a último momento durante la sesión en
+   * vivo (no venía en la rutina/plan original con la que se inició). */
+  agregadoEnSesion?: boolean;
 }
 
 export interface WorkoutSession {

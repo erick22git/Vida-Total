@@ -190,8 +190,21 @@ export interface GymState {
    * `activeExerciseIndex` para seguir apuntando al mismo ejercicio que
    * estaba activo, aunque haya cambiado de posición. */
   reorderActiveExercises: (next: WorkoutExerciseLog[]) => void;
+  /** Agrega ejercicios nuevos a la sesión en vivo (botón "+" del carrusel) —
+   * quedan marcados `agregadoEnSesion: true` porque no venían en la rutina
+   * original con la que se inició el entrenamiento. */
+  addExercisesToSession: (exerciseIds: string[]) => void;
+  /** Saca un ejercicio completo de la sesión en vivo (botón de eliminar). */
+  removeExerciseFromSession: (exerciseId: string) => void;
   addSetToExercise: (exerciseId: string) => void;
   updateSet: (exerciseId: string, setId: string, patch: Partial<WorkoutSet>) => void;
+  /** Igual que `updateSet` pero para el caso de marcar una serie como
+   * completada: calcula `completadoAt` y, si había una serie anterior ya
+   * completada, `descansoTomado` (segundos reales de descanso antes de
+   * esta). Vive en el store (no en la pantalla) porque necesita leer
+   * `Date.now()`, que las reglas de React no dejan llamar durante el
+   * render de un componente. */
+  completeSet: (exerciseId: string, setId: string, patch: Partial<WorkoutSet>) => void;
   removeSet: (exerciseId: string, setId: string) => void;
   replaceExercise: (oldExerciseId: string, newExerciseId: string) => void;
   setExerciseNote: (exerciseId: string, nota: string) => void;
@@ -671,7 +684,7 @@ export const useGymStore = create<GymState>()(
             ejercicios: routine.ejercicios.map<WorkoutExerciseLog>((rex) => ({
               exerciseId: rex.exerciseId,
               nota: rex.nota,
-              restSeconds: 90,
+              restSeconds: rex.restSeconds ?? 90,
               sets: rex.sets.map((s) => ({
                 id: uid(),
                 peso: s.peso,
@@ -699,6 +712,44 @@ export const useGymStore = create<GymState>()(
           return {
             activeSession: { ...state.activeSession, ejercicios: next },
             activeExerciseIndex: newIndex >= 0 ? newIndex : state.activeExerciseIndex,
+          };
+        }),
+      addExercisesToSession: (exerciseIds) =>
+        set((state) => {
+          if (!state.activeSession) return state;
+          const already = new Set(state.activeSession.ejercicios.map((e) => e.exerciseId));
+          const nuevos = exerciseIds
+            .filter((id) => !already.has(id))
+            .map<WorkoutExerciseLog>((id) => ({
+              exerciseId: id,
+              agregadoEnSesion: true,
+              sets: [
+                { id: uid(), peso: 0, reps: 10, completado: false, fallo: false, tipo: "normal" as const },
+                { id: uid(), peso: 0, reps: 10, completado: false, fallo: false, tipo: "normal" as const },
+                { id: uid(), peso: 0, reps: 10, completado: false, fallo: false, tipo: "normal" as const },
+              ],
+            }));
+          if (nuevos.length === 0) return state;
+          return {
+            activeSession: {
+              ...state.activeSession,
+              ejercicios: [...state.activeSession.ejercicios, ...nuevos],
+            },
+          };
+        }),
+      removeExerciseFromSession: (exerciseId) =>
+        set((state) => {
+          if (!state.activeSession) return state;
+          const next = state.activeSession.ejercicios.filter((e) => e.exerciseId !== exerciseId);
+          if (next.length === state.activeSession.ejercicios.length) return state;
+          const removedIndex = state.activeSession.ejercicios.findIndex((e) => e.exerciseId === exerciseId);
+          const newIndex =
+            removedIndex <= state.activeExerciseIndex
+              ? Math.max(0, state.activeExerciseIndex - 1)
+              : state.activeExerciseIndex;
+          return {
+            activeSession: { ...state.activeSession, ejercicios: next },
+            activeExerciseIndex: Math.min(newIndex, Math.max(0, next.length - 1)),
           };
         }),
       addSetToExercise: (exerciseId) =>
@@ -744,6 +795,30 @@ export const useGymStore = create<GymState>()(
                     }
                   : ex,
               ),
+            },
+          };
+        }),
+      completeSet: (exerciseId, setId, patch) =>
+        set((state) => {
+          if (!state.activeSession) return state;
+          const now = Date.now();
+          return {
+            activeSession: {
+              ...state.activeSession,
+              ejercicios: state.activeSession.ejercicios.map((ex) => {
+                if (ex.exerciseId !== exerciseId) return ex;
+                const i = ex.sets.findIndex((s) => s.id === setId);
+                const prevSet = i > 0 ? ex.sets[i - 1] : undefined;
+                const descansoTomado = prevSet?.completadoAt
+                  ? Math.round((now - prevSet.completadoAt) / 1000)
+                  : undefined;
+                return {
+                  ...ex,
+                  sets: ex.sets.map((s) =>
+                    s.id === setId ? { ...s, ...patch, completadoAt: now, descansoTomado } : s,
+                  ),
+                };
+              }),
             },
           };
         }),

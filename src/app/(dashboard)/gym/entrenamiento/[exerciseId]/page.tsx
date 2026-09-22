@@ -1,8 +1,7 @@
 "use client";
 
 import { use, useState, Suspense } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { ExerciseGuideTab } from "@/components/gym/exercise-guide-tab";
@@ -25,16 +24,25 @@ export default function ExerciseDetailPage({
   params: Promise<{ exerciseId: string }>;
 }) {
   const { exerciseId } = use(params);
+  const router = useRouter();
   const allExercises = useAllExercises();
   const sessions = useGymStore((s) => s.sessions);
   const exercise = allExercises.find((e) => e.id === exerciseId);
 
+  // router.back() en vez de un Link fijo a "/gym/entrenamiento": esta ficha
+  // se abre desde muchos lugares (buscador, rango, y sobre todo el botón
+  // "Tutorial" del entrenamiento activo) — volver siempre al inicio del
+  // módulo sacaba al usuario de su sesión en curso en vez de devolverlo ahí.
+  function goBack() {
+    router.back();
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <header className="flex items-center gap-3 pt-2">
-        <Link href="/gym/entrenamiento" className="text-white/50 hover:text-white transition-colors shrink-0">
+        <button onClick={goBack} className="text-white/50 hover:text-white transition-colors shrink-0 cursor-pointer">
           <ArrowLeft size={20} />
-        </Link>
+        </button>
         <h1 className="text-xl md:text-2xl font-semibold tracking-tight truncate">
           {exercise?.nombre ?? "Ejercicio no encontrado"}
         </h1>
@@ -43,9 +51,9 @@ export default function ExerciseDetailPage({
       {!exercise ? (
         <p className="text-sm text-white/50">
           Este ejercicio no existe.{" "}
-          <Link href="/gym/entrenamiento" className="underline">
+          <button onClick={goBack} className="underline cursor-pointer">
             Volver
-          </Link>
+          </button>
         </p>
       ) : (
         <Suspense fallback={null}>

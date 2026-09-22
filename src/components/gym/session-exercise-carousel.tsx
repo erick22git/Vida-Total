@@ -18,12 +18,16 @@ export function SessionExerciseCarousel({
   activeIndex,
   onSelect,
   onReorder,
+  onAdd,
 }: {
   ejercicios: WorkoutExerciseLog[];
   allExercises: Exercise[];
   activeIndex: number;
   onSelect: (i: number) => void;
   onReorder: (next: WorkoutExerciseLog[]) => void;
+  /** Botón "+" al final del carrusel — agregar un ejercicio a último momento,
+   * ya con el entrenamiento en curso. */
+  onAdd?: () => void;
 }) {
   const [movingId, setMovingId] = useState<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -62,7 +66,7 @@ export function SessionExerciseCarousel({
       axis="x"
       values={ejercicios}
       onReorder={onReorder}
-      className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1"
+      className="flex gap-2.5 overflow-x-auto no-scrollbar px-1 pt-2.5 pb-1"
     >
       {ejercicios.map((log, i) => {
         const ex = allExercises.find((e) => e.id === log.exerciseId);
@@ -107,6 +111,14 @@ export function SessionExerciseCarousel({
           </Reorder.Item>
         );
       })}
+      {onAdd && (
+        <button
+          onClick={onAdd}
+          className="shrink-0 w-14 h-14 rounded-full flex items-center justify-center bg-white/[0.05] border border-dashed border-white/20 text-white/50 text-2xl cursor-pointer"
+        >
+          +
+        </button>
+      )}
     </Reorder.Group>
   );
 }

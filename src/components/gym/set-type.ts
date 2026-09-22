@@ -5,7 +5,7 @@ export const SET_TYPE_META: Record<
   { label: string; short: string; color: string }
 > = {
   normal: { label: "Normal", short: "•", color: "#9a9aa5" },
-  calentamiento: { label: "Calentamiento", short: "W", color: "#f59e0b" },
+  calentamiento: { label: "Calentamiento", short: "C", color: "#f59e0b" },
   descendente: { label: "Descendente", short: "D", color: "#a855f7" },
   fallo: { label: "Al Fallo", short: "F", color: "#ef4444" },
 };

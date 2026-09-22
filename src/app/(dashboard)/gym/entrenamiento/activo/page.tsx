@@ -4,13 +4,14 @@ import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
-  ChevronDown,
   Dumbbell,
   Plus,
-  BookOpen,
+  Layers,
   Repeat,
   StickyNote,
   Clock,
+  Sparkles,
+  Trash2,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
@@ -23,6 +24,8 @@ import { RestDurationModal, formatRestDuration } from "@/components/gym/rest-dur
 import { PillActionButton } from "@/components/gym/pill-action-button";
 import { SessionTimer } from "@/components/gym/session-timer";
 import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
+import { SetTypeModal } from "@/components/gym/set-type-modal";
+import { DropsetWeightsModal } from "@/components/gym/dropset-weights-modal";
 import { useGymStore } from "@/lib/store/gymStore";
 import { previaLabelFor } from "@/lib/gym-utils";
 
@@ -37,16 +40,22 @@ export default function ActiveWorkoutPage() {
   const reorderActiveExercises = useGymStore((s) => s.reorderActiveExercises);
   const addSetToExercise = useGymStore((s) => s.addSetToExercise);
   const updateSet = useGymStore((s) => s.updateSet);
+  const completeSet = useGymStore((s) => s.completeSet);
   const replaceExercise = useGymStore((s) => s.replaceExercise);
   const setExerciseNote = useGymStore((s) => s.setExerciseNote);
   const setExerciseRest = useGymStore((s) => s.setExerciseRest);
   const startRest = useGymStore((s) => s.startRest);
   const cancelWorkout = useGymStore((s) => s.cancelWorkout);
+  const addExercisesToSession = useGymStore((s) => s.addExercisesToSession);
+  const removeExerciseFromSession = useGymStore((s) => s.removeExerciseFromSession);
 
-  const [collapsed, setCollapsed] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [addPickerOpen, setAddPickerOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [restConfigOpen, setRestConfigOpen] = useState(false);
+  const [dropsetTypeOpen, setDropsetTypeOpen] = useState(false);
+  const [dropsetWeightsOpen, setDropsetWeightsOpen] = useState(false);
+  const [aiComingSoonOpen, setAiComingSoonOpen] = useState(false);
 
   if (!activeSession) {
     return (
@@ -80,26 +89,29 @@ export default function ActiveWorkoutPage() {
   );
   const overallPct = totalSetsAll > 0 ? Math.round((doneSetsAll / totalSetsAll) * 100) : 0;
 
+  // Numeración de series: solo las de tipo "normal" cuentan (1, 2, 3...);
+  // las de calentamiento/dropset/fallo muestran su letra (C/D/F) y no
+  // interrumpen el conteo de las normales que vienen después.
+  let normalCounter = 0;
+  const normalNumbers = currentLog.sets.map((s) => ((s.tipo ?? "normal") === "normal" ? ++normalCounter : undefined));
+  const firstUncheckedSet = currentLog.sets.find((s) => !s.completado);
+
   function handleSetChange(setId: string, patch: Parameters<typeof updateSet>[2]) {
-    updateSet(currentLog.exerciseId, setId, patch);
     if (patch.completado) {
+      completeSet(currentLog.exerciseId, setId, patch);
       startRest(currentLog.exerciseId, restSeconds);
       const isExerciseNowComplete = currentLog.sets.every((s) => (s.id === setId ? true : s.completado));
       if (isExerciseNowComplete && !isLast) {
         setTimeout(() => setActiveExerciseIndex(activeExerciseIndex + 1), 500);
       }
+    } else {
+      updateSet(currentLog.exerciseId, setId, patch);
     }
   }
 
   return (
     <div className="flex flex-col gap-5 pb-24">
       <header className="flex items-center justify-between gap-3 pt-2">
-        <button
-          onClick={() => setCollapsed((c) => !c)}
-          className="text-white/50 hover:text-white transition-colors cursor-pointer"
-        >
-          <ChevronDown size={20} className={collapsed ? "-rotate-90 transition-transform" : "transition-transform"} />
-        </button>
         <SessionTimer startedAt={sessionStartedAt} />
         <button
           onClick={() => router.push("/gym/entrenamiento/activo/resumen")}
@@ -117,74 +129,94 @@ export default function ActiveWorkoutPage() {
         />
       </div>
 
-      {!collapsed && (
-        <>
-          <SessionExerciseCarousel
-            ejercicios={activeSession.ejercicios}
-            allExercises={allExercises}
-            activeIndex={activeExerciseIndex}
-            onSelect={setActiveExerciseIndex}
-            onReorder={reorderActiveExercises}
-          />
+      <SessionExerciseCarousel
+        ejercicios={activeSession.ejercicios}
+        allExercises={allExercises}
+        activeIndex={activeExerciseIndex}
+        onSelect={setActiveExerciseIndex}
+        onReorder={reorderActiveExercises}
+        onAdd={() => setAddPickerOpen(true)}
+      />
 
-          {exercise && (
-            <GlassCard accentColor="var(--gym)" glow className="flex flex-col gap-3">
-              <div className="flex items-center justify-center w-full aspect-video rounded-2xl bg-white/[0.05] glass-specular-ring overflow-hidden">
-                {exercise.imagen ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={exercise.imagen} alt={exercise.nombre} className="w-full h-full object-cover" />
-                ) : (
-                  <Dumbbell size={48} className="text-white/20" />
-                )}
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-white">{exercise.nombre}</h2>
-                <p className="text-xs text-white/45 mt-0.5">
-                  {completedSets}/{currentLog.sets.length} series completadas
-                </p>
-              </div>
-            </GlassCard>
-          )}
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <PillActionButton icon={BookOpen} title="Tutorial" onClick={() => exercise && router.push(`/gym/entrenamiento/${exercise.id}?tab=guia`)} />
-            <PillActionButton icon={Repeat} title="Reemplazar" onClick={() => setPickerOpen(true)} />
-            <PillActionButton icon={StickyNote} title="Notas" onClick={() => setNotesOpen(true)} active={!!currentLog.nota} />
-            <PillActionButton icon={Clock} title="Descanso" badge={formatRestDuration(restSeconds)} onClick={() => setRestConfigOpen(true)} />
+      {exercise && (
+        <GlassCard accentColor="var(--gym)" glow className="flex flex-col gap-3">
+          <button
+            onClick={() => router.push(`/gym/entrenamiento/${exercise.id}?tab=guia`)}
+            className="flex items-center justify-center w-full aspect-video rounded-2xl bg-white/[0.05] glass-specular-ring overflow-hidden cursor-pointer"
+            title="Ver tutorial del ejercicio"
+          >
+            {exercise.imagen ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={exercise.imagen} alt={exercise.nombre} className="w-full h-full object-cover" />
+            ) : (
+              <Dumbbell size={48} className="text-white/20" />
+            )}
+          </button>
+          <div>
+            <h2 className="text-xl font-semibold text-white">{exercise.nombre}</h2>
+            <p className="text-xs text-white/45 mt-0.5">
+              {completedSets}/{currentLog.sets.length} series completadas
+              {currentLog.agregadoEnSesion && " · agregado en esta sesión"}
+            </p>
           </div>
-
-          <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-[auto_auto_1fr_1fr_1fr_auto] gap-2 px-1 text-[11px] font-semibold text-white/40 uppercase tracking-wide">
-              <span className="w-8 text-center">Serie</span>
-              <span className="w-12 text-center">Previa</span>
-              <span className="text-center">{soloReps ? "" : "Kg"}</span>
-              <span className="text-center">Reps</span>
-              <span className="text-center">IA</span>
-              <span className="w-9" />
-            </div>
-            {currentLog.sets.map((set, i) => (
-              <SessionSetRow
-                key={set.id}
-                index={i}
-                set={set}
-                soloReps={soloReps}
-                previa={previaLabelFor(lastLog?.sets[i], soloReps)}
-                onChange={(patch) => handleSetChange(set.id, patch)}
-              />
-            ))}
-            <button
-              onClick={() => addSetToExercise(currentLog.exerciseId)}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 py-2.5 text-sm text-white/50 hover:text-white/80 hover:border-white/30 transition-colors cursor-pointer"
-            >
-              <Plus size={15} /> Añadir serie
-            </button>
-          </div>
-
-          <AnimatePresence>
-            <RestBar key="rest-bar" />
-          </AnimatePresence>
-        </>
+        </GlassCard>
       )}
+
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-4 px-4">
+        <PillActionButton
+          icon={Layers}
+          title="Drop set"
+          onClick={() => firstUncheckedSet && setDropsetTypeOpen(true)}
+          className={!firstUncheckedSet ? "opacity-40 pointer-events-none" : ""}
+        />
+        <PillActionButton icon={Repeat} title="Reemplazar" onClick={() => setPickerOpen(true)} />
+        <PillActionButton icon={StickyNote} title="Notas" onClick={() => setNotesOpen(true)} active={!!currentLog.nota} />
+        <PillActionButton icon={Clock} title="Descanso" badge={formatRestDuration(restSeconds)} onClick={() => setRestConfigOpen(true)} />
+        <PillActionButton icon={Sparkles} title="IA" onClick={() => setAiComingSoonOpen(true)} />
+        <PillActionButton
+          icon={Trash2}
+          title="Eliminar"
+          danger
+          onClick={() => {
+            if (confirm(`¿Sacar "${exercise?.nombre ?? "este ejercicio"}" del entrenamiento de hoy?`)) {
+              removeExerciseFromSession(currentLog.exerciseId);
+            }
+          }}
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-[auto_auto_1fr_1fr_auto_auto] gap-2 px-1 text-[11px] font-semibold text-white/40 uppercase tracking-wide">
+          <span className="w-8 text-center">Serie</span>
+          <span className="w-12 text-center">Previa</span>
+          <span className="text-center">{soloReps ? "" : "Kg"}</span>
+          <span className="text-center">Reps</span>
+          <span className="w-9 text-center">Desc.</span>
+          <span className="w-9" />
+        </div>
+        {currentLog.sets.map((set, i) => (
+          <SessionSetRow
+            key={set.id}
+            index={i}
+            normalNumber={normalNumbers[i]}
+            set={set}
+            soloReps={soloReps}
+            previa={previaLabelFor(lastLog?.sets[i], soloReps)}
+            restSeconds={restSeconds}
+            onChange={(patch) => handleSetChange(set.id, patch)}
+          />
+        ))}
+        <button
+          onClick={() => addSetToExercise(currentLog.exerciseId)}
+          className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 py-2.5 text-sm text-white/50 hover:text-white/80 hover:border-white/30 transition-colors cursor-pointer"
+        >
+          <Plus size={15} /> Añadir serie
+        </button>
+      </div>
+
+      <AnimatePresence>
+        <RestBar key="rest-bar" />
+      </AnimatePresence>
 
       <GlassModal open={pickerOpen} onClose={() => setPickerOpen(false)} title="Cambiar ejercicio">
         <ExercisePicker
@@ -194,6 +226,44 @@ export default function ActiveWorkoutPage() {
             setPickerOpen(false);
           }}
         />
+      </GlassModal>
+
+      <GlassModal open={addPickerOpen} onClose={() => setAddPickerOpen(false)} title="Agregar ejercicios">
+        <ExercisePicker
+          multiple
+          onConfirmSelection={(exs) => {
+            addExercisesToSession(exs.map((e) => e.id));
+            setAddPickerOpen(false);
+          }}
+        />
+      </GlassModal>
+
+      <SetTypeModal
+        open={dropsetTypeOpen}
+        onClose={() => setDropsetTypeOpen(false)}
+        value={firstUncheckedSet?.tipo ?? "normal"}
+        onSelect={(tipo) => {
+          if (!firstUncheckedSet) return;
+          updateSet(currentLog.exerciseId, firstUncheckedSet.id, { tipo });
+          setDropsetTypeOpen(false);
+          if (tipo === "descendente") setDropsetWeightsOpen(true);
+        }}
+      />
+      <DropsetWeightsModal
+        open={dropsetWeightsOpen}
+        onClose={() => setDropsetWeightsOpen(false)}
+        initialWeights={firstUncheckedSet?.pesosDescendentes ?? []}
+        onSave={(weights) => {
+          if (!firstUncheckedSet) return;
+          updateSet(currentLog.exerciseId, firstUncheckedSet.id, { pesosDescendentes: weights, peso: weights[0] ?? 0 });
+        }}
+      />
+
+      <GlassModal open={aiComingSoonOpen} onClose={() => setAiComingSoonOpen(false)} title="Escáner de técnica IA">
+        <p className="text-sm text-white/60">
+          Estamos preparando el escáner de movimiento con la cámara para revisar tu técnica desde distintos
+          ángulos. Todavía no está disponible — pronto vas a poder activarlo desde acá.
+        </p>
       </GlassModal>
 
       <GlassModal open={notesOpen} onClose={() => setNotesOpen(false)} title="Nota del ejercicio">
