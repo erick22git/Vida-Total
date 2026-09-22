@@ -196,6 +196,9 @@ function rowToHabit(row: HabitRow): Habit {
     frequency: row.frequency,
     streak: row.streak,
     completedDates: row.completed_dates ?? [],
+    // categoryId/milestonesUnlocked son local-only por ahora (sin columna
+    // en Supabase) — se preservan aparte en el merge, ver habitsStore.ts.
+    milestonesUnlocked: [],
   };
 }
 

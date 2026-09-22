@@ -24,6 +24,7 @@ import {
   Sun,
   Target,
   Utensils,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import type { TaskPriority } from "@/lib/types/habits";
@@ -54,6 +55,7 @@ export const HABIT_ICON_MAP: Record<string, LucideIcon> = {
   Sun,
   Target,
   Utensils,
+  Wallet,
 };
 
 export const ICON_PICKER_OPTIONS = Object.keys(HABIT_ICON_MAP);

@@ -22,6 +22,15 @@ export interface Task {
 
 export type HabitFrequency = "diario" | "semanal";
 
+/** Biblioteca propia de categorías (ver `src/lib/data/habit-categories.ts`)
+ * — íconos de lucide, no emojis. */
+export interface Category {
+  id: string;
+  label: string;
+  icon: string;
+  color: string;
+}
+
 export interface Habit {
   id: string;
   name: string;
@@ -30,6 +39,13 @@ export interface Habit {
   frequency: HabitFrequency;
   streak: number;
   completedDates: string[]; // ISO date strings (yyyy-MM-dd)
+  categoryId?: string;
+  /** Milestones de racha (7/21/66, ver `src/lib/progress/types.ts`) ya
+   * mostrados — evita repetir la animación de un milestone ya visto.
+   * Local-only por ahora (no sincroniza entre dispositivos todavía: la
+   * tabla `habits` en Supabase no tiene columna para esto — ver
+   * `src/lib/sync/habits-sync.ts`). */
+  milestonesUnlocked: number[];
 }
 
 export interface TimeBlock {

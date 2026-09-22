@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { userScopedLocalStorage } from "./scoped-storage";
-import { differenceInCalendarDays, format } from "date-fns";
+import { format } from "date-fns";
+import { processCompletionEvent, type ProgressResult } from "@/lib/progress";
 import type {
   Habit,
   KanbanColumn,
@@ -58,6 +59,8 @@ const DEFAULT_HABITS: Habit[] = [
     frequency: "diario",
     streak: 0,
     completedDates: [],
+    categoryId: "agua",
+    milestonesUnlocked: [],
   },
   {
     id: "h-lectura",
@@ -67,6 +70,8 @@ const DEFAULT_HABITS: Habit[] = [
     frequency: "diario",
     streak: 0,
     completedDates: [],
+    categoryId: "lectura",
+    milestonesUnlocked: [],
   },
   {
     id: "h-meditar",
@@ -76,6 +81,8 @@ const DEFAULT_HABITS: Habit[] = [
     frequency: "diario",
     streak: 0,
     completedDates: [],
+    categoryId: "meditacion",
+    milestonesUnlocked: [],
   },
 ];
 
@@ -123,7 +130,12 @@ interface HabitsState {
 
   // ---------- Habits ----------
   habits: Habit[];
-  toggleHabitToday: (id: string) => void;
+  /** Devuelve el resultado del Progress Engine (racha + milestone recién
+   * cruzado, si lo hay) cuando la acción es MARCAR como hecho — `null`
+   * cuando la acción fue desmarcar (ahí no hay nada que animar). La UI usa
+   * este valor para decidir qué emitir en el Animation Engine; el store
+   * nunca decide animaciones. */
+  toggleHabitToday: (id: string) => ProgressResult | null;
   addHabit: (habit: Partial<Habit> & { name: string }) => void;
   removeHabit: (id: string) => void;
 
@@ -257,35 +269,39 @@ export const useHabitsStore = create<HabitsState>()(
       // Habits
       habits: DEFAULT_HABITS,
       toggleHabitToday: (id) => {
-        let patch: { completedDates: string[]; streak: number } | null = null;
-        set((state) => {
-          const today = todayISO();
-          return {
-            habits: state.habits.map((h) => {
-              if (h.id !== id) return h;
-              const already = h.completedDates.includes(today);
-              if (already) {
-                patch = {
-                  completedDates: h.completedDates.filter((d) => d !== today),
-                  streak: Math.max(0, h.streak - 1),
-                };
-                return { ...h, ...patch };
-              }
-              const lastDate = h.completedDates[h.completedDates.length - 1];
-              let streak = h.streak;
-              if (lastDate) {
-                const diff = differenceInCalendarDays(new Date(today), new Date(lastDate));
-                streak = diff === 1 ? streak + 1 : 1;
-              } else {
-                streak = 1;
-              }
-              patch = { completedDates: [...h.completedDates, today], streak };
-              return { ...h, ...patch };
-            }),
-          };
-        });
+        const habit = get().habits.find((h) => h.id === id);
+        if (!habit) return null;
+
+        const today = todayISO();
+        const already = habit.completedDates.includes(today);
+        const completedDates = already
+          ? habit.completedDates.filter((d) => d !== today)
+          : [...habit.completedDates, today];
+        // Progress Engine — única fuente de verdad para racha/milestone, ya
+        // no se recalcula a mano acá (ver src/lib/progress/streak.ts para
+        // el porqué del bug anterior: el streak quedaba pegado en vez de
+        // reflejar que la racha se había roto).
+        const evaluated = processCompletionEvent(
+          { type: "habit.completed" },
+          { completedDates, frequency: habit.frequency },
+          habit.milestonesUnlocked,
+        );
+        const milestonesUnlocked = evaluated.milestoneReached
+          ? [...habit.milestonesUnlocked, evaluated.milestoneReached]
+          : habit.milestonesUnlocked;
+
+        set((state) => ({
+          habits: state.habits.map((h) =>
+            h.id === id ? { ...h, completedDates, streak: evaluated.streak, milestonesUnlocked } : h,
+          ),
+        }));
+
         const uidUser = getCurrentUserId();
-        if (uidUser && patch) syncUpdateHabit(id, patch, uidUser);
+        // milestonesUnlocked no viaja a Supabase todavía (sin columna, ver
+        // rowToHabit) — se sincroniza solo lo que sí tiene dónde vivir.
+        if (uidUser) syncUpdateHabit(id, { completedDates, streak: evaluated.streak }, uidUser);
+
+        return already ? null : evaluated;
       },
       addHabit: (habit) => {
         const created: Habit = {
@@ -296,6 +312,8 @@ export const useHabitsStore = create<HabitsState>()(
           frequency: habit.frequency ?? "diario",
           streak: 0,
           completedDates: [],
+          categoryId: habit.categoryId,
+          milestonesUnlocked: [],
         };
         set((state) => ({ habits: [...state.habits, created] }));
         const uidUser = getCurrentUserId();
@@ -497,7 +515,20 @@ export async function hydrateHabitsStore(userId: string): Promise<void> {
   const local = useHabitsStore.getState();
 
   const tasks = mergeById(remote.tasks, local.tasks);
-  const habits = mergeById(remote.habits, local.habits);
+  const rawHabits = mergeById(remote.habits, local.habits);
+  // `categoryId`/`milestonesUnlocked` son local-only (la tabla `habits` de
+  // Supabase no tiene esas columnas todavía) — `mergeById` toma la fila
+  // remota tal cual para cualquier id que ya exista ahí, así que sin esto
+  // se perderían apenas alguien inicia sesión en otro dispositivo. Se
+  // preservan del local si el habit ya existía localmente.
+  const localHabitById = new Map(local.habits.map((h) => [h.id, h] as const));
+  const habits = {
+    ...rawHabits,
+    merged: rawHabits.merged.map((h) => {
+      const prevLocal = localHabitById.get(h.id);
+      return prevLocal ? { ...h, categoryId: prevLocal.categoryId, milestonesUnlocked: prevLocal.milestonesUnlocked } : h;
+    }),
+  };
   const timeBlocks = mergeById(remote.timeBlocks, local.timeBlocks);
   const notionPages = mergeById(remote.notionPages, local.pages);
   const kanbanColumns = mergeKanbanColumns(remote.kanbanColumns, local.kanbanColumns);

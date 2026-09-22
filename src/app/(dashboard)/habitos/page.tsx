@@ -1,15 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarCheck2,
-  Check,
   ChevronRight,
   Clock,
   Flame,
   ListTodo,
+  Plus,
   Rows3,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import {
@@ -18,14 +20,25 @@ import {
   useTodayTasks,
 } from "@/lib/store/habitsStore";
 import { getHabitIcon } from "@/lib/habits-utils";
+import { getCategory } from "@/lib/data/habit-categories";
+import { computeStreak } from "@/lib/progress";
+import { HabitCheckButton } from "@/components/animations/HabitCheckButton";
+import { HabitsProgressHero } from "@/components/habitos/habits-progress-hero";
+import { CreateHabitModal } from "@/components/habitos/create-habit-modal";
+import { useEffectiveReduceMotion, usePreferencesStore } from "@/lib/store/preferencesStore";
 
 export default function HabitosHubPage() {
   const habits = useHabitsStore((s) => s.habits);
   const toggleHabitToday = useHabitsStore((s) => s.toggleHabitToday);
+  const addHabit = useHabitsStore((s) => s.addHabit);
   const { completed, total } = useHabitsCompletedToday();
   const todayTasks = useTodayTasks();
   const pendingTasks = todayTasks.filter((t) => !t.isCompleted).length;
   const today = new Date().toISOString().slice(0, 10);
+  const reduceMotion = useEffectiveReduceMotion();
+  const soundEnabled = usePreferencesStore((s) => s.soundEnabled);
+  const setSoundEnabled = usePreferencesStore((s) => s.setSoundEnabled);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const sections = [
     {
@@ -52,32 +65,30 @@ export default function HabitosHubPage() {
     // El fondo de foto ya lo pone habitos/layout.tsx (compartido por todas
     // las pantallas de Hábitos).
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1 pt-2">
-        <p className="text-white/50 text-sm md:text-base">Módulo</p>
-        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2">
-          <CalendarCheck2 style={{ color: "var(--habitos)" }} /> Hábitos
-        </h1>
+      <header className="flex items-center justify-between gap-3 pt-2">
+        <div className="flex flex-col gap-1 min-w-0">
+          <p className="text-white/50 text-sm md:text-base">Módulo</p>
+          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2">
+            <CalendarCheck2 style={{ color: "var(--habitos)" }} /> Hábitos
+          </h1>
+        </div>
+        <button
+          onClick={() => setSoundEnabled(!soundEnabled)}
+          className="flex items-center justify-center w-9 h-9 rounded-full text-white/50 hover:text-white cursor-pointer shrink-0"
+          style={{ background: "rgba(255,255,255,0.05)" }}
+          title={soundEnabled ? "Silenciar sonido" : "Activar sonido"}
+          aria-label={soundEnabled ? "Silenciar sonido" : "Activar sonido"}
+        >
+          {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+        </button>
       </header>
 
       <GlassCard accentColor="var(--habitos)" glow className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 text-sm text-white/55">
-              <Flame size={15} style={{ color: "var(--habitos)" }} />
-              Hábitos hoy
-            </div>
-            <p className="text-2xl font-semibold">
-              {completed}
-              <span className="text-white/40 text-base font-normal"> / {total}</span>
-            </p>
-          </div>
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 text-sm text-white/55">
-              <Clock size={15} style={{ color: "var(--habitos)" }} />
-              Tareas pendientes
-            </div>
-            <p className="text-2xl font-semibold">{pendingTasks}</p>
-          </div>
+        <HabitsProgressHero completed={completed} total={total} />
+        <div className="h-px bg-white/10" />
+        <div className="flex items-center gap-2 text-sm text-white/55">
+          <Clock size={15} style={{ color: "var(--habitos)" }} />
+          {pendingTasks} tarea{pendingTasks !== 1 ? "s" : ""} pendiente{pendingTasks !== 1 ? "s" : ""}
         </div>
       </GlassCard>
 
@@ -108,52 +119,48 @@ export default function HabitosHubPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <p className="text-sm font-semibold text-white/80">Hábitos rápidos</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-white/80">Hábitos rápidos</p>
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="flex items-center gap-1 text-xs font-medium text-white/50 hover:text-white cursor-pointer"
+          >
+            <Plus size={13} /> Nuevo
+          </button>
+        </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {habits.map((h) => {
+            const category = getCategory(h.categoryId);
             const Icon = getHabitIcon(h.icon);
+            const accent = category?.color ?? "var(--habitos)";
             const doneToday = h.completedDates.includes(today);
+            // Derivado en cada render — nunca depende de que el usuario haya
+            // vuelto a tocar el hábito para "enterarse" de que la racha se
+            // rompió (ver src/lib/progress/streak.ts).
+            const streak = computeStreak({ completedDates: h.completedDates, frequency: h.frequency });
             return (
-              <GlassCard
-                key={h.id}
-                padding="sm"
-                accentColor="var(--habitos)"
-                className="flex flex-col gap-3"
-              >
+              <GlassCard key={h.id} padding="sm" accentColor={accent} className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <div
                     className="flex items-center justify-center w-9 h-9 rounded-xl"
-                    style={{ background: "var(--habitos)22" }}
+                    style={{ background: `${accent}22` }}
                   >
-                    <Icon size={17} style={{ color: "var(--habitos)" }} />
+                    <Icon size={17} style={{ color: accent }} />
                   </div>
-                  <button
-                    onClick={() => toggleHabitToday(h.id)}
-                    className="relative flex items-center justify-center w-7 h-7 rounded-full border cursor-pointer transition-colors"
-                    style={{
-                      borderColor: doneToday ? "var(--habitos)" : "rgba(255,255,255,0.25)",
-                      background: doneToday ? "var(--habitos)" : "transparent",
-                    }}
-                  >
-                    <AnimatePresence>
-                      {doneToday && (
-                        <motion.span
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          exit={{ scale: 0, opacity: 0 }}
-                          transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                        >
-                          <Check size={14} className="text-white" />
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  </button>
+                  <HabitCheckButton
+                    habitId={h.id}
+                    done={doneToday}
+                    accentColor={accent}
+                    reduceMotion={reduceMotion}
+                    onToggle={() => toggleHabitToday(h.id)}
+                    size={38}
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <p className="text-sm font-medium text-white truncate">{h.name}</p>
                   <div className="flex items-center gap-1 text-xs text-white/45">
                     <Flame size={12} className="text-orange-400" />
-                    {h.streak} días
+                    {streak} día{streak !== 1 ? "s" : ""}
                   </div>
                 </div>
               </GlassCard>
@@ -161,6 +168,12 @@ export default function HabitosHubPage() {
           })}
         </div>
       </section>
+
+      <CreateHabitModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreate={(input) => addHabit(input)}
+      />
     </div>
   );
 }
