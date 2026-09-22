@@ -3,7 +3,19 @@
 import { useRef, useState } from "react";
 import { Reorder, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Dumbbell, Repeat, Trash2, Clock, PlayCircle, StickyNote, Hash } from "lucide-react";
+import {
+  Dumbbell,
+  Repeat,
+  Trash2,
+  Clock,
+  PlayCircle,
+  StickyNote,
+  Hash,
+  MoreVertical,
+  Link2,
+  Link2Off,
+  Check,
+} from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassModal } from "@/components/glass/glass-modal";
 import { GlassInput } from "@/components/glass/glass-input";
@@ -39,6 +51,9 @@ export function ExerciseSessionBuilder({
   const [replacePickerOpen, setReplacePickerOpen] = useState(false);
   const [restModalOpen, setRestModalOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [groupPickerOpen, setGroupPickerOpen] = useState(false);
+  const [groupSelection, setGroupSelection] = useState<string[]>([]);
   const [movingId, setMovingId] = useState<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFired = useRef(false);
@@ -102,6 +117,39 @@ export function ExerciseSessionBuilder({
 
   function updateActiveSets(sets: RoutineExercise["sets"]) {
     onDraftChange(draft.map((ex, i) => (i === safeIndex ? { ...ex, sets } : ex)));
+  }
+
+  // Bloque agrupar (superserie): dos o más ejercicios comparten `grupo` — en
+  // el entrenamiento en vivo se hacen serie por serie, uno tras otro sin
+  // descanso entre ellos, y recién descansan al terminar la ronda.
+  const groupPartners = active?.grupo ? draft.filter((ex) => ex.grupo === active.grupo && ex.exerciseId !== active.exerciseId) : [];
+
+  function openGroupPicker() {
+    setMoreMenuOpen(false);
+    setGroupSelection(groupPartners.map((ex) => ex.exerciseId));
+    setGroupPickerOpen(true);
+  }
+
+  function confirmGroup() {
+    if (!active || groupSelection.length === 0) {
+      setGroupPickerOpen(false);
+      return;
+    }
+    const grupoId = active.grupo ?? crypto.randomUUID();
+    const memberIds = new Set([active.exerciseId, ...groupSelection]);
+    onDraftChange(draft.map((ex) => (memberIds.has(ex.exerciseId) ? { ...ex, grupo: grupoId } : ex)));
+    setGroupPickerOpen(false);
+  }
+
+  function ungroupActive() {
+    setMoreMenuOpen(false);
+    if (!active?.grupo) return;
+    const grupoId = active.grupo;
+    // Si al sacar al activo queda un solo miembro en el grupo, tampoco tiene
+    // sentido dejarlo "agrupado" con nadie — se limpia también.
+    const remaining = draft.filter((ex) => ex.grupo === grupoId && ex.exerciseId !== active.exerciseId);
+    const idsToClear = new Set([active.exerciseId, ...(remaining.length === 1 ? [remaining[0].exerciseId] : [])]);
+    onDraftChange(draft.map((ex) => (idsToClear.has(ex.exerciseId) ? { ...ex, grupo: undefined } : ex)));
   }
 
   function handleSetChecked() {
@@ -247,6 +295,47 @@ export function ExerciseSessionBuilder({
             />
           )}
 
+          <div className="flex items-center justify-between gap-2 relative">
+            {groupPartners.length > 0 ? (
+              <p className="text-xs text-white/50 flex items-center gap-1.5">
+                <Link2 size={13} style={{ color: "var(--gym-2)" }} />
+                Agrupado con: {groupPartners.map((ex) => allExercises.find((e) => e.id === ex.exerciseId)?.nombre ?? "?").join(", ")}
+              </p>
+            ) : (
+              <span />
+            )}
+            <button
+              onClick={() => setMoreMenuOpen((o) => !o)}
+              className="flex items-center justify-center w-8 h-8 rounded-xl text-white/50 hover:text-white cursor-pointer shrink-0"
+              style={{ background: "rgba(255,255,255,0.05)" }}
+              title="Más opciones"
+              aria-label="Más opciones"
+            >
+              <MoreVertical size={15} />
+            </button>
+            {moreMenuOpen && (
+              <div
+                className="absolute top-10 right-0 z-20 w-52 rounded-2xl glass-surface p-1.5 flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={openGroupPicker}
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-left cursor-pointer transition-colors hover:bg-white/10 text-white/85"
+                >
+                  <Link2 size={15} /> {groupPartners.length > 0 ? "Editar agrupación" : "Agrupar"}
+                </button>
+                {groupPartners.length > 0 && (
+                  <button
+                    onClick={ungroupActive}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-left cursor-pointer transition-colors hover:bg-white/10 text-white/85"
+                  >
+                    <Link2Off size={15} /> Desagrupar
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
           <RoutineSetTable
             sets={active.sets}
             soloReps={active.soloReps}
@@ -280,6 +369,53 @@ export function ExerciseSessionBuilder({
 
       <GlassModal open={replacePickerOpen} onClose={() => setReplacePickerOpen(false)} title="Reemplazar ejercicio">
         <ExercisePicker onSelect={(ex) => replaceActive(ex.id)} />
+      </GlassModal>
+
+      <GlassModal open={groupPickerOpen} onClose={() => setGroupPickerOpen(false)} title="Agrupar ejercicios">
+        <div className="flex flex-col gap-4">
+          <p className="text-xs text-white/50">
+            Elige con cuáles de este día hará superserie {activeExercise?.nombre} — se hacen uno tras otro, serie por
+            serie, sin descanso entre ellos hasta terminar la ronda.
+          </p>
+          <div className="flex flex-col gap-1.5 max-h-[45vh] overflow-y-auto">
+            {draft
+              .filter((ex) => ex.exerciseId !== active?.exerciseId)
+              .map((ex) => {
+                const exData = allExercises.find((e) => e.id === ex.exerciseId);
+                const isSelected = groupSelection.includes(ex.exerciseId);
+                return (
+                  <button
+                    key={ex.exerciseId}
+                    onClick={() =>
+                      setGroupSelection((sel) =>
+                        sel.includes(ex.exerciseId) ? sel.filter((id) => id !== ex.exerciseId) : [...sel, ex.exerciseId],
+                      )
+                    }
+                    className="flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left transition-colors cursor-pointer"
+                    style={{ background: isSelected ? "var(--gym-2)22" : "rgba(255,255,255,0.05)" }}
+                  >
+                    <span className="flex-1 text-sm font-medium text-white/85 truncate">{exData?.nombre ?? "?"}</span>
+                    {isSelected && <Check size={16} style={{ color: "var(--gym-2)" }} />}
+                  </button>
+                );
+              })}
+            {draft.length <= 1 && <p className="text-sm text-white/40 py-4 text-center">Agrega otro ejercicio a este día primero.</p>}
+          </div>
+          <button
+            onClick={confirmGroup}
+            disabled={groupSelection.length === 0}
+            className="w-full rounded-2xl py-3.5 text-base font-medium text-white cursor-pointer disabled:cursor-not-allowed transition-[box-shadow,background-color] duration-300"
+            style={{
+              background: groupSelection.length > 0 ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.25)",
+              boxShadow:
+                groupSelection.length > 0
+                  ? "0 0 22px 1px rgba(255,255,255,0.35), 0 10px 24px rgba(0,0,0,0.35)"
+                  : "0 0 14px 1px rgba(0,0,0,0.35), 0 10px 24px rgba(0,0,0,0.35)",
+            }}
+          >
+            Agrupar {groupSelection.length > 0 ? `(${groupSelection.length + 1})` : ""}
+          </button>
+        </div>
       </GlassModal>
 
       {active && (

@@ -685,6 +685,7 @@ export const useGymStore = create<GymState>()(
               exerciseId: rex.exerciseId,
               nota: rex.nota,
               restSeconds: rex.restSeconds ?? 90,
+              grupo: rex.grupo,
               sets: rex.sets.map((s) => ({
                 id: uid(),
                 peso: s.peso,

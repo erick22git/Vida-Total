@@ -341,6 +341,11 @@ export interface WorkoutExerciseLog {
   /** true si este ejercicio se agregó a último momento durante la sesión en
    * vivo (no venía en la rutina/plan original con la que se inició). */
   agregadoEnSesion?: boolean;
+  /** Id de grupo (superserie): ejercicios con el mismo `grupo` se hacen uno
+   * tras otro sin descanso entre ellos, serie por serie (serie 1 de A, serie
+   * 1 de B, descanso, serie 2 de A, serie 2 de B...). `undefined` = no
+   * agrupado. Se copia desde `RoutineExercise.grupo` al iniciar la sesión. */
+  grupo?: string;
 }
 
 export interface WorkoutSession {
@@ -383,6 +388,9 @@ export interface RoutineExercise {
   nota?: string;
   soloReps?: boolean;
   restSeconds?: number;
+  /** Ver `WorkoutExerciseLog.grupo` — se configura acá, al armar el plan, y
+   * se copia a la sesión en vivo cuando arranca el entrenamiento. */
+  grupo?: string;
 }
 
 export interface Routine {

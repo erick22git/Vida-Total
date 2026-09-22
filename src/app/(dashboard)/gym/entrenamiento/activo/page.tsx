@@ -68,11 +68,16 @@ export default function ActiveWorkoutPage() {
     );
   }
 
-  const total = activeSession.ejercicios.length;
-  const currentLog = activeSession.ejercicios[activeExerciseIndex];
+  // Capturado en un local no-nulo: TypeScript no retiene el chequeo de
+  // `activeSession` de arriba dentro de handleSetChange (closure anidada).
+  const ejercicios = activeSession.ejercicios;
+  const total = ejercicios.length;
+  const currentLog = ejercicios[activeExerciseIndex];
   const exercise = allExercises.find((e) => e.id === currentLog.exerciseId);
-  const isLast = activeExerciseIndex === total - 1;
   const completedSets = currentLog.sets.filter((s) => s.completado).length;
+  const groupPartners = currentLog.grupo
+    ? activeSession.ejercicios.filter((ex) => ex.grupo === currentLog.grupo && ex.exerciseId !== currentLog.exerciseId)
+    : [];
   const soloReps = currentLog.sets[0]?.soloReps;
   const restSeconds = currentLog.restSeconds ?? 90;
   // "Previa": con cuánto peso x reps hiciste cada serie la última vez que
@@ -104,15 +109,40 @@ export default function ActiveWorkoutPage() {
   const visibleSets = currentLog.sets.slice(0, visibleSetCount);
 
   function handleSetChange(setId: string, patch: Parameters<typeof updateSet>[2]) {
-    if (patch.completado) {
-      completeSet(currentLog.exerciseId, setId, patch);
-      startRest(currentLog.exerciseId, restSeconds);
-      const isExerciseNowComplete = currentLog.sets.every((s) => (s.id === setId ? true : s.completado));
-      if (isExerciseNowComplete && !isLast) {
-        setTimeout(() => setActiveExerciseIndex(activeExerciseIndex + 1), 500);
-      }
-    } else {
+    if (!patch.completado) {
       updateSet(currentLog.exerciseId, setId, patch);
+      return;
+    }
+    completeSet(currentLog.exerciseId, setId, patch);
+
+    const setIndex = currentLog.sets.findIndex((s) => s.id === setId);
+    // Superserie (Bloque agrupar): ejercicios con el mismo `grupo` se hacen
+    // serie por serie, uno tras otro, sin descanso hasta terminar la ronda.
+    // Sin `grupo`, el "grupo" es solo este ejercicio (mismo comportamiento
+    // de siempre).
+    const groupMembers = currentLog.grupo
+      ? ejercicios.map((ex, i) => ({ ex, i })).filter(({ ex }) => ex.grupo === currentLog.grupo)
+      : [{ ex: currentLog, i: activeExerciseIndex }];
+
+    const nextPartner = groupMembers.find(
+      ({ ex, i }) => i !== activeExerciseIndex && ex.sets[setIndex] && !ex.sets[setIndex].completado,
+    );
+    if (nextPartner) {
+      setTimeout(() => setActiveExerciseIndex(nextPartner.i), 300);
+      return;
+    }
+
+    // Ronda de la superserie completa (o ejercicio suelto): recién acá
+    // corresponde descansar.
+    startRest(currentLog.exerciseId, restSeconds);
+    const groupFullyDone = groupMembers.every(({ ex, i }) =>
+      ex.sets.every((s, si) => (i === activeExerciseIndex && si === setIndex ? true : s.completado)),
+    );
+    if (groupFullyDone) {
+      const lastGroupIndex = Math.max(...groupMembers.map(({ i }) => i));
+      if (lastGroupIndex < total - 1) {
+        setTimeout(() => setActiveExerciseIndex(lastGroupIndex + 1), 500);
+      }
     }
   }
 
@@ -165,6 +195,11 @@ export default function ActiveWorkoutPage() {
               {completedSets}/{currentLog.sets.length} series completadas
               {currentLog.agregadoEnSesion && " · agregado en esta sesión"}
             </p>
+            {groupPartners.length > 0 && (
+              <p className="text-xs mt-0.5" style={{ color: "var(--gym-2)" }}>
+                Superserie con: {groupPartners.map((ex) => allExercises.find((e) => e.id === ex.exerciseId)?.nombre ?? "?").join(", ")}
+              </p>
+            )}
           </div>
         </GlassCard>
       )}
