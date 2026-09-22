@@ -2,6 +2,8 @@ export type ModuleId =
   | "home"
   | "gym"
   | "habitos"
+  | "rutinas"
+  | "calendario"
   | "outfit"
   | "paz-mental"
   | "finanzas"

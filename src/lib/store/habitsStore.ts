@@ -2,17 +2,20 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { userScopedLocalStorage } from "./scoped-storage";
 import { format } from "date-fns";
-import { processCompletionEvent, type ProgressResult } from "@/lib/progress";
+import { processCompletionEvent, computeStreak, type ProgressResult } from "@/lib/progress";
 import type {
   Habit,
+  HabitRoutine,
   KanbanColumn,
   KanbanColumnId,
   NotionBlock,
   NotionPage,
+  RoutineStep,
   Subtask,
   Task,
   TimeBlock,
 } from "@/lib/types/habits";
+import { isStepDoneOn } from "@/lib/routine-utils";
 import { getCurrentUserId } from "./user-scope";
 import {
   syncInsertTask,
@@ -138,6 +141,22 @@ interface HabitsState {
   toggleHabitToday: (id: string) => ProgressResult | null;
   addHabit: (habit: Partial<Habit> & { name: string }) => void;
   removeHabit: (id: string) => void;
+
+  // ---------- Routines (Hábitos + Rutinas, Fase 5) ----------
+  routines: HabitRoutine[];
+  addRoutine: (nombre: string, items: Array<Omit<RoutineStep, "id" | "completedDates">>) => HabitRoutine;
+  updateRoutineItems: (id: string, items: Array<Omit<RoutineStep, "completedDates"> & { completedDates?: string[] }>) => void;
+  deleteRoutine: (id: string) => void;
+  /** Marca/desmarca un paso para HOY. Si el paso está vinculado a un
+   * hábito, delega en `toggleHabitToday` (misma fuente de verdad, sin
+   * duplicar dato) y además evalúa si con esto la rutina completa quedó
+   * hecha o dejó de estarlo. Devuelve el resultado del paso y, si
+   * corresponde, el de la rutina completa — la UI decide con esto qué
+   * animación disparar (nunca lo decide el store). */
+  toggleRoutineStep: (
+    routineId: string,
+    stepId: string,
+  ) => { stepResult: ProgressResult | null; routineResult: ProgressResult | null };
 
   // ---------- Timeline / TimeBlocks ----------
   timeBlocks: TimeBlock[];
@@ -323,6 +342,100 @@ export const useHabitsStore = create<HabitsState>()(
         set((state) => ({ habits: state.habits.filter((h) => h.id !== id) }));
         const uidUser = getCurrentUserId();
         if (uidUser) syncDeleteHabit(id, uidUser);
+      },
+
+      // Routines (local-only por ahora — sin tabla en Supabase todavía,
+      // igual que categorías/milestones de hábitos, ver habits.ts).
+      routines: [],
+      addRoutine: (nombre, items) => {
+        const created: HabitRoutine = {
+          id: uid(),
+          nombre,
+          items: items.map((it) => ({ ...it, id: uid(), completedDates: [] })),
+          createdAt: Date.now(),
+          completedDates: [],
+          streak: 0,
+          milestonesUnlocked: [],
+        };
+        set((state) => ({ routines: [...state.routines, created] }));
+        return created;
+      },
+      updateRoutineItems: (id, items) => {
+        set((state) => ({
+          routines: state.routines.map((r) =>
+            r.id === id ? { ...r, items: items.map((it) => ({ ...it, completedDates: it.completedDates ?? [] })) } : r,
+          ),
+        }));
+      },
+      deleteRoutine: (id) => {
+        set((state) => ({ routines: state.routines.filter((r) => r.id !== id) }));
+      },
+      toggleRoutineStep: (routineId, stepId) => {
+        const state = get();
+        const routine = state.routines.find((r) => r.id === routineId);
+        const step = routine?.items.find((s) => s.id === stepId);
+        if (!routine || !step) return { stepResult: null, routineResult: null };
+
+        const today = todayISO();
+        let stepResult: ProgressResult | null = null;
+
+        if (step.habitId) {
+          // Vinculado a un hábito: se delega TODO en toggleHabitToday, así
+          // el dato vive en un solo lugar (Habit.completedDates) y la
+          // racha/milestone del hábito se calcula igual que si lo hubieras
+          // marcado desde la pantalla de Hábitos.
+          stepResult = get().toggleHabitToday(step.habitId);
+        } else {
+          const already = step.completedDates.includes(today);
+          const nextDates = already ? step.completedDates.filter((d) => d !== today) : [...step.completedDates, today];
+          set((s) => ({
+            routines: s.routines.map((r) =>
+              r.id === routineId
+                ? { ...r, items: r.items.map((it) => (it.id === stepId ? { ...it, completedDates: nextDates } : it)) }
+                : r,
+            ),
+          }));
+          if (!already) {
+            // Un paso sin hábito vinculado no tiene su propio "milestone" —
+            // eso es cosa de la rutina completa (ver más abajo) o de un
+            // hábito real. Acá solo interesa su racha para mostrarla.
+            stepResult = { streak: computeStreak({ completedDates: nextDates, frequency: "diario" }), milestoneReached: null };
+          }
+        }
+
+        // Evalúa si con este cambio la rutina completa quedó hecha hoy (o
+        // dejó de estarlo, si se desmarcó un paso que la completaba).
+        const freshState = get();
+        const freshRoutine = freshState.routines.find((r) => r.id === routineId)!;
+        const allDoneToday = freshRoutine.items.every((s) => isStepDoneOn(s, freshState.habits, today));
+        const wasCompletedToday = freshRoutine.completedDates.includes(today);
+        let routineResult: ProgressResult | null = null;
+
+        if (allDoneToday && !wasCompletedToday) {
+          const completedDates = [...freshRoutine.completedDates, today];
+          const evaluated = processCompletionEvent(
+            { type: "routine.completed" },
+            { completedDates, frequency: "diario" },
+            freshRoutine.milestonesUnlocked,
+          );
+          const milestonesUnlocked = evaluated.milestoneReached
+            ? [...freshRoutine.milestonesUnlocked, evaluated.milestoneReached]
+            : freshRoutine.milestonesUnlocked;
+          set((s) => ({
+            routines: s.routines.map((r) =>
+              r.id === routineId ? { ...r, completedDates, streak: evaluated.streak, milestonesUnlocked } : r,
+            ),
+          }));
+          routineResult = evaluated;
+        } else if (!allDoneToday && wasCompletedToday) {
+          const completedDates = freshRoutine.completedDates.filter((d) => d !== today);
+          const streak = computeStreak({ completedDates, frequency: "diario" });
+          set((s) => ({
+            routines: s.routines.map((r) => (r.id === routineId ? { ...r, completedDates, streak } : r)),
+          }));
+        }
+
+        return { stepResult, routineResult };
       },
 
       // Timeline

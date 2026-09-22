@@ -10,6 +10,8 @@
   --gym: #ff6b35;
   --gym-2: #ff3b3b;
   --habitos: #3b82f6;
+  --rutinas: #22d3ee;
+  --calendario: #f472b6;
   --outfit: #a855f7;
   --paz-mental: #14b8a6;
   --finanzas: #f59e0b;
@@ -94,6 +96,8 @@
   --color-foreground: var(--foreground);
   --color-gym: var(--gym);
   --color-habitos: var(--habitos);
+  --color-rutinas: var(--rutinas);
+  --color-calendario: var(--calendario);
   --color-outfit: var(--outfit);
   --color-paz-mental: var(--paz-mental);
   --color-finanzas: var(--finanzas);

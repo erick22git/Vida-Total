@@ -48,6 +48,37 @@ export interface Habit {
   milestonesUnlocked: number[];
 }
 
+/**
+ * Un paso de una rutina (ver `HabitRoutine`). Nombre distinto de `Routine`
+ * a propósito — ese tipo ya existe en `@/lib/types/index.ts` para las
+ * rutinas de ejercicios de Gym, dominio completamente separado.
+ */
+export interface RoutineStep {
+  id: string;
+  hora: string; // "06:35"
+  label: string;
+  /** Si está vinculado a un hábito, completar este paso completa ESE
+   * hábito (misma `completedDates`) — nunca se duplica el dato acá. */
+  habitId?: string;
+  durationMin?: number;
+  /** Solo se usa cuando `habitId` es `undefined` — un paso sin hábito
+   * vinculado (p.ej. "despertar") lleva su propio registro de qué días se
+   * cumplió, con la misma forma que `Habit.completedDates`. */
+  completedDates: string[];
+}
+
+export interface HabitRoutine {
+  id: string;
+  nombre: string;
+  items: RoutineStep[];
+  createdAt: number;
+  /** Días en que TODOS los pasos quedaron completos — alimenta su propia
+   * racha vía el Progress Engine (evento `routine.completed`). */
+  completedDates: string[];
+  streak: number;
+  milestonesUnlocked: number[];
+}
+
 export interface TimeBlock {
   id: string;
   taskId?: string;
