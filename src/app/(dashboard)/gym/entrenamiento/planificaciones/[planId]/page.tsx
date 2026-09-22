@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Moon, Dumbbell, MoreVertical, LayoutGrid, List, ListChecks } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
@@ -20,6 +20,7 @@ export default function PlanDetailPage({
 }) {
   const { planId } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const allExercises = useAllExercises();
   const plans = useGymStore((s) => s.plans);
   const routines = useGymStore((s) => s.routines);
@@ -31,10 +32,22 @@ export default function PlanDetailPage({
 
   const plan = plans.find((p) => p.id === planId);
 
+  // El panel de Entrenamiento (acceso rápido por día) enlaza directo acá con
+  // ?day=N en vez de mandar a la pantalla de rutina suelta — así hay un solo
+  // lugar para editar el día de un plan, y `grupoMuscular` se recalcula bien
+  // al cerrar (ver closeEditor), cosa que no pasaba editando por afuera.
+  const dayParam = searchParams.get("day");
+  const initialDay = dayParam !== null && plan?.dias[Number(dayParam)] ? Number(dayParam) : null;
+
   const [view, setView] = useState<"list" | "grid">("list");
   const [menuDay, setMenuDay] = useState<number | null>(null);
-  const [editingDay, setEditingDay] = useState<number | null>(null);
-  const [draft, setDraft] = useState<RoutineExercise[]>([]);
+  const [editingDay, setEditingDay] = useState<number | null>(initialDay);
+  const [draft, setDraft] = useState<RoutineExercise[]>(() => {
+    if (initialDay === null || !plan) return [];
+    const day = plan.dias[initialDay];
+    const routine = day.routineId ? routines.find((r) => r.id === day.routineId) : undefined;
+    return routine?.ejercicios ?? [];
+  });
 
   if (!plan) {
     return (
@@ -77,6 +90,9 @@ export default function PlanDetailPage({
     }
     setEditingDay(null);
     setDraft([]);
+    // Limpia el ?day=N si se llegó acá desde el acceso rápido del panel de
+    // Entrenamiento, para que "atrás"/recargar no reabra el mismo día.
+    if (dayParam !== null) router.replace(`/gym/entrenamiento/planificaciones/${plan!.id}`);
   }
 
   if (editingDay !== null) {

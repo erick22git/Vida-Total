@@ -236,9 +236,15 @@ export default function EntrenamientoPage() {
                   .map((rex) => allExercises.find((e) => e.id === rex.exerciseId))
                   .find((e) => e?.imagen)
               : undefined;
-            const href = routine
-              ? `/gym/entrenamiento/rutinas/${routine.id}`
-              : "/gym/entrenamiento/rutinas/nueva";
+            // Con un plan activo, el acceso rápido por día abre ESE día
+            // dentro del plan (misma pantalla que "Ver plan" arriba, ya
+            // enfocada en el día correspondiente) en vez de una rutina
+            // suelta desconectada del plan.
+            const href = activePlan
+              ? `/gym/entrenamiento/planificaciones/${activePlan.id}?day=${i}`
+              : routine
+                ? `/gym/entrenamiento/rutinas/${routine.id}`
+                : "/gym/entrenamiento/rutinas/nueva";
 
             return (
               <Link key={d.day + i} href={isRest ? "#" : href} className={isRest ? "pointer-events-none" : "shrink-0"}>
