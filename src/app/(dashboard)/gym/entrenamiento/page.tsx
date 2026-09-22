@@ -37,6 +37,9 @@ export default function EntrenamientoPage() {
   const routines = useGymStore((s) => s.routines);
   const activeSession = useGymStore((s) => s.activeSession);
   const sessionStartedAt = useGymStore((s) => s.sessionStartedAt);
+  const plans = useGymStore((s) => s.plans);
+  const activePlanId = useGymStore((s) => s.activePlanId);
+  const activePlan = activePlanId ? plans.find((p) => p.id === activePlanId) : undefined;
   const startWorkout = useGymStore((s) => s.startWorkout);
   const startWorkoutFromRoutine = useGymStore((s) => s.startWorkoutFromRoutine);
   const cancelWorkout = useGymStore((s) => s.cancelWorkout);
@@ -203,11 +206,24 @@ export default function EntrenamientoPage() {
       </GlassCard>
 
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Tu Plan</h3>
-          <Link href="/gym/entrenamiento/planificaciones" className="text-xs font-medium text-white/50 hover:text-white flex items-center gap-1">
-            Más planes <ChevronRight size={13} />
-          </Link>
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold truncate">{activePlan ? activePlan.nombre : "Tu Plan"}</h3>
+            {!activePlan && <p className="text-xs text-white/45">Todavía no elegiste una planificación</p>}
+          </div>
+          {activePlan ? (
+            <Link
+              href={`/gym/entrenamiento/planificaciones/${activePlan.id}`}
+              className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold text-white glass-specular-ring flex items-center gap-1"
+              style={{ background: "rgba(255,255,255,0.1)" }}
+            >
+              Ver plan <ChevronRight size={13} />
+            </Link>
+          ) : (
+            <Link href="/gym/entrenamiento/planificaciones" className="shrink-0 text-xs font-medium text-white/50 hover:text-white flex items-center gap-1">
+              Más planes <ChevronRight size={13} />
+            </Link>
+          )}
         </div>
         <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
           {weeklyPlan.map((d, i) => {
