@@ -94,7 +94,14 @@ export default function ActiveWorkoutPage() {
   // interrumpen el conteo de las normales que vienen después.
   let normalCounter = 0;
   const normalNumbers = currentLog.sets.map((s) => ((s.tipo ?? "normal") === "normal" ? ++normalCounter : undefined));
-  const firstUncheckedSet = currentLog.sets.find((s) => !s.completado);
+  const firstUncheckedIndex = currentLog.sets.findIndex((s) => !s.completado);
+  const firstUncheckedSet = firstUncheckedIndex === -1 ? undefined : currentLog.sets[firstUncheckedIndex];
+  // Series "una por una": solo se muestran las ya completadas más la
+  // siguiente pendiente — el resto aparece recién cuando le toca. Si ya no
+  // queda ninguna pendiente, se muestran todas (y ahí sí tiene sentido el
+  // botón de "Añadir serie").
+  const visibleSetCount = firstUncheckedIndex === -1 ? currentLog.sets.length : firstUncheckedIndex + 1;
+  const visibleSets = currentLog.sets.slice(0, visibleSetCount);
 
   function handleSetChange(setId: string, patch: Parameters<typeof updateSet>[2]) {
     if (patch.completado) {
@@ -194,7 +201,7 @@ export default function ActiveWorkoutPage() {
           <span className="w-9 text-center">Desc.</span>
           <span className="w-9" />
         </div>
-        {currentLog.sets.map((set, i) => (
+        {visibleSets.map((set, i) => (
           <SessionSetRow
             key={set.id}
             index={i}
@@ -206,12 +213,14 @@ export default function ActiveWorkoutPage() {
             onChange={(patch) => handleSetChange(set.id, patch)}
           />
         ))}
-        <button
-          onClick={() => addSetToExercise(currentLog.exerciseId)}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 py-2.5 text-sm text-white/50 hover:text-white/80 hover:border-white/30 transition-colors cursor-pointer"
-        >
-          <Plus size={15} /> Añadir serie
-        </button>
+        {visibleSetCount === currentLog.sets.length && (
+          <button
+            onClick={() => addSetToExercise(currentLog.exerciseId)}
+            className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 py-2.5 text-sm text-white/50 hover:text-white/80 hover:border-white/30 transition-colors cursor-pointer"
+          >
+            <Plus size={15} /> Añadir serie
+          </button>
+        )}
       </div>
 
       <AnimatePresence>
