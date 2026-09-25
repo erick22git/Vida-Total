@@ -5,37 +5,21 @@ import Link from "next/link";
 import {
   CalendarCheck2,
   ChevronRight,
-  Clock,
-  Flame,
   ListTodo,
-  Plus,
   Rows3,
   Volume2,
   VolumeX,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
-import {
-  useHabitsCompletedToday,
-  useHabitsStore,
-  useTodayTasks,
-} from "@/lib/store/habitsStore";
-import { getHabitIcon } from "@/lib/habits-utils";
-import { getCategory } from "@/lib/data/habit-categories";
-import { computeStreak } from "@/lib/progress";
-import { HabitCheckButton } from "@/components/animations/HabitCheckButton";
-import { HabitsProgressHero } from "@/components/habitos/habits-progress-hero";
+import { todayISO, useHabitsStore } from "@/lib/store/habitsStore";
+import { HabitOrbsCard } from "@/components/habitos/habit-orbs-card";
 import { CreateHabitModal } from "@/components/habitos/create-habit-modal";
-import { useEffectiveReduceMotion, usePreferencesStore } from "@/lib/store/preferencesStore";
+import { usePreferencesStore } from "@/lib/store/preferencesStore";
 
 export default function HabitosHubPage() {
   const habits = useHabitsStore((s) => s.habits);
-  const toggleHabitToday = useHabitsStore((s) => s.toggleHabitToday);
   const addHabit = useHabitsStore((s) => s.addHabit);
-  const { completed, total } = useHabitsCompletedToday();
-  const todayTasks = useTodayTasks();
-  const pendingTasks = todayTasks.filter((t) => !t.isCompleted).length;
-  const today = new Date().toISOString().slice(0, 10);
-  const reduceMotion = useEffectiveReduceMotion();
+  const today = todayISO();
   const soundEnabled = usePreferencesStore((s) => s.soundEnabled);
   const setSoundEnabled = usePreferencesStore((s) => s.setSoundEnabled);
   const [createOpen, setCreateOpen] = useState(false);
@@ -83,14 +67,7 @@ export default function HabitosHubPage() {
         </button>
       </header>
 
-      <GlassCard accentColor="var(--habitos)" glow className="flex flex-col gap-4">
-        <HabitsProgressHero completed={completed} total={total} />
-        <div className="h-px bg-white/10" />
-        <div className="flex items-center gap-2 text-sm text-white/55">
-          <Clock size={15} style={{ color: "var(--habitos)" }} />
-          {pendingTasks} tarea{pendingTasks !== 1 ? "s" : ""} pendiente{pendingTasks !== 1 ? "s" : ""}
-        </div>
-      </GlassCard>
+      <HabitOrbsCard habits={habits} todayISO={today} onCreate={() => setCreateOpen(true)} />
 
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {sections.map((s) => (
@@ -116,57 +93,6 @@ export default function HabitosHubPage() {
             </GlassCard>
           </Link>
         ))}
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-white/80">Hábitos rápidos</p>
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="flex items-center gap-1 text-xs font-medium text-white/50 hover:text-white cursor-pointer"
-          >
-            <Plus size={13} /> Nuevo
-          </button>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {habits.map((h) => {
-            const category = getCategory(h.categoryId);
-            const Icon = getHabitIcon(h.icon);
-            const accent = category?.color ?? "var(--habitos)";
-            const doneToday = h.completedDates.includes(today);
-            // Derivado en cada render — nunca depende de que el usuario haya
-            // vuelto a tocar el hábito para "enterarse" de que la racha se
-            // rompió (ver src/lib/progress/streak.ts).
-            const streak = computeStreak({ completedDates: h.completedDates, frequency: h.frequency });
-            return (
-              <GlassCard key={h.id} padding="sm" accentColor={accent} className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <div
-                    className="flex items-center justify-center w-9 h-9 rounded-xl"
-                    style={{ background: `${accent}22` }}
-                  >
-                    <Icon size={17} style={{ color: accent }} />
-                  </div>
-                  <HabitCheckButton
-                    habitId={h.id}
-                    done={doneToday}
-                    accentColor={accent}
-                    reduceMotion={reduceMotion}
-                    onToggle={() => toggleHabitToday(h.id)}
-                    size={38}
-                  />
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <p className="text-sm font-medium text-white truncate">{h.name}</p>
-                  <div className="flex items-center gap-1 text-xs text-white/45">
-                    <Flame size={12} className="text-orange-400" />
-                    {streak} día{streak !== 1 ? "s" : ""}
-                  </div>
-                </div>
-              </GlassCard>
-            );
-          })}
-        </div>
       </section>
 
       <CreateHabitModal
