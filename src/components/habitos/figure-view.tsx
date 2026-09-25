@@ -1,155 +1,267 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Crystal3D } from "@/components/animations/Crystal3D";
-import type { CrystalState } from "@/components/animations/ProgressCrystal";
 import { ProgressiveScene } from "@/components/3d/ProgressiveScene";
+import { FigureShelf } from "@/components/habitos/figure-shelf";
 import { ViewDots } from "@/components/habitos/view-dots";
-import { computeStreak } from "@/lib/progress";
-import { sceneStateFor } from "@/lib/3d/scene-progression";
-import { getSceneAsset } from "@/lib/3d/scene-registry";
-import { useEffectiveReduceMotion } from "@/lib/store/preferencesStore";
+import { animationEngine } from "@/lib/animations/animation-engine";
+import { haptic } from "@/lib/haptics/haptic";
+import { playSound } from "@/lib/sound/sound-engine";
+import { computeHabitLevel } from "@/lib/progress";
+import { collectionChange, collectionStateFor } from "@/lib/3d/scene-collection";
+import { HABIT_FIGURES, habitFigureConfigs } from "@/lib/3d/scene-registry";
 import type { SceneStats } from "@/lib/3d/progressive-scene";
+import { useEffectiveReduceMotion } from "@/lib/store/preferencesStore";
 import type { Habit } from "@/lib/types/habits";
 
 const MONO = { fontFamily: "var(--font-geist-mono), monospace" } as const;
 
-function crystalStateFor(fraction: number): CrystalState {
-  if (fraction >= 1) return "complete";
-  if (fraction >= 0.67) return "progress-75";
-  if (fraction >= 0.34) return "progress-50";
-  if (fraction > 0) return "progress-25";
-  return "idle";
-}
+/** Tras cambiar la etapa se deja ver la construcción (el clip más largo dura ~1.8 s) y una pausa antes de celebrar. */
+const FINAL_BUILD_MS = 2300;
+const UNLOCK_AFTER_MS = 1700;
+const BANNER_END_MS = 4300;
+
+type Banner = null | { title: string; sub: string };
 
 /**
- * Vista FIGURA: la escena 3D que se construye con el progreso del hábito (hoy, el Bosque de 7 días).
+ * Vista FIGURA: la escena 3D que se construye con el progreso del hábito y la fila de figuras de la colección.
  *
- * Este componente NO calcula progreso: lee las repeticiones del hábito, le pide a `SceneProgression`
- * en qué etapa está y le pasa esa etapa a la escena. Cuando el hábito se acaba de completar, la
- * pantalla de Hábitos abre esta vista con `buildFrom` (la etapa anterior) para que se vea construirse
- * la parte nueva.
+ * Separa tres conceptos (ver `scene-collection.ts`): A) progreso del hábito (`total`, lo cuenta el store),
+ * B) progreso de la figura (etapas construidas) y C) desbloqueo de figuras (secuencial). Este componente NO
+ * calcula nada de eso: lo pide a `collectionStateFor` y le pasa la etapa a la escena. Cuando el hábito se
+ * acaba de completar, la pantalla abre esta vista con `buildFromTotal` (repeticiones ANTES de completar)
+ * para que se vea construirse la parte nueva.
  *
- * Depuración (solo con `?debug3d=1` o en desarrollo): botones para probar el día 0..N sin completar
- * hábitos reales. No cambia ningún dato del hábito.
+ * Los controles de depuración (figuras, días, celebración) existen SOLO en desarrollo.
  */
-export function FigureView({ habit, buildFrom = null }: { habit: Habit; buildFrom?: number | null }) {
-  const asset = getSceneAsset();
+export function FigureView({ habit, buildFromTotal = null }: { habit: Habit; buildFromTotal?: number | null }) {
+  const configs = useMemo(() => habitFigureConfigs(), []);
   const total = habit.completedDates.length;
-  const state = sceneStateFor(asset.config, total);
-  const streak = computeStreak({ completedDates: habit.completedDates, frequency: habit.frequency });
   const reduceMotion = useEffectiveReduceMotion();
-  const params = useSearchParams();
-  const debug = params.get("debug3d") === "1" || process.env.NODE_ENV !== "production";
+  const debug = process.env.NODE_ENV !== "production";
 
-  // Si venimos de completar un día: primero se muestra la etapa anterior y, un instante después, la nueva.
-  const [built, setBuilt] = useState(buildFrom === null);
+  // Total que se está mostrando. Al completar un hábito se muestra primero el estado anterior y, un instante
+  // después, el nuevo (así la escena anima la etapa que acaba de desbloquearse).
+  const [shownTotal, setShownTotal] = useState(buildFromTotal ?? total);
+  const [debugActive, setDebugActive] = useState(false);
   useEffect(() => {
-    if (built) return;
-    const t = setTimeout(() => setBuilt(true), 450);
+    if (debugActive || shownTotal === total) return;
+    const t = setTimeout(() => setShownTotal(total), 450);
     return () => clearTimeout(t);
-  }, [built]);
+  }, [total, shownTotal, debugActive]);
 
-  const [debugStage, setDebugStage] = useState<number | null>(null);
-  const [replayKey, setReplayKey] = useState(0);
+  const collection = collectionStateFor(configs, shownTotal);
+  // La figura que se está construyendo queda fija durante la secuencia (aunque la colección ya apunte a la siguiente).
+  const [pinned] = useState<number | null>(() => (buildFromTotal !== null ? collectionStateFor(configs, buildFromTotal).currentIndex : null));
+  const [picked, setPicked] = useState<number | null>(null);
+  const selectedIndex = picked ?? pinned ?? collection.currentIndex;
+  const asset = HABIT_FIGURES[selectedIndex];
+  const fig = collection.figures[selectedIndex];
+  const stageName = fig.stage > 0 ? asset.config.stages[fig.stage - 1]?.name : null;
+  const level = computeHabitLevel(shownTotal);
+
+  // ---- secuencia de celebración (cuando esta repetición completa la figura)
+  const [banner, setBanner] = useState<Banner>(null);
+  const [celebrateKey, setCelebrateKey] = useState(0);
+  const [justUnlocked, setJustUnlocked] = useState<string | null>(null);
+  const prevShown = useRef(shownTotal);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  function clearTimers() {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  }
+  function runCelebration(figureId: string, figureName: string, nextId: string | null, nextName: string | null) {
+    clearTimers();
+    timers.current.push(
+      setTimeout(() => {
+        setCelebrateKey((k) => k + 1);
+        setBanner({ title: "LO LOGRASTE", sub: `${figureName} completado` });
+        animationEngine.emit({ type: "scene.completed", tier: "epic", entityId: habit.id, meta: { sceneId: figureId } });
+      }, FINAL_BUILD_MS),
+      setTimeout(() => {
+        if (nextId && nextName) {
+          setBanner({ title: "SIGUIENTE DESBLOQUEADA", sub: nextName });
+          setJustUnlocked(nextId);
+          animationEngine.emit({ type: "scene.unlocked", tier: "milestone", entityId: habit.id, meta: { sceneId: nextId } });
+        } else {
+          setBanner({ title: "COLECCIÓN COMPLETA", sub: "Todas las figuras terminadas" });
+        }
+      }, FINAL_BUILD_MS + UNLOCK_AFTER_MS),
+      setTimeout(() => {
+        setBanner(null);
+        setJustUnlocked(null);
+      }, FINAL_BUILD_MS + BANNER_END_MS),
+    );
+  }
+
+  useEffect(() => {
+    const prev = prevShown.current;
+    prevShown.current = shownTotal;
+    if (shownTotal !== prev + 1) return;
+    const ch = collectionChange(configs, prev, shownTotal);
+    if (!ch.completedNow) return;
+    const nextAsset = HABIT_FIGURES.find((s) => s.config.id === ch.unlockedFigureId);
+    runCelebration(ch.figureId, HABIT_FIGURES[ch.figureIndex].name, ch.unlockedFigureId, nextAsset?.name ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shownTotal]);
+  useEffect(() => clearTimers, []);
+
+  // ---- fila de figuras: solo las desbloqueadas se eligen; las bloqueadas tiemblan
+  const [shake, setShake] = useState<{ index: number; n: number } | null>(null);
+  function onLockedTap(index: number) {
+    setShake((s) => ({ index, n: (s?.n ?? 0) + 1 }));
+    haptic("light");
+    playSound("error");
+  }
+
+  // ---- depuración (solo desarrollo)
   const [stats, setStats] = useState<SceneStats | null>(null);
-
-  const shownStage = debugStage ?? (built ? state.stage : (buildFrom ?? 0));
-  const stageInfo = asset.config.stages.find((s) => s.stage === shownStage);
+  const [replayKey, setReplayKey] = useState(0);
+  const offsets = configs.map((_, i) => configs.slice(0, i).reduce((a, c) => a + c.totalStages, 0));
+  function debugSet(value: number, keepFigure = false) {
+    setDebugActive(true);
+    setPicked(keepFigure ? selectedIndex : null);
+    setShownTotal(Math.max(0, Math.min(value, offsets[offsets.length - 1] + configs[configs.length - 1].totalStages)));
+  }
 
   return (
     <div className="w-full h-full flex flex-col items-center px-6 pb-[max(env(safe-area-inset-bottom),20px)]">
-      <div className="mt-2 flex flex-col items-center gap-2">
-        <span className="text-[13px] uppercase tracking-[0.14em] text-white/60" style={MONO}>
-          Día {shownStage} de {state.totalStages}
+      {/* Título: nombre de la figura y lo último construido (no "día n de 7") */}
+      <div className="mt-2 flex flex-col items-center gap-1.5">
+        <span className="text-[13px] uppercase tracking-[0.18em] text-white/80" style={MONO}>
+          {asset.name}
         </span>
-        <span
-          className="px-5 py-1 text-[13px] font-bold uppercase tracking-[0.16em] text-black rounded-sm"
-          style={{ ...MONO, background: "#f5b301" }}
-        >
-          {shownStage === 0 ? "Sin empezar" : (stageInfo?.name ?? "")}
+        <span className="h-[18px] text-[10px] uppercase tracking-[0.16em] text-white/40" style={MONO}>
+          {fig.status === "complete" ? "Completado" : (stageName ?? "Sin empezar")}
         </span>
       </div>
 
-      <div className="flex-1 min-h-0 flex items-center justify-center w-full">
+      <div className="relative flex-1 min-h-0 flex items-center justify-center w-full">
         <ProgressiveScene
+          key={asset.config.id}
           asset={asset}
-          stage={shownStage}
+          stage={fig.stage}
           reduceMotion={reduceMotion}
           replayKey={replayKey}
-          className="w-full aspect-square max-w-[420px]"
+          celebrateKey={celebrateKey}
+          onTap={() => haptic("light")}
+          className="w-full aspect-square max-w-[440px]"
           onStats={debug ? setStats : undefined}
-          fallback={
-            <Crystal3D
-              size={260}
-              level={Math.floor(state.fraction * 6)}
-              inLevel={(state.fraction * 6) % 1}
-              burst={false}
-              reduceMotion={reduceMotion}
-              fallbackState={crystalStateFor(state.fraction)}
-            />
-          }
+          fallback={<Crystal3D size={240} level={Math.min(fig.stage, 6)} inLevel={0} burst={false} reduceMotion={reduceMotion} fallbackState={fig.stage >= fig.totalStages ? "complete" : fig.stage > 3 ? "progress-75" : fig.stage > 0 ? "progress-25" : "idle"} />}
         />
+        <AnimatePresence>
+          {banner && (
+            <motion.div
+              key={banner.title}
+              className="absolute inset-x-0 top-[6%] flex flex-col items-center gap-1.5 pointer-events-none text-center px-4"
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ type: "spring", stiffness: 320, damping: 22 }}
+            >
+              <span className="text-[21px] font-black tracking-[0.06em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)] leading-tight">{banner.title}</span>
+              <span className="text-[11px] uppercase tracking-[0.2em] text-[#f5b301]" style={MONO}>
+                {banner.sub}
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="w-full flex flex-col items-center gap-3">
-        <span className="text-[15px] tabular-nums text-white/90" style={MONO}>
-          {shownStage} / {state.totalStages}
-        </span>
-        <div className="flex items-center gap-2 w-full justify-center relative">
-          {asset.config.stages.map((s) => (
+        {/* Los 7 días, muy sutiles (no se tocan) */}
+        <div className="flex items-center gap-2 pointer-events-none" aria-hidden>
+          {Array.from({ length: fig.totalStages }, (_, i) => (
             <span
-              key={s.stage}
-              className="h-[3px] w-8 rounded-full transition-colors"
-              style={{ background: s.stage <= shownStage ? "#f5b301" : "rgba(255,255,255,0.18)" }}
+              key={i}
+              className="w-[5px] h-[5px] rounded-full transition-colors duration-500"
+              style={{ background: i < fig.stage ? "#f5b301" : "rgba(255,255,255,0.2)" }}
             />
           ))}
-          <div className="absolute right-0 -top-1">
+        </div>
+
+        {/* Contador del hábito */}
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="text-[15px] tabular-nums text-white/90" style={MONO}>
+            {Math.min(level.total, level.goal)} / {level.goal}
+          </span>
+          <div className="h-[3px] w-28 rounded-full bg-white/15 overflow-hidden">
+            <div className="h-full rounded-full" style={{ width: `${level.fraction * 100}%`, background: "#f5b301", transition: "width .5s ease" }} />
+          </div>
+        </div>
+
+        {/* Fila de figuras + puntos de vista */}
+        <div className="w-full relative pt-1">
+          <FigureShelf
+            figures={collection.figures}
+            icons={HABIT_FIGURES.map((s) => s.icon)}
+            names={HABIT_FIGURES.map((s) => s.name)}
+            selectedIndex={selectedIndex}
+            onSelect={(i) => setPicked(i)}
+            onLockedTap={onLockedTap}
+            shake={shake}
+            justUnlockedId={justUnlocked}
+          />
+          <div className="absolute right-0 top-1">
             <ViewDots index={2} />
           </div>
         </div>
-        <span className="text-[11px] uppercase tracking-[0.14em] text-white/40" style={MONO}>
-          Racha {streak} {streak === 1 ? "día" : "días"}
-        </span>
 
         {debug && (
-          <div className="mt-1 flex flex-col items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: "rgba(255,255,255,0.06)" }}>
+          <div className="mt-1 w-full max-w-[420px] flex flex-col items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: "rgba(255,255,255,0.06)" }}>
             <span className="text-[10px] uppercase tracking-[0.16em] text-white/45" style={MONO}>
-              debug 3d · día
+              debug 3d · solo desarrollo
             </span>
-            <div className="flex gap-1">
-              {[null, ...Array.from({ length: state.totalStages + 1 }, (_, i) => i)].map((d) => {
-                const active = debugStage === d;
-                return (
-                  <button
-                    key={String(d)}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => setDebugStage(d)}
-                    className="h-7 min-w-7 px-1.5 rounded-md text-[11px] cursor-pointer"
-                    style={{ ...MONO, background: active ? "#f5b301" : "rgba(255,255,255,0.1)", color: active ? "#000" : "#fff" }}
-                  >
-                    {d === null ? "real" : d}
-                  </button>
-                );
-              })}
-              <button
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => setReplayKey((k) => k + 1)}
-                className="h-7 px-2 rounded-md text-[11px] cursor-pointer bg-white/10 text-white"
-                style={MONO}
+            <div className="flex flex-wrap justify-center gap-1">
+              <DebugBtn active={!debugActive} onClick={() => { setDebugActive(false); setPicked(null); setShownTotal(total); }}>real</DebugBtn>
+              {configs.map((c, i) => (
+                <DebugBtn key={c.id} active={debugActive && collection.currentIndex === i} onClick={() => debugSet(offsets[i])}>F{i + 1}</DebugBtn>
+              ))}
+              <DebugBtn onClick={() => debugSet(shownTotal - 1, true)}>−1</DebugBtn>
+              <DebugBtn onClick={() => debugSet(shownTotal + 1, true)}>+1</DebugBtn>
+              <DebugBtn onClick={() => debugSet(offsets[selectedIndex] + fig.totalStages - 1, true)}>día 6</DebugBtn>
+              <DebugBtn onClick={() => debugSet(offsets[selectedIndex] + fig.totalStages, true)}>día 7</DebugBtn>
+              <DebugBtn onClick={() => debugSet(0)}>0</DebugBtn>
+              <DebugBtn onClick={() => debugSet(offsets[offsets.length - 1] + configs[configs.length - 1].totalStages)}>todo</DebugBtn>
+              <DebugBtn onClick={() => setReplayKey((k) => k + 1)}>↻</DebugBtn>
+              <DebugBtn
+                onClick={() => {
+                  const next = HABIT_FIGURES[selectedIndex + 1];
+                  runCelebration(asset.config.id, asset.name, next?.config.id ?? null, next?.name ?? null);
+                }}
               >
-                ↻
-              </button>
+                🎉
+              </DebugBtn>
+            </div>
+            <div className="flex flex-wrap justify-center gap-1">
+              {Array.from({ length: fig.totalStages + 1 }, (_, d) => (
+                <DebugBtn key={d} active={debugActive && fig.stage === d} onClick={() => debugSet(offsets[selectedIndex] + d, true)}>{d}</DebugBtn>
+              ))}
             </div>
             {stats && (
               <span className="text-[10px] text-white/40" style={MONO}>
-                {stats.drawCalls} draw calls · {Math.round(stats.triangles / 1000)}k tris
+                {stats.drawCalls} draw calls · {Math.round(stats.triangles / 1000)}k tris · figura {selectedIndex + 1} · día {fig.stage}
               </span>
             )}
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+function DebugBtn({ children, onClick, active }: { children: React.ReactNode; onClick: () => void; active?: boolean }) {
+  return (
+    <button
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={onClick}
+      className="h-7 min-w-7 px-1.5 rounded-md text-[11px] cursor-pointer"
+      style={{ ...MONO, background: active ? "#f5b301" : "rgba(255,255,255,0.1)", color: active ? "#000" : "#fff" }}
+    >
+      {children}
+    </button>
   );
 }

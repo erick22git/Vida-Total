@@ -65,7 +65,8 @@ function HabitScreen() {
   const wheelLock = useRef(false);
   // Secuencia de completado: tras completar un día se abre la vista FIGURA (con la etapa anterior),
   // la escena construye la parte nueva y, pasado un momento, se vuelve a la vista CHECK.
-  const [build, setBuild] = useState<{ habitId: string; from: number } | null>(null);
+  const [build, setBuild] = useState<{ habitId: string; fromTotal: number } | null>(null);
+  const [sequenceActive, setSequenceActive] = useState(false);
   const viewRef = useRef(0);
   const autoReturn = useRef<{ enter: ReturnType<typeof setTimeout>; back: ReturnType<typeof setTimeout> } | null>(null);
 
@@ -123,9 +124,11 @@ function HabitScreen() {
   useAnimationEvent((e) => {
     if (e.type !== "scene.stage.changed" || !habit || e.entityId !== habit.id) return;
     cancelAutoReturn();
-    const from = e.meta?.stageFrom ?? 0;
+    const fromTotal = e.meta?.totalFrom ?? 0;
+    const long = !!e.meta?.figureCompleted; // completar una figura tiene celebración: más tiempo
+    setSequenceActive(true);
     const enter = setTimeout(() => {
-      setBuild({ habitId: habit.id, from });
+      setBuild({ habitId: habit.id, fromTotal });
       setViewDir(1);
       setView(2);
       // Tiempo para ver la construcción y la celebración; después vuelve al check.
@@ -135,8 +138,9 @@ function HabitScreen() {
           setView(0);
         }
         setBuild(null);
+        setSequenceActive(false);
         autoReturn.current = null;
-      }, 3400);
+      }, long ? 8200 : 3600);
       if (autoReturn.current) autoReturn.current.back = back;
     }, 900);
     autoReturn.current = { enter, back: enter };
@@ -317,7 +321,7 @@ function HabitScreen() {
                     </div>
                   )}
                   {view === 1 && <YearView completedDates={habit.completedDates} todayISO={today} />}
-                  {view === 2 && <FigureView habit={habit} buildFrom={build && build.habitId === habit.id ? build.from : null} />}
+                  {view === 2 && <FigureView habit={habit} buildFromTotal={build && build.habitId === habit.id ? build.fromTotal : null} />}
                 </motion.div>
               </AnimatePresence>
             </motion.div>
@@ -334,7 +338,7 @@ function HabitScreen() {
 
       </main>
 
-      <MilestoneCelebration habitId={habit?.id} reduceMotion={reduceMotion} />
+      <MilestoneCelebration habitId={habit?.id} reduceMotion={reduceMotion} suppressed={sequenceActive} />
 
       <NewHabitFlow
         open={createOpen}

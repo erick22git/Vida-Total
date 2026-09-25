@@ -22,7 +22,7 @@ interface Celebration {
  * suscribe al Animation Engine: nunca decide cuándo hay un hito (eso es del
  * Progress Engine); solo lo muestra.
  */
-export function MilestoneCelebration({ habitId, reduceMotion }: { habitId: string | undefined; reduceMotion: boolean }) {
+export function MilestoneCelebration({ habitId, reduceMotion, suppressed = false }: { habitId: string | undefined; reduceMotion: boolean; suppressed?: boolean }) {
   const [item, setItem] = useState<Celebration | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const counter = useRef(0);
@@ -35,7 +35,7 @@ export function MilestoneCelebration({ habitId, reduceMotion }: { habitId: strin
   }
 
   useAnimationEvent((e) => {
-    if (e.entityId !== habitId) return;
+    if (e.entityId !== habitId || suppressed) return; // durante la secuencia de la figura 3D no se apila otra celebración
     if (e.type === "habit.milestone") show({ big: String(e.meta?.count ?? ""), label: "Hito alcanzado", epic: false });
     else if (e.type === "habit.levelUp") show({ big: "60", label: "Hábito dominado", epic: true });
     else if (e.type === "streak.milestone") show({ big: String(e.meta?.milestone ?? e.meta?.streak ?? ""), label: "Días de racha", epic: false });

@@ -24,15 +24,21 @@ export function ProgressiveScene({
   stage,
   reduceMotion,
   replayKey = 0,
+  celebrateKey = 0,
   className,
   fallback,
   onStats,
+  onTap,
 }: {
   asset: SceneAssetDef;
   stage: number;
   reduceMotion: boolean;
   /** Al cambiar, vuelve a reproducir la construcción de `stage` (uso de desarrollo). */
   replayKey?: number;
+  /** Al cambiar (>0), dispara la celebración (confeti sutil, brillo y rebote). */
+  celebrateKey?: number;
+  /** Toque corto sobre la figura (p. ej. háptico ligero). */
+  onTap?: () => void;
   className?: string;
   fallback: ReactNode;
   onStats?: (s: SceneStats) => void;
@@ -41,12 +47,14 @@ export function ProgressiveScene({
   const rendererRef = useRef<ProgressiveSceneRenderer | null>(null);
   const stageRef = useRef(stage);
   const onStatsRef = useRef(onStats);
+  const onTapRef = useRef(onTap);
   const [supported] = useState(webglAvailable);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     stageRef.current = stage;
     onStatsRef.current = onStats;
+    onTapRef.current = onTap;
   });
 
   // Crear el renderer una sola vez.
@@ -63,6 +71,7 @@ export function ProgressiveScene({
       return;
     }
     rendererRef.current = r;
+    r.onTap = () => onTapRef.current?.();
 
     r.load()
       .then(() => {
@@ -105,6 +114,11 @@ export function ProgressiveScene({
   useEffect(() => {
     if (status === "ready") rendererRef.current?.setStage(stage);
   }, [stage, status]);
+
+  // Celebración (la pide la vista tras la pausa de construcción).
+  useEffect(() => {
+    if (celebrateKey > 0 && status === "ready") rendererRef.current?.celebrate();
+  }, [celebrateKey, status]);
 
   // Repetición manual (depuración).
   useEffect(() => {

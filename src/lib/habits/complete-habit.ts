@@ -1,8 +1,8 @@
 import { animationEngine } from "@/lib/animations/animation-engine";
 import { todayISO, useHabitsStore } from "@/lib/store/habitsStore";
 import { crossedLevelMilestone } from "@/lib/progress";
-import { stageChange } from "@/lib/3d/scene-progression";
-import { getSceneAsset } from "@/lib/3d/scene-registry";
+import { collectionChange } from "@/lib/3d/scene-collection";
+import { habitFigureConfigs } from "@/lib/3d/scene-registry";
 import type { ProgressResult } from "@/lib/progress/types";
 import type { Habit } from "@/lib/types/habits";
 
@@ -22,19 +22,24 @@ function emitCompletion(habitId: string, prevTotal: number, result: ProgressResu
   const animationEvent = animationEngine.emit.bind(animationEngine);
   animationEvent({ type: "habit.completed", tier: "action", entityId: habitId, meta: { streak: result?.streak } });
 
-  // Figura 3D del hábito: ¿esta repetición desbloquea la siguiente etapa (día)? La escena solo RECIBE
-  // este aviso; el progreso lo sigue calculando el Progress Engine/store. Un pequeño desfase deja
-  // que primero se vea el check completado.
-  const scene = stageChange(getSceneAsset().config, prevTotal, prevTotal + 1);
-  if (scene.direction === "up") {
+  // Colección de figuras 3D: ¿esta repetición construye una etapa de la figura en curso (y quizá la completa
+  // y desbloquea la siguiente)? La escena solo RECIBE este aviso; el progreso lo calcula el store/Progress
+  // Engine. Un pequeño desfase deja que primero se vea el check completado.
+  const scene = collectionChange(habitFigureConfigs(), prevTotal, prevTotal + 1);
+  if (scene.changed) {
     setTimeout(() => {
-      animationEvent({
-        type: "scene.stage.changed",
-        tier: scene.completedNow ? "epic" : "action",
-        entityId: habitId,
-        meta: { stageFrom: scene.from, stageTo: scene.to },
-      });
-      if (scene.completedNow) animationEvent({ type: "scene.completed", tier: "epic", entityId: habitId, meta: { stageTo: scene.to } });
+      const meta = {
+        stageFrom: scene.from,
+        stageTo: scene.to,
+        sceneId: scene.figureId,
+        totalFrom: prevTotal,
+        totalTo: prevTotal + 1,
+        unlockedSceneId: scene.unlockedFigureId,
+        figureCompleted: scene.completedNow,
+      };
+      // La celebración (scene.completed / scene.unlocked, con su sonido y háptico) la emite la vista FIGURA en el
+      // momento en que se ve, para que suene junto con la animación y no antes.
+      animationEvent({ type: "scene.stage.changed", tier: scene.completedNow ? "epic" : "action", entityId: habitId, meta });
     }, 250);
   }
 
@@ -49,8 +54,8 @@ function emitCompletion(habitId: string, prevTotal: number, result: ProgressResu
       );
     }, 380);
   }
-  // Si esta repetición además completa la figura 3D, esa celebración manda: no se apila la de la racha.
-  if (result?.milestoneReached && !scene.completedNow) {
+  // Si esta repetición además construye la figura 3D, esa secuencia manda: no se apila la celebración de la racha.
+  if (result?.milestoneReached && !scene.changed) {
     // Racha de 7/21/66: si además hubo hito de repeticiones, va después para
     // que las dos ceremonias no se pisen.
     setTimeout(() => {

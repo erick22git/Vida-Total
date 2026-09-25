@@ -120,6 +120,8 @@ function geometryHash(g: THREE.BufferGeometry): string {
 export class ProgressiveSceneRenderer {
   readonly renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
+  /** Pivote de interacción: rota/inclina/escala la figura completa alrededor de su centro. */
+  private pivot = new THREE.Group();
   private root = new THREE.Group();
   private camera: THREE.PerspectiveCamera;
   private clock = new THREE.Clock();
@@ -137,11 +139,26 @@ export class ProgressiveSceneRenderer {
   private centerY = 0.9;
   private width = 300;
   private height = 300;
-  private celebrating: { t: number; points: THREE.Points; vel: Float32Array } | null = null;
+  private confetti: { t: number; mesh: THREE.InstancedMesh; data: { p: THREE.Vector3; v: THREE.Vector3; spin: THREE.Vector3; rot: THREE.Euler; life: number }[] } | null = null;
   private pulse = 0;
+  private glow = 0;
+  // Interacción táctil: rotar (arrastrar), zoom (pellizco / rueda), tap (rebote). Vuelve sola a la vista inicial.
+  private yaw = 0;
+  private pitch = 0;
+  private zoom = 1;
+  private yawVel = 0;
+  private lastTouch = -1e9;
+  private tapPulse = 0;
+  private pointers = new Map<number, { x: number; y: number }>();
+  private drag: { x: number; y: number; t: number; moved: boolean } | null = null;
+  private pinch: { dist: number; zoom: number } | null = null;
+  private baseDir = new THREE.Vector3(0, 0, 1);
+  private baseDist = 10;
+  private baseTarget = new THREE.Vector3();
+  /** Se llama en cada toque corto sobre la figura (p. ej. para un háptico). */
+  onTap: (() => void) | null = null;
   private disposed = false;
   private lastStats: SceneStats | null = null;
-  private sway = 0;
   readonly reduceMotion: boolean;
 
   constructor(
@@ -162,7 +179,8 @@ export class ProgressiveSceneRenderer {
     container.appendChild(this.renderer.domElement);
 
     this.camera = new THREE.PerspectiveCamera(asset.camera.fov, 1, 0.1, 100);
-    this.scene.add(this.root);
+    this.scene.add(this.pivot);
+    this.pivot.add(this.root);
 
     // Luz que acompaña al objeto (no crea fondo): hemisférica + sol cálido + relleno frío.
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x8e97a3, 1.3));
@@ -173,6 +191,7 @@ export class ProgressiveSceneRenderer {
     fill.position.set(5, 2, -4);
     this.scene.add(fill);
 
+    this.attachControls();
     this.resize(container.clientWidth || 300, container.clientHeight || 300);
   }
 
@@ -303,13 +322,18 @@ export class ProgressiveSceneRenderer {
 
   private fitCamera(centerY: number) {
     const [dx, dy, dz] = this.asset.camera.direction;
-    const dir = new THREE.Vector3(dx, dy, dz).normalize();
+    this.baseDir.set(dx, dy, dz).normalize();
     const vfov = THREE.MathUtils.degToRad(this.asset.camera.fov);
     const hfov = 2 * Math.atan(Math.tan(vfov / 2) * this.camera.aspect);
-    const dist = (this.radius * 1.04) / Math.sin(Math.min(vfov, hfov) / 2);
-    const target = new THREE.Vector3(0, Math.max(centerY, this.asset.camera.targetY * 0.8), 0);
-    this.camera.position.copy(target).addScaledVector(dir, dist);
-    this.camera.lookAt(target);
+    this.baseDist = (this.radius * 1.04) / Math.sin(Math.min(vfov, hfov) / 2);
+    this.baseTarget.set(0, Math.max(centerY, this.asset.camera.targetY * 0.8), 0);
+    this.applyCamera();
+  }
+
+  private applyCamera() {
+    const dist = this.baseDist / this.zoom;
+    this.camera.position.copy(this.baseTarget).addScaledVector(this.baseDir, dist);
+    this.camera.lookAt(this.baseTarget);
     this.camera.near = Math.max(dist - this.radius * 2.5, 0.1);
     this.camera.far = dist + this.radius * 3;
     this.camera.updateProjectionMatrix();
@@ -402,7 +426,6 @@ export class ProgressiveSceneRenderer {
       this.animating.set(g, 0);
       this.writeFrame(g, 0);
     }
-    if (this.asset.celebrationStages.includes(stage)) this.celebrate();
   }
 
   private writeFrame(g: ClutterGroup, t: number) {
@@ -501,35 +524,127 @@ export class ProgressiveSceneRenderer {
   }
 
   // ---------------------------------------------------------------- celebración
+  /** Confeti sutil (pocas piezas pequeñas), brillo breve y un rebote de la figura. Lo dispara la vista tras la pausa. */
   celebrate() {
     if (this.reduceMotion) return;
     this.pulse = 0.0001;
-    if (this.celebrating) {
-      this.scene.remove(this.celebrating.points);
-      this.celebrating.points.geometry.dispose();
-      (this.celebrating.points.material as THREE.Material).dispose();
-      this.celebrating = null;
-    }
-    const n = 46;
-    const pos = new Float32Array(n * 3);
-    const vel = new Float32Array(n * 3);
+    this.glow = 0.0001;
+    this.clearConfetti();
+    const n = 84;
+    const geo = new THREE.PlaneGeometry(0.1, 0.05);
+    const mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, toneMapped: false });
+    const mesh = new THREE.InstancedMesh(geo, mat, n);
+    mesh.frustumCulled = false;
+    const palette = [0xf5b301, 0xffffff, 0xffdca0, 0x8fd18a, 0xf49a7c, 0x9ec5ff].map((c) => new THREE.Color(c));
+    const data: NonNullable<typeof this.confetti>["data"] = [];
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
-      const r = Math.random() * this.radius * 0.7;
-      pos[i * 3] = Math.cos(a) * r;
-      pos[i * 3 + 1] = 0.3 + Math.random() * 0.6;
-      pos[i * 3 + 2] = Math.sin(a) * r;
-      vel[i * 3] = (Math.random() - 0.5) * 0.4;
-      vel[i * 3 + 1] = 0.9 + Math.random() * 1.1;
-      vel[i * 3 + 2] = (Math.random() - 0.5) * 0.4;
+      const r = Math.random() * this.radius * 0.5;
+      data.push({
+        p: new THREE.Vector3(Math.cos(a) * r, this.baseTarget.y + this.radius * 0.35, Math.sin(a) * r),
+        v: new THREE.Vector3((Math.random() - 0.5) * 1.6, 2.6 + Math.random() * 2.2, (Math.random() - 0.5) * 1.6),
+        spin: new THREE.Vector3((Math.random() - 0.5) * 12, (Math.random() - 0.5) * 12, (Math.random() - 0.5) * 12),
+        rot: new THREE.Euler(Math.random() * 6, Math.random() * 6, Math.random() * 6),
+        life: 1.7 + Math.random() * 0.6,
+      });
+      mesh.setColorAt(i, palette[i % palette.length]);
     }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    const mat = new THREE.PointsMaterial({ color: 0xffdca0, size: 0.09, transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true });
-    const points = new THREE.Points(geo, mat);
-    points.frustumCulled = false;
-    this.scene.add(points);
-    this.celebrating = { t: 0, points, vel };
+    this.scene.add(mesh);
+    this.confetti = { t: 0, mesh, data };
+  }
+
+  private clearConfetti() {
+    if (!this.confetti) return;
+    this.scene.remove(this.confetti.mesh);
+    this.confetti.mesh.geometry.dispose();
+    (this.confetti.mesh.material as THREE.Material).dispose();
+    this.confetti.mesh.dispose();
+    this.confetti = null;
+  }
+
+  // ---------------------------------------------------------------- interacción táctil
+  private attachControls() {
+    const el = this.renderer.domElement;
+    el.style.touchAction = "none"; // el gesto es de la figura, no de la página
+    el.style.cursor = "grab";
+    el.addEventListener("pointerdown", this.onPointerDown);
+    el.addEventListener("pointermove", this.onPointerMove);
+    el.addEventListener("pointerup", this.onPointerUp);
+    el.addEventListener("pointercancel", this.onPointerUp);
+    el.addEventListener("wheel", this.onWheel, { passive: false });
+  }
+
+  private onPointerDown = (e: PointerEvent) => {
+    // Nativo: corta la propagación ANTES de que la página (swipe de hábito/vista) lo vea.
+    e.stopPropagation();
+    this.renderer.domElement.setPointerCapture(e.pointerId);
+    this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    this.lastTouch = performance.now();
+    if (this.pointers.size === 1) {
+      this.drag = { x: e.clientX, y: e.clientY, t: performance.now(), moved: false };
+      this.yawVel = 0;
+    } else if (this.pointers.size === 2) {
+      const [a, b] = [...this.pointers.values()];
+      this.pinch = { dist: Math.hypot(a.x - b.x, a.y - b.y), zoom: this.zoom };
+      this.drag = null;
+    }
+  };
+
+  private onPointerMove = (e: PointerEvent) => {
+    const prev = this.pointers.get(e.pointerId);
+    if (!prev) return;
+    e.stopPropagation();
+    this.lastTouch = performance.now();
+    if (this.pointers.size >= 2 && this.pinch) {
+      this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const [a, b] = [...this.pointers.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      this.zoom = THREE.MathUtils.clamp(this.pinch.zoom * (d / Math.max(this.pinch.dist, 1)), 0.8, 1.6);
+      this.applyCamera();
+      return;
+    }
+    const dx = e.clientX - prev.x;
+    const dy = e.clientY - prev.y;
+    this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.drag && !this.drag.moved && Math.hypot(e.clientX - this.drag.x, e.clientY - this.drag.y) > 6) this.drag.moved = true;
+    if (this.drag?.moved) {
+      // Suave y limitado: giro amplio pero no infinito; inclinación vertical corta.
+      this.yaw = THREE.MathUtils.clamp(this.yaw + dx * 0.0085, -2.6, 2.6);
+      this.pitch = THREE.MathUtils.clamp(this.pitch + dy * 0.0035, -0.16, 0.3);
+      this.yawVel = dx * 0.0085 * 60;
+    }
+  };
+
+  private onPointerUp = (e: PointerEvent) => {
+    if (!this.pointers.has(e.pointerId)) return;
+    e.stopPropagation();
+    this.pointers.delete(e.pointerId);
+    this.lastTouch = performance.now();
+    if (this.pointers.size < 2) this.pinch = null;
+    if (this.pointers.size === 0 && this.drag) {
+      if (!this.drag.moved && performance.now() - this.drag.t < 300) {
+        this.tapPulse = 0.0001; // toque corto: pequeño rebote
+        this.onTap?.();
+      }
+      this.drag = null;
+    }
+  };
+
+  private onWheel = (e: WheelEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    this.zoom = THREE.MathUtils.clamp(this.zoom * (e.deltaY < 0 ? 1.06 : 1 / 1.06), 0.8, 1.6);
+    this.lastTouch = performance.now();
+    this.applyCamera();
+  };
+
+  /** Vuelve la figura a su vista inicial (rotación, inclinación y zoom). */
+  resetView() {
+    this.yaw = 0;
+    this.pitch = 0;
+    this.zoom = 1;
+    this.yawVel = 0;
+    this.applyCamera();
   }
 
   // ---------------------------------------------------------------- bucle
@@ -554,37 +669,77 @@ export class ProgressiveSceneRenderer {
       this.settleStage(this.current);
     }
 
-    // Vaivén sutil (objeto vivo) — apagado con "reducir movimiento".
-    if (!this.reduceMotion) {
-      this.sway += dt;
-      this.root.rotation.y = Math.sin(this.sway * 0.55) * 0.1;
+    // Interacción: inercia al soltar y regreso lento a la vista inicial cuando nadie toca la figura.
+    const touching = this.pointers.size > 0;
+    if (!touching) {
+      if (Math.abs(this.yawVel) > 0.01) {
+        this.yaw = THREE.MathUtils.clamp(this.yaw + this.yawVel * dt, -2.6, 2.6);
+        this.yawVel *= Math.exp(-dt * 4.2);
+      }
+      const idle = (performance.now() - this.lastTouch) / 1000;
+      if (idle > 2.2 && !this.reduceMotion) {
+        const k = 1 - Math.exp(-dt * 1.6); // regreso suave, no un salto
+        this.yaw += (0 - this.yaw) * k;
+        this.pitch += (0 - this.pitch) * k;
+        const nz = this.zoom + (1 - this.zoom) * k;
+        if (Math.abs(nz - this.zoom) > 1e-4) {
+          this.zoom = nz;
+          this.applyCamera();
+        }
+      }
     }
+    this.pivot.rotation.y = this.yaw;
+    this.pivot.rotation.x = this.pitch;
     // Pulso de celebración.
     if (this.pulse > 0) {
       this.pulse += dt;
       const p = this.pulse / 0.7;
       const s = p >= 1 ? 1 : 1 + 0.045 * Math.sin(p * Math.PI) * (1 - p * 0.3);
-      this.root.scale.setScalar(s);
+      this.pivot.scale.setScalar(s);
       if (p >= 1) {
         this.pulse = 0;
-        this.root.scale.setScalar(1);
+        this.pivot.scale.setScalar(1);
+      }
+    } else if (this.tapPulse > 0) {
+      this.tapPulse += dt;
+      const p = this.tapPulse / 0.35;
+      this.pivot.scale.setScalar(p >= 1 ? 1 : 1 + 0.03 * Math.sin(p * Math.PI));
+      if (p >= 1) this.tapPulse = 0;
+    }
+    // Brillo breve (exposición) durante la celebración.
+    if (this.glow > 0) {
+      this.glow += dt;
+      const g = this.glow / 1.0;
+      this.renderer.toneMappingExposure = 1.1 + (g >= 1 ? 0 : 0.28 * Math.sin(g * Math.PI));
+      if (g >= 1) {
+        this.glow = 0;
+        this.renderer.toneMappingExposure = 1.1;
       }
     }
-    if (this.celebrating) {
-      const c = this.celebrating;
+    if (this.confetti) {
+      const c = this.confetti;
       c.t += dt;
-      const attr = c.points.geometry.getAttribute("position") as THREE.BufferAttribute;
-      for (let i = 0; i < attr.count; i++) {
-        attr.setXYZ(i, attr.getX(i) + c.vel[i * 3] * dt, attr.getY(i) + c.vel[i * 3 + 1] * dt, attr.getZ(i) + c.vel[i * 3 + 2] * dt);
-      }
-      attr.needsUpdate = true;
-      (c.points.material as THREE.PointsMaterial).opacity = Math.max(0, 0.95 * (1 - c.t / 1.6));
-      if (c.t >= 1.6) {
-        this.scene.remove(c.points);
-        c.points.geometry.dispose();
-        (c.points.material as THREE.Material).dispose();
-        this.celebrating = null;
-      }
+      const m = new THREE.Matrix4();
+      const q = new THREE.Quaternion();
+      const e = new THREE.Euler();
+      const sc = new THREE.Vector3();
+      let alive = 0;
+      c.data.forEach((d, i) => {
+        d.v.y -= 6.5 * dt; // gravedad
+        d.p.addScaledVector(d.v, dt);
+        d.rot.x += d.spin.x * dt;
+        d.rot.y += d.spin.y * dt;
+        d.rot.z += d.spin.z * dt;
+        const life = Math.max(0, 1 - c.t / d.life);
+        if (life > 0) alive++;
+        e.copy(d.rot);
+        q.setFromEuler(e);
+        sc.setScalar(Math.min(1, life * 3));
+        m.compose(d.p, q, sc);
+        c.mesh.setMatrixAt(i, m);
+      });
+      c.mesh.instanceMatrix.needsUpdate = true;
+      if (alive === 0) this.clearConfetti();
     }
   }
 
@@ -633,6 +788,13 @@ export class ProgressiveSceneRenderer {
   dispose() {
     this.disposed = true;
     this.renderer.setAnimationLoop(null);
+    const el = this.renderer.domElement;
+    el.removeEventListener("pointerdown", this.onPointerDown);
+    el.removeEventListener("pointermove", this.onPointerMove);
+    el.removeEventListener("pointerup", this.onPointerUp);
+    el.removeEventListener("pointercancel", this.onPointerUp);
+    el.removeEventListener("wheel", this.onWheel);
+    this.clearConfetti();
     this.mixer?.stopAllAction();
     this.scene.traverse((o) => {
       const mesh = o as THREE.Mesh;

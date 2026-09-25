@@ -16,6 +16,7 @@ export type AnimationEventType =
   | "habit.completed"
   | "scene.stage.changed" // la figura 3D del hábito subió de etapa (día)
   | "scene.completed" // la figura quedó completa
+  | "scene.unlocked" // se desbloqueó la siguiente figura (lo emite la vista cuando la muestra)
   | "habit.progress" // un paso de un hábito de cantidad/tiempo (aún sin completar)
   | "habit.swipeNext" // cambio horizontal al hábito siguiente
   | "habit.swipePrevious"
@@ -29,5 +30,5 @@ export interface AnimationEvent {
   type: AnimationEventType;
   tier: AnimationTier;
   entityId: string;
-  meta?: { streak?: number; milestone?: Milestone; count?: number; level?: number; stageFrom?: number; stageTo?: number };
+  meta?: { streak?: number; milestone?: Milestone; count?: number; level?: number; stageFrom?: number; stageTo?: number; sceneId?: string; totalFrom?: number; totalTo?: number; unlockedSceneId?: string | null; figureCompleted?: boolean };
 }
