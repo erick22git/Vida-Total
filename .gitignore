@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Biblioteca local de assets 3D (pesada, .blend/GLB de trabajo) — no va al repo
+/biblioteca de assets/
+# Config local del MCP de Blender (rutas de esta máquina)
+/.mcp.json
