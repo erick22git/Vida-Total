@@ -14,6 +14,8 @@ export type AnimationEventType =
   | "check.press-start" // empezó a mantener presionado
   | "check.press-cancel" // soltó antes de tiempo
   | "habit.completed"
+  | "habit.swipeNext" // cambio horizontal al hábito siguiente
+  | "habit.swipePrevious"
   | "routine.completed"
   | "streak.milestone";
 
