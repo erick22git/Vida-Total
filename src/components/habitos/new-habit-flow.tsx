@@ -132,21 +132,12 @@ export function NewHabitFlow({
       {open && (
         <motion.div
           className="fixed inset-0 z-[70] flex flex-col text-white overflow-hidden"
-          style={{ backgroundColor: "#16161a", backgroundImage: NOISE }}
+          style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 30 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
         >
-          {/* Fondo difuso de color (referencia: mancha rosada desenfocada). */}
-          <motion.div
-            aria-hidden
-            className="absolute left-1/2 top-[48%] w-[80vw] max-w-[420px] aspect-square -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(236,72,153,0.75), rgba(245,179,1,0.35) 55%, transparent 72%)", filter: "blur(48px)" }}
-            animate={reduceMotion ? undefined : { scale: [1, 1.12, 1], x: ["-50%", "-46%", "-50%"] }}
-            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-          />
-
           <div className="relative flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),14px)] h-14">
             <button
               onClick={() => (step > 0 ? go(step - 1) : close())}
