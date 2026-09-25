@@ -53,6 +53,10 @@ export interface Habit {
   /** Hora del recordatorio "HH:mm" (opcional). Solo se guarda: todavía no
    * hay sistema de notificaciones que la use. */
   reminder?: string;
+  /** Propósito/"misión" del hábito (texto libre). Local-only. */
+  mission?: string;
+  /** El usuario lo marcó como dominado. Local-only. */
+  mastered?: boolean;
   /** Milestones de racha (7/21/66, ver `src/lib/progress/types.ts`) ya
    * mostrados — evita repetir la animación de un milestone ya visto.
    * Local-only por ahora (no sincroniza entre dispositivos todavía: la

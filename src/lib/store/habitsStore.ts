@@ -142,6 +142,11 @@ interface HabitsState {
   /** Devuelve el id del hábito creado. */
   addHabit: (habit: Partial<Habit> & { name: string }) => string;
   removeHabit: (id: string) => void;
+  /** Edita campos del hábito (nombre, días, hora, meta, misión…). */
+  updateHabit: (id: string, patch: Partial<Habit>) => void;
+  /** Marca/desmarca una fecha concreta (edición de historial). No dispara
+   * hitos: es una corrección, no un logro. */
+  toggleHabitOnDate: (id: string, dateISO: string) => void;
 
   // ---------- Routines (Hábitos + Rutinas, Fase 5) ----------
   routines: HabitRoutine[];
@@ -344,6 +349,26 @@ export const useHabitsStore = create<HabitsState>()(
         const uidUser = getCurrentUserId();
         if (uidUser) syncInsertHabit(created, uidUser);
         return created.id;
+      },
+      updateHabit: (id, patch) => {
+        set((state) => ({ habits: state.habits.map((h) => (h.id === id ? { ...h, ...patch } : h)) }));
+        const uidUser = getCurrentUserId();
+        // Solo name/icon/color/frequency viajan a Supabase hoy; el resto es
+        // local hasta la migración (ver syncUpdateHabit).
+        if (uidUser) syncUpdateHabit(id, patch, uidUser);
+      },
+      toggleHabitOnDate: (id, dateISO) => {
+        const habit = get().habits.find((h) => h.id === id);
+        if (!habit) return;
+        const completedDates = habit.completedDates.includes(dateISO)
+          ? habit.completedDates.filter((d) => d !== dateISO)
+          : [...habit.completedDates, dateISO];
+        const streak = computeStreak({ completedDates, frequency: habit.frequency });
+        set((state) => ({
+          habits: state.habits.map((h) => (h.id === id ? { ...h, completedDates, streak } : h)),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) syncUpdateHabit(id, { completedDates, streak }, uidUser);
       },
       removeHabit: (id) => {
         set((state) => ({ habits: state.habits.filter((h) => h.id !== id) }));
