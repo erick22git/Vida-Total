@@ -178,9 +178,12 @@ function HabitScreen() {
             </motion.h1>
           </AnimatePresence>
         </div>
-        {/* El detalle del hábito (progreso, horario, configuración) se
-            conecta en la Fase 12 — hasta entonces el botón queda inerte. */}
-        <button aria-label="Detalle del hábito" className="w-10 h-10 flex items-center justify-center cursor-pointer">
+        <button
+          onClick={() => habit && router.push(`/habitos/habito/detalle?id=${encodeURIComponent(habit.id)}`)}
+          disabled={!habit}
+          aria-label="Detalle del hábito"
+          className="w-10 h-10 flex items-center justify-center cursor-pointer disabled:opacity-30"
+        >
           <SlidersHorizontal size={26} strokeWidth={2.4} />
         </button>
       </header>
