@@ -34,6 +34,10 @@ import {
   syncUpsertKanbanColumns,
   hydrateHabitsStoreFromSupabase,
   type HabitsHydratedState,
+  syncUpsertHabitValue,
+  syncDeleteHabitValue,
+  syncUpsertRoutine,
+  syncDeleteRoutine,
 } from "@/lib/sync/habits-sync";
 
 /**
@@ -139,6 +143,10 @@ interface HabitsState {
    * este valor para decidir qué emitir en el Animation Engine; el store
    * nunca decide animaciones. */
   toggleHabitToday: (id: string) => ProgressResult | null;
+  /** Suma progreso HOY en un hábito de cantidad/tiempo (p.ej. +1 vaso). Si
+   * con esto se alcanza la meta, el hábito queda completado hoy (pasa por el
+   * Progress Engine igual que `toggleHabitToday`). */
+  addHabitProgress: (id: string, amount: number) => HabitProgressOutcome | null;
   /** Devuelve el id del hábito creado. */
   addHabit: (habit: Partial<Habit> & { name: string }) => string;
   removeHabit: (id: string) => void;
@@ -192,6 +200,15 @@ interface HabitsState {
    * único llamador en `UserScopeScript`. No se persiste ni se expone como
    * API pública del store más allá de este uso interno. */
   _hydrateFromRemote: (patch: Partial<HabitsState>) => void;
+}
+
+export interface HabitProgressOutcome {
+  value: number;
+  goal: number;
+  /** true si con este paso se alcanzó la meta y el hábito quedó hecho hoy. */
+  completedNow: boolean;
+  /** Resultado del Progress Engine — solo cuando `completedNow`. */
+  result: ProgressResult | null;
 }
 
 export const useHabitsStore = create<HabitsState>()(
@@ -315,18 +332,67 @@ export const useHabitsStore = create<HabitsState>()(
           ? [...habit.milestonesUnlocked, evaluated.milestoneReached]
           : habit.milestonesUnlocked;
 
+        // Hábitos de cantidad/tiempo: marcar/desmarcar el día completo fija
+        // (o borra) su valor del día, para que el historial no se contradiga.
+        const quantified = habit.type === "cantidad" || habit.type === "tiempo";
+        let values = habit.values;
+        if (quantified) {
+          values = { ...(habit.values ?? {}) };
+          if (already) delete values[today];
+          else values[today] = habit.goal ?? 1;
+        }
+
         set((state) => ({
           habits: state.habits.map((h) =>
-            h.id === id ? { ...h, completedDates, streak: evaluated.streak, milestonesUnlocked } : h,
+            h.id === id ? { ...h, completedDates, streak: evaluated.streak, milestonesUnlocked, values } : h,
           ),
         }));
 
         const uidUser = getCurrentUserId();
+        if (uidUser && quantified) {
+          if (already) syncDeleteHabitValue(id, today, uidUser);
+          else syncUpsertHabitValue(id, today, values?.[today] ?? 1, true, uidUser);
+        }
         // milestonesUnlocked no viaja a Supabase todavía (sin columna, ver
         // rowToHabit) — se sincroniza solo lo que sí tiene dónde vivir.
-        if (uidUser) syncUpdateHabit(id, { completedDates, streak: evaluated.streak }, uidUser);
+        if (uidUser) syncUpdateHabit(id, { completedDates, streak: evaluated.streak, milestonesUnlocked }, uidUser);
 
         return already ? null : evaluated;
+      },
+      addHabitProgress: (id, amount) => {
+        const habit = get().habits.find((h) => h.id === id);
+        if (!habit) return null;
+        const goal = habit.goal ?? 1;
+        const today = todayISO();
+        const value = (habit.values?.[today] ?? 0) + amount;
+        const wasDone = habit.completedDates.includes(today);
+        const completedNow = value >= goal && !wasDone;
+
+        let completedDates = habit.completedDates;
+        let streak = habit.streak;
+        let milestonesUnlocked = habit.milestonesUnlocked;
+        let result: ProgressResult | null = null;
+        if (completedNow) {
+          completedDates = [...habit.completedDates, today];
+          result = processCompletionEvent(
+            { type: "habit.completed" },
+            { completedDates, frequency: habit.frequency },
+            habit.milestonesUnlocked,
+          );
+          streak = result.streak;
+          if (result.milestoneReached) milestonesUnlocked = [...habit.milestonesUnlocked, result.milestoneReached];
+        }
+        const values = { ...(habit.values ?? {}), [today]: value };
+
+        set((state) => ({
+          habits: state.habits.map((h) => (h.id === id ? { ...h, values, completedDates, streak, milestonesUnlocked } : h)),
+        }));
+        const uidUser = getCurrentUserId();
+        if (uidUser) {
+          syncUpsertHabitValue(id, today, value, value >= goal, uidUser);
+          if (completedNow) syncUpdateHabit(id, { completedDates, streak, milestonesUnlocked }, uidUser);
+        }
+        return { value, goal, completedNow, result };
       },
       addHabit: (habit) => {
         const created: Habit = {
@@ -364,11 +430,25 @@ export const useHabitsStore = create<HabitsState>()(
           ? habit.completedDates.filter((d) => d !== dateISO)
           : [...habit.completedDates, dateISO];
         const streak = computeStreak({ completedDates, frequency: habit.frequency });
+        const marking = completedDates.includes(dateISO);
+        const quantified = habit.type === "cantidad" || habit.type === "tiempo";
+        let values = habit.values;
+        if (quantified) {
+          values = { ...(habit.values ?? {}) };
+          if (marking) values[dateISO] = habit.goal ?? 1;
+          else delete values[dateISO];
+        }
         set((state) => ({
-          habits: state.habits.map((h) => (h.id === id ? { ...h, completedDates, streak } : h)),
+          habits: state.habits.map((h) => (h.id === id ? { ...h, completedDates, streak, values } : h)),
         }));
         const uidUser = getCurrentUserId();
-        if (uidUser) syncUpdateHabit(id, { completedDates, streak }, uidUser);
+        if (uidUser) {
+          syncUpdateHabit(id, { completedDates, streak }, uidUser);
+          if (quantified) {
+            if (marking) syncUpsertHabitValue(id, dateISO, values?.[dateISO] ?? 1, true, uidUser);
+            else syncDeleteHabitValue(id, dateISO, uidUser);
+          }
+        }
       },
       removeHabit: (id) => {
         set((state) => ({ habits: state.habits.filter((h) => h.id !== id) }));
@@ -661,28 +741,30 @@ export async function hydrateHabitsStore(userId: string): Promise<void> {
 
   const tasks = mergeById(remote.tasks, local.tasks);
   const rawHabits = mergeById(remote.habits, local.habits);
-  // `categoryId`/`milestonesUnlocked` son local-only (la tabla `habits` de
-  // Supabase no tiene esas columnas todavía) — `mergeById` toma la fila
-  // remota tal cual para cualquier id que ya exista ahí, así que sin esto
-  // se perderían apenas alguien inicia sesión en otro dispositivo. Se
-  // preservan del local si el habit ya existía localmente.
+  // Desde la migración 0004 los campos extendidos SÍ viajan a Supabase. Para
+  // filas anteriores a esa migración (o cuando el remoto trae null) se
+  // conserva el valor local; los hitos vistos se unen; y el valor por día
+  // (habit_completions) se mezcla con el local (el remoto gana por fecha).
   const localHabitById = new Map(local.habits.map((h) => [h.id, h] as const));
   const habits = {
     ...rawHabits,
     merged: rawHabits.merged.map((h) => {
       const prevLocal = localHabitById.get(h.id);
-      return prevLocal
-        ? {
-            ...h,
-            categoryId: prevLocal.categoryId,
-            type: prevLocal.type,
-            goal: prevLocal.goal,
-            unit: prevLocal.unit,
-            scheduledDays: prevLocal.scheduledDays,
-            reminder: prevLocal.reminder,
-            milestonesUnlocked: prevLocal.milestonesUnlocked,
-          }
-        : h;
+      const remoteValues = remote.habitValues[h.id];
+      if (!prevLocal) return { ...h, values: remoteValues };
+      return {
+        ...h,
+        categoryId: h.categoryId ?? prevLocal.categoryId,
+        type: h.type && h.type !== "binario" ? h.type : (prevLocal.type ?? h.type),
+        goal: h.goal ?? prevLocal.goal,
+        unit: h.unit ?? prevLocal.unit,
+        scheduledDays: h.scheduledDays ?? prevLocal.scheduledDays,
+        reminder: h.reminder ?? prevLocal.reminder,
+        mission: h.mission ?? prevLocal.mission,
+        mastered: h.mastered || prevLocal.mastered,
+        milestonesUnlocked: [...new Set([...h.milestonesUnlocked, ...prevLocal.milestonesUnlocked])],
+        values: { ...(prevLocal.values ?? {}), ...(remoteValues ?? {}) },
+      };
     }),
   };
   const timeBlocks = mergeById(remote.timeBlocks, local.timeBlocks);
@@ -702,18 +784,32 @@ export async function hydrateHabitsStore(userId: string): Promise<void> {
           c.id === "por-hacer" ? { ...c, taskIds: [...c.taskIds, ...orphanTaskIds] } : c,
         );
 
+  const routines = mergeById(remote.routines, local.routines);
+
   const patch: Partial<HabitsState> = {
+    routines: routines.merged,
     tasks: tasks.merged,
     habits: habits.merged,
     timeBlocks: timeBlocks.merged,
     pages: notionPages.merged,
     kanbanColumns: kanbanColumnsWithOrphans,
   };
+  suppressRoutineSync = true;
   useHabitsStore.getState()._hydrateFromRemote(patch);
+  suppressRoutineSync = false;
 
   // Backfill: sube a Supabase lo que era solo local.
   for (const task of tasks.localOnly) syncInsertTask(task, userId);
   for (const habit of habits.localOnly) syncInsertHabit(habit, userId);
+  for (const routine of routines.localOnly) syncUpsertRoutine(routine, userId);
+  // Valores por día que solo existían en este dispositivo (creados antes de la
+  // migración): se suben a habit_completions.
+  for (const h of habits.merged) {
+    const remoteDays = remote.habitValues[h.id] ?? {};
+    for (const [date, value] of Object.entries(h.values ?? {})) {
+      if (remoteDays[date] === undefined) syncUpsertHabitValue(h.id, date, value, value >= (h.goal ?? 1), userId);
+    }
+  }
   for (const block of timeBlocks.localOnly) syncInsertTimeBlock(block, userId);
   for (const page of notionPages.localOnly) syncInsertNotionPage(page, userId);
   // kanban_columns es un singleton de 3 filas fijas por usuario — se
@@ -723,6 +819,26 @@ export async function hydrateHabitsStore(userId: string): Promise<void> {
   // necesidad de trackear un "localOnly" aparte para esta tabla.
   syncUpsertKanbanColumns(kanbanColumnsWithOrphans, userId);
 }
+
+// ---------- Sync de rutinas ----------
+// Las rutinas se modifican desde varias acciones (agregar, editar pasos,
+// tildar un paso…): en vez de repetir la llamada de sync en cada una, se
+// observa el slice `routines` y se sube lo que cambió. `suppressRoutineSync`
+// evita re-subir lo que acaba de bajar en la hidratación.
+let suppressRoutineSync = false;
+useHabitsStore.subscribe((state, prev) => {
+  if (suppressRoutineSync || state.routines === prev.routines) return;
+  const userId = getCurrentUserId();
+  if (!userId) return;
+  const prevById = new Map(prev.routines.map((r) => [r.id, r] as const));
+  for (const r of state.routines) {
+    if (prevById.get(r.id) !== r) syncUpsertRoutine(r, userId);
+  }
+  const nowIds = new Set(state.routines.map((r) => r.id));
+  for (const r of prev.routines) {
+    if (!nowIds.has(r.id)) syncDeleteRoutine(r.id, userId);
+  }
+});
 
 // ---------- Selectors / helpers ----------
 

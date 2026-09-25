@@ -31,6 +31,8 @@
 import { createClient } from "@/lib/supabase/client";
 import type {
   Habit,
+  HabitRoutine,
+  HabitType,
   KanbanColumn,
   KanbanColumnId,
   NotionBlock,
@@ -172,6 +174,16 @@ export interface HabitRow {
   frequency: Habit["frequency"];
   streak: number;
   completed_dates: string[];
+  // Migración 0004 — pueden faltar en filas anteriores a la migración.
+  category_id?: string | null;
+  type?: HabitType | null;
+  goal?: number | null;
+  unit?: string | null;
+  scheduled_days?: number[] | null;
+  reminder?: string | null;
+  mission?: string | null;
+  mastered?: boolean | null;
+  milestones_unlocked?: number[] | null;
 }
 
 function habitToRow(h: Habit, userId: string): HabitRow {
@@ -184,6 +196,15 @@ function habitToRow(h: Habit, userId: string): HabitRow {
     frequency: h.frequency,
     streak: h.streak,
     completed_dates: h.completedDates,
+    category_id: h.categoryId ?? null,
+    type: h.type ?? "binario",
+    goal: h.goal ?? null,
+    unit: h.unit ?? null,
+    scheduled_days: h.scheduledDays ?? null,
+    reminder: h.reminder ?? null,
+    mission: h.mission ?? null,
+    mastered: h.mastered ?? false,
+    milestones_unlocked: h.milestonesUnlocked ?? [],
   };
 }
 
@@ -196,9 +217,15 @@ function rowToHabit(row: HabitRow): Habit {
     frequency: row.frequency,
     streak: row.streak,
     completedDates: row.completed_dates ?? [],
-    // categoryId/milestonesUnlocked son local-only por ahora (sin columna
-    // en Supabase) — se preservan aparte en el merge, ver habitsStore.ts.
-    milestonesUnlocked: [],
+    categoryId: row.category_id ?? undefined,
+    type: row.type ?? undefined,
+    goal: row.goal ?? undefined,
+    unit: row.unit ?? undefined,
+    scheduledDays: row.scheduled_days ?? undefined,
+    reminder: row.reminder ?? undefined,
+    mission: row.mission ?? undefined,
+    mastered: row.mastered ?? undefined,
+    milestonesUnlocked: row.milestones_unlocked ?? [],
   };
 }
 
@@ -221,6 +248,17 @@ export function syncUpdateHabit(id: string, patch: Partial<Habit>, userId: strin
   if (patch.frequency !== undefined) row.frequency = patch.frequency;
   if (patch.streak !== undefined) row.streak = patch.streak;
   if (patch.completedDates !== undefined) row.completed_dates = patch.completedDates;
+  // Campos opcionales: `in` (no `!== undefined`) para poder BORRARLOS
+  // (p.ej. quitar el recordatorio manda null).
+  if ("categoryId" in patch) row.category_id = patch.categoryId ?? null;
+  if (patch.type !== undefined) row.type = patch.type;
+  if ("goal" in patch) row.goal = patch.goal ?? null;
+  if ("unit" in patch) row.unit = patch.unit ?? null;
+  if ("scheduledDays" in patch) row.scheduled_days = patch.scheduledDays ?? null;
+  if ("reminder" in patch) row.reminder = patch.reminder ?? null;
+  if ("mission" in patch) row.mission = patch.mission ?? null;
+  if (patch.mastered !== undefined) row.mastered = patch.mastered;
+  if (patch.milestonesUnlocked !== undefined) row.milestones_unlocked = patch.milestonesUnlocked;
   if (Object.keys(row).length === 0) return;
   void safeWrite("update habits", () =>
     createClient().from("habits").update(row).eq("id", id).eq("user_id", userId),
@@ -230,6 +268,109 @@ export function syncUpdateHabit(id: string, patch: Partial<Habit>, userId: strin
 export function syncDeleteHabit(id: string, userId: string): void {
   void safeWrite("delete habits", () =>
     createClient().from("habits").delete().eq("id", id).eq("user_id", userId),
+  );
+}
+
+// ============================================================================
+// habit_completions — valor por día de hábitos de cantidad/tiempo
+// ============================================================================
+
+export type HabitValues = Record<string, Record<string, number>>; // habitId -> fecha -> valor
+
+interface HabitCompletionRow {
+  habit_id: string;
+  completed_date: string;
+  value: number;
+}
+
+export function syncUpsertHabitValue(
+  habitId: string,
+  date: string,
+  value: number,
+  completed: boolean,
+  userId: string,
+): void {
+  void safeWrite("upsert habit_completions", () =>
+    createClient()
+      .from("habit_completions")
+      .upsert(
+        { user_id: userId, habit_id: habitId, completed_date: date, value, completed, updated_at: new Date().toISOString() },
+        { onConflict: "habit_id,completed_date" },
+      ),
+  );
+}
+
+export function syncDeleteHabitValue(habitId: string, date: string, userId: string): void {
+  void safeWrite("delete habit_completions", () =>
+    createClient().from("habit_completions").delete().eq("habit_id", habitId).eq("completed_date", date).eq("user_id", userId),
+  );
+}
+
+async function fetchHabitValues(userId: string): Promise<HabitValues> {
+  const rows = await safeFetchList<HabitCompletionRow>("habit_completions", () =>
+    createClient().from("habit_completions").select("habit_id, completed_date, value").eq("user_id", userId),
+  );
+  const out: HabitValues = {};
+  for (const r of rows) (out[r.habit_id] ??= {})[r.completed_date] = Number(r.value);
+  return out;
+}
+
+// ============================================================================
+// habit_routines
+// ============================================================================
+
+interface HabitRoutineRow {
+  id: string;
+  user_id: string;
+  nombre: string;
+  items: HabitRoutine["items"];
+  completed_dates: string[];
+  streak: number;
+  milestones_unlocked: number[];
+  created_at?: string;
+}
+
+function routineToRow(r: HabitRoutine, userId: string): HabitRoutineRow {
+  return {
+    id: r.id,
+    user_id: userId,
+    nombre: r.nombre,
+    items: r.items,
+    completed_dates: r.completedDates,
+    streak: r.streak,
+    milestones_unlocked: r.milestonesUnlocked,
+    created_at: new Date(r.createdAt).toISOString(),
+  };
+}
+
+function rowToRoutine(row: HabitRoutineRow): HabitRoutine {
+  return {
+    id: row.id,
+    nombre: row.nombre,
+    items: row.items ?? [],
+    completedDates: row.completed_dates ?? [],
+    streak: row.streak ?? 0,
+    milestonesUnlocked: row.milestones_unlocked ?? [],
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+  };
+}
+
+async function fetchRoutines(userId: string): Promise<HabitRoutine[]> {
+  const rows = await safeFetchList<HabitRoutineRow>("habit_routines", () =>
+    createClient().from("habit_routines").select("*").eq("user_id", userId),
+  );
+  return rows.map(rowToRoutine);
+}
+
+export function syncUpsertRoutine(routine: HabitRoutine, userId: string): void {
+  void safeWrite("upsert habit_routines", () =>
+    createClient().from("habit_routines").upsert(routineToRow(routine, userId), { onConflict: "id" }),
+  );
+}
+
+export function syncDeleteRoutine(id: string, userId: string): void {
+  void safeWrite("delete habit_routines", () =>
+    createClient().from("habit_routines").delete().eq("id", id).eq("user_id", userId),
   );
 }
 
@@ -431,6 +572,8 @@ export interface HabitsHydratedState {
   timeBlocks: TimeBlock[];
   notionPages: NotionPage[];
   kanbanColumns: KanbanColumn[];
+  routines: HabitRoutine[];
+  habitValues: HabitValues;
 }
 
 /**
@@ -439,13 +582,15 @@ export interface HabitsHydratedState {
  * cómo aplicar el patch (ver `hydrateHabitsStore` en habitsStore.ts).
  */
 export async function hydrateHabitsStoreFromSupabase(userId: string): Promise<HabitsHydratedState> {
-  const [tasks, habits, timeBlocks, notionPages, kanbanColumns] = await Promise.all([
+  const [tasks, habits, timeBlocks, notionPages, kanbanColumns, routines, habitValues] = await Promise.all([
     fetchTasks(userId),
     fetchHabits(userId),
     fetchTimeBlocks(userId),
     fetchNotionPages(userId),
     fetchKanbanColumns(userId),
+    fetchRoutines(userId),
+    fetchHabitValues(userId),
   ]);
 
-  return { tasks, habits, timeBlocks, notionPages, kanbanColumns };
+  return { tasks, habits, timeBlocks, notionPages, kanbanColumns, routines, habitValues };
 }

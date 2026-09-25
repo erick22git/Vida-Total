@@ -54,6 +54,8 @@ export interface Habit {
    * hay sistema de notificaciones que la use. */
   reminder?: string;
   /** Propósito/"misión" del hábito (texto libre). Local-only. */
+  /** Valor acumulado por día en hábitos de cantidad/tiempo (fecha ISO → valor). */
+  values?: Record<string, number>;
   mission?: string;
   /** El usuario lo marcó como dominado. Local-only. */
   mastered?: boolean;
