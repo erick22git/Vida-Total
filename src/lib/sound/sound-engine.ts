@@ -31,6 +31,11 @@ function enabled(): boolean {
 /** Llamar desde un gesto del usuario para que el navegador permita audio. */
 export function unlockAudio(): void {
   try {
+    // iOS 17+: pide que el audio se trate como "reproducción" (no "ambiente"),
+    // así el interruptor de silencio del iPhone no lo calla. Donde la API no
+    // existe (otros navegadores, iOS antiguo) simplemente se ignora.
+    const session = (navigator as unknown as { audioSession?: { type: string } }).audioSession;
+    if (session) session.type = "playback";
     const c = getContext();
     if (c && c.state === "suspended") c.resume().catch(() => {});
   } catch {

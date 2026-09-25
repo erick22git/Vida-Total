@@ -13,9 +13,12 @@ import { haptic } from "@/lib/haptics/haptic";
  */
 export function useHabitFeedback() {
   useEffect(() => {
+    // iOS solo desbloquea el audio al SOLTAR el dedo (touchend/click), no al
+    // apoyarlo — por eso se escuchan varios eventos y no solo pointerdown.
     const unlock = () => unlockAudio();
-    window.addEventListener("pointerdown", unlock, { once: true });
-    return () => window.removeEventListener("pointerdown", unlock);
+    const events = ["pointerdown", "pointerup", "touchend", "click"] as const;
+    events.forEach((e) => window.addEventListener(e, unlock, { passive: true }));
+    return () => events.forEach((e) => window.removeEventListener(e, unlock));
   }, []);
 
   useAnimationEvent((e) => {
