@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ProgressCrystal, type CrystalState } from "@/components/animations/ProgressCrystal";
+import type { CrystalState } from "@/components/animations/ProgressCrystal";
+import { Crystal3D } from "@/components/animations/Crystal3D";
+import { useEffectiveReduceMotion } from "@/lib/store/preferencesStore";
 import { ViewDots } from "@/components/habitos/view-dots";
 import { useAnimationEvent } from "@/lib/animations/use-animation-engine";
 import { LEVEL_MAX, LEVEL_STEP, computeHabitLevel, computeStreak } from "@/lib/progress";
@@ -18,14 +20,16 @@ function crystalStateFor(fraction: number): CrystalState {
 }
 
 /**
- * Vista FIGURA / PROGRESO: la evolución del hábito. Hoy el objeto es el
- * cristal SVG (placeholder); el punto de reemplazo por el modelo de Blender
- * (GLB + React Three Fiber) es `<ProgressCrystal/>` — nada más cambia.
+ * Vista FIGURA / PROGRESO: la evolución del hábito. El objeto es un cristal
+ * 3D hecho con código (`Crystal3D`, React Three Fiber) que se arma pieza a
+ * pieza; el punto de reemplazo por el modelo de Blender (GLB) es
+ * `CrystalScene.tsx` — nada más cambia.
  * Muestra repeticiones / meta, nivel, hitos y la racha como dato secundario.
  */
 export function FigureView({ habit }: { habit: Habit }) {
   const info = computeHabitLevel(habit.completedDates.length);
   const streak = computeStreak({ completedDates: habit.completedDates, frequency: habit.frequency });
+  const reduceMotion = useEffectiveReduceMotion();
   const [flash, setFlash] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -61,7 +65,14 @@ export function FigureView({ habit }: { habit: Habit }) {
       </div>
 
       <div className="flex-1 flex items-center justify-center w-full">
-        <ProgressCrystal state={state} size={260} />
+        <Crystal3D
+          size={300}
+          level={info.level}
+          inLevel={info.mastered ? 1 : (info.total % LEVEL_STEP) / LEVEL_STEP}
+          burst={flash}
+          reduceMotion={reduceMotion}
+          fallbackState={state}
+        />
       </div>
 
       <div className="w-full flex flex-col items-center gap-3">
