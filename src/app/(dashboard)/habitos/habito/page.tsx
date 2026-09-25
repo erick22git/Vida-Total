@@ -11,7 +11,7 @@ import { useEffectiveReduceMotion } from "@/lib/store/preferencesStore";
 import { HabitOrb } from "@/components/habitos/habit-orb";
 import { HoldCircle } from "@/components/habitos/hold-circle";
 import { HabitWeekStrip } from "@/components/habitos/habit-week-strip";
-import { CreateHabitModal } from "@/components/habitos/create-habit-modal";
+import { NewHabitFlow } from "@/components/habitos/new-habit-flow";
 import { useHabitFeedback } from "@/components/habitos/use-habit-feedback";
 import { YearView } from "@/components/habitos/year-view";
 import { FigureView } from "@/components/habitos/figure-view";
@@ -256,6 +256,7 @@ function HabitScreen() {
                         <HoldCircle
                           habitId={habit.id}
                           name={habit.name}
+                          subtitle={habit.type === "cantidad" || habit.type === "tiempo" ? `${habit.goal ?? ""} ${habit.unit ?? ""}`.trim() : undefined}
                           done={done}
                           reduceMotion={reduceMotion}
                           onComplete={() => completeHabit(habit.id)}
@@ -287,10 +288,17 @@ function HabitScreen() {
 
       <MilestoneCelebration habitId={habit?.id} reduceMotion={reduceMotion} />
 
-      <CreateHabitModal
+      <NewHabitFlow
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onCreate={(input) => addHabit(input)}
+        onCreate={(input) => {
+          // El nuevo hábito se agrega al final: saltar directo a él.
+          const previousCount = habits.length;
+          addHabit(input);
+          setDirection(1);
+          setIndex(previousCount);
+          setView(0);
+        }}
       />
     </div>
   );

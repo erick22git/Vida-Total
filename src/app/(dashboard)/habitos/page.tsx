@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   CalendarCheck2,
   ChevronRight,
@@ -12,11 +13,12 @@ import {
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { todayISO, useHabitsStore } from "@/lib/store/habitsStore";
-import { HabitOrbsCard } from "@/components/habitos/habit-orbs-card";
-import { CreateHabitModal } from "@/components/habitos/create-habit-modal";
+import { HabitOrbsCard, habitHref } from "@/components/habitos/habit-orbs-card";
+import { NewHabitFlow } from "@/components/habitos/new-habit-flow";
 import { usePreferencesStore } from "@/lib/store/preferencesStore";
 
 export default function HabitosHubPage() {
+  const router = useRouter();
   const habits = useHabitsStore((s) => s.habits);
   const addHabit = useHabitsStore((s) => s.addHabit);
   const today = todayISO();
@@ -95,10 +97,10 @@ export default function HabitosHubPage() {
         ))}
       </section>
 
-      <CreateHabitModal
+      <NewHabitFlow
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onCreate={(input) => addHabit(input)}
+        onCreate={(input) => router.push(habitHref(addHabit(input)))}
       />
     </div>
   );

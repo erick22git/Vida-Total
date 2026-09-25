@@ -28,6 +28,7 @@ const MOVE_CANCEL_PX = 10;
 export function HoldCircle({
   habitId,
   name,
+  subtitle,
   done,
   reduceMotion,
   onComplete,
@@ -35,6 +36,8 @@ export function HoldCircle({
 }: {
   habitId: string;
   name: string;
+  /** Línea de objetivo bajo el nombre (p.ej. "8 vasos"). */
+  subtitle?: string;
   done: boolean;
   reduceMotion: boolean;
   onComplete: () => void;
@@ -126,12 +129,14 @@ export function HoldCircle({
             <BigCheck size={170} />
           ) : (
             <>
-              <motion.span
-                className="px-8 text-center text-[34px] font-extrabold leading-[1.02] tracking-tight line-clamp-3 break-words"
-                style={{ opacity: nameOpacity }}
-              >
-                {name}
-              </motion.span>
+              <motion.div className="px-8 flex flex-col items-center gap-2" style={{ opacity: nameOpacity }}>
+                <span className="text-center text-[34px] font-extrabold leading-[1.02] tracking-tight line-clamp-3 break-words">{name}</span>
+                {subtitle && (
+                  <span className="text-[12px] uppercase tracking-[0.14em] text-white/55" style={{ fontFamily: "var(--font-geist-mono), monospace" }}>
+                    {subtitle}
+                  </span>
+                )}
+              </motion.div>
               {/* Check "en preparación": aparece a medida que avanza el hold. */}
               <motion.div className="absolute inset-0 flex items-center justify-center" style={{ opacity: checkOpacity }}>
                 <BigCheck size={150} />

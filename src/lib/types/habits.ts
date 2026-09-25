@@ -22,6 +22,9 @@ export interface Task {
 
 export type HabitFrequency = "diario" | "semanal";
 
+/** binario = sí/no · cantidad = 5/8 vasos · tiempo = 20/30 minutos. */
+export type HabitType = "binario" | "cantidad" | "tiempo";
+
 /** Biblioteca propia de categorías (ver `src/lib/data/habit-categories.ts`)
  * — íconos de lucide, no emojis. */
 export interface Category {
@@ -40,6 +43,16 @@ export interface Habit {
   streak: number;
   completedDates: string[]; // ISO date strings (yyyy-MM-dd)
   categoryId?: string;
+  /** Tipo y objetivo del hábito. Local-only hasta la migración de Supabase
+   * (Fase 13) — la tabla `habits` todavía no tiene estas columnas. */
+  type?: HabitType;
+  goal?: number; // p.ej. 8 (vasos) o 20 (minutos); ausente en binario
+  unit?: string; // p.ej. "vasos", "min"
+  /** Días de la semana (0 = domingo … 6 = sábado). Ausente = todos los días. */
+  scheduledDays?: number[];
+  /** Hora del recordatorio "HH:mm" (opcional). Solo se guarda: todavía no
+   * hay sistema de notificaciones que la use. */
+  reminder?: string;
   /** Milestones de racha (7/21/66, ver `src/lib/progress/types.ts`) ya
    * mostrados — evita repetir la animación de un milestone ya visto.
    * Local-only por ahora (no sincroniza entre dispositivos todavía: la

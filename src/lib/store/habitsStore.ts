@@ -139,7 +139,8 @@ interface HabitsState {
    * este valor para decidir qué emitir en el Animation Engine; el store
    * nunca decide animaciones. */
   toggleHabitToday: (id: string) => ProgressResult | null;
-  addHabit: (habit: Partial<Habit> & { name: string }) => void;
+  /** Devuelve el id del hábito creado. */
+  addHabit: (habit: Partial<Habit> & { name: string }) => string;
   removeHabit: (id: string) => void;
 
   // ---------- Routines (Hábitos + Rutinas, Fase 5) ----------
@@ -332,11 +333,17 @@ export const useHabitsStore = create<HabitsState>()(
           streak: 0,
           completedDates: [],
           categoryId: habit.categoryId,
+          type: habit.type,
+          goal: habit.goal,
+          unit: habit.unit,
+          scheduledDays: habit.scheduledDays,
+          reminder: habit.reminder,
           milestonesUnlocked: [],
         };
         set((state) => ({ habits: [...state.habits, created] }));
         const uidUser = getCurrentUserId();
         if (uidUser) syncInsertHabit(created, uidUser);
+        return created.id;
       },
       removeHabit: (id) => {
         set((state) => ({ habits: state.habits.filter((h) => h.id !== id) }));
@@ -639,7 +646,18 @@ export async function hydrateHabitsStore(userId: string): Promise<void> {
     ...rawHabits,
     merged: rawHabits.merged.map((h) => {
       const prevLocal = localHabitById.get(h.id);
-      return prevLocal ? { ...h, categoryId: prevLocal.categoryId, milestonesUnlocked: prevLocal.milestonesUnlocked } : h;
+      return prevLocal
+        ? {
+            ...h,
+            categoryId: prevLocal.categoryId,
+            type: prevLocal.type,
+            goal: prevLocal.goal,
+            unit: prevLocal.unit,
+            scheduledDays: prevLocal.scheduledDays,
+            reminder: prevLocal.reminder,
+            milestonesUnlocked: prevLocal.milestonesUnlocked,
+          }
+        : h;
     }),
   };
   const timeBlocks = mergeById(remote.timeBlocks, local.timeBlocks);
