@@ -45,8 +45,8 @@ next-env.d.ts
 # Config local del MCP de Blender (rutas de esta máquina)
 /.mcp.json
 
-# Modelos 3D de prueba con licencia SIN VERIFICAR (no se publican hasta tener origen/licencia): ver docs/3d/asset-registry.json
-/public/models/*.glb
+# Modelos 3D de prueba (licencia SIN VERIFICAR): se suben al repo SOLO para pruebas, por decision del dueno.
+# ANTES de produccion con clientes: reemplazarlos por assets con licencia (docs/3d/asset-registry.json, publishable:false).
 
 # Carpeta temporal de verificación en navegador (tools/3d/harness)
 /.harness_tmp/

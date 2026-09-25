@@ -36,3 +36,6 @@ FPS/memoria en teléfono real; densidad adaptable en gama baja; ciclo 2 (tras co
 
 ## Reproducir
 `tools/3d/blender/10–13_*_7day.py` (construcción) → `20–23_export_*.py` (GLB) → `tools/3d/verify/glb_report.mjs`. Ver `tools/3d/README.md`.
+
+## Estado de publicación
+Los 5 GLB (`public/models/*_meshopt.glb`, ~5,7 MB) están en el repo y se despliegan en Vercel SOLO para pruebas (decisión del dueño, 2026-09-25). Siguen `UNVERIFIED` / `publishable: false`: **hay que reemplazarlos o verificar su licencia antes de producción con clientes reales.**
