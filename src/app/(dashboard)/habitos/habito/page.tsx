@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, type PanInfo } from "framer-motion";
-import { ChevronDown, Plus, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, Plus, SlidersHorizontal } from "lucide-react";
 import { todayISO, useHabitsStore } from "@/lib/store/habitsStore";
 import { animationEngine } from "@/lib/animations/animation-engine";
 import { completeHabit, undoHabit } from "@/lib/habits/complete-habit";
@@ -142,13 +142,14 @@ function HabitScreen() {
       className="fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden"
       style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }}
     >
-      <div className="flex justify-center pt-[max(env(safe-area-inset-top),8px)]">
+      <div className="flex items-center px-5 pt-[max(env(safe-area-inset-top),10px)]">
         <button
           onClick={() => router.push("/habitos")}
           aria-label="Volver a Hábitos"
-          className="w-12 h-6 flex items-center justify-center text-white/40 cursor-pointer"
+          className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+          style={{ background: "#0d0d0d", boxShadow: "inset 0 1px 1px rgba(255,255,255,0.12), 0 2px 8px rgba(0,0,0,0.5)" }}
         >
-          <ChevronDown size={20} />
+          <ChevronLeft size={22} strokeWidth={2.6} />
         </button>
       </div>
 
