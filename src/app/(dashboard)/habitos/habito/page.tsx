@@ -184,6 +184,35 @@ function HabitScreen() {
         </button>
       </header>
 
+      {/* Indicador del hábito actual — discreto, no es una tab bar. */}
+      {habits.length > 1 && (
+        <div className="h-5 shrink-0 flex items-center justify-center gap-1" style={MONO}>
+          {habits.length > 8 ? (
+            <span className="text-[11px] text-white/45 tabular-nums">
+              {safeIndex + 1} / {habits.length}
+            </span>
+          ) : (
+            habits.map((h, i) => (
+              <button
+                key={h.id}
+                onClick={() => goTo(i)}
+                aria-label={`Ir a ${h.name}`}
+                className="w-4 h-4 flex items-center justify-center cursor-pointer"
+              >
+                <span
+                  className="rounded-full transition-all"
+                  style={{
+                    width: i === safeIndex ? 7 : 5,
+                    height: i === safeIndex ? 7 : 5,
+                    background: i === safeIndex ? "#fff" : "rgba(255,255,255,0.3)",
+                  }}
+                />
+              </button>
+            ))
+          )}
+        </div>
+      )}
+
       <main
         className="flex-1 min-h-0 relative touch-none"
         onPointerDown={onStagePointerDown}
@@ -254,34 +283,6 @@ function HabitScreen() {
           </div>
         )}
 
-        {/* Indicador del hábito actual — discreto, no es una tab bar. */}
-        {habits.length > 1 && (
-          <div className="absolute top-1 left-0 right-0 flex items-center justify-center gap-1 z-10" style={MONO}>
-            {habits.length > 8 ? (
-              <span className="text-[11px] text-white/45 tabular-nums">
-                {safeIndex + 1} / {habits.length}
-              </span>
-            ) : (
-              habits.map((h, i) => (
-                <button
-                  key={h.id}
-                  onClick={() => goTo(i)}
-                  aria-label={`Ir a ${h.name}`}
-                  className="w-4 h-4 flex items-center justify-center cursor-pointer"
-                >
-                  <span
-                    className="rounded-full transition-all"
-                    style={{
-                      width: i === safeIndex ? 7 : 5,
-                      height: i === safeIndex ? 7 : 5,
-                      background: i === safeIndex ? "#fff" : "rgba(255,255,255,0.3)",
-                    }}
-                  />
-                </button>
-              ))
-            )}
-          </div>
-        )}
       </main>
 
       <MilestoneCelebration habitId={habit?.id} reduceMotion={reduceMotion} />
