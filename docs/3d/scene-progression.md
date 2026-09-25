@@ -1,6 +1,6 @@
 # SceneProgression — de progreso a paisaje
 
-Diseño del sistema que convierte "progreso" en "qué parte de la escena está construida". **Conceptual: no hay código en `src/` todavía.** Es independiente de Hábitos, de React y de three.js.
+Sistema que convierte "progreso" en "qué parte de la escena está construida". **Implementado para Hábitos** (ver `forest-7-days.md`): `src/lib/3d/scene-progression.ts` (puro), `scene-registry.ts`, `progressive-scene.ts` (three.js) y `src/components/3d/ProgressiveScene.tsx`. Es independiente de Hábitos, de React y de three.js en su capa pura. **No hay un `7` fijo en el código**: la cantidad de etapas sale de la configuración (`createSceneConfig`) y funciona igual con 7, 8, 10 o 60.
 
 ## 1. Contrato
 
@@ -75,10 +75,8 @@ Progress Engine (repeticiones acumuladas por hábito)
 - No hace falta tocar el Progress Engine: `SceneProgression` es otro suscriptor del mismo flujo de eventos.
 - Persistencia: el progreso ya vive en `habit_completions`/`completed_dates` (Supabase); la etapa siempre se recalcula.
 
-## 7. Lo que falta para implementarlo
+## 7. Estado de la implementación
 
-1. Tipos + `stageFor` + `SceneProgression` (puros, con pruebas) en `src/lib/3d/`.
-2. Adaptador de eventos (`habit.completed` → `update`).
-3. `<SceneStage assetId/>` (R3F, carga perezosa) + instanciador de runtime.
-4. Decisión de R3F vs three.js directo (ver hallazgo de tipos en `3d-architecture.md`).
-5. Prueba en teléfono real (FPS, memoria, tiempo de carga).
+Hecho: tipos + `stageFor`/`sceneStateFor`/`stageChange` (puros), registro en runtime, reproductor three.js con instanciación, componente React, adaptador de eventos (`completeHabit` emite `scene.stage.changed` / `scene.completed`) y la integración en la vista FIGURA de Hábitos.
+
+Falta: pruebas automatizadas de la capa pura, otros módulos (Gym, Paz…), decidir R3F vs three.js directo (ver `3d-architecture.md`) y probar en un teléfono real (FPS, memoria, tiempo de carga).

@@ -36,7 +36,7 @@ GLB                        landscape_bosque_001.glb (+ metadatos vt_* en `extras
 Regla de capas (la misma que ya sigue Hábitos): **la UI no decide progreso, el Progress Engine no conoce animaciones, el Animation Engine solo emite eventos.** La escena 3D es *otro suscriptor* del mismo flujo.
 
 Hoy existe: `src/lib/progress/` (Progress Engine), `src/lib/animations/` (Animation Engine con eventos `habit.completed`, `habit.milestone`, `habit.levelUp`…), `src/components/animations/CrystalScene.tsx` + `Crystal3D.tsx` (cristal en three.js, con respaldo SVG).
-Falta (y **no** se creó en esta fase): el Achievement/Event System global, `SceneProgression`, el cargador de GLB y el instanciador de runtime.
+Implementado para Hábitos: `SceneProgression` (`src/lib/3d/scene-progression.ts`), registro en runtime, reproductor de GLB con instanciación (`progressive-scene.ts`) y su componente React; los eventos `scene.stage.changed` / `scene.completed` viajan por el Animation Engine existente. Falta: el Achievement/Event System global (Gym y demás módulos) y probar en un teléfono real.
 
 ## 3. Eventos globales
 

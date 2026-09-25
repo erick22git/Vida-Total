@@ -39,7 +39,9 @@ glTF solo entiende PBR plano. Los materiales procedurales (`ObjectInfo → Color
 - Luces "falsas" del original (p. ej. las de debajo del agua) se animan o se quitan en la previsualización; **en runtime las luces las pone la app**.
 - Cuando el asset sí traiga texturas: máximo 2K, atlas por familia, WebP/KTX2 (ver `performance.md`).
 
-## 4. División en etapas (script `02_build_stages_and_animation.py`)
+## 4. División en etapas (script `02_build_7_day_stages.py`; el de 9 etapas quedó como `legacy_02_…`)
+
+> Vigente: **Bosque de 7 días** (una etapa por día, ver `forest-7-days.md`). La tabla de 9 etapas de abajo es el prototipo anterior, conservado como referencia. Reglas nuevas: la figura se exporta **aislada** (sin fondo azul, niebla, cámara ni luces; render de prueba con `film_transparent`), se comparten mallas idénticas (copas/troncos) y se exporta con la escena en su estado final.
 
 1. Se elige una **secuencia propia del asset** (no se impone la misma a todos). Para el bosque:
 

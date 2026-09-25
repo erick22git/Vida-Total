@@ -47,6 +47,16 @@ Los 19 árboles suman solo ~11 k; el problema es el **pasto** (1 200 matas) y el
 - Draw calls: **muy por encima** (1 535 vs ≤ 150). Por eso el prototipo está marcado `mobileReady: false`.
 - Transferencia: **dentro** (2.02 MB).
 
+## 3b. Bosque de 7 días medido DENTRO de la app (Chromium con WebGL2, GPU de escritorio)
+
+| Momento | Draw calls | Triángulos |
+|---|---|---|
+| Día 1 (terreno) | 21 | 7 k |
+| Día 5 (durante la construcción, etapas 1–4 asentadas) | 142 (pico) | 79 k |
+| **Día 7 (completo, ya asentado)** | **124** | **126 k** |
+
+Con instanciación en runtime bajó de 1 533 nodos a 124 draw calls. GLB: 1.92 MB (Meshopt). Materiales: 24. Texturas: 0. Esto se midió con el código real de la app (página de Hábitos empaquetada), pero en una GPU de escritorio: **no es una medida de un teléfono**. Por eso `mobileReady` sigue en `false` (cumple el presupuesto de gama media, no el de gama baja, y falta FPS/memoria en dispositivo).
+
 ## 4. Qué se aplicó y qué falta
 
 Aplicado en el pipeline:
@@ -57,8 +67,8 @@ Aplicado en el pipeline:
 - **Animación**: el detalle repetitivo no lleva clip (pasar de 4.5 MB / 11 min de exportación a 3.3 MB / 35 s).
 
 Falta (en este orden de impacto):
-1. **Instanciar en runtime** (`InstancedMesh`) las mallas compartidas: 1 535 → ≤ 418 draw calls.
-2. **Deduplicar copas y rocas**: los 19 árboles tienen 95 copas con malla propia aunque solo hay 3 variedades de pino; si las copas de una misma variedad comparten malla (3 variedades × 5 capas ≈ 15) los draw calls bajan a **≈ 120**. Requiere modelarlas como *linked duplicates* antes de aplicar Solidify (a verificar: hoy las copas difieren en escala/forma).
+1. ~~Instanciar en runtime~~ **HECHO** (`progressive-scene.ts`): detalle repetitivo en `InstancedMesh` desde el inicio y piezas repetidas de etapas terminadas asentadas como instancias → 124 draw calls.
+2. ~~Deduplicar copas~~ **HECHO en Blender** (10 mallas de copa y 3 de tronco compartidas). Antes: **Deduplicar copas y rocas**: los 19 árboles tienen 95 copas con malla propia aunque solo hay 3 variedades de pino; si las copas de una misma variedad comparten malla (3 variedades × 5 capas ≈ 15) los draw calls bajan a **≈ 120**. Requiere modelarlas como *linked duplicates* antes de aplicar Solidify (a verificar: hoy las copas difieren en escala/forma).
 3. **Densidad adaptable**: el runtime muestra solo el primer N % del pasto según el dispositivo (gama baja ≈ 50 % → ~80 k triángulos).
 4. **Culling por etapa**: las etapas futuras no se renderizan (`visible = false`), así que la escena real en curso siempre pesa menos que el total.
 5. **LOD** para los pinos lejanos (no necesario con la cámara fija actual).

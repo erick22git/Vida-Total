@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Scripts de taller 3D (Blender/harness de verificación): no forman parte de la app.
+    "tools/**",
   ]),
 ]);
 

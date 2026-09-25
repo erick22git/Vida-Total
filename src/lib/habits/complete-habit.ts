@@ -1,6 +1,8 @@
 import { animationEngine } from "@/lib/animations/animation-engine";
 import { todayISO, useHabitsStore } from "@/lib/store/habitsStore";
 import { crossedLevelMilestone } from "@/lib/progress";
+import { stageChange } from "@/lib/3d/scene-progression";
+import { getSceneAsset } from "@/lib/3d/scene-registry";
 import type { ProgressResult } from "@/lib/progress/types";
 import type { Habit } from "@/lib/types/habits";
 
@@ -20,6 +22,22 @@ function emitCompletion(habitId: string, prevTotal: number, result: ProgressResu
   const animationEvent = animationEngine.emit.bind(animationEngine);
   animationEvent({ type: "habit.completed", tier: "action", entityId: habitId, meta: { streak: result?.streak } });
 
+  // Figura 3D del hábito: ¿esta repetición desbloquea la siguiente etapa (día)? La escena solo RECIBE
+  // este aviso; el progreso lo sigue calculando el Progress Engine/store. Un pequeño desfase deja
+  // que primero se vea el check completado.
+  const scene = stageChange(getSceneAsset().config, prevTotal, prevTotal + 1);
+  if (scene.direction === "up") {
+    setTimeout(() => {
+      animationEvent({
+        type: "scene.stage.changed",
+        tier: scene.completedNow ? "epic" : "action",
+        entityId: habitId,
+        meta: { stageFrom: scene.from, stageTo: scene.to },
+      });
+      if (scene.completedNow) animationEvent({ type: "scene.completed", tier: "epic", entityId: habitId, meta: { stageTo: scene.to } });
+    }, 250);
+  }
+
   // Hito por repeticiones (10/20/…/60): jerarquía "milestone", el 60 es "epic".
   const crossed = crossedLevelMilestone(prevTotal, prevTotal + 1);
   if (crossed) {
@@ -31,7 +49,8 @@ function emitCompletion(habitId: string, prevTotal: number, result: ProgressResu
       );
     }, 380);
   }
-  if (result?.milestoneReached) {
+  // Si esta repetición además completa la figura 3D, esa celebración manda: no se apila la de la racha.
+  if (result?.milestoneReached && !scene.completedNow) {
     // Racha de 7/21/66: si además hubo hito de repeticiones, va después para
     // que las dos ceremonias no se pisen.
     setTimeout(() => {

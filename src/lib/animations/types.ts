@@ -14,6 +14,8 @@ export type AnimationEventType =
   | "check.press-start" // empezó a mantener presionado
   | "check.press-cancel" // soltó antes de tiempo
   | "habit.completed"
+  | "scene.stage.changed" // la figura 3D del hábito subió de etapa (día)
+  | "scene.completed" // la figura quedó completa
   | "habit.progress" // un paso de un hábito de cantidad/tiempo (aún sin completar)
   | "habit.swipeNext" // cambio horizontal al hábito siguiente
   | "habit.swipePrevious"
@@ -27,5 +29,5 @@ export interface AnimationEvent {
   type: AnimationEventType;
   tier: AnimationTier;
   entityId: string;
-  meta?: { streak?: number; milestone?: Milestone; count?: number; level?: number };
+  meta?: { streak?: number; milestone?: Milestone; count?: number; level?: number; stageFrom?: number; stageTo?: number };
 }

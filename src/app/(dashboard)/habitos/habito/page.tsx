@@ -13,6 +13,7 @@ import { HoldCircle } from "@/components/habitos/hold-circle";
 import { HabitWeekStrip } from "@/components/habitos/habit-week-strip";
 import { NewHabitFlow } from "@/components/habitos/new-habit-flow";
 import { useHabitFeedback } from "@/components/habitos/use-habit-feedback";
+import { useAnimationEvent } from "@/lib/animations/use-animation-engine";
 import { YearView } from "@/components/habitos/year-view";
 import { FigureView } from "@/components/habitos/figure-view";
 import { MilestoneCelebration } from "@/components/habitos/milestone-celebration";
@@ -62,6 +63,11 @@ function HabitScreen() {
   const [viewDir, setViewDir] = useState(1);
   const gestureStart = useRef<{ x: number; y: number } | null>(null);
   const wheelLock = useRef(false);
+  // Secuencia de completado: tras completar un día se abre la vista FIGURA (con la etapa anterior),
+  // la escena construye la parte nueva y, pasado un momento, se vuelve a la vista CHECK.
+  const [build, setBuild] = useState<{ habitId: string; from: number } | null>(null);
+  const viewRef = useRef(0);
+  const autoReturn = useRef<{ enter: ReturnType<typeof setTimeout>; back: ReturnType<typeof setTimeout> } | null>(null);
 
   const today = todayISO();
   const safeIndex = Math.min(index, Math.max(habits.length - 1, 0));
@@ -70,7 +76,10 @@ function HabitScreen() {
 
   // Mantiene la URL apuntando al hábito visible sin re-navegar.
   useEffect(() => {
-    if (habit) window.history.replaceState(null, "", `/habitos/habito?id=${encodeURIComponent(habit.id)}`);
+    if (!habit) return;
+    // Conserva ?debug3d=1 (si está) para poder probar los 7 días en el dispositivo.
+    const debug = new URLSearchParams(window.location.search).get("debug3d") === "1" ? "&debug3d=1" : "";
+    window.history.replaceState(null, "", `/habitos/habito?id=${encodeURIComponent(habit.id)}${debug}`);
   }, [habit]);
 
   const goTo = useCallback(
@@ -88,15 +97,50 @@ function HabitScreen() {
     [habits, safeIndex],
   );
 
+  const cancelAutoReturn = useCallback(() => {
+    if (autoReturn.current) {
+      clearTimeout(autoReturn.current.enter);
+      clearTimeout(autoReturn.current.back);
+      autoReturn.current = null;
+    }
+  }, []);
+
   const goView = useCallback(
     (next: number) => {
       if (next < 0 || next >= VIEW_COUNT || next === view) return;
+      cancelAutoReturn(); // si el usuario navega a mano, la secuencia automática se cancela
       setViewDir(next > view ? 1 : -1);
       setView(next);
       animationEngine.emit({ type: "habit.viewChange", tier: "action", entityId: habit?.id ?? "" });
     },
-    [view, habit?.id],
+    [view, habit?.id, cancelAutoReturn],
   );
+
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
+
+  useAnimationEvent((e) => {
+    if (e.type !== "scene.stage.changed" || !habit || e.entityId !== habit.id) return;
+    cancelAutoReturn();
+    const from = e.meta?.stageFrom ?? 0;
+    const enter = setTimeout(() => {
+      setBuild({ habitId: habit.id, from });
+      setViewDir(1);
+      setView(2);
+      // Tiempo para ver la construcción y la celebración; después vuelve al check.
+      const back = setTimeout(() => {
+        if (viewRef.current === 2) {
+          setViewDir(-1);
+          setView(0);
+        }
+        setBuild(null);
+        autoReturn.current = null;
+      }, 3400);
+      if (autoReturn.current) autoReturn.current.back = back;
+    }, 900);
+    autoReturn.current = { enter, back: enter };
+  });
 
   // Swipe VERTICAL = otra vista del hábito (el horizontal es otro hábito;
   // ver el drag="x" más abajo). Deslizar el dedo hacia arriba avanza.
@@ -273,7 +317,7 @@ function HabitScreen() {
                     </div>
                   )}
                   {view === 1 && <YearView completedDates={habit.completedDates} todayISO={today} />}
-                  {view === 2 && <FigureView habit={habit} />}
+                  {view === 2 && <FigureView habit={habit} buildFrom={build && build.habitId === habit.id ? build.from : null} />}
                 </motion.div>
               </AnimatePresence>
             </motion.div>

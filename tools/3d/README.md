@@ -1,6 +1,6 @@
 # tools/3d — taller de assets 3D
 
-Scripts con los que se preparó el prototipo `landscape_bosque_001`. Documentación completa en `docs/3d/`.
+Scripts con los que se preparó el **Bosque de 7 días** (`forest_progression_001`; el prototipo de 9 etapas quedó como `legacy_*`). Documentación completa en `docs/3d/` (empezar por `forest-7-days.md`).
 
 > Las rutas dentro de los scripts son **de esta máquina** (`C:\Erick\...`). Si cambian, buscar `C:\\Erick` y ajustar.
 
@@ -16,25 +16,28 @@ cd C:\Erick\herramientas\blender-mcp
 # 0) (una vez) servidor headless
 blender --background --python scripts\headless_server.py -- --port 9334
 
-# 1) preparar (partículas → objetos, materiales planos, colecciones de plantillas)
+# 1) preparar (partículas → objetos, materiales, colecciones de plantillas)
 uv run python <repo>\tools\3d\client\runpy.py <repo>\tools\3d\blender\01_prepare_landscape.py 600
-# 2) etapas + animación (SIEMPRE después del 1: el 2 parte del archivo que guarda el 1)
-uv run python <repo>\tools\3d\client\runpy.py <repo>\tools\3d\blender\02_build_stages_and_animation.py 900
-# 3) previews y vídeo
-uv run python <repo>\tools\3d\client\render_stages.py
-uv run python <repo>\tools\3d\client\render_video.py          # ~8 min; el comando "expira" a los 300 s pero Blender termina
-# 4) exportar GLB (crudo, Meshopt, Draco)
-uv run python <repo>\tools\3d\client\runpy.py <repo>\tools\3d\blender\03_export_glb.py 280
-# 5) verificar
+# 2) 7 etapas (una por día) + animación + figura aislada (SIEMPRE después del 1: parte del archivo que guarda el 1)
+uv run python <repo>\tools\3d\client\runpy.py <repo>\tools\3d\blender\02_build_7_day_stages.py 900
+# 3) renders RGBA de cada día y comprobación de transparencia
+uv run python <repo>\tools\3d\client\render_days.py
+uv run --with pillow python <repo>\tools\3d\client\alpha_sheet.py <carpeta previews_7dias> <salida.png>
+# 4) exportar GLB (crudo, Meshopt, Draco): solo la colección STAGES, sin luces/cámaras/fondo
+uv run python <repo>\tools\3d\client\runpy.py <repo>\tools\3d\blender\03_export_forest_glb.py 280
+# 5) verificar el GLB
 node <repo>\tools\3d\verify\inspect_glb.mjs  <glb>
-node <repo>\tools\3d\verify\verify_glb.mjs   <glb>     # carga con GLTFLoader y muestrea STAGE_4
-node <repo>\tools\3d\verify\mesh_use.mjs     <glb>     # draw calls estimados
+node <repo>\tools\3d\verify\mesh_use.mjs     <glb>     # draw calls sin instanciar
 node <repo>\tools\3d\verify\stage_tris.mjs   <glb>     # triángulos por etapa
+# 6) copiar el GLB Meshopt a public\models\forest_progression_001_meshopt.glb (ignorado por git)
 ```
 
+Verificación en navegador (escena + página real de Hábitos): `harness/README.md`.
 Análisis de un `.blend` nuevo: `client\run_analysis.py` (usa `blender\analyze_blend.py`) y `client\render_originals.py`.
 
 ## Notas
 - `execute_python` del addon rechaza ciertos patrones (`__import__`, `subprocess`, `socket`, `exit(`…): los scripts están escritos para respetarlo.
-- Los pasos 1 y 2 **no son reejecutables por separado**: cada corrida de 2 vuelve a animar sobre el archivo ya animado. Reejecutar siempre 1 → 2.
-- El paso 3 (`03_export_glb.py`) no guarda el `.blend`: modifica la escena en memoria solo para exportar.
+- **1 y 2 no son reejecutables por separado**: cada corrida de 2 vuelve a animar sobre el archivo ya animado. Reejecutar siempre 1 → 2.
+- `03_export_forest_glb.py` no guarda el `.blend`: modifica la escena en memoria solo para exportar. Exporta con la escena en su estado final; aun así el GLB guarda en cada nodo la pose INICIAL (escala 0) y la pose final sale del último fotograma del clip (el runtime lo resuelve en `captureRestFromClips`).
+- Los comandos largos (vídeo, exportar) "expiran" a los 300 s en el cliente aunque Blender termine: comprobar el archivo de salida.
+- `verify/verify_glb.mjs` es del prototipo de 9 etapas (muestrea `STAGE_4`); para el bosque de 7 días la comprobación real se hizo en el navegador.

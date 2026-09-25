@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { CrystalState } from "@/components/animations/ProgressCrystal";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Crystal3D } from "@/components/animations/Crystal3D";
-import { useEffectiveReduceMotion } from "@/lib/store/preferencesStore";
+import type { CrystalState } from "@/components/animations/ProgressCrystal";
+import { ProgressiveScene } from "@/components/3d/ProgressiveScene";
 import { ViewDots } from "@/components/habitos/view-dots";
-import { useAnimationEvent } from "@/lib/animations/use-animation-engine";
-import { LEVEL_MAX, LEVEL_STEP, computeHabitLevel, computeStreak } from "@/lib/progress";
+import { computeStreak } from "@/lib/progress";
+import { sceneStateFor } from "@/lib/3d/scene-progression";
+import { getSceneAsset } from "@/lib/3d/scene-registry";
+import { useEffectiveReduceMotion } from "@/lib/store/preferencesStore";
+import type { SceneStats } from "@/lib/3d/progressive-scene";
 import type { Habit } from "@/lib/types/habits";
 
 const MONO = { fontFamily: "var(--font-geist-mono), monospace" } as const;
@@ -20,94 +24,131 @@ function crystalStateFor(fraction: number): CrystalState {
 }
 
 /**
- * Vista FIGURA / PROGRESO: la evolución del hábito. El objeto es un cristal
- * 3D hecho con código (`Crystal3D`, React Three Fiber) que se arma pieza a
- * pieza; el punto de reemplazo por el modelo de Blender (GLB) es
- * `CrystalScene.tsx` — nada más cambia.
- * Muestra repeticiones / meta, nivel, hitos y la racha como dato secundario.
+ * Vista FIGURA: la escena 3D que se construye con el progreso del hábito (hoy, el Bosque de 7 días).
+ *
+ * Este componente NO calcula progreso: lee las repeticiones del hábito, le pide a `SceneProgression`
+ * en qué etapa está y le pasa esa etapa a la escena. Cuando el hábito se acaba de completar, la
+ * pantalla de Hábitos abre esta vista con `buildFrom` (la etapa anterior) para que se vea construirse
+ * la parte nueva.
+ *
+ * Depuración (solo con `?debug3d=1` o en desarrollo): botones para probar el día 0..N sin completar
+ * hábitos reales. No cambia ningún dato del hábito.
  */
-export function FigureView({ habit }: { habit: Habit }) {
-  const info = computeHabitLevel(habit.completedDates.length);
+export function FigureView({ habit, buildFrom = null }: { habit: Habit; buildFrom?: number | null }) {
+  const asset = getSceneAsset();
+  const total = habit.completedDates.length;
+  const state = sceneStateFor(asset.config, total);
   const streak = computeStreak({ completedDates: habit.completedDates, frequency: habit.frequency });
   const reduceMotion = useEffectiveReduceMotion();
-  const [flash, setFlash] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const params = useSearchParams();
+  const debug = params.get("debug3d") === "1" || process.env.NODE_ENV !== "production";
 
-  // Al alcanzar un hito el cristal pasa un momento por el estado "milestone".
-  useAnimationEvent((e) => {
-    if ((e.type === "habit.milestone" || e.type === "habit.levelUp") && e.entityId === habit.id) {
-      setFlash(true);
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => setFlash(false), 1800);
-    }
-  });
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
+  // Si venimos de completar un día: primero se muestra la etapa anterior y, un instante después, la nueva.
+  const [built, setBuilt] = useState(buildFrom === null);
+  useEffect(() => {
+    if (built) return;
+    const t = setTimeout(() => setBuilt(true), 450);
+    return () => clearTimeout(t);
+  }, [built]);
 
-  const state: CrystalState = flash ? "milestone" : crystalStateFor(info.fraction);
+  const [debugStage, setDebugStage] = useState<number | null>(null);
+  const [replayKey, setReplayKey] = useState(0);
+  const [stats, setStats] = useState<SceneStats | null>(null);
+
+  const shownStage = debugStage ?? (built ? state.stage : (buildFrom ?? 0));
+  const stageInfo = asset.config.stages.find((s) => s.stage === shownStage);
 
   return (
     <div className="w-full h-full flex flex-col items-center px-6 pb-[max(env(safe-area-inset-bottom),20px)]">
       <div className="mt-2 flex flex-col items-center gap-2">
         <span className="text-[13px] uppercase tracking-[0.14em] text-white/60" style={MONO}>
-          {info.mastered ? "Dominado" : `Nivel ${info.level + 1}`}
+          Día {shownStage} de {state.totalStages}
         </span>
         <span
           className="px-5 py-1 text-[13px] font-bold uppercase tracking-[0.16em] text-black rounded-sm"
           style={{ ...MONO, background: "#f5b301" }}
         >
-          {info.mastered ? "Master" : info.level === 0 ? "Inicio" : `Hito ${info.level * LEVEL_STEP}`}
+          {shownStage === 0 ? "Sin empezar" : (stageInfo?.name ?? "")}
         </span>
       </div>
 
-      <div className="flex-1 flex items-center justify-center w-full">
-        <Crystal3D
-          size={300}
-          level={info.level}
-          inLevel={info.mastered ? 1 : (info.total % LEVEL_STEP) / LEVEL_STEP}
-          burst={flash}
+      <div className="flex-1 min-h-0 flex items-center justify-center w-full">
+        <ProgressiveScene
+          asset={asset}
+          stage={shownStage}
           reduceMotion={reduceMotion}
-          fallbackState={state}
+          replayKey={replayKey}
+          className="w-full aspect-square max-w-[420px]"
+          onStats={debug ? setStats : undefined}
+          fallback={
+            <Crystal3D
+              size={260}
+              level={Math.floor(state.fraction * 6)}
+              inLevel={(state.fraction * 6) % 1}
+              burst={false}
+              reduceMotion={reduceMotion}
+              fallbackState={crystalStateFor(state.fraction)}
+            />
+          }
         />
       </div>
 
       <div className="w-full flex flex-col items-center gap-3">
         <span className="text-[15px] tabular-nums text-white/90" style={MONO}>
-          {info.total} / {info.goal}
+          {shownStage} / {state.totalStages}
         </span>
-        <div className="h-[3px] w-28 rounded-full bg-white/15 overflow-hidden">
-          <div className="h-full rounded-full" style={{ width: `${info.fraction * 100}%`, background: "#f5b301", transition: "width .5s ease" }} />
-        </div>
-        <div className="flex items-center justify-center gap-3 mt-2 w-full relative">
-          {Array.from({ length: LEVEL_MAX }, (_, i) => {
-            const reached = info.level > i;
-            return (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden>
-                  <polygon
-                    points="12,2 21,7 21,17 12,22 3,17 3,7"
-                    fill={reached ? "#f5b301" : "none"}
-                    stroke={reached ? "#f5b301" : "rgba(255,255,255,0.35)"}
-                    strokeWidth="1.5"
-                  />
-                </svg>
-                <span className="text-[10px] text-white/45" style={MONO}>
-                  {(i + 1) * LEVEL_STEP}
-                </span>
-              </div>
-            );
-          })}
-          <div className="absolute right-0 top-1">
+        <div className="flex items-center gap-2 w-full justify-center relative">
+          {asset.config.stages.map((s) => (
+            <span
+              key={s.stage}
+              className="h-[3px] w-8 rounded-full transition-colors"
+              style={{ background: s.stage <= shownStage ? "#f5b301" : "rgba(255,255,255,0.18)" }}
+            />
+          ))}
+          <div className="absolute right-0 -top-1">
             <ViewDots index={2} />
           </div>
         </div>
         <span className="text-[11px] uppercase tracking-[0.14em] text-white/40" style={MONO}>
           Racha {streak} {streak === 1 ? "día" : "días"}
         </span>
+
+        {debug && (
+          <div className="mt-1 flex flex-col items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: "rgba(255,255,255,0.06)" }}>
+            <span className="text-[10px] uppercase tracking-[0.16em] text-white/45" style={MONO}>
+              debug 3d · día
+            </span>
+            <div className="flex gap-1">
+              {[null, ...Array.from({ length: state.totalStages + 1 }, (_, i) => i)].map((d) => {
+                const active = debugStage === d;
+                return (
+                  <button
+                    key={String(d)}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => setDebugStage(d)}
+                    className="h-7 min-w-7 px-1.5 rounded-md text-[11px] cursor-pointer"
+                    style={{ ...MONO, background: active ? "#f5b301" : "rgba(255,255,255,0.1)", color: active ? "#000" : "#fff" }}
+                  >
+                    {d === null ? "real" : d}
+                  </button>
+                );
+              })}
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setReplayKey((k) => k + 1)}
+                className="h-7 px-2 rounded-md text-[11px] cursor-pointer bg-white/10 text-white"
+                style={MONO}
+              >
+                ↻
+              </button>
+            </div>
+            {stats && (
+              <span className="text-[10px] text-white/40" style={MONO}>
+                {stats.drawCalls} draw calls · {Math.round(stats.triangles / 1000)}k tris
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

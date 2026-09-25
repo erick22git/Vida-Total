@@ -35,6 +35,7 @@ export function useHabitFeedback() {
         playSound("complete");
         haptic("success");
         break;
+      case "scene.completed": // la figura quedó terminada: mismo feedback que un hito grande
       case "habit.levelUp":
         playSound("level-up");
         haptic("milestone");

@@ -44,3 +44,6 @@ next-env.d.ts
 /biblioteca de assets/
 # Config local del MCP de Blender (rutas de esta máquina)
 /.mcp.json
+
+# Modelos 3D de prueba con licencia SIN VERIFICAR (no se publican hasta tener origen/licencia): ver docs/3d/asset-registry.json
+/public/models/*.glb
