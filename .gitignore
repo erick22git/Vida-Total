@@ -47,3 +47,6 @@ next-env.d.ts
 
 # Modelos 3D de prueba con licencia SIN VERIFICAR (no se publican hasta tener origen/licencia): ver docs/3d/asset-registry.json
 /public/models/*.glb
+
+# Carpeta temporal de verificación en navegador (tools/3d/harness)
+/.harness_tmp/
