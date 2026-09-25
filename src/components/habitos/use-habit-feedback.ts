@@ -28,12 +28,18 @@ export function useHabitFeedback() {
         playSound("complete");
         haptic("success");
         break;
+      case "habit.levelUp":
+        playSound("level-up");
+        haptic("milestone");
+        break;
+      case "habit.milestone":
       case "streak.milestone":
         playSound("milestone");
         haptic("milestone");
         break;
       case "habit.swipeNext":
       case "habit.swipePrevious":
+      case "habit.viewChange":
         playSound("navigation");
         haptic("light");
         break;

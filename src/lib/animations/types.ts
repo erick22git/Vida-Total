@@ -16,6 +16,9 @@ export type AnimationEventType =
   | "habit.completed"
   | "habit.swipeNext" // cambio horizontal al hábito siguiente
   | "habit.swipePrevious"
+  | "habit.viewChange" // cambio vertical de vista (check/año/figura)
+  | "habit.milestone" // 10/20/30/40/50 repeticiones
+  | "habit.levelUp" // 60 repeticiones: hábito dominado
   | "routine.completed"
   | "streak.milestone";
 
@@ -23,5 +26,5 @@ export interface AnimationEvent {
   type: AnimationEventType;
   tier: AnimationTier;
   entityId: string;
-  meta?: { streak?: number; milestone?: Milestone };
+  meta?: { streak?: number; milestone?: Milestone; count?: number; level?: number };
 }
