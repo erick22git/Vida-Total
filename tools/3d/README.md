@@ -41,3 +41,10 @@ Análisis de un `.blend` nuevo: `client\run_analysis.py` (usa `blender\analyze_b
 - `03_export_forest_glb.py` no guarda el `.blend`: modifica la escena en memoria solo para exportar. Exporta con la escena en su estado final; aun así el GLB guarda en cada nodo la pose INICIAL (escala 0) y la pose final sale del último fotograma del clip (el runtime lo resuelve en `captureRestFromClips`).
 - Los comandos largos (vídeo, exportar) "expiran" a los 300 s en el cliente aunque Blender termine: comprobar el archivo de salida.
 - `verify/verify_glb.mjs` es del prototipo de 9 etapas (muestrea `STAGE_4`); para el bosque de 7 días la comprobación real se hizo en el navegador.
+
+## Las otras cuatro figuras (Castillo, Casa, Molino, Cuarto)
+Compartidos: `blender/lib_stages.py` (materiales planos, cortes, etapas, animación) y `blender/lib_export.py`.
+Construir (sobre la COPIA de cada original): `10_house_7day.py`, `11_windmill_7day.py`, `12_castle_7day.py`, `13_room_7day.py`.
+Exportar GLB: `20_export_house.py`, `21_export_windmill.py`, `22_export_castle.py`, `23_export_room.py`.
+Cliente: `client/runpy.py` (admite `# @include`), `render_figure_days.py`. Verificar: `verify/glb_report.mjs`, `verify/collection_test.ts`.
+Resumen y métricas: `docs/3d/habit-figures.md`.

@@ -1,0 +1,21 @@
+import { collectionStateFor, collectionChange } from "C:/Erick/app movil/vida-total-web/src/lib/3d/scene-collection";
+import { habitFigureConfigs } from "C:/Erick/app movil/vida-total-web/src/lib/3d/scene-registry";
+const cfg = habitFigureConfigs();
+let fails = 0;
+function eq(name: string, got: unknown, want: unknown) { const ok = JSON.stringify(got) === JSON.stringify(want); if (!ok) { fails++; console.log("FALLA", name, JSON.stringify(got), "esperado", JSON.stringify(want)); } else console.log("ok   ", name); }
+const sum = (t: number) => { const s = collectionStateFor(cfg, t); return { cur: s.currentIndex, st: s.figures.map((f) => f.stage), status: s.figures.map((f) => f.status[0]), unlocked: s.unlockedCount, done: s.completedCount, all: s.allComplete }; };
+eq("0", sum(0), { cur: 0, st: [0,0,0,0,0], status: ["c","l","l","l","l"], unlocked: 1, done: 0, all: false });
+eq("6", sum(6), { cur: 0, st: [6,0,0,0,0], status: ["c","l","l","l","l"], unlocked: 1, done: 0, all: false });
+eq("7 (bosque completo, castillo desbloqueado)", sum(7), { cur: 1, st: [7,0,0,0,0], status: ["c","c","l","l","l"].map((x,i)=>i===0?"c":x), unlocked: 2, done: 1, all: false });
+eq("8", sum(8), { cur: 1, st: [7,1,0,0,0], status: ["c","c","l","l","l"], unlocked: 2, done: 1, all: false });
+eq("14", sum(14), { cur: 2, st: [7,7,0,0,0], status: ["c","c","c","l","l"], unlocked: 3, done: 2, all: false });
+eq("35 (todo)", sum(35), { cur: 4, st: [7,7,7,7,7], status: ["c","c","c","c","c"], unlocked: 5, done: 5, all: true });
+eq("50 (no pasa de 7)", sum(50), { cur: 4, st: [7,7,7,7,7], status: ["c","c","c","c","c"], unlocked: 5, done: 5, all: true });
+const ch = (a: number, b: number) => { const c = collectionChange(cfg, a, b); return { i: c.figureIndex, from: c.from, to: c.to, changed: c.changed, completedNow: c.completedNow, unlocks: c.unlockedFigureId, all: c.collectionCompletedNow }; };
+eq("5→6", ch(5, 6), { i: 0, from: 5, to: 6, changed: true, completedNow: false, unlocks: null, all: false });
+eq("6→7 completa figura y desbloquea castillo", ch(6, 7), { i: 0, from: 6, to: 7, changed: true, completedNow: true, unlocks: "castle_progression_001", all: false });
+eq("7→8 empieza castillo", ch(7, 8), { i: 1, from: 0, to: 1, changed: true, completedNow: false, unlocks: null, all: false });
+eq("34→35 completa la colección", ch(34, 35), { i: 4, from: 6, to: 7, changed: true, completedNow: true, unlocks: null, all: true });
+eq("35→36 no cambia nada", ch(35, 36), { i: 4, from: 7, to: 7, changed: false, completedNow: false, unlocks: null, all: false });
+console.log(fails === 0 ? "TODAS LAS PRUEBAS PASAN" : fails + " fallas");
+process.exit(fails ? 1 : 0);

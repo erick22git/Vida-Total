@@ -1,6 +1,6 @@
 {
   "$comment": "3D Asset Registry (global para todos los módulos). Los archivos pesados viven en 'biblioteca de assets/' (ignorada por git) y los GLB de prueba en 'public/models/' (también ignorados mientras la licencia sea UNVERIFIED). El espejo en runtime es src/lib/3d/scene-registry.ts.",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "assets": [
     {
       "id": "forest_progression_001",
@@ -17,39 +17,124 @@
       "originalSha256": "530a5c9e2e35993358728daf04d24ffb45478d6d9c3d28fd5e82aec7faac58ec",
       "workingFile": "biblioteca de assets/_trabajo/landscape_progression_prototype.blend",
       "format": "blend → glb (meshopt)",
-      "polyCount": { "sourceMeshPolys": 6745, "glbUniqueTris": 29023, "renderedTrisAtCompletion": 125644 },
+      "polyCount": {
+        "sourceMeshPolys": 6745,
+        "glbUniqueTris": 29023,
+        "renderedTrisAtCompletion": 125644
+      },
       "stages": {
         "count": 7,
         "unit": "días completados",
-        "thresholds": [1, 2, 3, 4, 5, 6, 7],
-        "names": ["Terreno", "Agua", "Rocas", "Pasto", "Primeros árboles", "Más árboles y detalles", "Escena completa"],
-        "celebrationStages": [7]
+        "thresholds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "names": [
+          "Terreno",
+          "Agua",
+          "Rocas",
+          "Pasto",
+          "Primeros árboles",
+          "Más árboles y detalles",
+          "Escena completa"
+        ],
+        "celebrationStages": [
+          7
+        ]
       },
       "animation": {
-        "clips": { "1": "STAGE_1", "2": "STAGE_2", "3": "STAGE_3", "4": null, "5": "STAGE_5", "6": "STAGE_6", "7": "STAGE_7" },
-        "clipSeconds": { "STAGE_1": 1.0, "STAGE_2": 1.0, "STAGE_3": 1.21, "STAGE_5": 1.33, "STAGE_6": 1.08, "STAGE_7": 1.83 },
-        "proceduralInRuntime": ["pop", "drop_small"],
+        "clips": {
+          "1": "STAGE_1",
+          "2": "STAGE_2",
+          "3": "STAGE_3",
+          "4": null,
+          "5": "STAGE_5",
+          "6": "STAGE_6",
+          "7": "STAGE_7"
+        },
+        "clipSeconds": {
+          "STAGE_1": 1,
+          "STAGE_2": 1,
+          "STAGE_3": 1.21,
+          "STAGE_5": 1.33,
+          "STAGE_6": 1.08,
+          "STAGE_7": 1.83
+        },
+        "proceduralInRuntime": [
+          "pop",
+          "drop_small"
+        ],
         "notes": "Día 4 (pasto) y el detalle de los días 1, 3, 6 y 7 se animan en runtime (vt_anim / vt_delay_frames); el resto son clips glTF."
       },
       "preview": "biblioteca de assets/_trabajo/previews_7dias/day_0..7.png (RGBA), sheet_light_dark.png",
       "glb": {
-        "raw": { "file": "biblioteca de assets/_trabajo/export/forest_progression_001.glb", "mb": 2.84 },
-        "meshopt": { "file": "biblioteca de assets/_trabajo/export/forest_progression_001_meshopt.glb", "mb": 1.92, "runtimeCopy": "public/models/forest_progression_001_meshopt.glb (ignorado por git)" },
-        "draco": { "file": "biblioteca de assets/_trabajo/export/forest_progression_001_draco.glb", "mb": 1.35, "verifiedLoad": false }
+        "raw": {
+          "file": "biblioteca de assets/_trabajo/export/forest_progression_001.glb",
+          "mb": 2.84
+        },
+        "meshopt": {
+          "file": "biblioteca de assets/_trabajo/export/forest_progression_001_meshopt.glb",
+          "mb": 1.92,
+          "runtimeCopy": "public/models/forest_progression_001_meshopt.glb (ignorado por git)"
+        },
+        "draco": {
+          "file": "biblioteca de assets/_trabajo/export/forest_progression_001_draco.glb",
+          "mb": 1.35,
+          "verifiedLoad": false
+        }
       },
-      "exports": { "lights": false, "cameras": false, "background": false, "fog": false },
+      "exports": {
+        "lights": false,
+        "cameras": false,
+        "background": false,
+        "fog": false
+      },
       "mobileReady": false,
       "mobile": {
         "status": "budget met for mid-range; NOT validated on a real phone",
-        "measuredInApp": { "drawCallsAtCompletion": 124, "trianglesAtCompletion": 125684, "materials": 24, "textures": 0, "glbMeshoptMb": 1.92 },
-        "budgetMidRange": { "drawCalls": 150, "triangles": 150000, "glbMb": 3 },
-        "budgetLowEnd": { "drawCalls": 80, "triangles": 60000 },
-        "missing": ["FPS y memoria en un teléfono real", "densidad adaptable del pasto para gama baja"]
+        "measuredInApp": {
+          "drawCallsAtCompletion": 124,
+          "trianglesAtCompletion": 125684,
+          "materials": 24,
+          "textures": 0,
+          "glbMeshoptMb": 1.92
+        },
+        "budgetMidRange": {
+          "drawCalls": 150,
+          "triangles": 150000,
+          "glbMb": 3
+        },
+        "budgetLowEnd": {
+          "drawCalls": 80,
+          "triangles": 60000
+        },
+        "missing": [
+          "FPS y memoria en un teléfono real",
+          "densidad adaptable del pasto para gama baja"
+        ]
       },
       "runtime": {
         "engine": "three.js directo (ProgressiveSceneRenderer)",
         "lights": "runtime",
         "camera": "runtime (encuadre automático por bounding sphere; dirección en scene-registry.ts)"
+      },
+      "collectionOrder": 1,
+      "metrics": {
+        "triangles": 125644,
+        "drawCallsAtCompletion": 124,
+        "materials": 24,
+        "textures": 0,
+        "nodes": 1533,
+        "glbMb": {
+          "raw": 2.84,
+          "meshopt": 1.92,
+          "draco": 1.35
+        }
       }
     },
     {
@@ -66,38 +151,521 @@
       "workingFile": null,
       "notes": "9 etapas (0–60 repeticiones) con fondo azul de Blender; se conserva solo como referencia (tools/3d/blender/legacy_*.py)."
     },
-    { "id": "landscape_castillo_001", "name": "Castillo abandonado", "module": "habitos", "category": "paisaje",
-      "source": "UNVERIFIED", "license": "UNVERIFIED", "author": null, "publishable": false,
-      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/castillo abandonado.blend", "workingFile": null,
-      "format": "blend", "polyCount": { "sourceMeshPolys": 28337, "evaluatedTris": 2345810 },
-      "progressionStages": null, "animation": null, "preview": "biblioteca de assets/_trabajo/previews_originales/castillo abandonado.png", "glb": null, "mobileReady": false,
-      "mobileNotes": "Reducir Wireframe (2.3 M tris evaluados) y hornear 37 materiales procedurales. No usar como asset propio sin verificar licencia." },
-    { "id": "interior_cuarto_001", "name": "Cuarto (interior gamer)", "module": "habitos", "category": "interior",
-      "source": "UNVERIFIED", "license": "UNVERIFIED", "author": null, "publishable": false,
-      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/cuarto.blend", "workingFile": null,
-      "format": "blend", "polyCount": { "sourceMeshPolys": 100450, "evaluatedTris": 436969 },
-      "progressionStages": null, "animation": null, "preview": "biblioteca de assets/_trabajo/previews_originales/cuarto.png", "glb": null, "mobileReady": false,
-      "mobileNotes": "307 MB de texturas y un Text de 70 k polígonos; requiere pase fuerte de optimización." },
-    { "id": "structure_casa_001", "name": "Casa moderna", "module": "habitos", "category": "estructura",
-      "source": "UNVERIFIED", "license": "UNVERIFIED", "author": null, "publishable": false,
-      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/casa.blend", "workingFile": null,
-      "format": "blend", "polyCount": { "sourceMeshPolys": 5863, "evaluatedTris": 224961 },
-      "progressionStages": null, "animation": { "existing": "10 acciones (puertas)" }, "preview": "biblioteca de assets/_trabajo/previews_originales/casa.png", "glb": null, "mobileReady": false,
-      "mobileNotes": "No es paisaje; quitar modificador Ocean; texturas 3392² a 2K." },
-    { "id": "structure_molino_001", "name": "Molino", "module": "habitos", "category": "estructura",
-      "source": "UNVERIFIED", "license": "UNVERIFIED", "author": null, "publishable": false,
-      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/molino.blend", "workingFile": null,
-      "format": "blend", "polyCount": { "sourceMeshPolys": 1394, "evaluatedTris": 2722 },
-      "progressionStages": null, "animation": { "existing": "armadura en las aspas, 48 fotogramas" }, "preview": "biblioteca de assets/_trabajo/previews_originales/molino.png", "glb": null, "mobileReady": false,
-      "mobileNotes": "Dos mallas: cortar el cuerpo a mano para hacerlo progresivo; texturas 2048² x5." }
+    {
+      "id": "landscape_castillo_001",
+      "name": "Castillo abandonado",
+      "module": "habitos",
+      "category": "paisaje",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/castillo abandonado.blend",
+      "workingFile": null,
+      "format": "blend",
+      "polyCount": {
+        "sourceMeshPolys": 28337,
+        "evaluatedTris": 2345810
+      },
+      "progressionStages": null,
+      "animation": null,
+      "preview": "biblioteca de assets/_trabajo/previews_originales/castillo abandonado.png",
+      "glb": null,
+      "mobileReady": false,
+      "mobileNotes": "Reducir Wireframe (2.3 M tris evaluados) y hornear 37 materiales procedurales. No usar como asset propio sin verificar licencia."
+    },
+    {
+      "id": "interior_cuarto_001",
+      "name": "Cuarto (interior gamer)",
+      "module": "habitos",
+      "category": "interior",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/cuarto.blend",
+      "workingFile": null,
+      "format": "blend",
+      "polyCount": {
+        "sourceMeshPolys": 100450,
+        "evaluatedTris": 436969
+      },
+      "progressionStages": null,
+      "animation": null,
+      "preview": "biblioteca de assets/_trabajo/previews_originales/cuarto.png",
+      "glb": null,
+      "mobileReady": false,
+      "mobileNotes": "307 MB de texturas y un Text de 70 k polígonos; requiere pase fuerte de optimización."
+    },
+    {
+      "id": "structure_casa_001",
+      "name": "Casa moderna",
+      "module": "habitos",
+      "category": "estructura",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/casa.blend",
+      "workingFile": null,
+      "format": "blend",
+      "polyCount": {
+        "sourceMeshPolys": 5863,
+        "evaluatedTris": 224961
+      },
+      "progressionStages": null,
+      "animation": {
+        "existing": "10 acciones (puertas)"
+      },
+      "preview": "biblioteca de assets/_trabajo/previews_originales/casa.png",
+      "glb": null,
+      "mobileReady": false,
+      "mobileNotes": "No es paisaje; quitar modificador Ocean; texturas 3392² a 2K."
+    },
+    {
+      "id": "structure_molino_001",
+      "name": "Molino",
+      "module": "habitos",
+      "category": "estructura",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/molino.blend",
+      "workingFile": null,
+      "format": "blend",
+      "polyCount": {
+        "sourceMeshPolys": 1394,
+        "evaluatedTris": 2722
+      },
+      "progressionStages": null,
+      "animation": {
+        "existing": "armadura en las aspas, 48 fotogramas"
+      },
+      "preview": "biblioteca de assets/_trabajo/previews_originales/molino.png",
+      "glb": null,
+      "mobileReady": false,
+      "mobileNotes": "Dos mallas: cortar el cuerpo a mano para hacerlo progresivo; texturas 2048² x5."
+    },
+    {
+      "module": "habitos",
+      "category": "progression-scene",
+      "progressionStages": 7,
+      "background": "transparent",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "format": "blend -> glb (meshopt)",
+      "exports": {
+        "lights": false,
+        "cameras": false,
+        "background": false,
+        "fog": false
+      },
+      "mobileReady": false,
+      "mobile": {
+        "status": "cumple presupuesto de gama media en medicion de escritorio; SIN prueba en telefono real",
+        "budget": {
+          "midRange": {
+            "drawCalls": 150,
+            "triangles": 150000,
+            "glbMbMeshopt": 3
+          }
+        },
+        "missing": [
+          "FPS y memoria en telefono real"
+        ]
+      },
+      "id": "castle_progression_001",
+      "name": "Castillo (diorama sobre terreno)",
+      "collectionOrder": 2,
+      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/castillo abandonado.blend",
+      "originalSha256": "64e636b1c9106210318663b06b55b8950ad0e0fdf4d9c35dce4a26749c4966f1",
+      "workingFile": "biblioteca de assets/_trabajo/castle_progression.blend",
+      "stages": {
+        "count": 7,
+        "unit": "dias completados de la figura",
+        "thresholds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "names": [
+          "Base",
+          "Muros",
+          "Torres",
+          "Estructura",
+          "Detalles",
+          "Vegetación",
+          "Castillo completo"
+        ],
+        "celebrationStages": [
+          7
+        ],
+        "clips": {
+          "1": "STAGE_1",
+          "2": "STAGE_2",
+          "3": "STAGE_3",
+          "4": "STAGE_4",
+          "5": "STAGE_5",
+          "6": "STAGE_6",
+          "7": null
+        }
+      },
+      "build": "tools/3d/blender/12_castle_7day.py + 22_export_castle.py",
+      "adaptations": [
+        "arboles secos de 229 mil a ~2.7 mil poligonos (ramas mas gruesas)",
+        "paleta diurna (el original es nocturno)",
+        "plano de fondo de 200 m eliminado",
+        "matas de pasto propias"
+      ],
+      "metrics": {
+        "triangles": 56262,
+        "drawCallsAtCompletion": 70,
+        "materials": 26,
+        "textures": 0,
+        "nodes": 72,
+        "glbMb": {
+          "raw": 3.91,
+          "meshopt": 1.59,
+          "draco": 0.77
+        }
+      },
+      "glb": {
+        "meshopt": "public/models/castle_progression_001_meshopt.glb (ignorado por git)"
+      }
+    },
+    {
+      "module": "habitos",
+      "category": "progression-scene",
+      "progressionStages": 7,
+      "background": "transparent",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "format": "blend -> glb (meshopt)",
+      "exports": {
+        "lights": false,
+        "cameras": false,
+        "background": false,
+        "fog": false
+      },
+      "mobileReady": false,
+      "mobile": {
+        "status": "cumple presupuesto de gama media en medicion de escritorio; SIN prueba en telefono real",
+        "budget": {
+          "midRange": {
+            "drawCalls": 150,
+            "triangles": 150000,
+            "glbMbMeshopt": 3
+          }
+        },
+        "missing": [
+          "FPS y memoria en telefono real"
+        ]
+      },
+      "id": "house_progression_001",
+      "name": "Casa moderna (jardin y piscina)",
+      "collectionOrder": 3,
+      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/casa.blend",
+      "originalSha256": "07347b87d50a5a6c6330bf160ae572e898f5fd704e6f42e83994a0e853cb8d2c",
+      "workingFile": "biblioteca de assets/_trabajo/house_progression.blend",
+      "stages": {
+        "count": 7,
+        "unit": "dias completados de la figura",
+        "thresholds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "names": [
+          "Base",
+          "Estructura",
+          "Paredes",
+          "Techo",
+          "Ventanas y puertas",
+          "Detalles",
+          "Casa completa"
+        ],
+        "celebrationStages": [
+          7
+        ],
+        "clips": {
+          "1": "STAGE_1",
+          "2": "STAGE_2",
+          "3": "STAGE_3",
+          "4": "STAGE_4",
+          "5": "STAGE_5",
+          "6": null,
+          "7": "STAGE_7"
+        }
+      },
+      "build": "tools/3d/blender/10_house_7day.py + 20_export_house.py",
+      "adaptations": [
+        "girada 45 grados para alinearla a los ejes",
+        "losa base propia",
+        "jardin generado",
+        "cubierta y paleta nuevas",
+        "agua de piscina sin modificador Ocean"
+      ],
+      "metrics": {
+        "triangles": 10387,
+        "drawCallsAtCompletion": 69,
+        "materials": 17,
+        "textures": 0,
+        "nodes": 41,
+        "glbMb": {
+          "raw": 0.53,
+          "meshopt": 0.28,
+          "draco": 0.13
+        }
+      },
+      "glb": {
+        "meshopt": "public/models/house_progression_001_meshopt.glb (ignorado por git)"
+      }
+    },
+    {
+      "module": "habitos",
+      "category": "progression-scene",
+      "progressionStages": 7,
+      "background": "transparent",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "format": "blend -> glb (meshopt)",
+      "exports": {
+        "lights": false,
+        "cameras": false,
+        "background": false,
+        "fog": false
+      },
+      "mobileReady": false,
+      "mobile": {
+        "status": "cumple presupuesto de gama media en medicion de escritorio; SIN prueba en telefono real",
+        "budget": {
+          "midRange": {
+            "drawCalls": 150,
+            "triangles": 150000,
+            "glbMbMeshopt": 3
+          }
+        },
+        "missing": [
+          "FPS y memoria en telefono real"
+        ]
+      },
+      "id": "windmill_progression_001",
+      "name": "Molino (diorama con pinos)",
+      "collectionOrder": 4,
+      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/molino.blend",
+      "originalSha256": "ec07e1f4dbe690e39896fac68d1b543b11fd5f682f5060726ec4a87eeeb1e302",
+      "workingFile": "biblioteca de assets/_trabajo/windmill_progression.blend",
+      "stages": {
+        "count": 7,
+        "unit": "dias completados de la figura",
+        "thresholds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "names": [
+          "Base",
+          "Cimientos",
+          "Cuerpo",
+          "Techo",
+          "Aspas",
+          "Detalles",
+          "Molino completo"
+        ],
+        "celebrationStages": [
+          7
+        ],
+        "clips": {
+          "1": "STAGE_1",
+          "2": "STAGE_2",
+          "3": "STAGE_3",
+          "4": "STAGE_4",
+          "5": "STAGE_5",
+          "6": null,
+          "7": "STAGE_7"
+        }
+      },
+      "build": "tools/3d/blender/11_windmill_7day.py + 21_export_windmill.py",
+      "adaptations": [
+        "original de un solo cuerpo sin materiales: cortado por islas y alturas",
+        "paleta y materiales nuevos",
+        "base, pinos, arbustos, rocas y farol generados"
+      ],
+      "metrics": {
+        "triangles": 3718,
+        "drawCallsAtCompletion": 41,
+        "materials": 13,
+        "textures": 0,
+        "nodes": 35,
+        "glbMb": {
+          "raw": 0.28,
+          "meshopt": 0.17,
+          "draco": 0.1
+        }
+      },
+      "glb": {
+        "meshopt": "public/models/windmill_progression_001_meshopt.glb (ignorado por git)"
+      }
+    },
+    {
+      "module": "habitos",
+      "category": "progression-scene",
+      "progressionStages": 7,
+      "background": "transparent",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "format": "blend -> glb (meshopt)",
+      "exports": {
+        "lights": false,
+        "cameras": false,
+        "background": false,
+        "fog": false
+      },
+      "mobileReady": false,
+      "mobile": {
+        "status": "cumple presupuesto de gama media en medicion de escritorio; SIN prueba en telefono real",
+        "budget": {
+          "midRange": {
+            "drawCalls": 150,
+            "triangles": 150000,
+            "glbMbMeshopt": 3
+          }
+        },
+        "missing": [
+          "FPS y memoria en telefono real"
+        ]
+      },
+      "id": "room_progression_001",
+      "name": "Cuarto (sala / escritorio)",
+      "collectionOrder": 5,
+      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/cuarto.blend",
+      "originalSha256": "b71481bf7d06524ff74bdc8ce8dbf06ec2f5ab1d7c616c2b16d212b633119587",
+      "workingFile": "biblioteca de assets/_trabajo/room_progression.blend",
+      "stages": {
+        "count": 7,
+        "unit": "dias completados de la figura",
+        "thresholds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "names": [
+          "Base",
+          "Paredes",
+          "Piso",
+          "Muebles",
+          "Decoración",
+          "Iluminación",
+          "Cuarto completo"
+        ],
+        "celebrationStages": [
+          7
+        ],
+        "clips": {
+          "1": "STAGE_1",
+          "2": "STAGE_2",
+          "3": "STAGE_3",
+          "4": "STAGE_4",
+          "5": null,
+          "6": null,
+          "7": "STAGE_7"
+        }
+      },
+      "build": "tools/3d/blender/13_room_7day.py + 23_export_room.py",
+      "adaptations": [
+        "sin texturas (26 imagenes reemplazadas por colores planos)",
+        "texto 3D y grupos pesados decimados",
+        "curvas sueltas descartadas",
+        "piezas pequenas unidas por zona",
+        "suelo infinito eliminado",
+        "plinto propio"
+      ],
+      "metrics": {
+        "triangles": 102132,
+        "drawCallsAtCompletion": 118,
+        "materials": 30,
+        "textures": 0,
+        "nodes": 62,
+        "glbMb": {
+          "raw": 3.58,
+          "meshopt": 1.73,
+          "draco": 0.73
+        }
+      },
+      "glb": {
+        "meshopt": "public/models/room_progression_001_meshopt.glb (ignorado por git)"
+      }
+    }
   ],
-  "replacementPlan": "Sustituir los cinco assets sin licencia por, en este orden de preferencia: 1) assets propios, 2) CC0 (p. ej. Poly Haven), 3) licencia comercial compatible, 4) modelos creados para Vida Total. Cambiar colores o detalles NO convierte un asset en propio.",
+  "replacementPlan": "Sustituir los cinco assets sin licencia por assets propios, CC0, con licencia comercial o creados para Vida Total. Cambiar colores/materiales no los vuelve propios ni publicables.",
   "eventMapping": {
     "$comment": "Qué evento alimenta a qué escena (diseño; solo Hábitos está conectado).",
-    "habit.completed": { "connected": true, "sceneAssetId": "forest_progression_001 (por defecto)", "adds": 1, "emits": ["scene.stage.changed", "scene.completed"] },
-    "workout.completed": { "connected": false, "module": "gym", "adds": 1 },
-    "calories.goal_reached": { "connected": false, "module": "gym", "experience": "achievement" },
-    "water.goal_reached": { "connected": false, "module": "gym", "experience": "achievement" },
-    "kegel.completed": { "connected": false, "module": "gym", "experience": "achievement" }
+    "habit.completed": {
+      "connected": true,
+      "sceneAssetId": "forest_progression_001 (por defecto)",
+      "adds": 1,
+      "emits": [
+        "scene.stage.changed",
+        "scene.completed"
+      ]
+    },
+    "workout.completed": {
+      "connected": false,
+      "module": "gym",
+      "adds": 1
+    },
+    "calories.goal_reached": {
+      "connected": false,
+      "module": "gym",
+      "experience": "achievement"
+    },
+    "water.goal_reached": {
+      "connected": false,
+      "module": "gym",
+      "experience": "achievement"
+    },
+    "kegel.completed": {
+      "connected": false,
+      "module": "gym",
+      "experience": "achievement"
+    }
+  },
+  "collections": {
+    "habitos": {
+      "order": [
+        "forest_progression_001",
+        "castle_progression_001",
+        "house_progression_001",
+        "windmill_progression_001",
+        "room_progression_001"
+      ],
+      "unlockRule": "una figura se desbloquea al completar la anterior (7 repeticiones cada una)",
+      "progressUnit": "repeticiones acumuladas del habito"
+    }
   }
 }

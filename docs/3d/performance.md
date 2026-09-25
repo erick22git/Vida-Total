@@ -81,3 +81,6 @@ Falta (en este orden de impacto):
 - Nunca dejar partículas ni Geometry Nodes sin aplicar en lo que se exporta.
 - Preferir muchas piezas pequeñas **que compartan malla** a pocas piezas grandes únicas.
 - Un asset con texturas > 2K o > 32 MB de RAM se optimiza **antes** de entrar al pipeline de etapas.
+
+## 6. Las cinco figuras (medido al completar la figura)
+Bosque 125 644 tris / ~124 dc; Castillo 56 262 / 70; Casa 10 387 / 69; Molino 3 718 / 41; Cuarto 102 132 / 118. Ver `habit-figures.md`. Sin medición en teléfono real.
