@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, type PanInfo } from "framer-motion";
 import { ChevronDown, Plus, SlidersHorizontal } from "lucide-react";
@@ -13,6 +13,9 @@ import { HoldCircle } from "@/components/habitos/hold-circle";
 import { HabitWeekStrip } from "@/components/habitos/habit-week-strip";
 import { CreateHabitModal } from "@/components/habitos/create-habit-modal";
 import { useHabitFeedback } from "@/components/habitos/use-habit-feedback";
+import { YearView } from "@/components/habitos/year-view";
+import { FigureView } from "@/components/habitos/figure-view";
+import { MilestoneCelebration } from "@/components/habitos/milestone-celebration";
 
 const MONO = { fontFamily: "var(--font-geist-mono), monospace" } as const;
 
@@ -32,6 +35,15 @@ const slide = {
   exit: (dir: number) => ({ x: dir * -110, opacity: 0, scale: 0.9 }),
 };
 
+// Cambio de vista (vertical): la nueva sube/baja desde el borde.
+const slideY = {
+  enter: (dir: number) => ({ y: dir * 70, opacity: 0 }),
+  center: { y: 0, opacity: 1 },
+  exit: (dir: number) => ({ y: dir * -70, opacity: 0 }),
+};
+const VIEW_COUNT = 3; // 0 = check, 1 = año, 2 = figura
+const SWIPE_Y = 60;
+
 function HabitScreen() {
   const router = useRouter();
   const params = useSearchParams();
@@ -46,6 +58,10 @@ function HabitScreen() {
     return i >= 0 ? i : 0;
   });
   const [direction, setDirection] = useState(1);
+  const [view, setView] = useState(0);
+  const [viewDir, setViewDir] = useState(1);
+  const gestureStart = useRef<{ x: number; y: number } | null>(null);
+  const wheelLock = useRef(false);
 
   const today = todayISO();
   const safeIndex = Math.min(index, Math.max(habits.length - 1, 0));
@@ -72,15 +88,47 @@ function HabitScreen() {
     [habits, safeIndex],
   );
 
+  const goView = useCallback(
+    (next: number) => {
+      if (next < 0 || next >= VIEW_COUNT || next === view) return;
+      setViewDir(next > view ? 1 : -1);
+      setView(next);
+      animationEngine.emit({ type: "habit.viewChange", tier: "action", entityId: habit?.id ?? "" });
+    },
+    [view, habit?.id],
+  );
+
+  // Swipe VERTICAL = otra vista del hábito (el horizontal es otro hábito;
+  // ver el drag="x" más abajo). Deslizar el dedo hacia arriba avanza.
+  function onStagePointerDown(e: React.PointerEvent) {
+    gestureStart.current = { x: e.clientX, y: e.clientY };
+  }
+  function onStagePointerUp(e: React.PointerEvent) {
+    const st = gestureStart.current;
+    gestureStart.current = null;
+    if (!st) return;
+    const dx = e.clientX - st.x;
+    const dy = e.clientY - st.y;
+    if (Math.abs(dy) > SWIPE_Y && Math.abs(dy) > Math.abs(dx) * 1.4) goView(view + (dy < 0 ? 1 : -1));
+  }
+  function onStageWheel(e: React.WheelEvent) {
+    if (wheelLock.current || Math.abs(e.deltaY) < 30) return;
+    wheelLock.current = true;
+    setTimeout(() => (wheelLock.current = false), 500);
+    goView(view + (e.deltaY > 0 ? 1 : -1));
+  }
+
   // Alternativa sin gestos: flechas del teclado.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "ArrowRight") goTo(safeIndex + 1);
       if (e.key === "ArrowLeft") goTo(safeIndex - 1);
+      if (e.key === "ArrowDown") goView(view + 1);
+      if (e.key === "ArrowUp") goView(view - 1);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goTo, safeIndex]);
+  }, [goTo, goView, safeIndex, view]);
 
   function onDragEnd(_: unknown, info: PanInfo) {
     if (info.offset.x < -SWIPE_OFFSET || info.velocity.x < -SWIPE_VELOCITY) goTo(safeIndex + 1);
@@ -136,7 +184,13 @@ function HabitScreen() {
         </button>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-6 relative">
+      <main
+        className="flex-1 min-h-0 relative touch-none"
+        onPointerDown={onStagePointerDown}
+        onPointerUp={onStagePointerUp}
+        onPointerCancel={() => (gestureStart.current = null)}
+        onWheel={onStageWheel}
+      >
         {habit ? (
           <AnimatePresence mode="popLayout" initial={false} custom={direction}>
             <motion.div
@@ -147,37 +201,62 @@ function HabitScreen() {
               animate="center"
               exit="exit"
               transition={{ type: "spring", stiffness: 380, damping: 34 }}
-              // Swipe horizontal = otro hábito. `drag="x"` deja el gesto
-              // vertical libre para el pager de vistas (Fase 8).
+              // Swipe horizontal = otro hábito.
               drag="x"
               dragDirectionLock
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={habits.length > 1 ? 0.55 : 0.12}
               dragSnapToOrigin
               onDragEnd={onDragEnd}
-              className="w-full flex justify-center touch-pan-y"
+              className="absolute inset-0"
             >
-              <HoldCircle
-                habitId={habit.id}
-                name={habit.name}
-                done={done}
-                reduceMotion={reduceMotion}
-                onComplete={() => completeHabit(habit.id)}
-                onUndo={() => undoHabit(habit.id)}
-              />
+              <AnimatePresence mode="popLayout" initial={false} custom={viewDir}>
+                <motion.div
+                  key={view}
+                  custom={viewDir}
+                  variants={slideY}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute inset-0"
+                >
+                  {view === 0 && (
+                    <div className="w-full h-full flex flex-col">
+                      <div className="flex-1 flex items-center justify-center px-6">
+                        <HoldCircle
+                          habitId={habit.id}
+                          name={habit.name}
+                          done={done}
+                          reduceMotion={reduceMotion}
+                          onComplete={() => completeHabit(habit.id)}
+                          onUndo={() => undoHabit(habit.id)}
+                        />
+                      </div>
+                      <div className="pb-[max(env(safe-area-inset-bottom),28px)] min-h-[104px]">
+                        <HabitWeekStrip completedDates={habit.completedDates} todayISO={today} viewIndex={0} viewCount={VIEW_COUNT} />
+                      </div>
+                    </div>
+                  )}
+                  {view === 1 && <YearView completedDates={habit.completedDates} todayISO={today} />}
+                  {view === 2 && <FigureView habit={habit} />}
+                </motion.div>
+              </AnimatePresence>
             </motion.div>
           </AnimatePresence>
         ) : (
-          <button onClick={() => setCreateOpen(true)} className="w-[68vw] max-w-[340px] cursor-pointer">
-            <HabitOrb className="w-full">
-              <span className="text-lg font-bold text-white/70">Crea tu primer hábito</span>
-            </HabitOrb>
-          </button>
+          <div className="w-full h-full flex items-center justify-center px-6">
+            <button onClick={() => setCreateOpen(true)} className="w-[68vw] max-w-[340px] cursor-pointer">
+              <HabitOrb className="w-full">
+                <span className="text-lg font-bold text-white/70">Crea tu primer hábito</span>
+              </HabitOrb>
+            </button>
+          </div>
         )}
 
         {/* Indicador del hábito actual — discreto, no es una tab bar. */}
         {habits.length > 1 && (
-          <div className="absolute bottom-3 flex items-center gap-1" style={MONO}>
+          <div className="absolute top-1 left-0 right-0 flex items-center justify-center gap-1 z-10" style={MONO}>
             {habits.length > 8 ? (
               <span className="text-[11px] text-white/45 tabular-nums">
                 {safeIndex + 1} / {habits.length}
@@ -205,9 +284,7 @@ function HabitScreen() {
         )}
       </main>
 
-      <div className="pb-[max(env(safe-area-inset-bottom),28px)] min-h-[104px]">
-        {habit && <HabitWeekStrip completedDates={habit.completedDates} todayISO={today} />}
-      </div>
+      <MilestoneCelebration habitId={habit?.id} reduceMotion={reduceMotion} />
 
       <CreateHabitModal
         open={createOpen}

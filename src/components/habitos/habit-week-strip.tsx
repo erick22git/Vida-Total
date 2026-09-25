@@ -2,6 +2,7 @@
 
 import { addDays, format } from "date-fns";
 import { Check } from "lucide-react";
+import { ViewDots } from "@/components/habitos/view-dots";
 
 const WEEKDAY = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
 const MONO = { fontFamily: "var(--font-geist-mono), monospace" } as const;
@@ -60,14 +61,8 @@ export function HabitWeekStrip({
           );
         })}
       </div>
-      <div className="flex flex-col gap-1.5 pt-2 pl-1" aria-hidden>
-        {Array.from({ length: viewCount }, (_, i) => (
-          <span
-            key={i}
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ background: i === viewIndex ? "#fff" : "rgba(255,255,255,0.35)" }}
-          />
-        ))}
+      <div className="pt-2 pl-1">
+        <ViewDots index={viewIndex} count={viewCount} />
       </div>
     </div>
   );
