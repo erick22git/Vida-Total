@@ -24,6 +24,10 @@ export function useHabitFeedback() {
         playSound("press");
         haptic("light");
         break;
+      case "habit.progress":
+        playSound("navigation");
+        haptic("medium");
+        break;
       case "habit.completed":
         playSound("complete");
         haptic("success");

@@ -6,7 +6,7 @@ import { AnimatePresence, motion, type PanInfo } from "framer-motion";
 import { ChevronLeft, Plus, SlidersHorizontal } from "lucide-react";
 import { todayISO, useHabitsStore } from "@/lib/store/habitsStore";
 import { animationEngine } from "@/lib/animations/animation-engine";
-import { completeHabit, undoHabit } from "@/lib/habits/complete-habit";
+import { completeHabit, isQuantified, undoHabit } from "@/lib/habits/complete-habit";
 import { useEffectiveReduceMotion } from "@/lib/store/preferencesStore";
 import { HabitOrb } from "@/components/habitos/habit-orb";
 import { HoldCircle } from "@/components/habitos/hold-circle";
@@ -260,7 +260,7 @@ function HabitScreen() {
                         <HoldCircle
                           habitId={habit.id}
                           name={habit.name}
-                          subtitle={habit.type === "cantidad" || habit.type === "tiempo" ? `${habit.goal ?? ""} ${habit.unit ?? ""}`.trim() : undefined}
+                          subtitle={isQuantified(habit) ? `${habit.values?.[today] ?? 0} / ${habit.goal ?? 1} ${habit.unit ?? ""}`.trim() : undefined}
                           done={done}
                           reduceMotion={reduceMotion}
                           onComplete={() => completeHabit(habit.id)}

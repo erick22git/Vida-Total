@@ -14,6 +14,7 @@ export type AnimationEventType =
   | "check.press-start" // empezó a mantener presionado
   | "check.press-cancel" // soltó antes de tiempo
   | "habit.completed"
+  | "habit.progress" // un paso de un hábito de cantidad/tiempo (aún sin completar)
   | "habit.swipeNext" // cambio horizontal al hábito siguiente
   | "habit.swipePrevious"
   | "habit.viewChange" // cambio vertical de vista (check/año/figura)
