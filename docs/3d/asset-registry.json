@@ -1,0 +1,77 @@
+{
+  "$comment": "3D Asset Registry (conceptual). Un registro global para todos los módulos. Los archivos pesados viven en 'biblioteca de assets/' (ignorada por git).",
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "id": "landscape_bosque_001",
+      "name": "Bosque (diorama con río y pinos)",
+      "module": "habitos",
+      "category": "paisaje",
+      "source": null,
+      "license": "UNVERIFIED",
+      "author": null,
+      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/Bosque.blend",
+      "originalSha256": "530a5c9e2e35993358728daf04d24ffb45478d6d9c3d28fd5e82aec7faac58ec",
+      "workingFile": "biblioteca de assets/_trabajo/landscape_progression_prototype.blend",
+      "format": "blend → glb",
+      "polyCount": { "sourceMeshPolys": 6745, "glbRenderedTris": 125684, "glbUniqueTris": 37971 },
+      "stages": {
+        "count": 9,
+        "thresholds": [0, 1, 5, 10, 20, 30, 40, 50, 60],
+        "names": ["terreno", "agua", "rocas", "pasto", "pinos chicos", "pinos medianos", "pinos grandes", "detalles", "ambiente"],
+        "milestoneStages": [8]
+      },
+      "animation": {
+        "clips": { "1": "STAGE_1", "2": "STAGE_2", "3": null, "4": "STAGE_4", "5": "STAGE_5", "6": "STAGE_6", "7": "STAGE_7", "8": "STAGE_8" },
+        "proceduralInRuntime": ["pop", "drop_small"],
+        "normalDurationSeconds": [1.0, 1.33],
+        "milestoneDurationSeconds": 1.83
+      },
+      "preview": "biblioteca de assets/_trabajo/previews/preview_stage_0..8.png, preview_growth.mp4",
+      "glb": {
+        "raw": "biblioteca de assets/_trabajo/export/landscape_bosque_001.glb",
+        "meshopt": "biblioteca de assets/_trabajo/export/landscape_bosque_001_meshopt.glb",
+        "draco": "biblioteca de assets/_trabajo/export/landscape_bosque_001_draco.glb"
+      },
+      "mobileReady": false,
+      "mobileNotes": "Falta instanciar en runtime (draw calls) y probar en teléfono real. Licencia sin verificar: no publicar.",
+      "runtime": {
+        "lights": "runtime",
+        "background": "runtime",
+        "camera": { "lens": 88, "note": "MasterCamera del original; posición (-15.75, -18.05, 14.96) en ejes Blender" }
+      }
+    },
+    { "id": "landscape_castillo_001", "name": "Castillo abandonado", "module": "habitos", "category": "paisaje",
+      "source": null, "license": "UNVERIFIED", "author": null,
+      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/castillo abandonado.blend", "workingFile": null,
+      "format": "blend", "polyCount": { "sourceMeshPolys": 28337, "evaluatedTris": 2345810 },
+      "stages": null, "animation": null, "preview": "biblioteca de assets/_trabajo/previews_originales/castillo abandonado.png", "glb": null, "mobileReady": false,
+      "mobileNotes": "Reducir Wireframe (2.3 M tris evaluados) y hornear 37 materiales procedurales." },
+    { "id": "interior_cuarto_001", "name": "Cuarto (interior gamer)", "module": "habitos", "category": "interior",
+      "source": null, "license": "UNVERIFIED", "author": null,
+      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/cuarto.blend", "workingFile": null,
+      "format": "blend", "polyCount": { "sourceMeshPolys": 100450, "evaluatedTris": 436969 },
+      "stages": null, "animation": null, "preview": "biblioteca de assets/_trabajo/previews_originales/cuarto.png", "glb": null, "mobileReady": false,
+      "mobileNotes": "307 MB de texturas y un Text de 70 k polígonos; requiere pase fuerte de optimización." },
+    { "id": "structure_casa_001", "name": "Casa moderna", "module": "habitos", "category": "estructura",
+      "source": null, "license": "UNVERIFIED", "author": null,
+      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/casa.blend", "workingFile": null,
+      "format": "blend", "polyCount": { "sourceMeshPolys": 5863, "evaluatedTris": 224961 },
+      "stages": null, "animation": { "existing": "10 acciones (puertas)" }, "preview": "biblioteca de assets/_trabajo/previews_originales/casa.png", "glb": null, "mobileReady": false,
+      "mobileNotes": "No es paisaje; quitar modificador Ocean; texturas 3392² a 2K." },
+    { "id": "structure_molino_001", "name": "Molino", "module": "habitos", "category": "estructura",
+      "source": null, "license": "UNVERIFIED", "author": null,
+      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/molino.blend", "workingFile": null,
+      "format": "blend", "polyCount": { "sourceMeshPolys": 1394, "evaluatedTris": 2722 },
+      "stages": null, "animation": { "existing": "armadura en las aspas, 48 fotogramas" }, "preview": "biblioteca de assets/_trabajo/previews_originales/molino.png", "glb": null, "mobileReady": false,
+      "mobileNotes": "Dos mallas: cortar el cuerpo a mano para hacerlo progresivo; texturas 2048² x5." }
+  ],
+  "eventMapping": {
+    "$comment": "Qué evento alimenta a qué asset (diseño; no implementado).",
+    "habit.completed": { "assetSource": "hábito → sceneAssetId", "adds": 1 },
+    "workout.completed": { "module": "gym", "assetFamily": "figura de gym", "adds": 1 },
+    "calories.goal_reached": { "module": "gym", "experience": "achievement", "adds": 1 },
+    "water.goal_reached": { "module": "gym", "experience": "achievement", "adds": 1 },
+    "kegel.completed": { "module": "gym", "experience": "achievement", "adds": 1 }
+  }
+}

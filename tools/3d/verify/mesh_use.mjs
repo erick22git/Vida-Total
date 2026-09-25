@@ -1,0 +1,12 @@
+import fs from "node:fs";
+const b = fs.readFileSync(process.argv[2]); const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+const j = JSON.parse(b.slice(20, 20 + dv.getUint32(12, true)).toString());
+const use = new Map(); for (const n of j.nodes) if (n.mesh !== undefined) use.set(n.mesh, (use.get(n.mesh) ?? 0) + 1);
+const counts = [...use.values()].sort((a, c) => c - a);
+const shared = counts.filter((c) => c > 1);
+const matOf = (mi) => j.meshes[mi].primitives.map((p) => p.material).join(",");
+const groups = new Set(); for (const [mi] of use) groups.add(mi + "|" + matOf(mi));
+console.log("nodos con mesh:", [...use.values()].reduce((a, c) => a + c, 0), "| meshes distintas:", use.size, "| meshes reutilizadas:", shared.length, "| top:", counts.slice(0, 12).join(","));
+const singles = counts.filter((c) => c === 1).length;
+console.log("draw calls estimados: sin instanciar =", [...use.values()].reduce((a, c) => a + c, 0), "| instanciando por mesh =", use.size, "(de las cuales", singles, "son únicas)");
+const primsPerMesh = j.meshes.map((m) => m.primitives.length); console.log("primitivas por mesh (max):", Math.max(...primsPerMesh));
