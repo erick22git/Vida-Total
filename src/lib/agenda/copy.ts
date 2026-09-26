@@ -1,5 +1,6 @@
 import { addDays, format } from "date-fns";
 import { isRecurring } from "./recurrence";
+import { sourceOf } from "./sources";
 import { normalizeText } from "./icons";
 import type { AgendaTask } from "./types";
 
@@ -28,7 +29,7 @@ const sameSlot = (a: Pick<AgendaTask, "title" | "startMin" | "allDay">, b: Pick<
  * (mismo título y hora) se omite. Las tareas que se repiten no se copian (ya aparecen solas). Las copias nacen sin hacer.
  */
 export function planCopy(all: AgendaTask[], sourceDate: string, taskIds: string[], weekdays: number[], spanDays: number): CopyPlan {
-  const picked = all.filter((t) => t.date === sourceDate && taskIds.includes(t.id) && !isRecurring(t));
+  const picked = all.filter((t) => t.date === sourceDate && taskIds.includes(t.id) && !isRecurring(t) && sourceOf(t) === "local");
   const src = new Date(`${sourceDate}T12:00:00`);
   const create: NewTask[] = [];
   let skipped = 0;
@@ -53,7 +54,7 @@ export function planCopy(all: AgendaTask[], sourceDate: string, taskIds: string[
         done: false,
         notes: t.notes,
         subtasks: t.subtasks.map((s, k) => ({ id: `s-${i}-${k}-${Math.random().toString(36).slice(2, 7)}`, title: s.title, done: false })),
-        alert: t.alert,
+        alerts: t.alerts?.map((a) => ({ ...a })),
       });
     }
   }

@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { addDays, addMonths, endOfMonth, format, getDay, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Globe, Inbox, RotateCcw, Search, Sparkles, SunMedium, X, Check, History } from "lucide-react";
-import { AGENDA_COLORS, AGENDA_ICONS, getAgendaIcon, matchIcons, searchIcons } from "@/lib/agenda/icons";
+import { AGENDA_ICONS, getAgendaIcon, matchIcons, searchIcons } from "@/lib/agenda/icons";
+import { getLoadedIcons, isLucideKey, loadAllIcons, lucideKey, lucideName, searchAllIcons } from "@/lib/agenda/all-icons";
 import { DEFAULT_DURATION_PRESETS, useAgendaStore } from "@/lib/agenda/store";
 import { durationLabel, toISODate } from "@/lib/agenda/time";
 import { CARD, CHIP, RoundButton, Sheet } from "./sheet";
+import { AgendaIcon } from "./agenda-icon";
+import { PaletteManager } from "./palette";
 import { WheelPicker } from "./wheel-picker";
 
 /* ---------------------------------- Duración ---------------------------------- */
@@ -199,37 +202,37 @@ export function TimeMoreMenu({
 }
 
 /* ------------------------------- Color e icono -------------------------------- */
+const PAGE = 120;
+
 export function ColorIconSheet({
   open, onClose, title, color, icon, onColor, onIcon,
 }: { open: boolean; onClose: () => void; title: string; color: string; icon: string; onColor: (c: string) => void; onIcon: (k: string) => void }) {
   const recents = useAgendaStore((s) => s.recentIcons);
   const pushRecent = useAgendaStore((s) => s.pushRecentIcon);
   const [q, setQ] = useState("");
+  const [all, setAll] = useState<Record<string, unknown> | null>(getLoadedIcons());
+  const [browse, setBrowse] = useState(false);
+  const [shown, setShown] = useState(PAGE);
+  // La biblioteca completa (~1800 iconos) se carga solo al buscar o al explorar.
+  useEffect(() => {
+    if ((q || browse) && !all) loadAllIcons().then((m) => setAll(m));
+  }, [q, browse, all]);
+  const names = useMemo(() => (all ? Object.keys(all) : []), [all]);
   const suggestions = useMemo(() => {
     const m = matchIcons(title).slice(0, 3);
     const rest = AGENDA_ICONS.filter((i) => !m.includes(i)).slice(0, Math.max(0, 3 - m.length));
     return [...m, ...rest];
   }, [title]);
-  const results = q ? searchIcons(q) : AGENDA_ICONS;
+  const curatedHits = q ? searchIcons(q).map((i) => i.key) : [];
+  const libHits = q ? searchAllIcons(q, names).map(lucideKey) : browse ? names.map(lucideKey) : [];
+  const results = q ? [...new Set([...curatedHits, ...libHits])] : browse ? libHits.slice(0, shown) : AGENDA_ICONS.map((i) => i.key);
   const pick = (k: string) => {
     onIcon(k);
     pushRecent(k);
   };
   return (
     <Sheet open={open} onClose={onClose} title="Color e icono" maxHeight="82%">
-      <div className="flex items-center justify-between rounded-full p-2.5 mb-4" style={{ background: "#232326" }} role="radiogroup" aria-label="Color">
-        {AGENDA_COLORS.map((c) => (
-          <button
-            key={c}
-            role="radio"
-            aria-checked={color === c}
-            aria-label={`Color ${c}`}
-            onClick={() => onColor(c)}
-            className="w-[34px] h-[34px] rounded-full cursor-pointer"
-            style={{ background: c, boxShadow: color === c ? "0 0 0 3px #232326, 0 0 0 5px #fff" : undefined }}
-          />
-        ))}
-      </div>
+      <PaletteManager value={color} onPick={onColor} />
       {!q && (
         <>
           <Label icon={<Sparkles size={16} />}>Sugerencias</Label>
@@ -242,15 +245,26 @@ export function ColorIconSheet({
           )}
         </>
       )}
-      <Label icon={<Search size={16} />}>{q ? "Resultados" : "Todos"}</Label>
-      <div className="grid grid-cols-6 gap-2.5 mb-3">
-        {results.map((i) => (
-          <IconButton key={i.key} k={i.key} selected={icon === i.key} onPick={pick} />
+      <Label icon={<Search size={16} />}>{q ? `Resultados (${results.length})` : browse ? "Toda la biblioteca" : "Populares"}</Label>
+      {q && results.length === 0 && (all ? <p className="text-[15px] font-semibold mb-3" style={{ color: "rgba(255,255,255,0.5)" }}>Sin resultados. Prueba con otra palabra.</p> : <p className="text-[15px] font-semibold mb-3" style={{ color: "rgba(255,255,255,0.5)" }}>Buscando…</p>)}
+      <div className="grid grid-cols-6 gap-2.5 mb-3" data-testid="icon-grid">
+        {results.map((k) => (
+          <IconButton key={k} k={k} selected={icon === k} onPick={pick} />
         ))}
       </div>
+      {!q && !browse && (
+        <button onClick={() => setBrowse(true)} className="w-full h-11 rounded-full text-[15px] font-extrabold cursor-pointer mb-3" style={{ background: CHIP }}>
+          Ver toda la biblioteca
+        </button>
+      )}
+      {browse && !q && names.length > shown && (
+        <button onClick={() => setShown((n) => n + PAGE)} className="w-full h-11 rounded-full text-[15px] font-extrabold cursor-pointer mb-3" style={{ background: CHIP }}>
+          Ver más
+        </button>
+      )}
       <label className="flex items-center gap-3 h-12 px-4 rounded-full sticky bottom-0" style={{ background: "#3b3b3f" }}>
         <Search size={20} />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar" className="flex-1 bg-transparent outline-none text-[17px] font-semibold placeholder:text-white/60" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar icono" placeholder="Buscar (comida, gym, viaje…)" className="flex-1 bg-transparent outline-none text-[17px] font-semibold placeholder:text-white/60" />
       </label>
     </Sheet>
   );
@@ -266,10 +280,10 @@ function Label({ icon, children }: { icon: ReactNode; children: string }) {
 }
 
 function IconButton({ k, selected, onPick }: { k: string; selected: boolean; onPick: (k: string) => void }) {
-  const { Icon, label } = getAgendaIcon(k);
+  const label = isLucideKey(k) ? lucideName(k) : getAgendaIcon(k).label;
   return (
-    <button aria-label={label} aria-pressed={selected} onClick={() => onPick(k)} className="flex items-center justify-center aspect-square rounded-full cursor-pointer" style={{ background: selected ? "#fff" : "#1d1d20", color: selected ? "#111" : "#fff" }}>
-      <Icon size={22} strokeWidth={2.4} />
+    <button aria-label={label} aria-pressed={selected} data-icon={k} onClick={() => onPick(k)} className="flex items-center justify-center aspect-square rounded-full cursor-pointer" style={{ background: selected ? "#fff" : "#1d1d20", color: selected ? "#111" : "#fff" }}>
+      <AgendaIcon k={k} size={22} />
     </button>
   );
 }

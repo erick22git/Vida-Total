@@ -4,7 +4,9 @@ import { useRef, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Bell, BellOff, Calendar, Check, Clock, Ellipsis, Inbox, Palette, Repeat, Target, Trash2, X } from "lucide-react";
+import { alertsOf, alertsSummary } from "@/lib/agenda/alerts";
 import { iconForTitle } from "@/lib/agenda/icons";
+import { isReadOnlyEvent, SOURCE_LABEL, sourceOf } from "@/lib/agenda/sources";
 import { isDoneOn, isRecurring, occurrencesOn, repeatLabel } from "@/lib/agenda/recurrence";
 import { emptyDraft, firstFreeStart, useAgendaStore } from "@/lib/agenda/store";
 import { durationLabel, isInProgress, minutesLeft, taskProgress, timeRange, toISODate } from "@/lib/agenda/time";
@@ -12,13 +14,14 @@ import { useNow } from "@/lib/agenda/use-now";
 import { NO_REPEAT, type AgendaTask, type AgendaTaskDraft } from "@/lib/agenda/types";
 import { haptic } from "@/lib/haptics/haptic";
 import { ConfirmSheet, RepeatSheet } from "./agenda-sheets";
+import { AlertsSheet } from "./alerts-sheet";
 import { ColorIconSheet, DatePickerSheet, DurationSheet, TimeMoreMenu } from "./pickers";
 import { CARD, RoundButton, Sheet, SURFACE } from "./sheet";
 import { TaskNode } from "./task-node";
 import { DurationSegments, SectionTitle, TimeAndDuration, TimeWheel } from "./time-duration";
 
 /** Crear: abre el panel vacío (no crea nada hasta guardar). Editar: abre la tarea con sus datos reales (`date` = día que se está viendo). */
-export type EditorTarget = { mode: "create"; date: string | null; startMin: number | null } | { mode: "edit"; id: string; date: string };
+export type EditorTarget = { mode: "create"; date: string | null; startMin: number | null; prefill?: Partial<AgendaTaskDraft> } | { mode: "edit"; id: string; date: string };
 
 const LIGHT = "#d9d9db";
 /** Tiempo mínimo (ms) entre "Continuar" y poder pulsar "Crear tarea" en el mismo sitio: evita crear por un doble toque. */
@@ -53,14 +56,14 @@ export function TaskEditor({ target, onClose, onFocus }: { target: EditorTarget;
     if (target.mode !== "create") return emptyDraft(null, null);
     const all = useAgendaStore.getState().tasks;
     const st = useAgendaStore.getState().timeStep;
-    return emptyDraft(target.date, target.date === null ? null : (target.startMin ?? firstFreeStart(all, target.date, st)));
+    return { ...emptyDraft(target.date, target.date === null ? null : (target.startMin ?? firstFreeStart(all, target.date, st))), ...target.prefill };
   });
   // En edición se lee siempre del store (una sola fuente de verdad: se actualiza ESA tarea, nunca se crea otra); en creación, del borrador local.
   const draft: AgendaTaskDraft = stored ?? local;
   const patch = (p: Partial<AgendaTaskDraft>) => (isEdit && stored ? updateTask(stored.id, p) : setLocal((d) => ({ ...d, ...p })));
 
   const [stage, setStage] = useState<1 | 2>(isEdit ? 2 : 1);
-  const [sheet, setSheet] = useState<null | "date" | "duration" | "color" | "time" | "timeMenu" | "more" | "repeat" | "delete">(null);
+  const [sheet, setSheet] = useState<null | "date" | "duration" | "color" | "time" | "timeMenu" | "more" | "repeat" | "delete" | "alerts">(null);
   const [subDraft, setSubDraft] = useState("");
   const [hint, setHint] = useState("");
   const iconTouched = useRef(isEdit);
@@ -71,7 +74,11 @@ export function TaskEditor({ target, onClose, onFocus }: { target: EditorTarget;
   const shown: AgendaTask | undefined = stored ? { ...stored, date: viewDate, done: isDoneOn(stored, viewDate) } : undefined;
   const inProgress = !!shown && isInProgress(shown, now);
   const recurring = isRecurring(draft);
+  const isImportedSource = sourceOf(draft) !== "local";
   const canCreate = draft.title.trim().length > 0;
+  // Los eventos de calendario son de solo lectura: solo se cambian color, icono, alertas y subtareas.
+  const locked = !!stored && isReadOnlyEvent(stored);
+  const alerts = alertsOf(draft);
 
   // Vecinos en la línea de tiempo (para ver qué tarea va antes y cuál después mientras se edita).
   const neighbors = (() => {
@@ -187,6 +194,7 @@ export function TaskEditor({ target, onClose, onFocus }: { target: EditorTarget;
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Nombre de la tarea"
                   aria-label="Título"
+                  readOnly={locked}
                   className="w-full bg-transparent text-[26px] font-extrabold tracking-tight outline-none placeholder:text-black/30 pb-1"
                   style={{ borderBottom: "1.5px solid rgba(0,0,0,0.55)" }}
                 />
@@ -245,24 +253,32 @@ export function TaskEditor({ target, onClose, onFocus }: { target: EditorTarget;
           ) : (
             <>
               <div className="rounded-[26px] overflow-hidden" style={{ background: CARD }}>
-                <Row icon={<Calendar size={24} />} onClick={() => setSheet("date")} right={recurring ? "Inicio" : dateHint(draft.date)}>{dateText(draft.date)}</Row>
+                <Row icon={<Calendar size={24} />} onClick={locked ? undefined : () => setSheet("date")} right={recurring ? "Inicio" : dateHint(draft.date)}>{dateText(draft.date)}</Row>
                 {draft.date !== null && (
-                  <Row icon={<Clock size={24} fill="#fff" color={CARD} />} onClick={() => (draft.allDay ? patch({ allDay: false }) : setSheet("time"))} right={draft.allDay ? "" : durationLabel(draft.durationMin)} divider>
+                  <Row icon={<Clock size={24} fill="#fff" color={CARD} />} onClick={locked ? undefined : () => (draft.allDay ? patch({ allDay: false }) : setSheet("time"))} right={draft.allDay ? "" : durationLabel(draft.durationMin)} divider>
                     {timeLabel}
                   </Row>
                 )}
-                <Row icon={draft.alert ? <Bell size={24} /> : <BellOff size={24} />} onClick={() => patch({ alert: !draft.alert })} right="Empujoncito" divider>
-                  {draft.alert ? "1 alerta" : "Sin alertas"}
-                </Row>
+                {draft.date !== null && (
+                  <Row icon={alerts.length ? <Bell size={24} /> : <BellOff size={24} />} onClick={() => setSheet("alerts")} right="Empujoncito" divider>
+                    <span data-testid="alerts-summary">{alertsSummary(alerts)}</span>
+                  </Row>
+                )}
               </div>
-              <button
+              {isImportedSource && (
+                <p data-testid="source-banner" className="text-[13px] font-bold mt-3 px-2" style={{ color: "rgba(255,255,255,0.6)" }}>
+                  {SOURCE_LABEL[sourceOf(draft)]}
+                  {locked ? " · solo lectura: puedes cambiar color, icono, alertas y subtareas." : " · importado de una lista externa."}
+                </p>
+              )}
+              {!locked && <button
                 onClick={() => (draft.date === null ? setHint("Ponle una fecha a la tarea para poder repetirla.") : setSheet("repeat"))}
                 aria-label="Repetir"
                 className="flex items-center gap-3 h-14 px-5 mt-3 rounded-full cursor-pointer text-[19px] font-bold"
                 style={{ background: CARD, color: recurring ? "#fff" : "rgba(255,255,255,0.7)" }}
               >
                 <Repeat size={22} /> {recurring ? repeatLabel(draft) : "Repetir"}
-              </button>
+              </button>}
 
               <div className="mt-4 rounded-[26px] p-4" style={{ background: CARD }}>
                 {draft.subtasks.map((s) => (
@@ -293,6 +309,7 @@ export function TaskEditor({ target, onClose, onFocus }: { target: EditorTarget;
                   placeholder="Añadir notas, reuniones o números de teléfono"
                   aria-label="Notas"
                   rows={5}
+                  readOnly={locked}
                   className="w-full bg-transparent outline-none resize-none text-[18px] font-semibold placeholder:text-white/35 pt-2"
                 />
               </div>
@@ -304,7 +321,7 @@ export function TaskEditor({ target, onClose, onFocus }: { target: EditorTarget;
                   className="flex items-center justify-center gap-3 w-full h-14 mt-6 rounded-full text-[19px] font-extrabold cursor-pointer"
                   style={{ background: CARD, color: "#ff453a" }}
                 >
-                  <Trash2 size={22} /> Eliminar
+                  <Trash2 size={22} /> {locked ? "Quitar de la agenda" : "Eliminar"}
                 </button>
               )}
             </>
@@ -370,6 +387,7 @@ export function TaskEditor({ target, onClose, onFocus }: { target: EditorTarget;
           patch({ icon: k });
         }}
       />
+      <AlertsSheet open={sheet === "alerts"} onClose={() => setSheet(null)} alerts={alerts} onChange={(a) => patch({ alerts: a })} allDay={draft.allDay} />
       <RepeatSheet open={sheet === "repeat"} onClose={() => setSheet(null)} task={draft} onChange={(r) => patch({ repeat: r })} />
       <ConfirmSheet
         open={sheet === "delete"}

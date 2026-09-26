@@ -16,7 +16,7 @@ import { CARD, CHIP, Sheet } from "./sheet";
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const SHORT = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 
-function Chip({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) {
+export function Chip({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button
       role="checkbox"
@@ -31,7 +31,7 @@ function Chip({ selected, onClick, children }: { selected: boolean; onClick: () 
   );
 }
 
-function ActionButton({ onClick, disabled, children, danger }: { onClick: () => void; disabled?: boolean; children: ReactNode; danger?: boolean }) {
+export function ActionButton({ onClick, disabled, children, danger }: { onClick: () => void; disabled?: boolean; children: ReactNode; danger?: boolean }) {
   return (
     <button
       onClick={onClick}
@@ -94,7 +94,7 @@ export function RepeatSheet({ open, onClose, task, onChange }: { open: boolean; 
   );
 }
 
-function ModeRow({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) {
+export function ModeRow({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button role="radio" aria-checked={selected} onClick={onClick} className="flex items-center justify-between h-14 px-5 rounded-full text-[19px] font-bold cursor-pointer" style={{ background: "#232326" }}>
       {children}

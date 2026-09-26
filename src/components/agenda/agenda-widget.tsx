@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check, Plus } from "lucide-react";
 import { occurrencesOn } from "@/lib/agenda/recurrence";
 import { useAgendaStore } from "@/lib/agenda/store";
+import { useVisibleTasks } from "@/lib/agenda/use-visible";
 import { durationLabel, taskProgress, timeRange, toISODate } from "@/lib/agenda/time";
 import { useNow } from "@/lib/agenda/use-now";
 import { haptic } from "@/lib/haptics/haptic";
@@ -16,7 +17,7 @@ import { TaskNode } from "./task-node";
  */
 export function AgendaWidget() {
   const now = useNow(30_000);
-  const tasks = useAgendaStore((s) => s.tasks);
+  const tasks = useVisibleTasks();
   const toggleDoneOn = useAgendaStore((s) => s.toggleDoneOn);
   const today = toISODate(now);
   const rows = useMemo(() => {
@@ -45,7 +46,7 @@ export function AgendaWidget() {
           {rows.length > 1 && <span className="absolute w-[2px] left-[43px] top-[38px] bottom-[38px]" style={{ background: "rgba(255,255,255,0.85)" }} />}
           {rows.map((t) => (
             <div key={t.id} className="relative flex items-center gap-4 min-h-[48px]">
-              <TaskNode icon={t.icon} color={t.color} width={46} height={46} iconSize={21} done={t.done} progress={taskProgress(t, now)} label={t.title} />
+              <TaskNode icon={t.icon} color={t.color} width={46} height={46} iconSize={21} done={t.done} progress={taskProgress(t, now)} source={t.source} label={t.title} />
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-semibold truncate" style={{ color: "rgba(255,255,255,0.55)" }}>{timeRange(t.startMin!, t.durationMin)} ({durationLabel(t.durationMin)})</p>
                 <p className="text-[19px] font-extrabold leading-tight truncate" style={{ textDecoration: t.done ? "line-through" : undefined, color: t.done ? "rgba(255,255,255,0.5)" : "#fff" }}>{t.title}</p>

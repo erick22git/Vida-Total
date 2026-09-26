@@ -73,6 +73,7 @@ export function DayTimeline({
               progress={taskProgress(it.task, now)}
               done={it.task.done}
               selected={selectedId === it.task.id}
+              source={it.task.source}
               iconSize={17}
               label={it.task.title}
               onClick={() => (selectedId === it.task.id ? onOpen(it.task.id) : onSelect(it.task.id))}

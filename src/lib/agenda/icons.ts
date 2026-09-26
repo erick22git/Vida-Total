@@ -95,5 +95,6 @@ export function searchIcons(query: string): AgendaIconDef[] {
   return AGENDA_ICONS.filter((i) => normalizeText(i.label).includes(q) || i.keywords.some((k) => k.includes(q) || q.includes(k.trim())));
 }
 
+/** Colores de fábrica; los propios del usuario (presets) se guardan aparte en el store. */
 export const AGENDA_COLORS = ["#F5C037", "#79B247", "#6C9FD8", "#0E8A5F", "#DA4650", "#0B63D6", "#FFFFFF"] as const;
 export const DEFAULT_COLOR = "#FFFFFF";

@@ -77,7 +77,7 @@ export function DaySheet({ expanded, onExpandedChange, tasks, active, now, onTog
           {active && (
             <div className="relative flex items-center gap-4 pl-[30px] pr-6 h-full pb-3">
               <span className="absolute w-[2px] top-0 -translate-x-1/2" style={{ left: 63, height: 36, background: "rgba(255,255,255,0.8)" }} />
-              <TaskNode icon={active.icon} color={active.color} width={54} height={54} progress={taskProgress(active, now)} done={active.done} iconSize={24} label={active.title} />
+              <TaskNode icon={active.icon} color={active.color} width={54} height={54} progress={taskProgress(active, now)} done={active.done} iconSize={24} source={active.source} label={active.title} />
               <div className="flex-1 min-w-0">
                 <p className="text-[15px] font-semibold truncate" style={{ color: "rgba(255,255,255,0.55)" }}>{subtitle(active, now)}</p>
                 <p className="text-[22px] font-extrabold leading-tight truncate" style={{ textDecoration: active.done ? "line-through" : undefined, opacity: active.done ? 0.55 : 1 }}>{active.title}</p>
@@ -108,7 +108,7 @@ export function DaySheet({ expanded, onExpandedChange, tasks, active, now, onTog
                       <Notch size={34} />
                     </span>
                   )}
-                  <TaskNode icon={t.icon} color={t.color} width={53} height={timed ? h : 53} progress={taskProgress(t, now)} done={t.done} iconSize={24} label={t.title} />
+                  <TaskNode icon={t.icon} color={t.color} width={53} height={timed ? h : 53} progress={taskProgress(t, now)} done={t.done} iconSize={24} source={t.source} label={t.title} />
                   <div className="flex-1 min-w-0">
                     <p className="text-[15px] font-semibold" style={{ color: "rgba(255,255,255,0.55)" }}>{subtitle(t, now)}</p>
                     <p className="text-[22px] font-extrabold leading-tight truncate" style={{ textDecoration: t.done ? "line-through" : undefined, color: t.done ? "rgba(255,255,255,0.55)" : "#fff" }}>{t.title}</p>
