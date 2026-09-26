@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { animate, motion, useMotionValue, useTransform, type AnimationPlaybackControls } from "framer-motion";
 import { animationEngine } from "@/lib/animations/animation-engine";
 import { startHoldSound } from "@/lib/sound/sound-engine";
+import { haptic } from "@/lib/haptics/haptic";
 import { HabitOrb } from "@/components/habitos/habit-orb";
 import { BigCheck } from "@/components/habitos/big-check";
 
 /** Cuánto hay que mantener presionado para completar. */
 const HOLD_MS = 800;
+/** Rebote guía: 0.9 s de movimiento + 1.5 s de pausa. */
+const GUIDE_PERIOD_MS = 2400;
 /** Si el dedo se mueve más que esto se cancela el hold (es un swipe). */
 const MOVE_CANCEL_PX = 10;
 
@@ -31,6 +34,7 @@ export function HoldCircle({
   subtitle,
   done,
   reduceMotion,
+  attention = false,
   onComplete,
   onUndo,
 }: {
@@ -40,6 +44,8 @@ export function HoldCircle({
   subtitle?: string;
   done: boolean;
   reduceMotion: boolean;
+  /** Un módulo (Gym) ya cumplió el objetivo: el check invita a tocarlo (rebote suave + pausa + brillo). No lo completa. */
+  attention?: boolean;
   onComplete: () => void;
   onUndo: () => void;
 }) {
@@ -47,6 +53,15 @@ export function HoldCircle({
   const anim = useRef<AnimationPlaybackControls | null>(null);
   const sound = useRef<ReturnType<typeof startHoldSound> | null>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
+  const [pressed, setPressed] = useState(false);
+  const guiding = attention && !done && !pressed;
+
+  // Un toque háptico suave acompaña cada rebote (mismo ritmo que la animación).
+  useEffect(() => {
+    if (!guiding) return;
+    const id = setInterval(() => haptic("light"), GUIDE_PERIOD_MS);
+    return () => clearInterval(id);
+  }, [guiding]);
 
   const scale = useTransform(progress, [0, 1], [1, reduceMotion ? 1 : 0.94]);
   const glow = useTransform(progress, [0, 1], [0, 0.5]);
@@ -73,6 +88,7 @@ export function HoldCircle({
   function cancel() {
     if (!start.current) return;
     start.current = null;
+    setPressed(false);
     sound.current?.stop();
     sound.current = null;
     reset(0.25);
@@ -81,6 +97,7 @@ export function HoldCircle({
 
   function finish() {
     start.current = null;
+    setPressed(false);
     sound.current?.stop();
     sound.current = null;
     if (done) onUndo();
@@ -91,6 +108,7 @@ export function HoldCircle({
   function onPointerDown(e: React.PointerEvent) {
     if (e.button > 0 || start.current) return;
     start.current = { x: e.clientX, y: e.clientY };
+    setPressed(true);
     animationEngine.emit({ type: "check.press-start", tier: "micro", entityId: habitId });
     sound.current = startHoldSound();
     anim.current?.stop();
@@ -117,6 +135,21 @@ export function HoldCircle({
     >
       {/* Al cambiar `done` el bloque se remonta y entra con un pequeño
           resorte — la animación "normal" de completar es corta a propósito. */}
+      {guiding && (
+        <motion.div
+          className="absolute -inset-2 rounded-full pointer-events-none"
+          style={{ border: "2px solid #f5b301" }}
+          initial={{ opacity: 0, scale: 1 }}
+          animate={{ opacity: [0, 0.85, 0], scale: reduceMotion ? [1, 1.03, 1] : [1, 1.07, 1] }}
+          transition={{ duration: 1.3, repeat: Infinity, repeatDelay: 1.1, ease: "easeOut" }}
+          aria-hidden
+        />
+      )}
+      <motion.div
+        animate={guiding && !reduceMotion ? { y: [0, -16, 0, -7, 0] } : { y: 0 }}
+        transition={guiding && !reduceMotion ? { duration: 0.9, times: [0, 0.3, 0.55, 0.75, 1], ease: "easeOut", repeat: Infinity, repeatDelay: 1.5 } : { duration: 0.2 }}
+        className="w-full h-full"
+      >
       <motion.div
         key={String(done)}
         className="w-full h-full"
@@ -144,6 +177,7 @@ export function HoldCircle({
             </>
           )}
         </HabitOrb>
+      </motion.div>
       </motion.div>
 
       {!done && (

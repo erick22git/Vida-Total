@@ -165,6 +165,9 @@ export function syncDeleteTask(id: string, userId: string): void {
 // habits
 // ============================================================================
 
+/** En la BD, `NULL` = sin valor (la app usa la fuente por defecto de la categoría) y 'none' = el usuario lo dejó sin vínculo. */
+const SOURCE_NONE = "none";
+
 export interface HabitRow {
   id: string;
   user_id: string;
@@ -176,6 +179,8 @@ export interface HabitRow {
   completed_dates: string[];
   // Migración 0004 — pueden faltar en filas anteriores a la migración.
   category_id?: string | null;
+  // Migración 0005 — fuente de progreso (ver `src/lib/habits/progress-sources.ts`).
+  source_id?: string | null;
   type?: HabitType | null;
   goal?: number | null;
   unit?: string | null;
@@ -197,6 +202,8 @@ function habitToRow(h: Habit, userId: string): HabitRow {
     streak: h.streak,
     completed_dates: h.completedDates,
     category_id: h.categoryId ?? null,
+    // Solo se envía cuando hay un valor: así un hábito sin vínculo (o una BD sin la migración 0005) sigue sincronizando igual.
+    ...(h.sourceId !== undefined ? { source_id: h.sourceId ?? SOURCE_NONE } : {}),
     type: h.type ?? "binario",
     goal: h.goal ?? null,
     unit: h.unit ?? null,
@@ -218,6 +225,7 @@ function rowToHabit(row: HabitRow): Habit {
     streak: row.streak,
     completedDates: row.completed_dates ?? [],
     categoryId: row.category_id ?? undefined,
+    sourceId: row.source_id === SOURCE_NONE ? null : (row.source_id ?? undefined),
     type: row.type ?? undefined,
     goal: row.goal ?? undefined,
     unit: row.unit ?? undefined,
@@ -236,8 +244,20 @@ async function fetchHabits(userId: string): Promise<Habit[]> {
   return rows.map(rowToHabit);
 }
 
+/** ¿El error viene de la columna `source_id` (BD sin la migración 0005)? Entonces se reintenta sin ella. */
+function isMissingSourceColumn(error: { message: string } | null): boolean {
+  return !!error && error.message.includes("source_id");
+}
+
 export function syncInsertHabit(habit: Habit, userId: string): void {
-  void safeWrite("insert habits", () => createClient().from("habits").insert(habitToRow(habit, userId)));
+  void safeWrite("insert habits", async () => {
+    const row = habitToRow(habit, userId);
+    const res = await createClient().from("habits").insert(row);
+    if (!isMissingSourceColumn(res.error)) return res;
+    const { source_id: _omit, ...withoutSource } = row;
+    void _omit;
+    return createClient().from("habits").insert(withoutSource);
+  });
 }
 
 export function syncUpdateHabit(id: string, patch: Partial<Habit>, userId: string): void {
@@ -251,6 +271,7 @@ export function syncUpdateHabit(id: string, patch: Partial<Habit>, userId: strin
   // Campos opcionales: `in` (no `!== undefined`) para poder BORRARLOS
   // (p.ej. quitar el recordatorio manda null).
   if ("categoryId" in patch) row.category_id = patch.categoryId ?? null;
+  if ("sourceId" in patch) row.source_id = patch.sourceId ?? SOURCE_NONE;
   if (patch.type !== undefined) row.type = patch.type;
   if ("goal" in patch) row.goal = patch.goal ?? null;
   if ("unit" in patch) row.unit = patch.unit ?? null;
@@ -260,9 +281,14 @@ export function syncUpdateHabit(id: string, patch: Partial<Habit>, userId: strin
   if (patch.mastered !== undefined) row.mastered = patch.mastered;
   if (patch.milestonesUnlocked !== undefined) row.milestones_unlocked = patch.milestonesUnlocked;
   if (Object.keys(row).length === 0) return;
-  void safeWrite("update habits", () =>
-    createClient().from("habits").update(row).eq("id", id).eq("user_id", userId),
-  );
+  void safeWrite("update habits", async () => {
+    const res = await createClient().from("habits").update(row).eq("id", id).eq("user_id", userId);
+    if (!isMissingSourceColumn(res.error) || !("source_id" in row)) return res;
+    const { source_id: _omit, ...withoutSource } = row;
+    void _omit;
+    if (Object.keys(withoutSource).length === 0) return { error: null };
+    return createClient().from("habits").update(withoutSource).eq("id", id).eq("user_id", userId);
+  });
 }
 
 export function syncDeleteHabit(id: string, userId: string): void {

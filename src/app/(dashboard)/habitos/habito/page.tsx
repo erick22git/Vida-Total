@@ -17,6 +17,8 @@ import { useAnimationEvent } from "@/lib/animations/use-animation-engine";
 import { YearView } from "@/components/habitos/year-view";
 import { FigureView } from "@/components/habitos/figure-view";
 import { MilestoneCelebration } from "@/components/habitos/milestone-celebration";
+import { promptForHabit, useHabitPromptStore } from "@/lib/habits/habit-prompts";
+import { getProgressSource } from "@/lib/habits/progress-sources";
 
 const MONO = { fontFamily: "var(--font-geist-mono), monospace" } as const;
 
@@ -71,9 +73,13 @@ function HabitScreen() {
   const autoReturn = useRef<{ enter: ReturnType<typeof setTimeout>; back: ReturnType<typeof setTimeout> } | null>(null);
 
   const today = todayISO();
+  const prompts = useHabitPromptStore((s) => s.prompts);
   const safeIndex = Math.min(index, Math.max(habits.length - 1, 0));
   const habit = habits[safeIndex];
   const done = habit ? habit.completedDates.includes(today) : false;
+  // Acción pendiente (un módulo, p.ej. Gym, avisó que se cumplió el objetivo): el check invita a tocarlo.
+  const prompt = promptForHabit(prompts, habit?.id, today);
+  const promptText = !done && !sequenceActive ? getProgressSource(prompt?.sourceId)?.prompt : undefined;
 
   // Mantiene la URL apuntando al hábito visible sin re-navegar.
   useEffect(() => {
@@ -120,6 +126,26 @@ function HabitScreen() {
   useEffect(() => {
     viewRef.current = view;
   }, [view]);
+
+  // Si llega un aviso NUEVO de otro módulo mientras estás aquí, se enfoca el hábito y su check (los que ya estaban
+  // al abrir la pantalla no mueven nada: la URL manda).
+  const focusRef = useRef({ habits, index: safeIndex });
+  useEffect(() => {
+    focusRef.current = { habits, index: safeIndex };
+  });
+  useEffect(() => {
+    return useHabitPromptStore.subscribe((state, prev) => {
+      const known = new Set(prev.prompts.map((p) => `${p.habitId}:${p.createdAt}`));
+      const fresh = state.prompts.filter((p) => !known.has(`${p.habitId}:${p.createdAt}`)).sort((a, b) => b.createdAt - a.createdAt)[0];
+      if (!fresh) return;
+      const { habits: list, index: current } = focusRef.current;
+      const i = list.findIndex((h) => h.id === fresh.habitId);
+      if (i < 0) return;
+      setDirection(i > current ? 1 : -1);
+      setIndex(i);
+      setView(0);
+    });
+  }, []);
 
   useAnimationEvent((e) => {
     if (e.type !== "scene.stage.changed" || !habit || e.entityId !== habit.id) return;
@@ -304,16 +330,34 @@ function HabitScreen() {
                 >
                   {view === 0 && (
                     <div className="w-full h-full flex flex-col">
-                      <div className="flex-1 flex items-center justify-center px-6">
+                      <div className="flex-1 flex flex-col items-center justify-center gap-7 px-6">
                         <HoldCircle
                           habitId={habit.id}
                           name={habit.name}
                           subtitle={isQuantified(habit) ? `${habit.values?.[today] ?? 0} / ${habit.goal ?? 1} ${habit.unit ?? ""}`.trim() : undefined}
                           done={done}
                           reduceMotion={reduceMotion}
+                          attention={!!promptText}
                           onComplete={() => completeHabit(habit.id)}
                           onUndo={() => undoHabit(habit.id)}
                         />
+                        <div className="h-9 flex items-start justify-center">
+                          <AnimatePresence>
+                            {promptText && (
+                              <motion.p
+                                key={prompt?.sourceId}
+                                data-testid="habit-source-prompt"
+                                className="text-center text-[12px] leading-snug text-white/70 max-w-[260px]"
+                                style={MONO}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0 }}
+                              >
+                                {promptText}
+                              </motion.p>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
                       <div className="pb-[max(env(safe-area-inset-bottom),28px)] min-h-[104px]">
                         <HabitWeekStrip completedDates={habit.completedDates} todayISO={today} viewIndex={0} viewCount={VIEW_COUNT} />

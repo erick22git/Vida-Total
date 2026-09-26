@@ -5,7 +5,10 @@ import { createSceneConfig, type SceneProgressionConfig } from "./scene-progress
  * para montar una escena). Sumar una figura nueva (montaña, gimnasio…) es agregar una entrada acá
  * + su GLB: el motor de etapas, el reproductor, la colección y la interfaz no cambian.
  */
-export type SceneIcon = "forest" | "castle" | "house" | "windmill" | "room";
+export type SceneIcon = "forest" | "castle" | "house" | "windmill" | "room" | "bridge" | "skeleton" | "sedan" | "racecar" | "bomb";
+
+/** Colecciones de figuras. Cada una tiene su propio orden y su propio desbloqueo (nunca se mezclan). */
+export type SceneCollectionId = "habitos" | "gym";
 
 export interface SceneAssetDef {
   config: SceneProgressionConfig;
@@ -91,10 +94,98 @@ export const ROOM_SCENE: SceneAssetDef = {
   camera: { direction: [-0.56, 0.53, 0.64], fov: 24, targetY: 0.7 },
 };
 
-/** Figuras de Hábitos EN ORDEN de desbloqueo. */
-export const HABIT_FIGURES: SceneAssetDef[] = [FOREST_SCENE, CASTLE_SCENE, HOUSE_SCENE, WINDMILL_SCENE, ROOM_SCENE];
+export const BRIDGE_SCENE: SceneAssetDef = {
+  config: createSceneConfig("bridge_progression_001", ["Base", "Terreno", "Río y estanque", "Puente", "Pagoda", "Árboles y cerezo", "Rocas y linterna"], { clips: clipsFor(7) }),
+  name: "Puente",
+  icon: "bridge",
+  glbUrl: "/models/bridge_progression_001_meshopt.glb",
+  module: "habitos",
+  license: "UNVERIFIED",
+  source: "UNVERIFIED",
+  celebrationStages: [7],
+  camera: { direction: [-0.56, 0.53, 0.64], fov: 24, targetY: 0.7 },
+};
 
-const SCENES: Record<string, SceneAssetDef> = Object.fromEntries(HABIT_FIGURES.map((s) => [s.config.id, s]));
+/** Figuras de Hábitos EN ORDEN de desbloqueo. */
+export const HABIT_FIGURES: SceneAssetDef[] = [FOREST_SCENE, CASTLE_SCENE, HOUSE_SCENE, WINDMILL_SCENE, ROOM_SCENE, BRIDGE_SCENE];
+
+// ---------------------------------------------------------------- GYM
+// El día 7 de las figuras de GYM celebra igual que las de Hábitos (mismo componente). Los clips faltantes los tolera el runtime.
+export const SKELETON_SCENE: SceneAssetDef = {
+  config: createSceneConfig("skeleton_progression_001", ["Base", "Piernas", "Pelvis", "Columna", "Caja torácica", "Brazos", "Cráneo"], { clips: clipsFor(7) }),
+  name: "Esqueleto",
+  icon: "skeleton",
+  glbUrl: "/models/skeleton_progression_001_meshopt.glb",
+  module: "gym",
+  license: "UNVERIFIED",
+  source: "UNVERIFIED",
+  celebrationStages: [7],
+  camera: { direction: [-0.3, 0.28, 0.85], fov: 24, targetY: 0.7 },
+};
+
+export const BMW_SCENE: SceneAssetDef = {
+  config: createSceneConfig("bmw_progression_001", ["Base", "Chasis", "Ruedas", "Carrocería", "Techo y cristales", "Interior", "Luces y detalles"], { clips: clipsFor(7) }),
+  name: "BMW M6",
+  icon: "sedan",
+  glbUrl: "/models/bmw_progression_001_meshopt.glb",
+  module: "gym",
+  license: "UNVERIFIED",
+  source: "UNVERIFIED",
+  celebrationStages: [7],
+  camera: { direction: [-0.62, 0.42, 0.6], fov: 24, targetY: 0.7 },
+};
+
+export const FORMULA2_SCENE: SceneAssetDef = {
+  config: createSceneConfig("formula2_progression_001", ["Base", "Chasis", "Ruedas", "Carrocería", "Morro y alerón delantero", "Trasera y alerón", "Cabina y detalles"], { clips: clipsFor(7) }),
+  name: "Fórmula 2",
+  icon: "racecar",
+  glbUrl: "/models/formula2_progression_001_meshopt.glb",
+  module: "gym",
+  license: "UNVERIFIED",
+  source: "UNVERIFIED",
+  celebrationStages: [7],
+  camera: { direction: [0.62, 0.45, 0.6], fov: 24, targetY: 0.7 },
+};
+
+export const BOMB_SCENE: SceneAssetDef = {
+  config: createSceneConfig("bomb_progression_001", ["Base", "Dinamita", "Cintas", "Circuito", "Reloj", "Cables", "Luces"], { clips: clipsFor(7) }),
+  name: "Bomba",
+  icon: "bomb",
+  glbUrl: "/models/bomb_progression_001_meshopt.glb",
+  module: "gym",
+  license: "UNVERIFIED",
+  source: "UNVERIFIED",
+  celebrationStages: [7],
+  camera: { direction: [-0.56, 0.5, 0.64], fov: 24, targetY: 0.7 },
+};
+
+/** Figuras de GYM EN ORDEN de desbloqueo (su desbloqueo es independiente del de Hábitos). */
+export const GYM_FIGURES: SceneAssetDef[] = [SKELETON_SCENE, BMW_SCENE, FORMULA2_SCENE, BOMB_SCENE];
+
+export interface SceneCollectionDef {
+  id: SceneCollectionId;
+  name: string;
+  figures: SceneAssetDef[];
+}
+
+/** Registro de colecciones: sumar una (Paz Mental, Finanzas, Outfit, Voz…) es agregar una entrada. */
+export const SCENE_COLLECTIONS: Record<SceneCollectionId, SceneCollectionDef> = {
+  habitos: { id: "habitos", name: "Hábitos", figures: HABIT_FIGURES },
+  gym: { id: "gym", name: "Gym", figures: GYM_FIGURES },
+};
+
+export function sceneFigures(collection: SceneCollectionId = "habitos"): SceneAssetDef[] {
+  return SCENE_COLLECTIONS[collection]?.figures ?? HABIT_FIGURES;
+}
+
+/** Configuraciones de una colección en orden (entrada de `collectionStateFor` / `collectionChange`). */
+export function figureConfigsFor(collection: SceneCollectionId = "habitos"): SceneProgressionConfig[] {
+  return sceneFigures(collection).map((s) => s.config);
+}
+
+const SCENES: Record<string, SceneAssetDef> = Object.fromEntries(
+  Object.values(SCENE_COLLECTIONS).flatMap((c) => c.figures.map((s) => [s.config.id, s] as const)),
+);
 
 export const DEFAULT_SCENE_ID = FOREST_SCENE.config.id;
 
@@ -102,7 +193,7 @@ export function getSceneAsset(id: string = DEFAULT_SCENE_ID): SceneAssetDef {
   return SCENES[id] ?? FOREST_SCENE;
 }
 
-/** Configuraciones en orden (entrada de `collectionStateFor` / `collectionChange`). */
+/** Configuraciones de la colección de Hábitos (atajo de `figureConfigsFor("habitos")`). */
 export function habitFigureConfigs(): SceneProgressionConfig[] {
-  return HABIT_FIGURES.map((s) => s.config);
+  return figureConfigsFor("habitos");
 }

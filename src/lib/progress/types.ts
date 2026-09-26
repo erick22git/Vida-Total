@@ -22,7 +22,10 @@ export type ProgressEventType =
   | "water.goal_reached"
   | "meal.logged"
   | "sleep.goal_reached"
-  | "calories.goal_reached";
+  | "calories.goal_reached"
+  | "meal.goal_reached"
+  | "kegel.completed"
+  | "meditation.completed";
 
 export interface ProgressEvent {
   type: ProgressEventType;

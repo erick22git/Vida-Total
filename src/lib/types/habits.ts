@@ -43,6 +43,9 @@ export interface Habit {
   streak: number;
   completedDates: string[]; // ISO date strings (yyyy-MM-dd)
   categoryId?: string;
+  /** Fuente de progreso que puede confirmar el hábito (ver `src/lib/habits/progress-sources.ts`). `undefined` = la de su
+   * categoría (hábitos anteriores); `null` = sin vínculo. Persistido en `habits.source_id` (migración 0005). */
+  sourceId?: string | null;
   /** Tipo y objetivo del hábito. Local-only hasta la migración de Supabase
    * (Fase 13) — la tabla `habits` todavía no tiene estas columnas. */
   type?: HabitType;

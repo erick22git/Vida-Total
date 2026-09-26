@@ -404,6 +404,7 @@ export const useHabitsStore = create<HabitsState>()(
           streak: 0,
           completedDates: [],
           categoryId: habit.categoryId,
+          sourceId: habit.sourceId,
           type: habit.type,
           goal: habit.goal,
           unit: habit.unit,
@@ -755,6 +756,7 @@ export async function hydrateHabitsStore(userId: string): Promise<void> {
       return {
         ...h,
         categoryId: h.categoryId ?? prevLocal.categoryId,
+        sourceId: h.sourceId !== undefined ? h.sourceId : prevLocal.sourceId,
         type: h.type && h.type !== "binario" ? h.type : (prevLocal.type ?? h.type),
         goal: h.goal ?? prevLocal.goal,
         unit: h.unit ?? prevLocal.unit,

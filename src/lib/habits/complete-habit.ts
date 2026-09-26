@@ -2,7 +2,9 @@ import { animationEngine } from "@/lib/animations/animation-engine";
 import { todayISO, useHabitsStore } from "@/lib/store/habitsStore";
 import { crossedLevelMilestone } from "@/lib/progress";
 import { collectionChange } from "@/lib/3d/scene-collection";
-import { habitFigureConfigs } from "@/lib/3d/scene-registry";
+import { figureConfigsFor } from "@/lib/3d/scene-registry";
+import { habitSceneCollection } from "@/lib/habits/habit-links";
+import { useHabitPromptStore, promptForHabit } from "@/lib/habits/habit-prompts";
 import type { ProgressResult } from "@/lib/progress/types";
 import type { Habit } from "@/lib/types/habits";
 
@@ -18,14 +20,16 @@ export function progressStep(habit: Pick<Habit, "type" | "goal">): number {
 }
 
 /** Eventos de una completación del día (y de los hitos que cruza). */
-function emitCompletion(habitId: string, prevTotal: number, result: ProgressResult | null) {
+function emitCompletion(habit: Habit, prevTotal: number, result: ProgressResult | null) {
+  const habitId = habit.id;
   const animationEvent = animationEngine.emit.bind(animationEngine);
   animationEvent({ type: "habit.completed", tier: "action", entityId: habitId, meta: { streak: result?.streak } });
 
   // Colección de figuras 3D: ¿esta repetición construye una etapa de la figura en curso (y quizá la completa
   // y desbloquea la siguiente)? La escena solo RECIBE este aviso; el progreso lo calcula el store/Progress
   // Engine. Un pequeño desfase deja que primero se vea el check completado.
-  const scene = collectionChange(habitFigureConfigs(), prevTotal, prevTotal + 1);
+  // Cada hábito usa la colección que le corresponde por su categoría (Hábitos o Gym), con su propio desbloqueo.
+  const scene = collectionChange(figureConfigsFor(habitSceneCollection(habit)), prevTotal, prevTotal + 1);
   if (scene.changed) {
     setTimeout(() => {
       const meta = {
@@ -84,9 +88,14 @@ export function completeHabit(habitId: string): ProgressResult | null {
   const habit = state.habits.find((h) => h.id === habitId);
   if (!habit || habit.completedDates.includes(todayISO())) return null;
   const prevTotal = habit.completedDates.length;
+  const today = todayISO();
+  // Si un módulo (Gym) ya confirmó el objetivo, el check cierra el hábito completo aunque sea de cantidad/tiempo.
+  const confirmedBySource = !!promptForHabit(useHabitPromptStore.getState().prompts, habitId, today);
+  useHabitPromptStore.getState().clearHabit(habitId);
 
   if (isQuantified(habit)) {
-    const outcome = state.addHabitProgress(habitId, progressStep(habit));
+    const missing = Math.max((habit.goal ?? 1) - (habit.values?.[today] ?? 0), 0);
+    const outcome = state.addHabitProgress(habitId, confirmedBySource && missing > 0 ? missing : progressStep(habit));
     if (!outcome) return null;
     if (!outcome.completedNow) {
       animationEngine.emit({
@@ -97,12 +106,12 @@ export function completeHabit(habitId: string): ProgressResult | null {
       });
       return null;
     }
-    emitCompletion(habitId, prevTotal, outcome.result);
+    emitCompletion(habit, prevTotal, outcome.result);
     return outcome.result;
   }
 
   const result = state.toggleHabitToday(habitId);
-  emitCompletion(habitId, prevTotal, result);
+  emitCompletion(habit, prevTotal, result);
   return result;
 }
 

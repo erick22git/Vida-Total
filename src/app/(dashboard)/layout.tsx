@@ -9,6 +9,7 @@ import { UserScopeScript } from "@/components/nav/user-scope-script";
 import { AccountNoticeBanner } from "@/components/nav/account-notice-banner";
 import { ImpersonationBanner } from "@/components/nav/impersonation-banner";
 import { ProfileProvider } from "@/components/providers/profile-provider";
+import { HabitSourceBridge } from "@/components/habitos/habit-source-bridge";
 import { createClient } from "@/lib/supabase/server";
 import { getAccountNotice, type Profile } from "@/lib/types/profile";
 
@@ -73,6 +74,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     <ProfileProvider profile={profile}>
       <div className="flex items-start min-h-dvh w-full">
         <UserScopeScript userId={user.id} />
+        <HabitSourceBridge />
         <Sidebar user={sessionUser} isAdmin={profile?.role === "admin"} />
         <MobileUserMenu user={sessionUser} isAdmin={profile?.role === "admin"} />
         {/* Sidebar/BottomNav son `position: fixed` (ver esos componentes),

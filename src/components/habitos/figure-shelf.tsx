@@ -17,6 +17,28 @@ export function FigureIcon({ icon, size = 26 }: { icon: SceneIcon; size?: number
       {icon === "house" && <path {...common} d="M3 11.5 12 4l9 7.5M5.5 10v11h13V10M10 21v-6h4v6" />}
       {icon === "windmill" && <path {...common} d="M9 21l1.2-9h3.6L15 21zM12 12 6 5.5M12 12l6.5 5M12 12l5.5-6.5M12 12 5.5 17.5" />}
       {icon === "room" && <path {...common} d="M3 8l9-5 9 5v8l-9 5-9-5zM3 8l9 5 9-5M12 13v8" />}
+      {icon === "bridge" && <path {...common} d="M2.5 16h19M4.5 16a7.5 7.5 0 0 1 15 0M7 16v4M17 16v4M12 8.5V16M3 7l3 2M21 7l-3 2" />}
+      {icon === "skeleton" && <path {...common} d="M12 3a4 4 0 0 0-4 4c0 1.5.8 2.6 2 3.3V12h4v-1.7c1.2-.7 2-1.8 2-3.3a4 4 0 0 0-4-4zM12 12v9M8.5 15h7M9.5 18h5" />}
+      {icon === "sedan" && (
+        <>
+          <path {...common} d="M2.5 16v-3l2.2-.8L7 8.5h7.5l3.3 3.4 3.7 1.1V16M2.5 16h19M10.5 8.5v3.4" />
+          <circle {...common} cx="7" cy="17" r="1.9" />
+          <circle {...common} cx="17" cy="17" r="1.9" />
+        </>
+      )}
+      {icon === "racecar" && (
+        <>
+          <path {...common} d="M2 16h20M4 16l.8-3H10l2.2-2.6h4.6L21 13.6V16M3 9.5v3M6.5 9.5v3" />
+          <circle {...common} cx="7.5" cy="17" r="1.9" />
+          <circle {...common} cx="17.5" cy="17" r="1.9" />
+        </>
+      )}
+      {icon === "bomb" && (
+        <>
+          <circle {...common} cx="10.5" cy="14.5" r="6" />
+          <path {...common} d="M15 10l3-3M18 7l1.2-2.4M17.3 4.8l2.5.5M6.5 13a4 4 0 0 1 3-2.6" />
+        </>
+      )}
     </svg>
   );
 }

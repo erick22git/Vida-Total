@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Minus, Plus, X } from "lucide-react";
 import { HABIT_CATEGORIES } from "@/lib/data/habit-categories";
+import { profileForCategory } from "@/lib/habits/category-config";
+import { getProgressSource } from "@/lib/habits/progress-sources";
 import { useEffectiveReduceMotion } from "@/lib/store/preferencesStore";
 import { playSound } from "@/lib/sound/sound-engine";
 import { haptic } from "@/lib/haptics/haptic";
@@ -16,7 +18,7 @@ const STEPS = 4;
 
 export type NewHabitInput = Pick<
   Habit,
-  "name" | "icon" | "color" | "frequency" | "categoryId" | "type" | "goal" | "unit" | "scheduledDays" | "reminder"
+  "name" | "icon" | "color" | "frequency" | "categoryId" | "sourceId" | "type" | "goal" | "unit" | "scheduledDays" | "reminder"
 >;
 
 const TYPE_OPTIONS: { id: HabitType; label: string; hint: string }[] = [
@@ -52,6 +54,7 @@ export function NewHabitFlow({
   const [unit, setUnit] = useState("vasos");
   const [minutes, setMinutes] = useState(20);
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [linkSource, setLinkSource] = useState(true);
   const [specificDays, setSpecificDays] = useState(false);
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [reminder, setReminder] = useState("20:00");
@@ -65,6 +68,7 @@ export function NewHabitFlow({
     setUnit("vasos");
     setMinutes(20);
     setCategoryId(null);
+    setLinkSource(true);
     setSpecificDays(false);
     setDays([1, 2, 3, 4, 5]);
     setReminder("20:00");
@@ -99,13 +103,18 @@ export function NewHabitFlow({
     if (step < STEPS - 1) go(step + 1);
   }
 
+  const categorySource = getProgressSource(profileForCategory(categoryId).defaultSource);
+
   function create(withReminder: boolean) {
     const category = HABIT_CATEGORIES.find((c) => c.id === categoryId);
+    // La categoría decide la fuente (Gym: agua/calorías/entrenamiento); el usuario puede dejarlo sin vínculo.
+    const defaultSource = getProgressSource(profileForCategory(categoryId).defaultSource);
     onCreate({
       name: name.trim(),
       icon: category?.icon ?? "Star",
       color: category?.color ?? "var(--habitos)",
       categoryId: category?.id,
+      sourceId: defaultSource ? (linkSource ? defaultSource.id : null) : undefined,
       type,
       goal: type === "cantidad" ? goal : type === "tiempo" ? minutes : undefined,
       unit: type === "cantidad" ? unit.trim() || "veces" : type === "tiempo" ? "min" : undefined,
@@ -265,6 +274,17 @@ export function NewHabitFlow({
                           </button>
                         ))}
                       </div>
+                      {categorySource && (
+                        <button
+                          onClick={() => setLinkSource((v) => !v)}
+                          className="mx-auto mt-1 flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] cursor-pointer"
+                          style={{ ...MONO, background: "rgba(255,255,255,0.06)", color: linkSource ? "#fff" : "rgba(255,255,255,0.45)" }}
+                          aria-pressed={linkSource}
+                        >
+                          <span className="w-2 h-2 rounded-full" style={{ background: linkSource ? "#f5b301" : "rgba(255,255,255,0.25)" }} />
+                          Se confirma al cumplir tu meta · {categorySource.label}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}

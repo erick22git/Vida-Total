@@ -1,29 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { Crystal3D } from "@/components/animations/Crystal3D";
 import { ProgressiveScene } from "@/components/3d/ProgressiveScene";
 import { FigureShelf } from "@/components/habitos/figure-shelf";
 import { ViewDots } from "@/components/habitos/view-dots";
-import { animationEngine } from "@/lib/animations/animation-engine";
+import { SceneCompletionCelebration, useSceneCompletionCelebration } from "@/components/3d/scene-completion-celebration";
 import { haptic } from "@/lib/haptics/haptic";
 import { playSound } from "@/lib/sound/sound-engine";
 import { computeHabitLevel } from "@/lib/progress";
 import { collectionChange, collectionStateFor } from "@/lib/3d/scene-collection";
-import { HABIT_FIGURES, habitFigureConfigs } from "@/lib/3d/scene-registry";
+import { figureConfigsFor, sceneFigures } from "@/lib/3d/scene-registry";
+import { habitSceneCollection } from "@/lib/habits/habit-links";
 import type { SceneStats } from "@/lib/3d/progressive-scene";
 import { useEffectiveReduceMotion } from "@/lib/store/preferencesStore";
 import type { Habit } from "@/lib/types/habits";
 
 const MONO = { fontFamily: "var(--font-geist-mono), monospace" } as const;
-
-/** Tras cambiar la etapa se deja ver la construcción (el clip más largo dura ~1.8 s) y una pausa antes de celebrar. */
-const FINAL_BUILD_MS = 2300;
-const UNLOCK_AFTER_MS = 1700;
-const BANNER_END_MS = 4300;
-
-type Banner = null | { title: string; sub: string };
 
 /**
  * Vista FIGURA: la escena 3D que se construye con el progreso del hábito y la fila de figuras de la colección.
@@ -37,7 +30,10 @@ type Banner = null | { title: string; sub: string };
  * Los controles de depuración (figuras, días, celebración) existen SOLO en desarrollo.
  */
 export function FigureView({ habit, buildFromTotal = null }: { habit: Habit; buildFromTotal?: number | null }) {
-  const configs = useMemo(() => habitFigureConfigs(), []);
+  // La categoría del hábito decide la colección de figuras (Hábitos o Gym); cada colección tiene su propio desbloqueo.
+  const collectionId = habitSceneCollection(habit);
+  const figures = useMemo(() => sceneFigures(collectionId), [collectionId]);
+  const configs = useMemo(() => figureConfigsFor(collectionId), [collectionId]);
   const total = habit.completedDates.length;
   const reduceMotion = useEffectiveReduceMotion();
   const debug = process.env.NODE_ENV !== "production";
@@ -57,45 +53,14 @@ export function FigureView({ habit, buildFromTotal = null }: { habit: Habit; bui
   const [pinned] = useState<number | null>(() => (buildFromTotal !== null ? collectionStateFor(configs, buildFromTotal).currentIndex : null));
   const [picked, setPicked] = useState<number | null>(null);
   const selectedIndex = picked ?? pinned ?? collection.currentIndex;
-  const asset = HABIT_FIGURES[selectedIndex];
+  const asset = figures[selectedIndex];
   const fig = collection.figures[selectedIndex];
   const stageName = fig.stage > 0 ? asset.config.stages[fig.stage - 1]?.name : null;
   const level = computeHabitLevel(shownTotal);
 
-  // ---- secuencia de celebración (cuando esta repetición completa la figura)
-  const [banner, setBanner] = useState<Banner>(null);
-  const [celebrateKey, setCelebrateKey] = useState(0);
-  const [justUnlocked, setJustUnlocked] = useState<string | null>(null);
+  // ---- celebración de figura completada (componente reutilizable)
+  const { banner, celebrateKey, justUnlocked, run: runCelebration } = useSceneCompletionCelebration(habit.id);
   const prevShown = useRef(shownTotal);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-
-  function clearTimers() {
-    timers.current.forEach(clearTimeout);
-    timers.current = [];
-  }
-  function runCelebration(figureId: string, figureName: string, nextId: string | null, nextName: string | null) {
-    clearTimers();
-    timers.current.push(
-      setTimeout(() => {
-        setCelebrateKey((k) => k + 1);
-        setBanner({ title: "LO LOGRASTE", sub: `${figureName} completado` });
-        animationEngine.emit({ type: "scene.completed", tier: "epic", entityId: habit.id, meta: { sceneId: figureId } });
-      }, FINAL_BUILD_MS),
-      setTimeout(() => {
-        if (nextId && nextName) {
-          setBanner({ title: "SIGUIENTE DESBLOQUEADA", sub: nextName });
-          setJustUnlocked(nextId);
-          animationEngine.emit({ type: "scene.unlocked", tier: "milestone", entityId: habit.id, meta: { sceneId: nextId } });
-        } else {
-          setBanner({ title: "COLECCIÓN COMPLETA", sub: "Todas las figuras terminadas" });
-        }
-      }, FINAL_BUILD_MS + UNLOCK_AFTER_MS),
-      setTimeout(() => {
-        setBanner(null);
-        setJustUnlocked(null);
-      }, FINAL_BUILD_MS + BANNER_END_MS),
-    );
-  }
 
   useEffect(() => {
     const prev = prevShown.current;
@@ -103,12 +68,10 @@ export function FigureView({ habit, buildFromTotal = null }: { habit: Habit; bui
     if (shownTotal !== prev + 1) return;
     const ch = collectionChange(configs, prev, shownTotal);
     if (!ch.completedNow) return;
-    const nextAsset = HABIT_FIGURES.find((s) => s.config.id === ch.unlockedFigureId);
-    runCelebration(ch.figureId, HABIT_FIGURES[ch.figureIndex].name, ch.unlockedFigureId, nextAsset?.name ?? null);
+    const nextAsset = figures.find((s) => s.config.id === ch.unlockedFigureId);
+    runCelebration(ch.figureId, figures[ch.figureIndex].name, ch.unlockedFigureId, nextAsset?.name ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shownTotal]);
-  useEffect(() => clearTimers, []);
-
   // ---- fila de figuras: solo las desbloqueadas se eligen; las bloqueadas tiemblan
   const [shake, setShake] = useState<{ index: number; n: number } | null>(null);
   function onLockedTap(index: number) {
@@ -152,23 +115,7 @@ export function FigureView({ habit, buildFromTotal = null }: { habit: Habit; bui
           onStats={debug ? setStats : undefined}
           fallback={<Crystal3D size={240} level={Math.min(fig.stage, 6)} inLevel={0} burst={false} reduceMotion={reduceMotion} fallbackState={fig.stage >= fig.totalStages ? "complete" : fig.stage > 3 ? "progress-75" : fig.stage > 0 ? "progress-25" : "idle"} />}
         />
-        <AnimatePresence>
-          {banner && (
-            <motion.div
-              key={banner.title}
-              className="absolute inset-x-0 top-[6%] flex flex-col items-center gap-1.5 pointer-events-none text-center px-4"
-              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.92 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ type: "spring", stiffness: 320, damping: 22 }}
-            >
-              <span className="text-[21px] font-black tracking-[0.06em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)] leading-tight">{banner.title}</span>
-              <span className="text-[11px] uppercase tracking-[0.2em] text-[#f5b301]" style={MONO}>
-                {banner.sub}
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <SceneCompletionCelebration banner={banner} reduceMotion={reduceMotion} />
       </div>
 
       <div className="w-full flex flex-col items-center gap-3">
@@ -197,8 +144,8 @@ export function FigureView({ habit, buildFromTotal = null }: { habit: Habit; bui
         <div className="w-full relative pt-1">
           <FigureShelf
             figures={collection.figures}
-            icons={HABIT_FIGURES.map((s) => s.icon)}
-            names={HABIT_FIGURES.map((s) => s.name)}
+            icons={figures.map((s) => s.icon)}
+            names={figures.map((s) => s.name)}
             selectedIndex={selectedIndex}
             onSelect={(i) => setPicked(i)}
             onLockedTap={onLockedTap}
@@ -213,7 +160,7 @@ export function FigureView({ habit, buildFromTotal = null }: { habit: Habit; bui
         {debug && (
           <div className="mt-1 w-full max-w-[420px] flex flex-col items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: "rgba(255,255,255,0.06)" }}>
             <span className="text-[10px] uppercase tracking-[0.16em] text-white/45" style={MONO}>
-              debug 3d · solo desarrollo
+              debug 3d · {collectionId} · solo desarrollo
             </span>
             <div className="flex flex-wrap justify-center gap-1">
               <DebugBtn active={!debugActive} onClick={() => { setDebugActive(false); setPicked(null); setShownTotal(total); }}>real</DebugBtn>
@@ -229,7 +176,7 @@ export function FigureView({ habit, buildFromTotal = null }: { habit: Habit; bui
               <DebugBtn onClick={() => setReplayKey((k) => k + 1)}>↻</DebugBtn>
               <DebugBtn
                 onClick={() => {
-                  const next = HABIT_FIGURES[selectedIndex + 1];
+                  const next = figures[selectedIndex + 1];
                   runCelebration(asset.config.id, asset.name, next?.config.id ?? null, next?.name ?? null);
                 }}
               >
