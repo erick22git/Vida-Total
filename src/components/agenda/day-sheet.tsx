@@ -1,7 +1,8 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { clock, DAY_MIN, durationLabel, minutesLeft, isInProgress, taskProgress, timeRange } from "@/lib/agenda/time";
+import { clock, DAY_MIN, durationLabel, minutesLeft, isInProgress, overlapFlags, taskProgress, timeRange } from "@/lib/agenda/time";
+import { Notch } from "./day-timeline";
 import type { AgendaTask } from "@/lib/agenda/types";
 import { haptic } from "@/lib/haptics/haptic";
 import { TaskNode } from "./task-node";
@@ -50,6 +51,7 @@ interface DaySheetProps {
  */
 export function DaySheet({ expanded, onExpandedChange, tasks, active, now, onToggle, onOpen }: DaySheetProps) {
   const sorted = [...tasks].sort((a, b) => (a.allDay ? -1 : 0) - (b.allDay ? -1 : 0) || (a.startMin ?? 0) - (b.startMin ?? 0));
+  const overlaps = overlapFlags(sorted);
   return (
     <div
       className="absolute left-2.5 right-2.5 overflow-hidden"
@@ -94,8 +96,18 @@ export function DaySheet({ expanded, onExpandedChange, tasks, active, now, onTog
             const hourMarks = timed ? Array.from({ length: 24 }, (_, k) => k * 60).filter((m) => m > t.startMin! && m < end! && m < DAY_MIN) : [];
             return (
               <div key={t.id} className="relative pl-[52px] pr-5" onClick={() => onOpen(t.id)} role="button" aria-label={`Abrir ${t.title}`}>
+                {overlaps[i] && (
+                  <p className="text-[15px] font-semibold -mt-1 mb-3" style={{ marginLeft: 66, color: "rgba(255,255,255,0.5)" }}>
+                    Las tareas <b className="text-white">coinciden</b>
+                  </p>
+                )}
                 {i > 0 && <span className="absolute w-[2px] -translate-x-1/2" style={{ left: 75, top: -9, height: 12, background: "rgba(255,255,255,0.35)" }} />}
-                <div className="flex items-center gap-4 mb-3 cursor-pointer" style={{ minHeight: h }}>
+                <div className="relative flex items-center gap-4 mb-3 cursor-pointer" style={{ minHeight: h }}>
+                  {overlaps[i] && (
+                    <span className="absolute" style={{ left: 0, top: 0, width: 53 }}>
+                      <Notch size={34} />
+                    </span>
+                  )}
                   <TaskNode icon={t.icon} color={t.color} width={53} height={timed ? h : 53} progress={taskProgress(t, now)} done={t.done} iconSize={24} label={t.title} />
                   <div className="flex-1 min-w-0">
                     <p className="text-[15px] font-semibold" style={{ color: "rgba(255,255,255,0.55)" }}>{subtitle(t, now)}</p>

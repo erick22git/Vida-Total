@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
+import { isDoneOn } from "@/lib/agenda/recurrence";
 import { useAgendaStore } from "@/lib/agenda/store";
-import { durationLabel, taskProgress, timeRange } from "@/lib/agenda/time";
+import { durationLabel, timeRange, toISODate } from "@/lib/agenda/time";
 import { haptic } from "@/lib/haptics/haptic";
 import { TaskNode } from "./task-node";
 
@@ -12,10 +13,11 @@ type Tab = "subtasks" | "notes" | "intervals";
 /** Modo enfoque: pantalla completa clara con cuenta regresiva de la tarea en curso. */
 export function FocusScreen({ taskId, onClose }: { taskId: string; onClose: () => void }) {
   const task = useAgendaStore((s) => s.tasks.find((t) => t.id === taskId));
-  const toggleDone = useAgendaStore((s) => s.toggleDone);
+  const toggleDoneOn = useAgendaStore((s) => s.toggleDoneOn);
   const toggleSubtask = useAgendaStore((s) => s.toggleSubtask);
   const updateTask = useAgendaStore((s) => s.updateTask);
   const [now, setNow] = useState(() => new Date());
+  const day = toISODate(now);
   const [tab, setTab] = useState<Tab | null>(null);
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export function FocusScreen({ taskId, onClose }: { taskId: string; onClose: () =
   const mm = String(Math.floor(left / 60)).padStart(2, "0");
   const ss = String(left % 60).padStart(2, "0");
   const progress = Math.min(1, Math.max(0, 1 - left / (task.durationMin * 60)));
-  void taskProgress;
+  const done = isDoneOn(task, day);
 
   return (
     <div className="absolute inset-0 z-[80] overflow-hidden" style={{ background: "#b4b4b6", color: "#111" }}>
@@ -71,15 +73,15 @@ export function FocusScreen({ taskId, onClose }: { taskId: string; onClose: () =
             <p className="text-[22px] font-extrabold truncate">{task.title}</p>
           </div>
           <button
-            aria-label={task.done ? "Marcar como pendiente" : "Completar"}
+            aria-label={done ? "Marcar como pendiente" : "Completar"}
             onClick={() => {
               haptic("success");
-              toggleDone(task.id);
+              toggleDoneOn(task.id, day);
             }}
             className="w-[30px] h-[30px] rounded-full flex items-center justify-center cursor-pointer"
-            style={{ border: "2.5px solid #fff", background: task.done ? "#fff" : "transparent", color: "#111" }}
+            style={{ border: "2.5px solid #fff", background: done ? "#fff" : "transparent", color: "#111" }}
           >
-            {task.done && <Check size={18} strokeWidth={4} />}
+            {done && <Check size={18} strokeWidth={4} />}
           </button>
         </div>
         <div className="flex items-center justify-around h-[62px] rounded-full text-[16px] font-extrabold" style={{ background: "rgba(70,70,72,0.94)", color: "#fff" }}>

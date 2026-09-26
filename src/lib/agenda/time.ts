@@ -78,6 +78,19 @@ export interface LaidOutTask {
   height: number;
   /** Z-index para tareas que se solapan: la más tardía queda encima. */
   z: number;
+  /** Empieza antes de que termine alguna anterior: se dibuja encajada con una muesca y se avisa "Las tareas coinciden". */
+  overlapsPrev: boolean;
+}
+
+/** ¿Cada tarea (ordenadas por hora) coincide en el tiempo con alguna de las anteriores? */
+export function overlapFlags(sorted: Pick<AgendaTask, "startMin" | "durationMin" | "allDay">[]): boolean[] {
+  let maxEnd = -1;
+  return sorted.map((t) => {
+    if (t.startMin === null || t.allDay) return false;
+    const flag = t.startMin < maxEnd;
+    maxEnd = Math.max(maxEnd, t.startMin + t.durationMin);
+    return flag;
+  });
 }
 
 export interface DayLayout {
@@ -109,7 +122,7 @@ export function layoutDay(tasks: AgendaTask[]): DayLayout {
     let top: number;
     if (start >= cursorTime) top = cursorY + (start - cursorTime) * EMPTY_PER_MIN + (i > 0 ? GAP : 0);
     else top = Math.max(items[i - 1] ? items[i - 1].top + 14 : TOP_PAD, cursorY - OVERLAP);
-    items.push({ task, top, height: h, z: i + 1 });
+    items.push({ task, top, height: h, z: i + 1, overlapsPrev: start < cursorTime && i > 0 });
     const last = anchors[anchors.length - 1];
     if (start > last.t) anchors.push({ t: start, y: top });
     const lastB = anchors[anchors.length - 1];

@@ -131,7 +131,7 @@ export function DatePickerSheet({ open, onClose, value, onPick, allowNone }: { o
             <button key={iso} onClick={() => pick(iso)} className="flex items-center justify-center h-12 cursor-pointer">
               <span
                 className="flex items-center justify-center w-11 h-11 rounded-full text-[19px] font-extrabold"
-                style={{ background: sel ? "#F28B82" : "transparent", color: sel ? "#1a1a1a" : iso === today ? "#F28B82" : "#fff" }}
+                style={{ background: sel ? "#fff" : "transparent", color: sel ? "#111" : "#fff", boxShadow: !sel && iso === today ? "inset 0 0 0 2px rgba(255,255,255,0.45)" : undefined }}
               >
                 {d}
               </span>
@@ -144,7 +144,7 @@ export function DatePickerSheet({ open, onClose, value, onPick, allowNone }: { o
 }
 
 /* ------------------------------------ Menú ------------------------------------ */
-function MenuRow({ icon, children, onClick, disabled, chevron }: { icon: ReactNode; children: ReactNode; onClick?: () => void; disabled?: boolean; chevron?: boolean }) {
+export function MenuRow({ icon, children, onClick, disabled, chevron }: { icon: ReactNode; children: ReactNode; onClick?: () => void; disabled?: boolean; chevron?: boolean }) {
   return (
     <button onClick={onClick} disabled={disabled} className="flex items-center gap-3 w-full text-left px-3 py-3 rounded-xl text-[17px] font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-default">
       <span className="shrink-0">{icon}</span>

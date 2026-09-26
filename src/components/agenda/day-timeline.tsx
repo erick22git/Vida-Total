@@ -8,6 +8,11 @@ import { TaskNode } from "./task-node";
 const NODE_W = 37;
 const AXIS = "63%";
 
+/** Muesca donde una tarea se encaja en otra que coincide en el tiempo (ambas siguen visibles). */
+export function Notch({ size = 28 }: { size?: number }) {
+  return <span aria-hidden className="absolute left-1/2 -translate-x-1/2 pointer-events-none" style={{ top: -8, width: size, height: 15, borderRadius: "50%", background: "#000", zIndex: 5, boxShadow: "0 0 0 2px rgba(255,255,255,0.15)" }} />;
+}
+
 /**
  * Línea de tiempo vertical del día. Las horas con tareas se expanden y las vacías se comprimen; cada tarea es un
  * círculo/cápsula sobre una línea central, más alta cuanto más dura. La hora actual va llenando el bloque.
@@ -59,6 +64,7 @@ export function DayTimeline({
 
         {items.map((it) => (
           <div key={it.task.id} className="absolute -translate-x-1/2" style={{ left: AXIS, top: it.top, zIndex: it.z }}>
+            {it.overlapsPrev && <Notch />}
             <TaskNode
               icon={it.task.icon}
               color={it.task.color}

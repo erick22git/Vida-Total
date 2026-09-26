@@ -4,12 +4,14 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addDays, format, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Inbox, LayoutGrid, List, Plus, Sparkles } from "lucide-react";
-import { tasksOnDate, inboxTasks, useAgendaStore } from "@/lib/agenda/store";
+import { CalendarPlus, ChevronLeft, ChevronRight, Copy, Inbox, LayoutGrid, List, Plus, Send, Sparkles, Trash2 } from "lucide-react";
+import { occurrencesOn } from "@/lib/agenda/recurrence";
+import { inboxTasks, useAgendaStore } from "@/lib/agenda/store";
 import { isInProgress, nowMinutes, toISODate } from "@/lib/agenda/time";
 import { useNow } from "@/lib/agenda/use-now";
 import type { AgendaTask } from "@/lib/agenda/types";
-import { DatePickerSheet } from "./pickers";
+import { ConfirmSheet, CopyTasksSheet } from "./agenda-sheets";
+import { DatePickerSheet, MenuRow } from "./pickers";
 import { DayTimeline } from "./day-timeline";
 import { DaySheet, NAV_H, PEEK_H } from "./day-sheet";
 import { FocusScreen } from "./focus-screen";
@@ -35,7 +37,9 @@ export function AgendaScreen() {
   const router = useRouter();
   const now = useNow(15_000);
   const tasks = useAgendaStore((s) => s.tasks);
-  const toggleDone = useAgendaStore((s) => s.toggleDone);
+  const toggleDoneOn = useAgendaStore((s) => s.toggleDoneOn);
+  const moveTasks = useAgendaStore((s) => s.moveTasks);
+  const clearDay = useAgendaStore((s) => s.clearDay);
   const [date, setDate] = useState(() => toISODate(new Date()));
   const [tab, setTab] = useState<Tab>("day");
   const [expanded, setExpanded] = useState(false);
@@ -43,9 +47,11 @@ export function AgendaScreen() {
   const [editor, setEditor] = useState<EditorTarget | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [calendar, setCalendar] = useState(false);
+  const [dayMenu, setDayMenu] = useState<null | "menu" | "copy" | "move" | "clear">(null);
   const swipe = useRef<number | null>(null);
 
-  const dayTasks = useMemo(() => tasksOnDate(tasks, date), [tasks, date]);
+  const dayTasks = useMemo(() => occurrencesOn(tasks, date), [tasks, date]);
+  const pending = dayTasks.filter((t) => !t.done && !(t.repeat && t.repeat.freq !== "none"));
   const inbox = useMemo(() => inboxTasks(tasks), [tasks]);
   const active = pickActive(dayTasks, now, selectedId);
   const today = toISODate(now);
@@ -90,9 +96,9 @@ export function AgendaScreen() {
               {week.map((d, i) => {
                 const iso = toISODate(d);
                 const sel = iso === date;
-                const dots = expanded && sel ? tasksOnDate(tasks, iso).slice(0, 5) : [];
+                const dots = expanded && sel ? occurrencesOn(tasks, iso).slice(0, 5) : [];
                 return (
-                  <button key={iso} onClick={() => { setDate(iso); setSelectedId(null); }} className="flex flex-col items-center gap-1 cursor-pointer" aria-label={format(d, "EEEE d 'de' MMMM", { locale: es })} aria-pressed={sel}>
+                  <button key={iso} onClick={() => { if (sel) setDayMenu("menu"); else { setDate(iso); setSelectedId(null); } }} className="flex flex-col items-center gap-1 cursor-pointer" aria-label={format(d, "EEEE d 'de' MMMM", { locale: es })} aria-pressed={sel}>
                     <span className="text-[14px] font-semibold" style={{ color: sel ? "#fff" : "rgba(255,255,255,0.5)" }}>{WEEKDAYS[i]}</span>
                     <span className="flex items-center justify-center w-[30px] h-[30px] rounded-full text-[18px] font-extrabold" style={{ background: sel ? "#fff" : "transparent", color: sel ? "#000" : iso === today ? "#fff" : "#fff" }}>
                       {format(d, "d")}
@@ -122,7 +128,7 @@ export function AgendaScreen() {
             now={now}
             selectedId={active?.id ?? null}
             onSelect={setSelectedId}
-            onOpen={(id) => setEditor({ mode: "edit", id })}
+            onOpen={(id) => setEditor({ mode: "edit", id, date })}
             bottomPad={PEEK_H + NAV_H + 30}
           />
         )}
@@ -136,10 +142,10 @@ export function AgendaScreen() {
               </div>
             ) : (
               inbox.map((t) => (
-                <div key={t.id} role="button" aria-label={`Abrir ${t.title}`} onClick={() => setEditor({ mode: "edit", id: t.id })} className="flex items-center gap-4 mb-4 cursor-pointer">
+                <div key={t.id} role="button" aria-label={`Abrir ${t.title}`} onClick={() => setEditor({ mode: "edit", id: t.id, date: toISODate(new Date()) })} className="flex items-center gap-4 mb-4 cursor-pointer">
                   <TaskNode icon={t.icon} color={t.color} width={50} height={50} iconSize={22} done={t.done} label={t.title} />
                   <p className="flex-1 min-w-0 text-[21px] font-extrabold truncate" style={{ textDecoration: t.done ? "line-through" : undefined, opacity: t.done ? 0.5 : 1 }}>{t.title}</p>
-                  <button aria-label={t.done ? "Marcar como pendiente" : "Completar"} onClick={(e) => { e.stopPropagation(); toggleDone(t.id); }} className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer" style={{ border: "2.5px solid #fff", background: t.done ? "#fff" : "transparent", color: "#000" }}>
+                  <button aria-label={t.done ? "Marcar como pendiente" : "Completar"} onClick={(e) => { e.stopPropagation(); toggleDoneOn(t.id, date); }} className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer" style={{ border: "2.5px solid #fff", background: t.done ? "#fff" : "transparent", color: "#000" }}>
                     {t.done && <span className="text-[14px] font-black">✓</span>}
                   </button>
                 </div>
@@ -169,8 +175,8 @@ export function AgendaScreen() {
             tasks={dayTasks}
             active={active}
             now={now}
-            onToggle={toggleDone}
-            onOpen={(id) => setEditor({ mode: "edit", id })}
+            onToggle={(id) => toggleDoneOn(id, date)}
+            onOpen={(id) => setEditor({ mode: "edit", id, date })}
           />
         )}
 
@@ -210,6 +216,31 @@ export function AgendaScreen() {
           />
         )}
         {focusId && <FocusScreen taskId={focusId} onClose={() => setFocusId(null)} />}
+        {dayMenu === "menu" && (
+          <div className="absolute inset-0 z-[55]" onClick={() => setDayMenu(null)}>
+            <div className="absolute left-3 top-[112px] w-[250px] rounded-[28px] p-2" style={{ background: "rgba(28,28,30,0.97)", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 16px 50px rgba(0,0,0,0.7)" }} onClick={(e) => e.stopPropagation()} role="menu" aria-label="Opciones del día">
+              <MenuRow icon={<Copy size={22} />} onClick={() => setDayMenu("copy")}>Copiar tareas del día</MenuRow>
+              {pending.length > 0 && (
+                <MenuRow icon={<Send size={22} />} onClick={() => setDayMenu("move")}>Volver a planificar {pending.length} {pending.length === 1 ? "tarea" : "tareas"}</MenuRow>
+              )}
+              <div className="h-px mx-3 my-1" style={{ background: "rgba(255,255,255,0.1)" }} />
+              <MenuRow icon={<CalendarPlus size={22} />} onClick={() => { setDayMenu(null); setEditor({ mode: "create", date, startMin: null }); }}>Añadir tarea</MenuRow>
+              <div className="h-px mx-3 my-1" style={{ background: "rgba(255,255,255,0.1)" }} />
+              <button disabled={dayTasks.length === 0} onClick={() => setDayMenu("clear")} className="flex items-center gap-3 w-full text-left px-3 py-3 rounded-xl text-[17px] font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-default" style={{ color: "#ff453a" }}>
+                <Trash2 size={22} /> Vaciar día
+              </button>
+            </div>
+          </div>
+        )}
+        <CopyTasksSheet open={dayMenu === "copy"} onClose={() => setDayMenu(null)} sourceDate={date} tasks={dayTasks} />
+        <DatePickerSheet open={dayMenu === "move"} onClose={() => setDayMenu(null)} value={date} onPick={(d) => { if (d) { moveTasks(pending.map((t) => t.id), d); setDate(d); setSelectedId(null); } }} />
+        <ConfirmSheet
+          open={dayMenu === "clear"}
+          onClose={() => setDayMenu(null)}
+          title="Vaciar día"
+          message={`Se quitarán las ${dayTasks.length} tareas de este día. Las que se repiten seguirán en los demás días.`}
+          actions={[{ label: "Vaciar día", danger: true, onClick: () => { clearDay(date); setDayMenu(null); setSelectedId(null); } }]}
+        />
         <DatePickerSheet open={calendar} onClose={() => setCalendar(false)} value={date} onPick={(d) => { if (d) { setDate(d); setSelectedId(null); } }} />
       </div>
     </div>

@@ -3,7 +3,8 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { Check, Plus } from "lucide-react";
-import { tasksOnDate, useAgendaStore } from "@/lib/agenda/store";
+import { occurrencesOn } from "@/lib/agenda/recurrence";
+import { useAgendaStore } from "@/lib/agenda/store";
 import { durationLabel, taskProgress, timeRange, toISODate } from "@/lib/agenda/time";
 import { useNow } from "@/lib/agenda/use-now";
 import { haptic } from "@/lib/haptics/haptic";
@@ -16,10 +17,10 @@ import { TaskNode } from "./task-node";
 export function AgendaWidget() {
   const now = useNow(30_000);
   const tasks = useAgendaStore((s) => s.tasks);
-  const toggleDone = useAgendaStore((s) => s.toggleDone);
+  const toggleDoneOn = useAgendaStore((s) => s.toggleDoneOn);
   const today = toISODate(now);
   const rows = useMemo(() => {
-    const sorted = tasksOnDate(tasks, today)
+    const sorted = occurrencesOn(tasks, today)
       .filter((t) => t.startMin !== null && !t.allDay)
       .sort((a, b) => a.startMin! - b.startMin!);
     const firstPending = sorted.findIndex((t) => !t.done);
@@ -55,7 +56,7 @@ export function AgendaWidget() {
                   e.preventDefault();
                   e.stopPropagation();
                   haptic("light");
-                  toggleDone(t.id);
+                  toggleDoneOn(t.id, today);
                 }}
                 className="shrink-0 flex items-center justify-center w-[26px] h-[26px] rounded-full cursor-pointer"
                 style={{ border: "2.5px solid #fff", background: t.done ? "#fff" : "transparent", color: "#111" }}
