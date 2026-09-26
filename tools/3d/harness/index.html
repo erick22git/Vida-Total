@@ -1,3 +1,3 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="/app.css"><style>html,body{margin:0;height:100%;background:#000}:root{--font-geist-mono: ui-monospace, monospace;--font-geist-sans: system-ui}</style></head>
-<body><div id="root"></div><script src="/entry.js"></script></body></html>
+<body><script>/* ?raf=timer: el panel del navegador pausa requestAnimationFrame cuando está oculto; con esto las animaciones avanzan igual (solo pruebas) */if(location.search.includes("raf=timer")){window.requestAnimationFrame=function(cb){return setTimeout(function(){cb(performance.now())},16)};window.cancelAnimationFrame=function(i){clearTimeout(i)}}</script><div id="root"></div><script src="/entry.js"></script></body></html>

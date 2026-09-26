@@ -134,6 +134,9 @@ def flatten_materials(objs, overrides=None, sat=0.85, val=1.0, prefix="VT_", mer
             continue
         for slot in ob.material_slots:
             src = slot.material
+            if slot.link != "DATA":
+                src = slot.material or (ob.data.materials[slot.slot_index] if slot.slot_index < len(ob.data.materials) else None)
+                slot.link = "DATA"
             key = src.name if src else "_none"
             if key not in cache:
                 ov = overrides.get(key)
@@ -600,6 +603,27 @@ def setup_transparent_scene(scene, target, direction, lens=95.0, exposure=-0.2, 
     cam_obj.data.clip_end = 500
     scene.camera = cam_obj
     scene.render.film_transparent = True
+    # Algunos archivos traen compositor/secuenciador propios (fondos negros): se apagan para la vista previa.
+    for attr, val in (("use_nodes", False), ("compositing_node_group", None)):
+        try:
+            setattr(scene, attr, val)
+        except Exception:
+            pass
+    try:
+        scene.render.use_compositing = False
+        scene.render.use_sequencer = False
+    except Exception:
+        pass
+    for vl in scene.view_layers:
+        vl.material_override = None            # (p. ej. el BMW trae un override tipo arcilla)
+        vl.use_pass_combined = True
+    scene.view_settings.view_transform = "Standard"
+
+    try:
+        scene.render.image_settings.media_type = "IMAGE"
+    except Exception:
+        pass
+    scene.render.image_settings.file_format = "PNG"
     scene.render.image_settings.color_mode = "RGBA"
     scene.render.resolution_x = res
     scene.render.resolution_y = res
@@ -705,3 +729,24 @@ def cluster_join(objs, cell, prefix):
         if j:
             out.append(j)
     return out
+
+
+def include_everything():
+    """Colecciones excluidas/ocultas del original: se activan para poder trabajar con todo (join/select exigen view layer)."""
+    def walk(lc):
+        lc.exclude = False
+        lc.hide_viewport = False
+        for ch in lc.children:
+            walk(ch)
+    walk(bpy.context.view_layer.layer_collection)
+    # objetos que existen en el archivo pero no están enlazados a la escena (colecciones sueltas): se enlazan
+    for o in bpy.data.objects:
+        if o.name not in bpy.context.scene.objects:
+            bpy.context.scene.collection.objects.link(o)
+    for o in bpy.data.objects:
+        o.hide_viewport = False
+        o.hide_render = False
+        try:
+            o.hide_set(False)
+        except Exception:
+            pass

@@ -48,3 +48,6 @@ Construir (sobre la COPIA de cada original): `10_house_7day.py`, `11_windmill_7d
 Exportar GLB: `20_export_house.py`, `21_export_windmill.py`, `22_export_castle.py`, `23_export_room.py`.
 Cliente: `client/runpy.py` (admite `# @include`), `render_figure_days.py`. Verificar: `verify/glb_report.mjs`, `verify/collection_test.ts`.
 Resumen y métricas: `docs/3d/habit-figures.md`.
+
+## Puente y las 4 figuras de GYM
+`blender/inspect_asset.py` (+ `client/inspect_new.py`) inspecciona un `.blend` nuevo. Construcción: `14_bridge_7day.py`, `15_formula2_7day.py`, `16_skeleton_7day.py`, `17_bmw_7day.py`, `18_bomb_7day.py`; exportación: `24`–`28_export_*.py`. `lib_stages.py` ahora también apaga compositor/override de material del archivo original y activa colecciones ocultas (`include_everything`). Pruebas de integración: `verify/run_ts.mjs verify/integration_test.ts`. Resumen: `docs/3d/habitos-gym-integration.md`.

@@ -1,6 +1,6 @@
 {
   "$comment": "3D Asset Registry (global para todos los módulos). Los archivos pesados viven en 'biblioteca de assets/' (ignorada por git) y los GLB de prueba en 'public/models/' (también ignorados mientras la licencia sea UNVERIFIED). El espejo en runtime es src/lib/3d/scene-registry.ts.",
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "assets": [
     {
       "id": "forest_progression_001",
@@ -620,39 +620,538 @@
       "glb": {
         "meshopt": "public/models/room_progression_001_meshopt.glb (ignorado por git)"
       }
+    },
+    {
+      "category": "progression-scene",
+      "progressionStages": 7,
+      "background": "transparent",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "format": "blend -> glb (meshopt)",
+      "exports": {
+        "lights": false,
+        "cameras": false,
+        "background": false,
+        "fog": false
+      },
+      "mobileReady": false,
+      "mobile": {
+        "status": "cumple el presupuesto de gama media en medicion de escritorio; SIN prueba en telefono real",
+        "budget": {
+          "midRange": {
+            "drawCalls": 150,
+            "triangles": 150000,
+            "glbMbMeshopt": 3
+          }
+        },
+        "missing": [
+          "FPS y memoria en telefono real"
+        ]
+      },
+      "id": "bridge_progression_001",
+      "name": "Puente (jardin japones con pagoda)",
+      "module": "habitos",
+      "collectionOrder": 6,
+      "originalFile": "biblioteca de assets/HÁBITOS/Paisajes completos/puente.blend",
+      "originalSha256": "8ff259fab304f6d57429662c5a2134f8e50f0abc45ed1cd14a50934c1b58fd00",
+      "workingFile": "biblioteca de assets/_trabajo/bridge_progression.blend",
+      "stages": {
+        "count": 7,
+        "unit": "dias completados de la figura",
+        "thresholds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "names": [
+          "Base",
+          "Terreno",
+          "Río y estanque",
+          "Puente",
+          "Pagoda",
+          "Árboles y cerezo",
+          "Rocas y linterna"
+        ],
+        "celebrationStages": [
+          7
+        ],
+        "clips": {
+          "1": "STAGE_1",
+          "2": "STAGE_2",
+          "3": "STAGE_3",
+          "4": "STAGE_4",
+          "5": "STAGE_5",
+          "6": "STAGE_6",
+          "7": "STAGE_7"
+        }
+      },
+      "build": "tools/3d/blender/14_bridge_7day.py + 24_export_bridge.py",
+      "inspection": {
+        "objects": 21,
+        "tris": 13001,
+        "materials": 19,
+        "textures": "3 (cielo 1920x1080 + 2 baldosas 512): reemplazadas por colores planos; el cielo se descarta",
+        "licenseEvidence": "ninguna dentro del archivo"
+      },
+      "adaptations": [
+        "cielo/fondo y luces del original descartados",
+        "colores planos (piedra, agua, pasto, madera)",
+        "reparto por capas del diorama (base, terreno, rio, puente, pagoda, arboles, rocas)"
+      ],
+      "metrics": {
+        "triangles": 12601,
+        "drawCallsAtCompletion": 33,
+        "materials": 18,
+        "textures": 0,
+        "nodes": 19,
+        "glbMb": {
+          "raw": 0.785,
+          "meshopt": 0.345,
+          "draco": 0.184
+        }
+      },
+      "glb": {
+        "meshopt": "public/models/bridge_progression_001_meshopt.glb"
+      }
+    },
+    {
+      "category": "progression-scene",
+      "progressionStages": 7,
+      "background": "transparent",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "format": "blend -> glb (meshopt)",
+      "exports": {
+        "lights": false,
+        "cameras": false,
+        "background": false,
+        "fog": false
+      },
+      "mobileReady": false,
+      "mobile": {
+        "status": "cumple el presupuesto de gama media en medicion de escritorio; SIN prueba en telefono real",
+        "budget": {
+          "midRange": {
+            "drawCalls": 150,
+            "triangles": 150000,
+            "glbMbMeshopt": 3
+          }
+        },
+        "missing": [
+          "FPS y memoria en telefono real"
+        ]
+      },
+      "id": "skeleton_progression_001",
+      "name": "Esqueleto (Manny)",
+      "module": "gym",
+      "collectionOrder": 1,
+      "originalFile": "biblioteca de assets/GYM/esqueleto.blend",
+      "originalSha256": "0ba13c9f0c2af50aafb317f450a92083f7d08ece67c3ecc9a2c64eac13257926",
+      "workingFile": "biblioteca de assets/_trabajo/skeleton_progression.blend",
+      "stages": {
+        "count": 7,
+        "unit": "dias completados de la figura",
+        "thresholds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "names": [
+          "Base",
+          "Piernas",
+          "Pelvis",
+          "Columna",
+          "Caja torácica",
+          "Brazos",
+          "Cráneo"
+        ],
+        "celebrationStages": [
+          7
+        ],
+        "clips": {
+          "1": "STAGE_1",
+          "2": "STAGE_2",
+          "3": "STAGE_3",
+          "4": "STAGE_4",
+          "5": "STAGE_5",
+          "6": "STAGE_6",
+          "7": "STAGE_7"
+        }
+      },
+      "build": "tools/3d/blender/16_skeleton_7day.py + 26_export_skeleton.py",
+      "inspection": {
+        "objects": "8 mallas + armadura",
+        "tris": 15585,
+        "materials": 1,
+        "textures": 0,
+        "licenseEvidence": "Texto dentro del archivo: 'Manny the Mannequin by Gord Goodwin ... This rig may be used for any purpose.' (declaracion NO verificada en su fuente)"
+      },
+      "adaptations": [
+        "armadura y subdivision horneadas en la pose original",
+        "escalado a 4.2 m, material unico hueso",
+        "base propia"
+      ],
+      "metrics": {
+        "triangles": 15629,
+        "drawCallsAtCompletion": 10,
+        "materials": 3,
+        "textures": 0,
+        "nodes": 9,
+        "glbMb": {
+          "raw": 0.839,
+          "meshopt": 0.394,
+          "draco": 0.223
+        }
+      },
+      "glb": {
+        "meshopt": "public/models/skeleton_progression_001_meshopt.glb"
+      }
+    },
+    {
+      "category": "progression-scene",
+      "progressionStages": 7,
+      "background": "transparent",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "format": "blend -> glb (meshopt)",
+      "exports": {
+        "lights": false,
+        "cameras": false,
+        "background": false,
+        "fog": false
+      },
+      "mobileReady": false,
+      "mobile": {
+        "status": "cumple el presupuesto de gama media en medicion de escritorio; SIN prueba en telefono real",
+        "budget": {
+          "midRange": {
+            "drawCalls": 150,
+            "triangles": 150000,
+            "glbMbMeshopt": 3
+          }
+        },
+        "missing": [
+          "FPS y memoria en telefono real"
+        ]
+      },
+      "id": "bmw_progression_001",
+      "name": "BMW M6",
+      "module": "gym",
+      "collectionOrder": 2,
+      "originalFile": "biblioteca de assets/GYM/BMW.blend",
+      "originalSha256": "042eb79f51bc72787f9211a1cf6a4ee2365ec8130f25f09209076db4f7425f0a",
+      "workingFile": "biblioteca de assets/_trabajo/bmw_progression.blend",
+      "stages": {
+        "count": 7,
+        "unit": "dias completados de la figura",
+        "thresholds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "names": [
+          "Base",
+          "Chasis",
+          "Ruedas",
+          "Carrocería",
+          "Techo y cristales",
+          "Interior",
+          "Luces y detalles"
+        ],
+        "celebrationStages": [
+          7
+        ],
+        "clips": {
+          "1": "STAGE_1",
+          "2": "STAGE_2",
+          "3": "STAGE_3",
+          "4": "STAGE_4",
+          "5": "STAGE_5",
+          "6": "STAGE_6",
+          "7": "STAGE_7"
+        }
+      },
+      "build": "tools/3d/blender/17_bmw_7day.py + 27_export_bmw.py",
+      "inspection": {
+        "objects": "101 mallas",
+        "tris": 795425,
+        "materials": 27,
+        "textures": "7 (planos de referencia; no se exportan)",
+        "licenseEvidence": "Texto dentro del archivo (autor 'Fred C. M'ule jr.'): uso comercial y no comercial permitido, modificable, pide credito. Declaracion NO verificada en su fuente y con ATRIBUCION obligatoria."
+      },
+      "adaptations": [
+        "795 mil -> 92 mil triangulos (subdivision y decimacion por rol)",
+        "pintura azul (el original es gris/arcilla)",
+        "suelo de 50 m, luces, cámara, curvas y casco de referencia 'BMWBody' eliminados",
+        "materiales planos"
+      ],
+      "metrics": {
+        "triangles": 91900,
+        "drawCallsAtCompletion": 62,
+        "materials": 24,
+        "textures": 0,
+        "nodes": 13,
+        "glbMb": {
+          "raw": 4.613,
+          "meshopt": 2.516,
+          "draco": 0.813
+        }
+      },
+      "glb": {
+        "meshopt": "public/models/bmw_progression_001_meshopt.glb"
+      }
+    },
+    {
+      "category": "progression-scene",
+      "progressionStages": 7,
+      "background": "transparent",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "format": "blend -> glb (meshopt)",
+      "exports": {
+        "lights": false,
+        "cameras": false,
+        "background": false,
+        "fog": false
+      },
+      "mobileReady": false,
+      "mobile": {
+        "status": "cumple el presupuesto de gama media en medicion de escritorio; SIN prueba en telefono real",
+        "budget": {
+          "midRange": {
+            "drawCalls": 150,
+            "triangles": 150000,
+            "glbMbMeshopt": 3
+          }
+        },
+        "missing": [
+          "FPS y memoria en telefono real"
+        ]
+      },
+      "id": "formula2_progression_001",
+      "name": "Fórmula 2",
+      "module": "gym",
+      "collectionOrder": 3,
+      "originalFile": "biblioteca de assets/GYM/Formula 2.blend",
+      "originalSha256": "ce99cec84760aa214640339d5bddb567fb485178efe4765145985c7f9d7ac9b4",
+      "workingFile": "biblioteca de assets/_trabajo/formula2_progression.blend",
+      "stages": {
+        "count": 7,
+        "unit": "dias completados de la figura",
+        "thresholds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "names": [
+          "Base",
+          "Chasis",
+          "Ruedas",
+          "Carrocería",
+          "Morro y alerón delantero",
+          "Trasera y alerón",
+          "Cabina y detalles"
+        ],
+        "celebrationStages": [
+          7
+        ],
+        "clips": {
+          "1": "STAGE_1",
+          "2": "STAGE_2",
+          "3": "STAGE_3",
+          "4": "STAGE_4",
+          "5": "STAGE_5",
+          "6": "STAGE_6",
+          "7": "STAGE_7"
+        }
+      },
+      "build": "tools/3d/blender/15_formula2_7day.py + 25_export_formula2.py",
+      "inspection": {
+        "objects": "3 mallas (Geometry Nodes)",
+        "tris": 96243,
+        "materials": 15,
+        "textures": 0,
+        "licenseEvidence": "ninguna dentro del archivo"
+      },
+      "adaptations": [
+        "Geometry Nodes horneado; el cuerpo unico se reparte por material y por zona (morro/centro/trasera)",
+        "carroceria roja (el original es blanco)",
+        "ruedas decimadas",
+        "base propia"
+      ],
+      "metrics": {
+        "triangles": 55356,
+        "drawCallsAtCompletion": 25,
+        "materials": 16,
+        "textures": 0,
+        "nodes": 12,
+        "glbMb": {
+          "raw": 1.669,
+          "meshopt": 0.823,
+          "draco": 0.322
+        }
+      },
+      "glb": {
+        "meshopt": "public/models/formula2_progression_001_meshopt.glb"
+      }
+    },
+    {
+      "category": "progression-scene",
+      "progressionStages": 7,
+      "background": "transparent",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "format": "blend -> glb (meshopt)",
+      "exports": {
+        "lights": false,
+        "cameras": false,
+        "background": false,
+        "fog": false
+      },
+      "mobileReady": false,
+      "mobile": {
+        "status": "cumple el presupuesto de gama media en medicion de escritorio; SIN prueba en telefono real",
+        "budget": {
+          "midRange": {
+            "drawCalls": 150,
+            "triangles": 150000,
+            "glbMbMeshopt": 3
+          }
+        },
+        "missing": [
+          "FPS y memoria en telefono real"
+        ]
+      },
+      "id": "bomb_progression_001",
+      "name": "Bomba (dinamita con circuito)",
+      "module": "gym",
+      "collectionOrder": 4,
+      "originalFile": "biblioteca de assets/GYM/Bomba.blend",
+      "originalSha256": "27236d4dcac6c850f643c4c1872b4b2af65cf9b58a2427211e2a2b22b198b539",
+      "workingFile": "biblioteca de assets/_trabajo/bomb_progression.blend",
+      "stages": {
+        "count": 7,
+        "unit": "dias completados de la figura",
+        "thresholds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "names": [
+          "Base",
+          "Dinamita",
+          "Cintas",
+          "Circuito",
+          "Reloj",
+          "Cables",
+          "Luces"
+        ],
+        "celebrationStages": [
+          7
+        ],
+        "clips": {
+          "1": "STAGE_1",
+          "2": "STAGE_2",
+          "3": "STAGE_3",
+          "4": "STAGE_4",
+          "5": "STAGE_5",
+          "6": "STAGE_6",
+          "7": "STAGE_7"
+        }
+      },
+      "build": "tools/3d/blender/18_bomb_7day.py + 28_export_bomb.py",
+      "inspection": {
+        "objects": "53 mallas + 15 curvas + 46 instancias de coleccion",
+        "tris": 1615402,
+        "materials": 24,
+        "textures": "3 (circuitos 1024, rutas de otra maquina): planos",
+        "licenseEvidence": "ninguna dentro del archivo"
+      },
+      "notes": "El tema (dinamita) no es de gimnasio; se integro tal cual porque el usuario la incluyo en la carpeta GYM.",
+      "adaptations": [
+        "1.6 M -> 64 mil triangulos (subdivision minima, instancias realizadas, decimacion)",
+        "plano emisor de luz eliminado",
+        "materiales planos"
+      ],
+      "metrics": {
+        "triangles": 64344,
+        "drawCallsAtCompletion": 79,
+        "materials": 21,
+        "textures": 0,
+        "nodes": 25,
+        "glbMb": {
+          "raw": 1.826,
+          "meshopt": 0.788,
+          "draco": 0.383
+        }
+      },
+      "glb": {
+        "meshopt": "public/models/bomb_progression_001_meshopt.glb"
+      }
     }
   ],
   "replacementPlan": "Sustituir los cinco assets sin licencia por assets propios, CC0, con licencia comercial o creados para Vida Total. Cambiar colores/materiales no los vuelve propios ni publicables.",
   "eventMapping": {
-    "$comment": "Qué evento alimenta a qué escena (diseño; solo Hábitos está conectado).",
-    "habit.completed": {
+    "water.goal_reached": {
       "connected": true,
-      "sceneAssetId": "forest_progression_001 (por defecto)",
-      "adds": 1,
-      "emits": [
-        "scene.stage.changed",
-        "scene.completed"
-      ]
-    },
-    "workout.completed": {
-      "connected": false,
-      "module": "gym",
-      "adds": 1
+      "emittedBy": "src/lib/gym/goal-events.ts",
+      "source": "gym.water"
     },
     "calories.goal_reached": {
-      "connected": false,
-      "module": "gym",
-      "experience": "achievement"
+      "connected": true,
+      "emittedBy": "src/lib/gym/goal-events.ts",
+      "source": "gym.calories"
     },
-    "water.goal_reached": {
+    "workout.completed": {
+      "connected": true,
+      "emittedBy": "src/lib/gym/goal-events.ts",
+      "source": "gym.workout"
+    },
+    "meal.goal_reached": {
       "connected": false,
-      "module": "gym",
-      "experience": "achievement"
+      "reserved": true
+    },
+    "sleep.goal_reached": {
+      "connected": false,
+      "reserved": true
     },
     "kegel.completed": {
       "connected": false,
-      "module": "gym",
-      "experience": "achievement"
+      "reserved": true
+    },
+    "meditation.completed": {
+      "connected": false,
+      "reserved": true
     }
   },
   "collections": {
@@ -662,10 +1161,21 @@
         "castle_progression_001",
         "house_progression_001",
         "windmill_progression_001",
-        "room_progression_001"
+        "room_progression_001",
+        "bridge_progression_001"
       ],
       "unlockRule": "una figura se desbloquea al completar la anterior (7 repeticiones cada una)",
-      "progressUnit": "repeticiones acumuladas del habito"
+      "progressUnit": "repeticiones acumuladas del habito (completedDates.length)"
+    },
+    "gym": {
+      "order": [
+        "skeleton_progression_001",
+        "bmw_progression_001",
+        "formula2_progression_001",
+        "bomb_progression_001"
+      ],
+      "unlockRule": "igual que habitos, con su propio desbloqueo (nunca se mezcla con el de habitos)",
+      "progressUnit": "repeticiones acumuladas del habito de categoria gym/agua/comida"
     }
   }
 }
