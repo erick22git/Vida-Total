@@ -1,7 +1,7 @@
 # BMW M6 (GYM) — 7 etapas. Trabaja sobre la COPIA (`originales_copia/BMW.blend`), nunca sobre el original.
 # El archivo trae este texto (autor "Fred C. M'ule jr. (tyrant monkey)"): "You may use the file in both commercial or non-commercial use and are
 # free to modify it and share it ... I ask that you only give me credit". Es una declaración DENTRO del archivo, no verificada en su fuente
-# y con atribución obligatoria: licencia = UNVERIFIED hasta comprobarla. Pintura azul, materiales planos y base = adaptaciones.
+# y con atribución obligatoria: licencia = UNVERIFIED hasta comprobarla. Pintura gris plomo, materiales planos y base = adaptaciones.
 # Reducción: 795 mil triángulos evaluados → menos de 90 mil (Subsurf a nivel 0/1 + Decimate). Se quitan suelo de 50 m, luces, cámara y logos en curva.
 # @include lib_stages.py
 
@@ -89,8 +89,8 @@ report["tris_baked"] = sum(tris(o) for o in meshes)
 
 # ---------------------------------------------------------------- materiales planos
 ov = {
-    "CarPaint": dict(color=(0.02, 0.07, 0.36), rough=0.22, metallic=0.55),
-    "car paint": dict(color=(0.02, 0.07, 0.36), rough=0.22, metallic=0.55),
+    "CarPaint": dict(color=(0.16, 0.17, 0.19), rough=0.25, metallic=0.6),
+    "car paint": dict(color=(0.16, 0.17, 0.19), rough=0.25, metallic=0.6),
     "carbonfibre": dict(color=(0.035, 0.035, 0.04), rough=0.4, metallic=0.3),
     "shinychrome": dict(color=(0.78, 0.8, 0.83), rough=0.15, metallic=0.95),
     "WindscreenGlass": dict(color=(0.16, 0.22, 0.27), rough=0.05, alpha=0.4),
