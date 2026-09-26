@@ -11,6 +11,8 @@ import type { Habit } from "@/lib/types/habits";
 import { AreaChart } from "@/components/habitos/detail/area-chart";
 import { HistoryGrid } from "@/components/habitos/detail/history-grid";
 import { AchievementCard, buildAchievements } from "@/components/habitos/detail/achievements";
+import { habitProgressSource } from "@/lib/habits/habit-links";
+import { PROGRESS_SOURCES } from "@/lib/habits/progress-sources";
 import { haptic } from "@/lib/haptics/haptic";
 import { playSound } from "@/lib/sound/sound-engine";
 
@@ -299,6 +301,35 @@ function DetailBody({ habit }: { habit: Habit }) {
         <p className="text-[12px] text-white/40 mt-2 px-1" style={MONO}>
           Se guarda la hora; los avisos en el celular todavía no están activos.
         </p>
+
+        <div className="mt-3 rounded-3xl p-5 flex flex-col gap-3" style={{ background: CARD, border: "1px solid rgba(255,255,255,0.08)" }}>
+          <span className="text-[20px]">Se confirma desde Gym</span>
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Fuente de progreso">
+            {[{ id: null, label: "Ninguna" }, ...PROGRESS_SOURCES.map((s) => ({ id: s.id as string | null, label: s.label.replace("Gym · ", "") }))].map((opt) => {
+              const current = habitProgressSource(habit)?.id ?? null;
+              const selected = current === opt.id;
+              return (
+                <button
+                  key={opt.id ?? "none"}
+                  role="radio"
+                  aria-checked={selected}
+                  data-source-option={opt.id ?? "none"}
+                  onClick={() => {
+                    haptic("light");
+                    updateHabit(habit.id, { sourceId: opt.id });
+                  }}
+                  className="h-11 px-5 rounded-full text-[17px] cursor-pointer"
+                  style={{ background: selected ? "#f5b301" : "#3a3a3a", color: selected ? "#000" : "rgba(255,255,255,0.7)" }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[12px] text-white/40" style={MONO}>
+            Al cumplir esa meta en Gym, te llevamos a este hábito para que lo confirmes con el check. Nunca se marca solo.
+          </p>
+        </div>
 
         <div className="mt-3 rounded-3xl p-5 flex flex-col gap-3" style={{ background: CARD, border: "1px solid rgba(255,255,255,0.08)" }}>
           <span className="text-[20px]">Meta diaria</span>

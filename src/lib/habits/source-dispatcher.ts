@@ -1,5 +1,6 @@
 import { animationEngine } from "@/lib/animations/animation-engine";
 import { habitProgressSource, isScheduledOn } from "@/lib/habits/habit-links";
+import { flowTrace } from "@/lib/habits/flow-debug";
 import { useHabitPromptStore } from "@/lib/habits/habit-prompts";
 import { sourceForEvent } from "@/lib/habits/progress-sources";
 import { progressEvents } from "@/lib/progress/event-bus";
@@ -18,18 +19,31 @@ import { useHabitsStore } from "@/lib/store/habitsStore";
  */
 export function dispatchProgressEvent(event: ProgressEvent, now: Date = new Date()): string[] {
   const source = sourceForEvent(event.type);
-  if (!source) return [];
+  if (!source) {
+    flowTrace("SOURCE", false, `el evento ${event.type} no tiene fuente de progreso`);
+    return [];
+  }
   const today = format(now, "yyyy-MM-dd");
   const weekday = now.getDay();
   const { habits } = useHabitsStore.getState();
-  const linked = habits.filter(
-    (h) => habitProgressSource(h)?.id === source.id && isScheduledOn(h, weekday) && !h.completedDates.includes(today),
+  const withSource = habits.filter((h) => habitProgressSource(h)?.id === source.id);
+  const linked = withSource.filter((h) => isScheduledOn(h, weekday) && !h.completedDates.includes(today));
+  flowTrace(
+    "HABIT",
+    linked.length > 0,
+    linked.length > 0
+      ? linked.map((h) => `${h.id} (categoría=${h.categoryId ?? "—"}, source_id=${h.sourceId === undefined ? "por defecto" : h.sourceId})`).join(", ")
+      : withSource.length > 0
+        ? `hay ${withSource.length} hábito(s) vinculado(s) pero hoy ya están hechos o no tocan`
+        : `ningún hábito vinculado a ${source.id} (de ${habits.length}: ${habits.map((h) => `${h.name}[${h.categoryId ?? "sin categoría"}]`).join(", ")})`,
   );
+  flowTrace("SOURCE", linked.length > 0, `${event.type} → ${source.id}`);
   if (linked.length === 0) return [];
   const prompts = useHabitPromptStore.getState();
   prompts.prune(today);
   for (const h of linked) {
     prompts.add({ habitId: h.id, sourceId: source.id, eventType: event.type, date: today, createdAt: event.timestamp });
+    flowTrace("PENDING ACTION", true, `${h.id} ← ${source.id}`);
     animationEngine.emit({ type: "habit.prompted", tier: "action", entityId: h.id, meta: { sourceId: source.id } });
   }
   return linked.map((h) => h.id);

@@ -44,6 +44,12 @@ Gym (agua / calorías / entrenamiento)
 - Fuente: **columna nueva `habits.source_id text`** (migración `supabase/migrations/0005_habit_progress_source.sql`, aditiva e idempotente; `NULL` = por defecto de la categoría, `'none'` = sin vínculo; índice parcial `(user_id, source_id)`). `habits-sync.ts` la envía solo cuando hay valor y, si la BD aún no tiene la columna, reintenta sin ella (no rompe el sync).
 - Acciones pendientes: `localStorage` (`vida-total-habit-prompts`, por usuario). Son efímeras a propósito.
 
+## Robustez y diagnóstico (revisión con la app real)
+- La navegación al hábito sale de la **acción pendiente guardada** (`habit-prompts`, con `navigatedAt`), no del evento: sobrevive a cambiar de pantalla, desmontar componentes y **recargar** (un aviso de menos de 2 min sin atender navega una sola vez al montar).
+- Un hábito **sin categoría** no tiene fuente por defecto y no se vincula (a propósito: si no hay hábito vinculado no se navega ni se avisa). Ahora se vincula desde `Hábito → detalle → «Se confirma desde Gym»` (Ninguna / Agua / Calorías / Entrenamiento); se guarda en `habits.source_id`.
+- Diagnóstico solo en desarrollo (`src/lib/habits/flow-debug.ts`): consola `[GYM→HÁBITOS]` y panel `sim` con `EVENT → HABIT → SOURCE → PENDING ACTION → ROUTE → TARGET → CHECK` (✓/✗ y el motivo: p.ej. «ningún hábito vinculado a gym.water (de 6: …[sin categoría])»). En producción no hace nada.
+- Solo desarrollo: `window.__vt` (stores reales de Gym/Hábitos/avisos) para probar desde la consola.
+
 ## Pruebas
 - `node tools/3d/verify/run_ts.mjs tools/3d/verify/integration_test.ts` — 40 comprobaciones: categorías, colecciones independientes, evento → hábito correcto, nunca se completa solo, confirmación, hábito de cantidad, hábito sin relación, detección de cruces de Gym (y que la hidratación no dispara).
 - Navegador (harness, `tools/3d/harness`): las 4 figuras de Gym y el Puente cargan y muestran etapas; el evento navega al hábito y el aviso persiste tras recargar. Botón `sim` (solo desarrollo) para simular `calories.goal_reached`, `water.goal_reached`, `workout.completed`.

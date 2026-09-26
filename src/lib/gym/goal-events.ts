@@ -1,5 +1,7 @@
 import { format, isSameDay } from "date-fns";
-import { emitProgressEvent } from "@/lib/progress/event-bus";
+import { flowTrace } from "@/lib/habits/flow-debug";
+import { emitProgressEvent as emitBus } from "@/lib/progress/event-bus";
+import type { ProgressEventType } from "@/lib/progress/types";
 import { totalMlForDay } from "@/lib/gym/water-stats";
 import { useGymStore, type GymState } from "@/lib/store/gymStore";
 import type { LoggedFood } from "@/lib/types";
@@ -17,6 +19,11 @@ import type { LoggedFood } from "@/lib/types";
  * hidratación del almacenamiento local o de Supabase (que puede traer un día ya cumplido) nunca dispara nada.
  */
 const FRESH_MS = 10_000;
+
+function emitProgressEvent(type: ProgressEventType, entityId: string, meta?: Record<string, unknown>): void {
+  flowTrace("EVENT", true, `${type} ${JSON.stringify(meta ?? {})}`);
+  emitBus(type, entityId, meta);
+}
 
 function todayKcal(foods: LoggedFood[], now: Date): number {
   return foods.reduce((sum, f) => (f.activo === false || !isSameDay(new Date(f.timestamp), now) ? sum : sum + f.calorias), 0);

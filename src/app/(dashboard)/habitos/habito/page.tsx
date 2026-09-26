@@ -19,6 +19,7 @@ import { FigureView } from "@/components/habitos/figure-view";
 import { MilestoneCelebration } from "@/components/habitos/milestone-celebration";
 import { promptForHabit, useHabitPromptStore } from "@/lib/habits/habit-prompts";
 import { getProgressSource } from "@/lib/habits/progress-sources";
+import { flowTrace } from "@/lib/habits/flow-debug";
 
 const MONO = { fontFamily: "var(--font-geist-mono), monospace" } as const;
 
@@ -80,6 +81,10 @@ function HabitScreen() {
   // Acción pendiente (un módulo, p.ej. Gym, avisó que se cumplió el objetivo): el check invita a tocarlo.
   const prompt = promptForHabit(prompts, habit?.id, today);
   const promptText = !done && !sequenceActive ? getProgressSource(prompt?.sourceId)?.prompt : undefined;
+  const guidedHabitId = promptText ? habit?.id : undefined;
+  useEffect(() => {
+    if (guidedHabitId) flowTrace("CHECK", true, `check guiado en ${guidedHabitId} (rebote + aviso, sin marcar solo)`);
+  }, [guidedHabitId]);
 
   // Mantiene la URL apuntando al hábito visible sin re-navegar.
   useEffect(() => {

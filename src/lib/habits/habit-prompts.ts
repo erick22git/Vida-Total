@@ -15,6 +15,8 @@ export interface HabitPrompt {
   /** yyyy-MM-dd del día en que se generó. */
   date: string;
   createdAt: number;
+  /** Cuándo la app ya llevó al usuario a este hábito (así no se navega dos veces por el mismo aviso). */
+  navigatedAt?: number;
 }
 
 interface HabitPromptState {
@@ -22,6 +24,7 @@ interface HabitPromptState {
   /** Agrega (o refresca) el pendiente de un hábito. */
   add: (prompt: HabitPrompt) => void;
   clearHabit: (habitId: string) => void;
+  markNavigated: (habitId: string, createdAt: number) => void;
   /** Quita los pendientes de días anteriores. */
   prune: (today: string) => void;
 }
@@ -32,6 +35,8 @@ export const useHabitPromptStore = create<HabitPromptState>()(
       prompts: [],
       add: (prompt) =>
         set((s) => ({ prompts: [...s.prompts.filter((p) => p.habitId !== prompt.habitId), prompt] })),
+      markNavigated: (habitId, createdAt) =>
+        set((s) => ({ prompts: s.prompts.map((p) => (p.habitId === habitId && p.createdAt === createdAt ? { ...p, navigatedAt: Date.now() } : p)) })),
       clearHabit: (habitId) => set((s) => ({ prompts: s.prompts.filter((p) => p.habitId !== habitId) })),
       prune: (today) => set((s) => (s.prompts.some((p) => p.date !== today) ? { prompts: s.prompts.filter((p) => p.date === today) } : s)),
     }),
