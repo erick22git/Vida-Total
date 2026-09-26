@@ -7,13 +7,13 @@ import {
   CalendarCheck2,
   ChevronRight,
   ListTodo,
-  Rows3,
   Volume2,
   VolumeX,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { todayISO, useHabitsStore } from "@/lib/store/habitsStore";
 import { HabitOrbsCard, habitHref } from "@/components/habitos/habit-orbs-card";
+import { AgendaWidget } from "@/components/agenda/agenda-widget";
 import { NewHabitFlow } from "@/components/habitos/new-habit-flow";
 import { usePreferencesStore } from "@/lib/store/preferencesStore";
 
@@ -27,12 +27,6 @@ export default function HabitosHubPage() {
   const [createOpen, setCreateOpen] = useState(false);
 
   const sections = [
-    {
-      href: "/habitos/timeline",
-      icon: Rows3,
-      title: "Timeline",
-      desc: "Tu día hora por hora, estilo Structured",
-    },
     {
       href: "/habitos/tareas",
       icon: ListTodo,
@@ -72,6 +66,7 @@ export default function HabitosHubPage() {
       <HabitOrbsCard habits={habits} todayISO={today} onCreate={() => setCreateOpen(true)} />
 
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <AgendaWidget />
         {sections.map((s) => (
           <Link key={s.href} href={s.href}>
             <GlassCard
