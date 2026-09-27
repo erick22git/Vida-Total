@@ -236,12 +236,6 @@ export default function ProgresoPage() {
           onChange={(v) => setDashboardPref("showOtherNutrients", v)}
         />
         <PrefToggle
-          label="Tira de la semana"
-          description="Días de la semana con racha de registro"
-          checked={dashboardPrefs.showWeekStrip}
-          onChange={(v) => setDashboardPref("showWeekStrip", v)}
-        />
-        <PrefToggle
           label="Botón “Terminar Día”"
           description="Botón para marcar el día como registrado"
           checked={dashboardPrefs.showFinishDayButton}

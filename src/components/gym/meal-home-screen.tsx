@@ -13,8 +13,8 @@
  * fecha/racha ahora es navegable (día anterior/siguiente) — esto también resuelve lo que el
  * usuario pidió por separado: poder ver un día pasado, comida por comida, con el mismo swipe.
  *
- * Ruta de PREVIEW (`/gym/calorias/inicio-nuevo`): no reemplaza todavía `/gym/calorias` (esa sigue
- * intacta) hasta que todas las etapas estén listas y se haga un solo corte.
+ * Corte final: esto ES la pantalla principal de `/gym/calorias` (reemplaza a la vieja, basada en
+ * arco+grilla de comidas). El botón de arriba a la izquierda vuelve a `/gym`, no a `/gym/calorias`.
  */
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -115,8 +115,8 @@ export function MealHomeScreen() {
     >
       <div className="flex items-center px-5 pt-[max(env(safe-area-inset-top),10px)]">
         <button
-          onClick={() => router.push("/gym/calorias")}
-          aria-label="Volver a Calorías"
+          onClick={() => router.push("/gym")}
+          aria-label="Volver a Gym"
           className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
           style={{ background: "#0d0d0d", boxShadow: "inset 0 1px 1px rgba(255,255,255,0.12), 0 2px 8px rgba(0,0,0,0.5)" }}
         >
