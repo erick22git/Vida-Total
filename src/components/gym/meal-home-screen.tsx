@@ -1,29 +1,36 @@
 "use client";
 
 /**
- * Pantalla principal de una comida — rediseño Calorías, etapa 2 (WIP, estilo provisional: ver
+ * Pantalla principal de una comida — rediseño Calorías, etapas 2 y 6 (WIP, estilo provisional: ver
  * docs del pedido "REDISEÑO CALORÍAS — ESTILO NOT BORING"). Reutiliza la mecánica de Hábitos:
  * el título de arriba es la comida actual (según la hora, `mealForTime`), se navega entre comidas
  * con el mismo carrusel de swipe/dots que usa `/habitos/habito`, y el centro es un círculo (mismo
  * `HabitOrb`) que colapsa/expande al tocarlo — sin comida: un "+"; con comida: resumen (kcal) que
  * expande a la lista de esa comida (el `MealCard` que ya existe, sin tocarlo).
  *
+ * Etapa 6: el selector de gráfico 3D, el arco y "Terminar Día" se movieron detrás del ícono de
+ * ajustes (`CalorieSettingsSheet`) en vez de vivir sueltos en la pantalla. De paso, la tira de
+ * fecha/racha ahora es navegable (día anterior/siguiente) — esto también resuelve lo que el
+ * usuario pidió por separado: poder ver un día pasado, comida por comida, con el mismo swipe.
+ *
  * Ruta de PREVIEW (`/gym/calorias/inicio-nuevo`): no reemplaza todavía `/gym/calorias` (esa sigue
- * intacta) hasta que las etapas siguientes (detalle de alimento, buscador, menú +, ajustes) estén
- * listas y se haga un solo corte. El selector de gráfico 3D, el arco, "Terminar Día" y el resto de
- * lo que hoy vive en la pantalla principal se mueven en una etapa posterior — acá no están.
+ * intacta) hasta que todas las etapas estén listas y se haga un solo corte.
  */
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Plus } from "lucide-react";
+import { ChevronLeft, Plus, Settings, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { addDays, isToday, isYesterday, startOfDay, subDays, format } from "date-fns";
+import { es } from "date-fns/locale";
 import { HabitOrb } from "@/components/habitos/habit-orb";
 import { MealCard } from "@/components/gym/meal-card";
 import { AddFoodMenu } from "@/components/gym/add-food-menu";
+import { CalorieSettingsSheet } from "@/components/gym/calorie-settings-sheet";
 import { useGymStore, useLoggedFoodsForDate } from "@/lib/store/gymStore";
-import { activeLoggedFoods } from "@/lib/food-utils";
+import { activeLoggedFoods, mergeFoods, nutrientTotalsForLoggedFoods } from "@/lib/food-utils";
+import { computeLoggedDaysStreak } from "@/lib/gym/streaks";
 import { mealForTime } from "@/lib/gym/meal-time";
-import { MEAL_LABELS, type MealType } from "@/lib/types";
+import { MEAL_LABELS, type Food, type MealType } from "@/lib/types";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { SwipeCarouselDots, SwipeCarouselStage, swipeSlide, useSwipeCarousel } from "@/components/shared/swipe-carousel";
 
@@ -35,9 +42,18 @@ const NOISE =
 
 export function MealHomeScreen() {
   const router = useRouter();
-  const loggedFoods = useLoggedFoodsForDate(new Date());
+  const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
+  const viendoHoy = isToday(selectedDate);
+  const etiquetaFecha = viendoHoy
+    ? "Hoy"
+    : isYesterday(selectedDate)
+      ? "Ayer"
+      : format(selectedDate, "eee d MMM", { locale: es });
+
+  const loggedFoods = useLoggedFoodsForDate(selectedDate);
+  const allLoggedFoods = useGymStore((s) => s.loggedFoods);
   const customFoods = useGymStore((s) => s.customFoods);
-  void customFoods; // reservado para cuando el ícono use la categoría real del alimento (etapa 3)
+  const loggedStreak = useMemo(() => computeLoggedDaysStreak(allLoggedFoods), [allLoggedFoods]);
 
   const [index, setIndex] = useState(() => MEALS.indexOf(mealForTime()));
   const [expanded, setExpanded] = useState(false);
@@ -58,19 +74,39 @@ export function MealHomeScreen() {
   const hasFood = foodsForMeal.length > 0;
   const totalKcal = foodsForMeal.reduce((sum, f) => sum + f.calorias, 0);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
-  const openMealCircle = () => (hasFood ? setExpanded(true) : setAddMenuOpen(true));
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const openMealCircle = () => {
+    if (hasFood) setExpanded(true);
+    else if (viendoHoy) setAddMenuOpen(true);
+  };
 
-  // El título sigue la hora real mientras el usuario no navegó a mano — si ya está mirando otra
-  // comida, no se lo salteamos de abajo cada minuto.
+  // Totales del día para el gráfico/macros que ahora vive detrás de ajustes.
+  const totals = activeLoggedFoods(loggedFoods).reduce(
+    (acc, f) => ({
+      calorias: acc.calorias + f.calorias,
+      proteina: acc.proteina + f.proteina,
+      carbos: acc.carbos + f.carbos,
+      grasas: acc.grasas + f.grasas,
+    }),
+    { calorias: 0, proteina: 0, carbos: 0, grasas: 0 },
+  );
+  const allFoods = useMemo<Food[]>(() => mergeFoods(customFoods), [customFoods]);
+  const otherNutrientTotals = useMemo(
+    () => nutrientTotalsForLoggedFoods(activeLoggedFoods(loggedFoods), allFoods) as Record<string, number>,
+    [loggedFoods, allFoods],
+  );
+
+  // El título sigue la hora real mientras el usuario no navegó a mano ni cambió de día — si ya
+  // está mirando otra comida o un día pasado, no se lo salteamos de abajo cada minuto.
   const [followClock, setFollowClock] = useState(true);
   useEffect(() => {
-    if (!followClock) return;
+    if (!followClock || !viendoHoy) return;
     const id = setInterval(() => {
       const i = MEALS.indexOf(mealForTime());
       setIndex((cur) => (cur === i ? cur : i));
     }, 60_000);
     return () => clearInterval(id);
-  }, [followClock]);
+  }, [followClock, viendoHoy]);
 
   return (
     <div
@@ -90,9 +126,10 @@ export function MealHomeScreen() {
 
       <header className="flex items-center justify-between px-5 h-12">
         <button
-          onClick={() => setAddMenuOpen(true)}
+          onClick={() => viendoHoy && setAddMenuOpen(true)}
+          disabled={!viendoHoy}
           aria-label="Agregar comida"
-          className="w-10 h-10 flex items-center justify-center cursor-pointer"
+          className="w-10 h-10 flex items-center justify-center cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
         >
           <Plus size={30} strokeWidth={2.6} />
         </button>
@@ -113,8 +150,60 @@ export function MealHomeScreen() {
             </motion.h1>
           </AnimatePresence>
         </div>
-        <div className="w-10 h-10" aria-hidden />
+        <button
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Ajustes de calorías"
+          className="w-10 h-10 flex items-center justify-center cursor-pointer"
+        >
+          <Settings size={20} strokeWidth={2.2} className="text-white/70" />
+        </button>
       </header>
+
+      <div className="flex items-center justify-between px-5 pb-1">
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => {
+              setFollowClock(false);
+              setSelectedDate((d) => subDays(d, 1));
+              setExpanded(false);
+            }}
+            aria-label="Día anterior"
+            className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+            style={{ background: "rgba(255,255,255,0.06)" }}
+          >
+            <ChevronLeft size={14} className="text-white/50" />
+          </button>
+          <span
+            className="text-[11px] uppercase tracking-[0.1em] text-white/60 min-w-[76px] text-center capitalize"
+            style={MONO_FONT}
+          >
+            {etiquetaFecha}
+          </span>
+          <button
+            onClick={() => {
+              if (viendoHoy) return;
+              setFollowClock(false);
+              setSelectedDate((d) => (isToday(d) ? d : addDays(d, 1)));
+              setExpanded(false);
+            }}
+            disabled={viendoHoy}
+            aria-label="Día siguiente"
+            className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer active:scale-95 transition-transform disabled:opacity-25 disabled:cursor-not-allowed"
+            style={{ background: "rgba(255,255,255,0.06)" }}
+          >
+            <ChevronRightIcon size={14} className="text-white/50" />
+          </button>
+        </div>
+        <button
+          onClick={() => setSettingsOpen(true)}
+          className="flex items-center gap-1.5 cursor-pointer rounded-full px-2.5 py-1"
+          style={{ background: "rgba(255,255,255,0.06)" }}
+          aria-label="Ver racha"
+        >
+          <span className="text-[13px]">🔥</span>
+          <span className="text-xs font-semibold tabular-nums text-white/80">{loggedStreak.current}</span>
+        </button>
+      </div>
 
       <SwipeCarouselDots
         length={MEALS.length}
@@ -158,8 +247,10 @@ export function MealHomeScreen() {
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") openMealCircle();
                     }}
-                    aria-label={hasFood ? `Ver ${MEAL_LABELS[meal]}` : `Agregar a ${MEAL_LABELS[meal]}`}
-                    className="w-[68vw] max-w-[340px] aspect-square cursor-pointer select-none"
+                    aria-label={
+                      hasFood ? `Ver ${MEAL_LABELS[meal]}` : viendoHoy ? `Agregar a ${MEAL_LABELS[meal]}` : `Sin registro en ${MEAL_LABELS[meal]}`
+                    }
+                    className={`w-[68vw] max-w-[340px] aspect-square select-none ${hasFood || viendoHoy ? "cursor-pointer" : "cursor-default"}`}
                   >
                     <HabitOrb done={hasFood} className="w-full">
                       {hasFood ? (
@@ -171,7 +262,7 @@ export function MealHomeScreen() {
                           </span>
                         </div>
                       ) : (
-                        <Plus size={64} strokeWidth={2} className="text-white/70" />
+                        <Plus size={64} strokeWidth={2} className={viendoHoy ? "text-white/70" : "text-white/25"} />
                       )}
                     </HabitOrb>
                   </div>
@@ -194,9 +285,10 @@ export function MealHomeScreen() {
                   </button>
                   <MealCard
                     meal={meal}
-                    date={new Date()}
+                    date={selectedDate}
+                    disableAdd={!viendoHoy}
                     foods={loggedFoods.filter((f) => f.meal === meal)}
-                    onAdd={() => setAddMenuOpen(true)}
+                    onAdd={() => viendoHoy && setAddMenuOpen(true)}
                   />
                 </motion.div>
               )}
@@ -206,6 +298,13 @@ export function MealHomeScreen() {
       </main>
 
       <AddFoodMenu open={addMenuOpen} onClose={() => setAddMenuOpen(false)} meal={meal} />
+      <CalorieSettingsSheet
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        totals={totals}
+        otherNutrientTotals={otherNutrientTotals}
+        streakCurrent={loggedStreak.current}
+      />
     </div>
   );
 }
