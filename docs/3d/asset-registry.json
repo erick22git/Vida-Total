@@ -1467,6 +1467,56 @@
       "glb": {
         "meshopt": "public/models/water_glass_002_meshopt.glb"
       }
+    },
+    {
+      "id": "gauge_canister_001",
+      "name": "Bote de gritos (Scream Canister) — gráfico de calorías",
+      "module": "gym",
+      "category": "calorie-gauge",
+      "sceneCollection": "calorias-graficos",
+      "background": "transparent",
+      "source": "biblioteca de assets/GYM/calorias/Bote de gritos (FBX descargado por el dueño; página de origen no registrada)",
+      "license": "Disney/Pixar (Monsters, Inc.) — sin licencia de uso",
+      "author": "desconocido (modelo de aficionado de una propiedad de Disney/Pixar)",
+      "publishable": false,
+      "licenseNote": "ASSET DE REFERENCIA/PROTOTIPO, NO COMERCIAL. Propiedad intelectual de Disney/Pixar: NO publicar en producción tal cual. REEMPLAZAR por un modelo propio antes de cualquier lanzamiento comercial.",
+      "originalFile": "biblioteca de assets/GYM/calorias/Bote de gritos/source/Monsters_inc_canister_low.fbx",
+      "originalSha256": null,
+      "build": "tools/3d/blender/50_canister_build.py",
+      "workingFile": "biblioteca de assets/_trabajo/gauge_canister.blend",
+      "inspection": {
+        "objects": "3 mallas: CANISTER_LOW 3 700 tris, PLATE_LOW 864, SCREAM-O-METER_LOW 544; 1 material",
+        "textures": "4 PNG de 4096 px (72 MB en disco: Normal 62 MB, Base 7 MB, Roughness 5 MB, Metalness 0,25 MB)"
+      },
+      "structure": [
+        "cuerpo",
+        "tapa",
+        "placa",
+        "fondo",
+        "indicador (material ENERGY emisivo)",
+        "aguja",
+        "cristal"
+      ],
+      "adaptations": [
+        "Cuerpo cortado en cuerpo/tapa por la ranura superior (z 3.65)",
+        "SCREAM-O-METER_LOW eliminado: su barra roja está horneada en la textura y no se puede controlar; se sustituye por fondo oscuro + barra ENERGY + aguja + cristal propios",
+        "Texturas 4096 → base 1024, normal 1024, rugosidad/metal 512, exportadas como JPEG",
+        "El modelo recibe SIEMPRE el estado de calorie-state.ts (nivel, color continuo, glow); no calcula su porcentaje"
+      ],
+      "behavior": "0 % barra vacía y aguja abajo · amarillo→verde progresivo hasta 100 % · rojo inmediato al pasar la meta · desde 120 % vibra (calorie-arc-shake) y brilla (calorie-arc-glow + pulso del emisivo)",
+      "metrics": {
+        "triangles": 4620,
+        "drawCalls": 8,
+        "textures": "3 JPEG (base, normal, ORM)",
+        "glbMb": {
+          "raw": 0.246,
+          "meshopt": 0.192
+        }
+      },
+      "mobileReady": false,
+      "glb": {
+        "meshopt": "public/models/gauge_canister_001_meshopt.glb"
+      }
     }
   ],
   "replacementPlan": "Sustituir los cinco assets sin licencia por assets propios, CC0, con licencia comercial o creados para Vida Total. Cambiar colores/materiales no los vuelve propios ni publicables.",
@@ -1528,6 +1578,12 @@
       ],
       "unlockRule": "igual que habitos, con su propio desbloqueo (nunca se mezcla con el de habitos)",
       "progressUnit": "repeticiones acumuladas del habito de categoria gym/agua/comida"
+    },
+    "calorias-graficos": {
+      "order": [
+        "gauge_canister_001"
+      ],
+      "note": "Valor continuo (no etapas de 7 días): cada modelo recibe el CalorieState de src/lib/gym/calorie-state.ts. Registro en runtime: src/lib/3d/gauge-registry.ts"
     }
   }
 }

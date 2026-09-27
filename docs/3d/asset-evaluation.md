@@ -32,3 +32,6 @@ Se pidió "realista, premium, cinematográfico, no low-poly infantil por defecto
 ## Licencias
 
 Ninguno de los cinco trae origen ni licencia registrados. Hasta tenerlos, todos quedan `license: "UNVERIFIED"` y **no deben publicarse**. Para cada uno se necesita: `source` (URL), `author`, `license`, y la evidencia (captura de la página de descarga). Los assets de Poly Haven son CC0; los de Sketchfab/BlenderKit dependen de cada modelo.
+
+## Bote de gritos (Scream Canister) — gráfico de calorías
+`biblioteca de assets/GYM/calorias/Bote de gritos` (FBX + 4 PNG de 4096 px). **Asset de Monsters, Inc. (Disney/Pixar): referencia/prototipo NO comercial y NO publicable tal cual.** Está en el registro con `publishable: false` y **debe reemplazarse por un modelo propio antes de cualquier lanzamiento comercial**. Integrado como opción del selector de gráficos de Calorías (`src/lib/3d/gauge-registry.ts`); 4 620 tris, 8 draw calls, 0,19 MB tras reducir las texturas (72 MB → ~0,15 MB).

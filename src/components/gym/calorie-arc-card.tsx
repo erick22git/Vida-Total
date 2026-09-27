@@ -8,6 +8,17 @@ import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
 import { useGymStore } from "@/lib/store/gymStore";
 import { ArcChart, MacroColumn, MACRO_COLORS } from "@/components/gym/calorie-arc-visual";
+import { CalorieGauge3D } from "@/components/gym/calorie-gauge-3d";
+import { GAUGES } from "@/lib/3d/gauge-registry";
+import { calorieState } from "@/lib/gym/calorie-state";
+import { useCalorieChartPref, type CalorieChartKind } from "@/lib/gym/calorie-chart-pref";
+
+const CHART_OPTIONS: { id: CalorieChartKind; label: string }[] = [
+  { id: "arc", label: "Arco" },
+  { id: "canister", label: GAUGES.canister.name },
+  { id: "meter", label: GAUGES.meter.name },
+  { id: "battery", label: GAUGES.battery.name },
+];
 
 export function CalorieArcCard({
   totals,
@@ -26,6 +37,7 @@ export function CalorieArcCard({
 
   const [pencilOpen, setPencilOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [chartKind, setChartKind] = useCalorieChartPref();
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [macroModalOpen, setMacroModalOpen] = useState(false);
   const [calorieInput, setCalorieInput] = useState(String(calorieGoal));
@@ -101,7 +113,28 @@ export function CalorieArcCard({
           {moreOpen && (
             <>
               <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} />
-              <div className="glass-panel absolute right-0 top-9 z-40 w-44 rounded-2xl shadow-2xl overflow-hidden py-1">
+              <div className="glass-panel absolute right-0 top-9 z-40 w-52 rounded-2xl shadow-2xl overflow-hidden py-1">
+                <p className="px-3.5 pt-2 pb-1 text-[10px] uppercase tracking-wider text-white/40">Gráfico</p>
+                {CHART_OPTIONS.map((o) => {
+                  const available = o.id === "arc" || GAUGES[o.id].available;
+                  return (
+                    <button
+                      key={o.id}
+                      disabled={!available}
+                      onClick={() => {
+                        setChartKind(o.id);
+                        setMoreOpen(false);
+                      }}
+                      className="w-full flex items-center justify-between text-left px-3.5 py-2.5 text-xs text-white/85 hover:bg-white/[0.06] cursor-pointer disabled:cursor-default disabled:text-white/35 disabled:hover:bg-transparent"
+                      role="menuitemradio"
+                      aria-checked={chartKind === o.id}
+                    >
+                      {o.label}
+                      {!available ? <span className="text-[10px]">próximamente</span> : chartKind === o.id && <Check size={14} className="text-white" />}
+                    </button>
+                  );
+                })}
+                <div className="h-px mx-3 my-1 bg-white/10" />
                 <button
                   onClick={() => setMoreOpen(false)}
                   className="w-full text-left px-3.5 py-2.5 text-xs text-white/40 cursor-default"
@@ -119,7 +152,11 @@ export function CalorieArcCard({
         <span className="text-lg text-white/35 tabular-nums">/ {calorieGoal.toLocaleString()}</span>
       </div>
 
-      <ArcChart goal={calorieGoal} value={totals.calorias} />
+      {chartKind === "arc" ? (
+        <ArcChart goal={calorieGoal} value={totals.calorias} />
+      ) : (
+        <CalorieGauge3D kind={chartKind} state={calorieState(totals.calorias, calorieGoal)} />
+      )}
 
       <div className="grid grid-cols-3 gap-3">
         <MacroColumn label="Proteínas" value={totals.proteina} goal={proteinGoal} color={MACRO_COLORS.proteina} />
