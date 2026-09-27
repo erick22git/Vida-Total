@@ -2,29 +2,46 @@
 
 /**
  * Panel de ajustes de Calorías, abierto con el ícono de "sliders" (arriba a la derecha, presente en
- * las 3 vistas de la home nueva). Ya NO incluye el `CalorieArcCard` completo — ese vive ahora en su
- * propia vista (`NutrientDetailView`, a la que se llega deslizando hacia abajo). Este panel es solo
- * el acceso rápido: a qué gráfico apunta el contador, y accesos a Progreso/Racha.
+ * las 3 vistas de la home nueva). Acá vive TODO lo de editar/configurar que antes estaba suelto en
+ * el `CalorieArcCard` (ya borrado): ver restante, meta de calorías, macros, qué gráfico mostrar e
+ * historial — más el acceso a Progreso. Ya NO hay acceso a Racha desde acá (se llega solo tocando
+ * el fuego dentro de la vista de racha, o de la franja de los 7 días).
  */
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, TrendingUp, Flame as FlameIcon, Check } from "lucide-react";
-import { CHART_OPTIONS } from "@/components/gym/calorie-arc-card";
+import { ChevronLeft, TrendingUp, Check } from "lucide-react";
+import { GlassModal } from "@/components/glass/glass-modal";
+import { GlassInput } from "@/components/glass/glass-input";
+import { GlassButton } from "@/components/glass/glass-button";
 import { GAUGES } from "@/lib/3d/gauge-registry";
-import { useCalorieChartPref } from "@/lib/gym/calorie-chart-pref";
+import { useGymStore } from "@/lib/store/gymStore";
+import { useCalorieChartPref, type CalorieChartKind } from "@/lib/gym/calorie-chart-pref";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 
-export function CalorieSettingsSheet({
-  open,
-  onClose,
-  streakCurrent,
-}: {
-  open: boolean;
-  onClose: () => void;
-  streakCurrent: number;
-}) {
+const CHART_OPTIONS: { id: CalorieChartKind; label: string }[] = [
+  { id: "arc", label: "Arco" },
+  { id: "canister", label: GAUGES.canister.name },
+  { id: "meter", label: GAUGES.meter.name },
+  { id: "battery", label: GAUGES.battery.name },
+];
+
+export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
+  const calorieGoal = useGymStore((s) => s.calorieGoal);
+  const proteinGoal = useGymStore((s) => s.proteinGoal);
+  const carbsGoal = useGymStore((s) => s.carbsGoal);
+  const fatGoal = useGymStore((s) => s.fatGoal);
+  const showRemaining = useGymStore((s) => s.showRemaining);
+  const toggleShowRemaining = useGymStore((s) => s.toggleShowRemaining);
   const [chartKind, setChartKind] = useCalorieChartPref();
+
+  const [goalModalOpen, setGoalModalOpen] = useState(false);
+  const [macroModalOpen, setMacroModalOpen] = useState(false);
+  const [calorieInput, setCalorieInput] = useState(String(calorieGoal));
+  const [proteinInput, setProteinInput] = useState(String(proteinGoal));
+  const [carbsInput, setCarbsInput] = useState(String(carbsGoal));
+  const [fatInput, setFatInput] = useState(String(fatGoal));
 
   return (
     <AnimatePresence>
@@ -52,26 +69,44 @@ export function CalorieSettingsSheet({
               </h1>
             </header>
 
-            <div className="flex gap-2">
+            <button
+              onClick={() => {
+                onClose();
+                router.push("/gym/calorias/progreso");
+              }}
+              className="flex items-center justify-center gap-1.5 cursor-pointer bg-white/[0.06] hover:bg-white/[0.12] transition-colors rounded-2xl py-3"
+            >
+              <TrendingUp size={14} className="text-white/70" />
+              <span className="text-xs font-semibold text-white/80">Ver progreso</span>
+            </button>
+
+            <div className="flex flex-col gap-1">
               <button
-                onClick={() => {
-                  onClose();
-                  router.push("/gym/calorias/progreso");
-                }}
-                className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer bg-white/[0.06] hover:bg-white/[0.12] transition-colors rounded-2xl py-3"
+                onClick={toggleShowRemaining}
+                className="w-full flex items-center justify-between text-left px-3.5 py-3 rounded-xl text-sm text-white/85 hover:bg-white/[0.06] cursor-pointer"
               >
-                <TrendingUp size={14} className="text-white/70" />
-                <span className="text-xs font-semibold text-white/80">Progreso</span>
+                Ver restante
+                {showRemaining && <Check size={14} className="text-white" />}
               </button>
               <button
                 onClick={() => {
-                  onClose();
-                  router.push("/gym/calorias/rachas");
+                  setCalorieInput(String(calorieGoal));
+                  setGoalModalOpen(true);
                 }}
-                className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer bg-white/[0.06] hover:bg-white/[0.12] transition-colors rounded-2xl py-3"
+                className="w-full text-left px-3.5 py-3 rounded-xl text-sm text-white/85 hover:bg-white/[0.06] cursor-pointer"
               >
-                <FlameIcon size={14} style={{ color: "white" }} fill="white" fillOpacity={0.3} />
-                <span className="text-xs font-semibold text-white/80 tabular-nums">Racha {streakCurrent}</span>
+                Configuración de calorías
+              </button>
+              <button
+                onClick={() => {
+                  setProteinInput(String(proteinGoal));
+                  setCarbsInput(String(carbsGoal));
+                  setFatInput(String(fatGoal));
+                  setMacroModalOpen(true);
+                }}
+                className="w-full text-left px-3.5 py-3 rounded-xl text-sm text-white/85 hover:bg-white/[0.06] cursor-pointer"
+              >
+                Configurar macros
               </button>
             </div>
 
@@ -95,10 +130,66 @@ export function CalorieSettingsSheet({
                   </button>
                 );
               })}
+              <p className="w-full text-left px-3.5 py-3 text-sm text-white/35 cursor-default">Historial (próximamente)</p>
             </div>
           </div>
+
+          <GlassModal open={goalModalOpen} onClose={() => setGoalModalOpen(false)} title="Configuración de calorías">
+            <div className="flex flex-col gap-3">
+              <GlassInput
+                type="number"
+                inputMode="numeric"
+                value={calorieInput}
+                onChange={(e) => setCalorieInput(e.target.value)}
+                placeholder="Meta diaria de kcal"
+              />
+              <GlassButton
+                className="w-full"
+                onClick={() => {
+                  const v = parseInt(calorieInput, 10);
+                  if (v > 0) useGymStore.setState({ calorieGoal: v });
+                  setGoalModalOpen(false);
+                }}
+              >
+                Guardar
+              </GlassButton>
+            </div>
+          </GlassModal>
+
+          <GlassModal open={macroModalOpen} onClose={() => setMacroModalOpen(false)} title="Configurar macros">
+            <div className="flex flex-col gap-3">
+              <LabeledInput label="Proteína (g)" value={proteinInput} onChange={setProteinInput} />
+              <LabeledInput label="Carbohidratos (g)" value={carbsInput} onChange={setCarbsInput} />
+              <LabeledInput label="Grasas (g)" value={fatInput} onChange={setFatInput} />
+              <GlassButton
+                className="w-full"
+                onClick={() => {
+                  const p = parseInt(proteinInput, 10);
+                  const c = parseInt(carbsInput, 10);
+                  const f = parseInt(fatInput, 10);
+                  useGymStore.setState({
+                    ...(p > 0 ? { proteinGoal: p } : {}),
+                    ...(c > 0 ? { carbsGoal: c } : {}),
+                    ...(f > 0 ? { fatGoal: f } : {}),
+                  });
+                  setMacroModalOpen(false);
+                }}
+              >
+                Guardar
+              </GlassButton>
+            </div>
+          </GlassModal>
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+function LabeledInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs text-white/50">{label}</span>
+      <GlassInput type="number" inputMode="numeric" value={value} onChange={(e) => onChange(e.target.value)} />
+    </div>
   );
 }

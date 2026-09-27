@@ -37,8 +37,6 @@ export default function ProgresoPage() {
   const loggedFoods = useGymStore((s) => s.loggedFoods);
   const calorieGoal = useGymStore((s) => s.calorieGoal) || 2000;
   const weightEntries = useGymStore((s) => s.weightEntries);
-  const dashboardPrefs = useGymStore((s) => s.dashboardPrefs);
-  const setDashboardPref = useGymStore((s) => s.setDashboardPref);
 
   const [scorePeriod, setScorePeriod] = useState(SCORE_PERIODS[1]);
   const [chartPeriod, setChartPeriod] = useState(CHART_PERIODS[1]);
@@ -226,16 +224,6 @@ export default function ProgresoPage() {
         </div>
       </GlassCard>
 
-      {/* 4. Personalizar Dashboard */}
-      <GlassCard padding="md" className="flex flex-col gap-1" style={{ background: "rgba(10,10,14,0.55)" }}>
-        <h2 className="text-sm font-semibold text-white/85 mb-2">Personalizar Dashboard</h2>
-        <PrefToggle
-          label="Botón “Terminar Día”"
-          description="Botón para marcar el día como registrado"
-          checked={dashboardPrefs.showFinishDayButton}
-          onChange={(v) => setDashboardPref("showFinishDayButton", v)}
-        />
-      </GlassCard>
     </div>
   );
 }
@@ -275,39 +263,6 @@ function StreakMini({ label, current, best, color }: { label: string; current: n
         {current}
       </p>
       <p className="text-[10px] text-white/40">🏆 Mejor: {best}</p>
-    </div>
-  );
-}
-
-function PrefToggle({
-  label,
-  description,
-  checked,
-  onChange,
-}: {
-  label: string;
-  description: string;
-  checked: boolean;
-  onChange: (value: boolean) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 py-2.5 border-b border-white/[0.06] last:border-b-0">
-      <div className="flex flex-col">
-        <span className="text-sm font-medium text-white">{label}</span>
-        <span className="text-[11px] text-white/40">{description}</span>
-      </div>
-      <button
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className="relative w-11 h-[26px] rounded-full shrink-0 cursor-pointer transition-colors"
-        style={{ background: checked ? "var(--gym)" : "rgba(255,255,255,0.12)" }}
-      >
-        <span
-          className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform"
-          style={{ transform: checked ? "translateX(21px)" : "translateX(2px)" }}
-        />
-      </button>
     </div>
   );
 }

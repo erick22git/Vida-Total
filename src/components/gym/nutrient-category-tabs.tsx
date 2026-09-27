@@ -3,8 +3,8 @@
 /**
  * Rediseño Calorías: las 4 categorías de nutrientes de la referencia (imagen 3 del pedido) —
  * Principales / A limitar / Micronutrientes / Otros — con los 4 íconos de abajo para cambiar entre
- * ellas y el contador "n/4" al lado. Vive debajo del `CalorieArcCard` en la vista de nutrientes
- * (`NutrientDetailView`).
+ * ellas y el contador "n/4" al lado. Vive debajo del `CalorieGaugeDisplay` en la vista de
+ * nutrientes (`NutrientDetailView`) — acá viven los macros, no se repiten en ningún otro lado.
  */
 import { useState } from "react";
 import { Dna, Leaf, Atom, Droplet } from "lucide-react";

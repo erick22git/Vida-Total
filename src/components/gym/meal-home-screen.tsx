@@ -5,11 +5,13 @@
  * confirmadas por el usuario. Mecánica calcada de `/habitos/habito` (ver ese archivo): el swipe
  * HORIZONTAL cambia de comida (desayuno/almuerzo/...), el swipe VERTICAL cambia de VISTA — acá hay
  * 3, igual que en Hábitos:
- *   0 = círculo de la comida actual + franja de los últimos 7 días (con racha) al pie.
- *   1 = detalle de nutrientes del día: número + gráfico elegido + macros (`CalorieArcCard`, sin
- *       tocar) y, debajo, las 4 categorías de nutrientes (`NutrientCategoryTabs`).
- *   2 = calendario de racha del año (`CalorieYearView`), con conos rojos (días con registro) y
- *       verdes (días perfectos) — tocar el fuego de abajo lleva a `/gym/calorias/rachas`.
+ *   0 = círculo de la comida actual + franja de los últimos 7 días (sin racha: se sacó de acá).
+ *   1 = detalle de nutrientes del día: número + gráfico elegido (`CalorieGaugeDisplay`, sin tarjeta,
+ *       directo sobre el fondo) y, debajo, las 4 categorías de nutrientes (`NutrientCategoryTabs`,
+ *       ahí viven los macros — no se repiten en ningún otro lado).
+ *   2 = calendario de racha del año en DORADO (`CalorieYearView`, modo simple, igual que Hábitos) —
+ *       tocar el fuego de abajo lleva a la página dedicada `/gym/calorias/rachas`, que sí distingue
+ *       rojo (registrado) / verde (perfecto).
  * Las vistas 1 y 2 son del DÍA (no cambian al swipear entre comidas), así que solo la vista 0 vive
  * dentro del carrusel horizontal de comidas.
  *
@@ -30,7 +32,7 @@ import { CalorieYearView } from "@/components/gym/calorie-year-view";
 import { NutrientDetailView } from "@/components/gym/nutrient-detail-view";
 import { useGymStore, useLoggedFoodsForDate } from "@/lib/store/gymStore";
 import { activeLoggedFoods, mergeFoods, nutrientTotalsForLoggedFoods } from "@/lib/food-utils";
-import { computeLoggedDaysStreak, loggedDayKeys, perfectDayKeys } from "@/lib/gym/streaks";
+import { computeLoggedDaysStreak, loggedDayKeys } from "@/lib/gym/streaks";
 import { mealForTime } from "@/lib/gym/meal-time";
 import { MEAL_LABELS, type Food, type MealType, type TrackableNutrient } from "@/lib/types";
 import { MONO_FONT } from "@/lib/ui/mono-font";
@@ -59,11 +61,9 @@ export function MealHomeScreen() {
 
   const loggedFoods = useLoggedFoodsForDate(selectedDate);
   const allLoggedFoods = useGymStore((s) => s.loggedFoods);
-  const calorieGoal = useGymStore((s) => s.calorieGoal);
   const customFoods = useGymStore((s) => s.customFoods);
   const loggedStreak = useMemo(() => computeLoggedDaysStreak(allLoggedFoods), [allLoggedFoods]);
   const loggedDays = useMemo(() => loggedDayKeys(allLoggedFoods), [allLoggedFoods]);
-  const perfectDays = useMemo(() => perfectDayKeys(allLoggedFoods, calorieGoal), [allLoggedFoods, calorieGoal]);
 
   const [index, setIndex] = useState(() => MEALS.indexOf(mealForTime()));
   const [expanded, setExpanded] = useState(false);
@@ -332,7 +332,6 @@ export function MealHomeScreen() {
                           setExpanded(false);
                         }}
                         todayISO={todayISO}
-                        streakCurrent={loggedStreak.current}
                         viewIndex={0}
                         viewCount={VIEW_COUNT}
                       />
@@ -347,7 +346,6 @@ export function MealHomeScreen() {
             {view === 2 && (
               <CalorieYearView
                 loggedDayKeys={loggedDays}
-                perfectDayKeys={perfectDays}
                 todayISO={todayISO}
                 streakCurrent={loggedStreak.current}
                 onFlameClick={() => router.push("/gym/calorias/rachas")}
@@ -360,7 +358,7 @@ export function MealHomeScreen() {
       </main>
 
       <AddFoodMenu open={addMenuOpen} onClose={() => setAddMenuOpen(false)} meal={meal} />
-      <CalorieSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} streakCurrent={loggedStreak.current} />
+      <CalorieSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }

@@ -2,11 +2,13 @@
 
 /**
  * Rediseño Calorías: vista AÑO de la racha, adaptada de `YearView` de Hábitos (mismo layout: una
- * columna por mes, una fila por día). Diferencias con Hábitos:
- * - Dos estados en vez de uno: cono ROJO = día con registro ("constancia"), cono VERDE = día
- *   perfecto (llegó a la meta) — en Hábitos todo cono completado es dorado, acá el usuario pidió
- *   distinguir los dos.
- * - Abajo, en vez de solo el año, hay un botón de racha (🔥 + contador) — Hábitos no lo tiene ahí.
+ * columna por mes, una fila por día). Dos modos:
+ * - `perfectDayKeys` SIN pasar: modo simple, idéntico a Hábitos — todo día con registro es un cono
+ *   DORADO. Es el que se ve al deslizar hasta acá desde la home (vista embebida).
+ * - `perfectDayKeys` pasado: modo dual, solo para la página dedicada `/gym/calorias/rachas` — cono
+ *   ROJO (día con registro) vs VERDE (día perfecto, llegó a la meta). No se mezclan los dos modos
+ *   en la misma pantalla.
+ * Abajo, en vez de solo el año, hay un botón de racha (🔥 + contador) — Hábitos no lo tiene ahí.
  */
 import { getDaysInMonth } from "date-fns";
 import { ViewDots } from "@/components/habitos/view-dots";
@@ -18,7 +20,7 @@ function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
-/** Cono de un día — verde (perfecto) o rojo (registrado, sin llegar a la meta). */
+/** Cono de un día completado — dorado (modo simple) o rojo/verde (modo dual, ver arriba). */
 function Cone({ color, colorDark }: { color: string; colorDark: string }) {
   return (
     <svg viewBox="0 0 10 22" className="h-full max-h-[20px]" aria-hidden>
@@ -38,7 +40,8 @@ export function CalorieYearView({
   viewCount = 3,
 }: {
   loggedDayKeys: Set<string>;
-  perfectDayKeys: Set<string>;
+  /** Si se pasa, activa el modo dual (rojo/verde) — ver comentario del componente. */
+  perfectDayKeys?: Set<string>;
   todayISO: string;
   streakCurrent: number;
   onFlameClick?: () => void;
@@ -57,7 +60,7 @@ export function CalorieYearView({
         continue;
       }
       const iso = `${year}-${pad(m + 1)}-${pad(d)}`;
-      const isPerfect = perfectDayKeys.has(iso);
+      const isPerfect = !!perfectDayKeys?.has(iso);
       const isLogged = loggedDayKeys.has(iso);
       const isToday = iso === todayISO;
       cells.push(
@@ -65,7 +68,7 @@ export function CalorieYearView({
           {isPerfect ? (
             <Cone color="#4ade80" colorDark="#16803c" />
           ) : isLogged ? (
-            <Cone color="#f87171" colorDark="#b91c1c" />
+            perfectDayKeys ? <Cone color="#f87171" colorDark="#b91c1c" /> : <Cone color="#f5b301" colorDark="#b97f00" />
           ) : (
             <span
               className="rounded-full"

@@ -1,15 +1,13 @@
 "use client";
 
 /**
- * Rediseño Calorías (fase con fotos de referencia — Not Boring Habits/Weather): franja de los
- * últimos 7 días, adaptada de `HabitWeekStrip` (ver ese archivo). Diferencias con Hábitos:
- * - Cada día es tocable: cambia `selectedDate` (Hábitos no necesita esto, siempre mira hoy).
- * - Suma un botón de racha (🔥 + contador) que lleva a `/gym/calorias/rachas` — en Hábitos esa
- *   franja no tiene racha, acá la pidió el usuario específicamente ahí.
+ * Rediseño Calorías: franja de los últimos 7 días, adaptada de `HabitWeekStrip` (ver ese archivo).
+ * Única diferencia con Hábitos: cada día es tocable acá y cambia `selectedDate` (Hábitos no lo
+ * necesita, siempre mira hoy). Sin racha/fuego acá — el usuario pidió sacarlo: la racha se ve solo
+ * deslizando hasta la vista de año, tocando el fuego ahí.
  */
 import { addDays, format, isSameDay } from "date-fns";
 import { Check } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { ViewDots } from "@/components/habitos/view-dots";
 
 const WEEKDAY = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
@@ -20,7 +18,6 @@ export function CalorieWeekStrip({
   selectedDate,
   onSelectDate,
   todayISO,
-  streakCurrent,
   viewIndex = 0,
   viewCount = 3,
 }: {
@@ -28,26 +25,14 @@ export function CalorieWeekStrip({
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
   todayISO: string;
-  streakCurrent: number;
   viewIndex?: number;
   viewCount?: number;
 }) {
-  const router = useRouter();
   const today = new Date(`${todayISO}T12:00:00`);
   const days = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6));
 
   return (
-    <div className="flex items-center gap-2 px-4">
-      <button
-        onClick={() => router.push("/gym/calorias/rachas")}
-        aria-label={`Ver racha (${streakCurrent})`}
-        className="flex flex-col items-center gap-1 cursor-pointer shrink-0"
-      >
-        <span className="text-lg leading-none">🔥</span>
-        <span className="text-[11px] font-semibold tabular-nums text-white/80" style={MONO}>
-          {streakCurrent}
-        </span>
-      </button>
+    <div className="flex items-start gap-1 px-4">
       <div className="flex flex-1 justify-between">
         {days.map((d) => {
           const iso = format(d, "yyyy-MM-dd");
