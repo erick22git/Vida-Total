@@ -1,36 +1,30 @@
 "use client";
 
 /**
- * Rediseño Calorías, etapa 6: el selector de gráfico (Arco/Cápsula/Medidor/Batería), los macros y
- * "Terminar Día" — todo lo que hoy vive suelto en la pantalla principal vieja — se movieron acá,
- * detrás del ícono de ajustes de la home nueva. El componente en sí (`CalorieArcCard`,
- * `OtherNutrientsCard`) NO se tocó — se reutiliza tal cual, solo cambia dónde vive.
+ * Panel de ajustes de Calorías, abierto con el ícono de "sliders" (arriba a la derecha, presente en
+ * las 3 vistas de la home nueva). Ya NO incluye el `CalorieArcCard` completo — ese vive ahora en su
+ * propia vista (`NutrientDetailView`, a la que se llega deslizando hacia abajo). Este panel es solo
+ * el acceso rápido: a qué gráfico apunta el contador, y accesos a Progreso/Racha.
  */
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, TrendingUp, Flame as FlameIcon } from "lucide-react";
-import { CalorieArcCard } from "@/components/gym/calorie-arc-card";
-import { OtherNutrientsCard } from "@/components/gym/other-nutrients-card";
-import { useGymStore } from "@/lib/store/gymStore";
+import { ChevronLeft, TrendingUp, Flame as FlameIcon, Check } from "lucide-react";
+import { CHART_OPTIONS } from "@/components/gym/calorie-arc-card";
+import { GAUGES } from "@/lib/3d/gauge-registry";
+import { useCalorieChartPref } from "@/lib/gym/calorie-chart-pref";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 
 export function CalorieSettingsSheet({
   open,
   onClose,
-  totals,
-  otherNutrientTotals,
   streakCurrent,
 }: {
   open: boolean;
   onClose: () => void;
-  totals: { calorias: number; proteina: number; carbos: number; grasas: number };
-  otherNutrientTotals: Record<string, number>;
   streakCurrent: number;
 }) {
   const router = useRouter();
-  const showOtherNutrients = useGymStore((s) => s.dashboardPrefs.showOtherNutrients);
-  const [page, setPage] = useState(0);
+  const [chartKind, setChartKind] = useCalorieChartPref();
 
   return (
     <AnimatePresence>
@@ -81,39 +75,27 @@ export function CalorieSettingsSheet({
               </button>
             </div>
 
-            {showOtherNutrients ? (
-              <>
-                <div
-                  className="flex overflow-x-auto snap-x snap-mandatory gap-3 -mx-1 px-1 no-scrollbar"
-                  onScroll={(e) => {
-                    const el = e.currentTarget;
-                    const idx = Math.round(el.scrollLeft / el.clientWidth);
-                    if (idx !== page) setPage(idx);
-                  }}
-                >
-                  <div className="w-full shrink-0 snap-center">
-                    <CalorieArcCard totals={totals} />
-                  </div>
-                  <div className="w-full shrink-0 snap-center">
-                    <OtherNutrientsCard totals={otherNutrientTotals} />
-                  </div>
-                </div>
-                <div className="flex items-center justify-center gap-1.5 -mt-2">
-                  {[0, 1].map((i) => (
-                    <span
-                      key={i}
-                      className="h-1.5 rounded-full transition-all"
-                      style={{
-                        width: page === i ? 16 : 6,
-                        background: page === i ? "white" : "rgba(255,255,255,0.2)",
-                      }}
-                    />
-                  ))}
-                </div>
-              </>
-            ) : (
-              <CalorieArcCard totals={totals} />
-            )}
+            <div className="flex flex-col gap-1">
+              <p className="text-[10px] uppercase tracking-[0.1em] text-white/40 px-1 mb-1" style={MONO_FONT}>
+                Gráfico del contador
+              </p>
+              {CHART_OPTIONS.map((o) => {
+                const available = o.id === "arc" || GAUGES[o.id].available;
+                return (
+                  <button
+                    key={o.id}
+                    disabled={!available}
+                    onClick={() => setChartKind(o.id)}
+                    className="w-full flex items-center justify-between text-left px-3.5 py-3 rounded-xl text-sm text-white/85 hover:bg-white/[0.06] cursor-pointer disabled:cursor-default disabled:text-white/35 disabled:hover:bg-transparent"
+                    role="menuitemradio"
+                    aria-checked={chartKind === o.id}
+                  >
+                    {o.label}
+                    {!available ? <span className="text-[10px]">próximamente</span> : chartKind === o.id && <Check size={14} className="text-white" />}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </motion.div>
       )}

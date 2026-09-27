@@ -230,12 +230,6 @@ export default function ProgresoPage() {
       <GlassCard padding="md" className="flex flex-col gap-1" style={{ background: "rgba(10,10,14,0.55)" }}>
         <h2 className="text-sm font-semibold text-white/85 mb-2">Personalizar Dashboard</h2>
         <PrefToggle
-          label="Tarjeta “Otros nutrientes”"
-          description="Segunda tarjeta del carrusel superior"
-          checked={dashboardPrefs.showOtherNutrients}
-          onChange={(v) => setDashboardPref("showOtherNutrients", v)}
-        />
-        <PrefToggle
           label="Botón “Terminar Día”"
           description="Botón para marcar el día como registrado"
           checked={dashboardPrefs.showFinishDayButton}

@@ -13,7 +13,7 @@ import { GAUGES } from "@/lib/3d/gauge-registry";
 import { calorieState } from "@/lib/gym/calorie-state";
 import { useCalorieChartPref, type CalorieChartKind } from "@/lib/gym/calorie-chart-pref";
 
-const CHART_OPTIONS: { id: CalorieChartKind; label: string }[] = [
+export const CHART_OPTIONS: { id: CalorieChartKind; label: string }[] = [
   { id: "arc", label: "Arco" },
   { id: "canister", label: GAUGES.canister.name },
   { id: "meter", label: GAUGES.meter.name },

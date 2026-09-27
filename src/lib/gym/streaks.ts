@@ -114,6 +114,23 @@ export function dayHasLoggedFood(loggedFoods: LoggedFood[], date: Date): boolean
   return loggedFoods.some((f) => f.activo !== false && isSameDay(new Date(f.timestamp), date));
 }
 
+/** Set of "yyyy-MM-dd" keys for every day that has at least one logged food entry —
+ * usado por la vista de racha (cono rojo: "constancia"). */
+export function loggedDayKeys(loggedFoods: LoggedFood[]): Set<string> {
+  return new Set(groupLoggedFoodsByDay(loggedFoods).keys());
+}
+
+/** Set of "yyyy-MM-dd" keys for every "día perfecto" (llegó a la meta) — usado
+ * por la vista de racha (cono verde). */
+export function perfectDayKeys(loggedFoods: LoggedFood[], calorieGoal: number): Set<string> {
+  const byDay = groupLoggedFoodsByDay(loggedFoods);
+  const out = new Set<string>();
+  for (const [key, foods] of byDay) {
+    if (isPerfectDay(foods, calorieGoal, key)) out.add(key);
+  }
+  return out;
+}
+
 /** Average kcal logged per day-with-entries within [start, end] inclusive; null if none. */
 export function averageKcalInRange(
   loggedFoods: LoggedFood[],
