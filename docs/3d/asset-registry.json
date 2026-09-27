@@ -1421,6 +1421,52 @@
       "glb": {
         "meshopt": "public/models/islandanim_progression_001_meshopt.glb"
       }
+    },
+    {
+      "id": "water_glass_001",
+      "name": "Vaso de agua con nivel en vivo",
+      "module": "gym",
+      "category": "live-indicator",
+      "background": "transparent",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "licenseNote": "El dueño indica que viene de BlendSwap («Glass of Water»); la página NO se ha revisado y el archivo no trae texto de licencia. BlendSwap suele exigir atribución: no asumir CC0.",
+      "originalFile": "biblioteca de assets/GYM/Agua/vaso de agua.blend",
+      "originalSha256": "a042d0bcd21ec965ebf27b2553fd91db065b254bdaf52297485ad84a5b3fe34a",
+      "workingFile": "biblioteca de assets/_trabajo/water_glass.blend",
+      "format": "blend → glb (meshopt)",
+      "build": "tools/3d/blender/39_glass_probe.py + 40_glass_build.py",
+      "runtime": "src/lib/3d/water-glass.ts + src/components/gym/water-glass-3d.tsx (nivel: src/lib/gym/water-state.ts)",
+      "inspection": {
+        "objects": "17 mallas (vaso = 'Circle', efector de fluido); 'Cube' de 160 mil tris (dominio/agua horneada), suelo, fondo, piedras, esferas",
+        "tris": 266799,
+        "licenseEvidence": "ninguna dentro del archivo"
+      },
+      "adaptations": [
+        "Solo se conserva el vaso ('Circle'); simulación de fluido, dominio, suelo y demás descartados",
+        "Subdivisión bajada a nivel 1: 19 456 → 1 216 tris",
+        "Escalado a 2 unidades de alto",
+        "El AGUA es una pieza propia generada en runtime (tronco de cono + superficie con oleaje), no viene del original",
+        "Perfil interior del vaso (recta radio = 0.385 + 0.1967·z, pared 0.03) guardado en `vt_profile` del nodo"
+      ],
+      "behavior": "0 % vacío · 25/50/75 % niveles proporcionales a la altura interior · 100 % lleno; siempre como fracción de la meta configurada (waterState). Resorte hacia el nivel + oleaje que se agita al cambiar. Color = mezcla de las bebidas de hoy.",
+      "mobileReady": false,
+      "metrics": {
+        "glassTriangles": 1216,
+        "renderedTriangles": 4352,
+        "drawCalls": 6,
+        "materials": "3 (vaso, agua lateral y superficie comparten uno)",
+        "textures": 0,
+        "glbMb": {
+          "raw": 0.0232,
+          "meshopt": 0.0125
+        }
+      },
+      "glb": {
+        "meshopt": "public/models/water_glass_001_meshopt.glb"
+      }
     }
   ],
   "replacementPlan": "Sustituir los cinco assets sin licencia por assets propios, CC0, con licencia comercial o creados para Vida Total. Cambiar colores/materiales no los vuelve propios ni publicables.",

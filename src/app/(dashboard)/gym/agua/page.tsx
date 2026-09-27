@@ -1,18 +1,47 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, Droplets, Plus, X } from "lucide-react";
 import { format } from "date-fns";
 import { GlassCard } from "@/components/glass/glass-card";
 import { WaterBottle } from "@/components/gym/water-bottle";
+import { WaterGlass3D } from "@/components/gym/water-glass-3d";
 import { WeeklyWaterCard } from "@/components/gym/weekly-water-card";
 import { AddDrinkModal } from "@/components/gym/add-drink-modal";
 import { totalsByDrink } from "@/lib/gym/water-stats";
+import { waterState } from "@/lib/gym/water-state";
 import { useGymStore, useTodayWaterEntries } from "@/lib/store/gymStore";
 
 const QUICK_ADDS = [150, 250, 500];
+
+type WaterView = "glass" | "bottle";
+const VIEW_KEY = "vt-water-view";
+const viewListeners = new Set<() => void>();
+
+/** Preferencia del indicador (vaso 3D o botella), guardada en este dispositivo. */
+function readView(): WaterView {
+  try {
+    return localStorage.getItem(VIEW_KEY) === "bottle" ? "bottle" : "glass";
+  } catch {
+    return "glass";
+  }
+}
+
+/** Mezcla los colores de las bebidas de hoy (ponderados por ml) para teñir el agua del vaso. */
+function blendColor(parts: { color: string; ml: number }[]): string {
+  let r = 0, g = 0, b = 0, w = 0;
+  for (const p of parts) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(p.color.trim());
+    if (!m || p.ml <= 0) continue;
+    const n = parseInt(m[1], 16);
+    r += ((n >> 16) & 255) * p.ml; g += ((n >> 8) & 255) * p.ml; b += (n & 255) * p.ml; w += p.ml;
+  }
+  if (w === 0) return "#3b9dff";
+  const h = (v: number) => Math.round(v / w).toString(16).padStart(2, "0");
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
 
 export default function AguaPage() {
   const router = useRouter();
@@ -23,8 +52,22 @@ export default function AguaPage() {
   const removeWaterEntry = useGymStore((s) => s.removeWaterEntry);
   const todayEntries = useTodayWaterEntries();
   const [addDrinkOpen, setAddDrinkOpen] = useState(false);
+  const view = useSyncExternalStore(
+    (cb) => { viewListeners.add(cb); return () => viewListeners.delete(cb); },
+    readView,
+    () => "glass" as WaterView,
+  );
+  const [glassFailed, setGlassFailed] = useState(false);
+  const setView = useCallback((v: WaterView) => {
+    try { localStorage.setItem(VIEW_KEY, v); } catch { /* sin almacenamiento: solo esta sesión */ }
+    viewListeners.forEach((l) => l());
+  }, []);
 
   const todayByDrink = useMemo(() => totalsByDrink(todayEntries, drinkOverrides), [todayEntries, drinkOverrides]);
+  const totalMl = todayByDrink.reduce((sum, d) => sum + d.ml, 0);
+  const water = waterState(totalMl, waterGoalMl);
+  const waterColor = useMemo(() => blendColor(todayByDrink.map((d) => ({ color: d.color, ml: d.ml }))), [todayByDrink]);
+  const showGlass = view === "glass" && !glassFailed;
 
   return (
     // El fondo de foto ya lo pone gym/agua/layout.tsx (compartido por todas
@@ -40,7 +83,27 @@ export default function AguaPage() {
       </header>
 
       <GlassCard accentColor="#3b82f6" glow className="flex flex-col items-center gap-6 py-8" style={{ background: "var(--glass-bg-dark)" }}>
-        <WaterBottle segments={todayByDrink.map((d) => ({ color: d.color, ml: d.ml }))} max={waterGoalMl} />
+        <div className="flex gap-1 rounded-full bg-white/[0.06] p-1 text-xs font-medium" role="radiogroup" aria-label="Indicador de agua">
+          {([["glass", "Vaso 3D"], ["bottle", "Botella"]] as const).map(([id, label]) => (
+            <button
+              key={id}
+              role="radio"
+              aria-checked={view === id}
+              onClick={() => setView(id)}
+              className={`rounded-full px-3 py-1 cursor-pointer transition-colors ${view === id ? "bg-white/15 text-white" : "text-white/50 hover:text-white/80"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {showGlass ? (
+          <WaterGlass3D fraction={water.fraction} color={waterColor} onError={() => setGlassFailed(true)} />
+        ) : (
+          <WaterBottle segments={todayByDrink.map((d) => ({ color: d.color, ml: d.ml }))} max={waterGoalMl} />
+        )}
+        <p className="text-sm text-white/60 -mt-2">
+          {totalMl} / {waterGoalMl} ml · {Math.round(water.fraction * 100)} %
+        </p>
         <div className="flex gap-3">
           {QUICK_ADDS.map((ml) => (
             <button
