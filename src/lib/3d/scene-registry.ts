@@ -5,7 +5,7 @@ import { createSceneConfig, type SceneProgressionConfig } from "./scene-progress
  * para montar una escena). Sumar una figura nueva (montaña, gimnasio…) es agregar una entrada acá
  * + su GLB: el motor de etapas, el reproductor, la colección y la interfaz no cambian.
  */
-export type SceneIcon = "forest" | "castle" | "house" | "windmill" | "room" | "bridge" | "skeleton" | "sedan" | "racecar" | "bomb" | "island" | "diorama";
+export type SceneIcon = "forest" | "castle" | "house" | "windmill" | "room" | "bridge" | "skeleton" | "sedan" | "racecar" | "bomb" | "island" | "diorama" | "tropical";
 
 /** Colecciones de figuras. Cada una tiene su propio orden y su propio desbloqueo (nunca se mezclan). */
 export type SceneCollectionId = "habitos" | "gym";
@@ -185,8 +185,21 @@ export const ISLAND_SCENE: SceneAssetDef = {
   camera: { direction: [-0.56, 0.53, 0.64], fov: 24, targetY: 0.7 },
 };
 
+/** Isla tropical con montañas, palmeras, pinos, tortuga, tiburón y aves (GYM/Agua, «Island Animation»). Muy reducida para móvil. */
+export const TROPICAL_SCENE: SceneAssetDef = {
+  config: createSceneConfig("islandanim_progression_001", ["Estanque", "Montañas y fondo", "Arena", "Palmeras", "Pinos", "Fauna marina", "Aves"], { clips: ["STAGE_1", "STAGE_2", "STAGE_3", null, null, "STAGE_6", null] }),
+  name: "Isla tropical",
+  icon: "tropical",
+  glbUrl: "/models/islandanim_progression_001_meshopt.glb",
+  module: "gym",
+  license: "UNVERIFIED",
+  source: "UNVERIFIED",
+  celebrationStages: [7],
+  camera: { direction: [-0.56, 0.53, 0.64], fov: 24, targetY: 0.7 },
+};
+
 /** Figuras de GYM EN ORDEN de desbloqueo (su desbloqueo es independiente del de Hábitos). */
-export const GYM_FIGURES: SceneAssetDef[] = [SKELETON_SCENE, BMW_SCENE, FORMULA2_SCENE, BOMB_SCENE, DIORAMA_SCENE, ISLAND_SCENE];
+export const GYM_FIGURES: SceneAssetDef[] = [SKELETON_SCENE, BMW_SCENE, FORMULA2_SCENE, BOMB_SCENE, DIORAMA_SCENE, ISLAND_SCENE, TROPICAL_SCENE];
 
 export interface SceneCollectionDef {
   id: SceneCollectionId;

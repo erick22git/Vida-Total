@@ -1320,6 +1320,107 @@
       "glb": {
         "meshopt": "public/models/island_progression_001_meshopt.glb"
       }
+    },
+    {
+      "category": "progression-scene",
+      "progressionStages": 7,
+      "background": "transparent",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "format": "blend -> glb (meshopt)",
+      "exports": {
+        "lights": false,
+        "cameras": false,
+        "background": false,
+        "fog": false
+      },
+      "mobileReady": false,
+      "mobile": {
+        "status": "cumple el presupuesto de gama media en medicion de escritorio; SIN prueba en telefono real",
+        "budget": {
+          "midRange": {
+            "drawCalls": 150,
+            "triangles": 150000,
+            "glbMbMeshopt": 3
+          }
+        },
+        "missing": [
+          "FPS y memoria en telefono real"
+        ]
+      },
+      "id": "islandanim_progression_001",
+      "name": "Isla tropical (montañas, palmeras, pinos, tortuga, tiburón y aves)",
+      "module": "gym",
+      "collectionOrder": 7,
+      "originalFile": "biblioteca de assets/GYM/Agua/Island Animation.blend",
+      "originalSha256": "8dff73e998e7183cb640f8eeb6fe690d1b60d8903c0a277ea0508b10b6dc6c59",
+      "workingFile": "biblioteca de assets/_trabajo/islandanim_progression.blend",
+      "stages": {
+        "count": 7,
+        "unit": "dias completados de la figura",
+        "thresholds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "names": [
+          "Estanque",
+          "Montañas y fondo",
+          "Arena",
+          "Palmeras",
+          "Pinos",
+          "Fauna marina",
+          "Aves"
+        ],
+        "celebrationStages": [
+          7
+        ],
+        "clips": {
+          "1": "STAGE_1",
+          "2": "STAGE_2",
+          "3": "STAGE_3",
+          "6": "STAGE_6"
+        }
+      },
+      "build": "tools/3d/blender/36_anim_reduce.py + 37_anim_7day.py + 38_export_islandanim.py",
+      "inspection": {
+        "objects": "47 mallas, 22 armaduras, 51 acciones, 2 cámaras, 2 luces",
+        "tris": 1348600,
+        "materials": 21,
+        "textures": "12 de 2K–4K (piel de tiburón/tortuga/arena…): descartadas",
+        "licenseEvidence": "ninguna dentro del archivo (scene props de KitOps/Screencast Keys)"
+      },
+      "notes": "262 MB en disco. Reducción 1,35 M → 52 mil triángulos renderizados (32 mil únicos). El océano procedural (Plane.002, 41 mil tris, wave_scale 0.01 ≈ plano) NO se conservó: el estanque es un cilindro translúcido propio del original. Ver adaptaciones.",
+      "adaptations": [
+        "Modificadores horneados y decimación: terrenos 54k+34k → 9k+7k, palmeras 53 mil → 1.4 mil (12 copias de una malla compartida, escala ×2 para que se lean)",
+        "Cottonwood (231 mil) y Rush (196 mil) NO se usan: eran plantillas de partículas (1 800 instancias, apagadas en la vista) y no decimaban; se sustituyen por 8 pinos low-poly propios (lib_stages.make_pine)",
+        "Sin océano procedural, sin plano de nubes, sin caja de fondo, cámaras y luces fuera",
+        "Tiburón, tortuga y aves congelados en la pose del fotograma 1 (se pierden las animaciones de nado y vuelo); tortuga y tiburón ×2.2; aves = 1 bandada de 20 en 3 copias",
+        "Materiales planos (texturas de 4096 px descartadas); montañas coloreadas por altura; agua translúcida (alpha 0.38)",
+        "Escena escalada de ~61 a ~6 unidades"
+      ],
+      "metrics": {
+        "triangles": 52087,
+        "trianglesUnique": 32035,
+        "drawCallsAtCompletion": 24,
+        "materials": 17,
+        "textures": 0,
+        "nodes": 31,
+        "glbMb": {
+          "raw": 1.051,
+          "meshopt": 0.599,
+          "draco": 0.235
+        }
+      },
+      "glb": {
+        "meshopt": "public/models/islandanim_progression_001_meshopt.glb"
+      }
     }
   ],
   "replacementPlan": "Sustituir los cinco assets sin licencia por assets propios, CC0, con licencia comercial o creados para Vida Total. Cambiar colores/materiales no los vuelve propios ni publicables.",
@@ -1376,7 +1477,8 @@
         "formula2_progression_001",
         "bomb_progression_001",
         "diorama_progression_001",
-        "island_progression_001"
+        "island_progression_001",
+        "islandanim_progression_001"
       ],
       "unlockRule": "igual que habitos, con su propio desbloqueo (nunca se mezcla con el de habitos)",
       "progressUnit": "repeticiones acumuladas del habito de categoria gym/agua/comida"

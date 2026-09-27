@@ -13,7 +13,7 @@ def expand(path, depth=0):
         out.append(expand(os.path.join(base, m.group(1)), depth + 1) if m and depth < 4 else line)
     return "\n".join(out)
 w = r"C:\Erick\app movil\vida-total-web\biblioteca de assets\_trabajo".replace("\\", "/")
-code = expand(os.path.join(here, "..", "blender", "29_explore.py")).replace("__SRC__", f"{w}/originales_copia/{sys.argv[1]}").replace("__OUT__", sys.argv[2].replace("\\", "/"))
+code = expand(os.path.join(here, "..", "blender", "29_explore.py")).replace("__SRC__", (sys.argv[1].replace("\\","/") if ":" in sys.argv[1] else f"{w}/originales_copia/{sys.argv[1]}")).replace("__OUT__", sys.argv[2].replace("\\", "/"))
 c = BlenderConnection(); c.connect()
 r = c.send_command("execute_python", {"code": code}, timeout=900)["result"]
 print(json.dumps(r, ensure_ascii=False, default=str)[:30000])

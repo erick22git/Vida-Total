@@ -34,6 +34,7 @@ export function FigureIcon({ icon, size = 26 }: { icon: SceneIcon; size?: number
         </>
       )}
       {icon === "island" && <path {...common} d="M3 12c2 0 3-1.6 5-1.6S11 12 13 12s3-1.6 5-1.6S20 12 21 12M5 12c1 3.5 3 5.5 5 8.5M19 12c-1 3.5-3 5.5-5 8.5M9 9V6.5M9 6.5l2-1.2M9 6.5 7 5.3" />}
+      {icon === "tropical" && <path {...common} d="M3 19c3 0 3-1.5 6-1.5s3 1.5 6 1.5 3-1.5 6-1.5M12 17V9M12 9c-1.5-2.5-4-3-6.5-2.2M12 9c1.5-2.5 4-3 6.5-2.2M12 9c-.5-2.6-2.4-4-4.8-4.3M12 9c.5-2.6 2.4-4 4.8-4.3" />}
       {icon === "diorama" && (
         <>
           <ellipse {...common} cx="12" cy="15" rx="9" ry="4" />
