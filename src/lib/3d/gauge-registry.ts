@@ -50,10 +50,11 @@ export const GAUGES: Record<GaugeKind, GaugeAssetDef> = {
     name: "Batería sci-fi",
     glbUrl: "/models/gauge_battery_001_meshopt.glb",
     sceneCollection: GAUGE_COLLECTION,
-    license: "UNVERIFIED",
-    source: "BlenderKit «Sci Fi Battery» (por verificar)",
+    license: "BlenderKit «royalty_free» (validado en su ficha) — solo leída, sin verificar los términos completos de la licencia",
+    source: "BlenderKit «Sci Fi Battery» (Avishka Induwara), descargado con el addon dentro de Blender",
     publishable: false,
-    available: false,
+    available: true,
+    licenseNote: "«Royalty free» de BlenderKit permite uso en proyectos (incluso comerciales) pero no revender el asset en sí; falta leer los términos completos de BlenderKit antes de publicar.",
   },
 };
 

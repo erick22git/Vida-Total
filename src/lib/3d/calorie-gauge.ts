@@ -79,55 +79,14 @@ function canisterAdapter(): Adapter {
   };
 }
 
-const STATUS_LABEL: Record<CalorieState["status"], string> = { vacio: "SIN ANOTAR", bajo: "BAJO", logrado: "META", excedido: "EXCEDIDO", excedidoFuerte: "EXCEDIDO" };
-
 /**
  * Medidor de energía (dial de radio 1, mira a +Z): la aguja (`aguja`) gira sobre su eje según `arcFraction` — 270° de recorrido, con la meta a
- * 2/3, igual que el arco. El número de kcal y el estado son una etiqueta VIVA (canvas → plano) delante del cristal, no parte de la textura.
+ * 2/3, igual que el arco. Sin etiqueta propia: las kcal y el estado ya se ven arriba, en la tarjeta de Calorías; repetirlos en el medio del
+ * gráfico era redundante.
  */
 function meterAdapter(): Adapter {
   let needle: THREE.Object3D | null = null;
   let needleMat: THREE.MeshStandardMaterial | null = null;
-  let tex: THREE.CanvasTexture | null = null;
-  let canvas: HTMLCanvasElement | null = null;
-  let plane: THREE.Mesh | null = null;
-  let lastKey = "";
-  let pending: CalorieState | null = null;
-  const draw = (s: CalorieState) => {
-    pending = s;
-    if (!canvas || !tex) return;
-    const key = `${Math.round(s.kcal)}|${s.status}`;
-    if (key === lastKey) return;
-    lastKey = key;
-    const g = canvas.getContext("2d");
-    if (!g) return;
-    const W = canvas.width;
-    const H = canvas.height;
-    g.clearRect(0, 0, W, H);
-    g.fillStyle = "rgba(12,13,16,0.82)";
-    g.beginPath();
-    g.roundRect(6, 6, W - 12, H - 12, 34);
-    g.fill();
-    g.textBaseline = "alphabetic";
-    const num = Math.round(s.kcal).toLocaleString("es");
-    g.font = "700 104px system-ui, sans-serif";
-    const nw = g.measureText(num).width;
-    g.font = "600 38px system-ui, sans-serif";
-    const kw = g.measureText("kcal").width;
-    const x0 = (W - (nw + 12 + kw)) / 2;
-    g.textAlign = "left";
-    g.fillStyle = "#ffffff";
-    g.font = "700 104px system-ui, sans-serif";
-    g.fillText(num, x0, 128);
-    g.fillStyle = "#9ca3af";
-    g.font = "600 38px system-ui, sans-serif";
-    g.fillText("kcal", x0 + nw + 12, 128);
-    g.textAlign = "center";
-    g.fillStyle = s.color;
-    g.font = "800 44px system-ui, sans-serif";
-    g.fillText(STATUS_LABEL[s.status], W / 2, 202);
-    tex.needsUpdate = true;
-  };
   return {
     yaw: 0,
     camera: { position: [0, 0.0, 5.6], target: [0, 0, 0], fov: 30 },
@@ -138,22 +97,6 @@ function meterAdapter(): Adapter {
         const m = (needle as THREE.Mesh).material as THREE.MeshStandardMaterial;
         needleMat = m;
       }
-      canvas = document.createElement("canvas");
-      canvas.width = 512;
-      canvas.height = 256;
-      tex = new THREE.CanvasTexture(canvas);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.9, 0.45),
-        new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false }),
-      );
-      plane.position.set(0, -0.52, 0.16);
-      plane.renderOrder = 10;
-      root.add(plane);
-      if (pending) draw(pending);
-    },
-    setState(s) {
-      draw(s);
     },
     apply(level, _color, glowPulse) {
       if (needle) needle.rotation.z = Math.PI / 4 - 1.5 * Math.PI * level;
@@ -162,10 +105,106 @@ function meterAdapter(): Adapter {
         needleMat.emissiveIntensity = 0.7 * glowPulse;
       }
     },
+  };
+}
+
+/**
+ * Batería sci-fi (BlenderKit, Avishka Induwara): el núcleo de cristal (`nucleo`) y los anillos de cobre (`anillos`) toman el color continuo y
+ * se iluminan con el nivel — apagado en 0, tenue ~25 %, brillante 50–75 %. Al llegar al 100 % suelta una chispa breve de partículas una sola
+ * vez (no se repite mientras el nivel se mantenga arriba; vuelve a saltar si baja y vuelve a subir).
+ */
+function batteryAdapter(): Adapter {
+  let core: THREE.MeshStandardMaterial | null = null;
+  let ring: THREE.MeshStandardMaterial | null = null;
+  let root: THREE.Object3D | null = null;
+  let corePos = new THREE.Vector3(0, 0.1, 0);
+  let burst: THREE.Points | null = null;
+  let burstVel: Float32Array | null = null;
+  let burstT0 = 0;
+  let lastTick = 0;
+  let wasFull = false;
+  const N = 18;
+  const spawnBurst = () => {
+    if (!root) return;
+    if (burst) {
+      root.remove(burst);
+      burst.geometry.dispose();
+      (burst.material as THREE.Material).dispose();
+    }
+    const pos = new Float32Array(N * 3);
+    burstVel = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      pos[i * 3] = corePos.x;
+      pos[i * 3 + 1] = corePos.y;
+      pos[i * 3 + 2] = corePos.z;
+      const a = Math.random() * Math.PI * 2;
+      const r = 0.02 + Math.random() * 0.05;
+      burstVel[i * 3] = Math.cos(a) * r;
+      burstVel[i * 3 + 1] = 0.03 + Math.random() * 0.06;
+      burstVel[i * 3 + 2] = Math.sin(a) * r;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    const mat = new THREE.PointsMaterial({ color: 0x86efac, size: 0.012, transparent: true, opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending });
+    burst = new THREE.Points(geo, mat);
+    root.add(burst);
+    burstT0 = lastTick = performance.now();
+  };
+  return {
+    yaw: 0.4,
+    camera: { position: [0, 0.1, 0.42], target: [0, 0.1, 0], fov: 32 },
+    value: (s) => s.level,
+    bind(r) {
+      root = r;
+      const n = findNode(r, "nucleo") as THREE.Mesh | null;
+      const a = findNode(r, "anillos") as THREE.Mesh | null;
+      if (n) {
+        core = n.material as THREE.MeshStandardMaterial;
+        n.geometry.computeBoundingBox();
+        const b = n.geometry.boundingBox!;
+        corePos = n.position.clone().add(b.min.clone().add(b.max).multiplyScalar(0.5));
+      }
+      if (a) ring = a.material as THREE.MeshStandardMaterial;
+    },
+    apply(level, color, glowPulse) {
+      const t = Math.max(0, Math.min(1, level));
+      if (core) {
+        core.emissive.copy(color);
+        core.emissiveIntensity = 0.15 + t * 3.3 + 1.2 * glowPulse;
+      }
+      if (ring) {
+        ring.emissive.copy(color);
+        ring.emissiveIntensity = 0.1 + t * 1.7 + 0.6 * glowPulse;
+      }
+      const full = t > 0.995;
+      if (full && !wasFull) spawnBurst();
+      wasFull = full;
+      if (burst && burstVel) {
+        const now = performance.now();
+        const dt = Math.min(0.05, (now - (lastTick || now)) / 1000);
+        lastTick = now;
+        const age = (now - burstT0) / 1000;
+        const pos = burst.geometry.attributes.position as THREE.BufferAttribute;
+        for (let i = 0; i < N; i++) {
+          pos.setXYZ(i, pos.getX(i) + burstVel[i * 3] * dt, pos.getY(i) + burstVel[i * 3 + 1] * dt, pos.getZ(i) + burstVel[i * 3 + 2] * dt);
+        }
+        pos.needsUpdate = true;
+        const mat = burst.material as THREE.PointsMaterial;
+        mat.opacity = Math.max(0, 1 - age / 0.9);
+        if (age > 0.9) {
+          root?.remove(burst);
+          burst.geometry.dispose();
+          mat.dispose();
+          burst = null;
+          burstVel = null;
+        }
+      }
+    },
     dispose() {
-      tex?.dispose();
-      (plane?.material as THREE.Material | undefined)?.dispose();
-      plane?.geometry.dispose();
+      if (burst) {
+        burst.geometry.dispose();
+        (burst.material as THREE.Material).dispose();
+      }
     },
   };
 }
@@ -173,8 +212,7 @@ function meterAdapter(): Adapter {
 const ADAPTERS: Record<GaugeKind, () => Adapter> = {
   canister: canisterAdapter,
   meter: meterAdapter,
-  // La batería se agrega al integrarla — mismo contrato.
-  battery: canisterAdapter,
+  battery: batteryAdapter,
 };
 
 export class CalorieGaugeRenderer {

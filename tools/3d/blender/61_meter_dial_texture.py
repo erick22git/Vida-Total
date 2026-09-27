@@ -26,10 +26,12 @@ def mix(a, b, t):
     return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
 
-img = Image.new("RGB", (N, N), (244, 241, 234))
+PLOMO = (86, 90, 98)          # borde y trazos: gris plomo (no negro puro)
+FONDO = (150, 153, 160)       # fondo del dial: gris medio, no blanco
+img = Image.new("RGB", (N, N), FONDO)
 d = ImageDraw.Draw(img)
-d.ellipse([6, 6, N - 6, N - 6], outline=(30, 30, 34), width=10)
-d.ellipse([C - 0.92 * C, C - 0.92 * C, C + 0.92 * C, C + 0.92 * C], outline=(30, 30, 34), width=4)
+d.ellipse([6, 6, N - 6, N - 6], outline=PLOMO, width=10)
+d.ellipse([C - 0.92 * C, C - 0.92 * C, C + 0.92 * C, C + 0.92 * C], outline=PLOMO, width=4)
 
 # banda de color: segmentos finos para el degradado
 R0, R1 = 0.50 * C, 0.66 * C
@@ -40,20 +42,20 @@ for i in range(STEPS):
     col = mix(YEL, GRN, p / GOAL_POS) if p <= GOAL_POS else RED
     poly = [pt(p0, R1), pt(min(p1, 1), R1), pt(min(p1, 1), R0), pt(p0, R0)]
     d.polygon(poly, fill=col)
-d.arc([C - R1, C - R1, C + R1, C + R1], 0, 360, fill=(30, 30, 34), width=0)
+d.arc([C - R1, C - R1, C + R1, C + R1], 0, 360, fill=PLOMO, width=0)
 
 # marcas cada 10 % de la meta (0..150 %) y grandes cada 50 %
 for k in range(0, 16):
     pct = k * 10
     p = (pct / 100) * GOAL_POS
     big = pct % 50 == 0
-    d.line([pt(p, R1 + 8), pt(p, R1 + (52 if big else 30))], fill=(30, 30, 34), width=9 if big else 4)
+    d.line([pt(p, R1 + 8), pt(p, R1 + (52 if big else 30))], fill=PLOMO, width=9 if big else 4)
 
 f_big = ImageFont.truetype("C:/Windows/Fonts/arialbd.ttf", 44)
 f_mid = ImageFont.truetype("C:/Windows/Fonts/arialbd.ttf", 38)
 
 
-def label(p, text, r, font, fill=(30, 30, 34)):
+def label(p, text, r, font, fill=PLOMO):
     x, y = pt(p, r)
     w = d.textlength(text, font=font)
     d.text((x - w / 2, y - font.size / 2), text, font=font, fill=fill)
@@ -83,7 +85,7 @@ arc_text(0.30 * GOAL_POS, "BAJO", (60, 45, 0, 255))
 arc_text(1.25 * GOAL_POS, "EXCEDIDO", (255, 255, 255, 255))
 
 # eje central (la aguja gira sobre él)
-d.ellipse([C - 28, C - 28, C + 28, C + 28], fill=(30, 30, 34))
+d.ellipse([C - 28, C - 28, C + 28, C + 28], fill=PLOMO)
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 img.save(OUT)
 print("OK", OUT, os.path.getsize(OUT))

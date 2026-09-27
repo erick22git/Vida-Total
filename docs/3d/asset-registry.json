@@ -1556,24 +1556,78 @@
       ],
       "adaptations": [
         "Descartados engranajes, soportes internos, cámara, luz y suelo",
-        "Dial con textura propia: arco de 270°, amarillo→verde hasta la meta (2/3), rojo pasada la meta, marcas BAJO / META / EXCEDIDO",
+        "Dial con textura propia: fondo y trazos gris plomo (no blanco), arco de 270°, amarillo→verde hasta la meta (2/3), rojo pasada la meta, marcas BAJO / META / EXCEDIDO",
         "Aguja de doble punta recortada (queda un contrapeso corto); se elimina la acción del FBX que reescribía su posición",
-        "Número de kcal y estado = etiqueta VIVA (canvas → plano) delante del cristal, no parte de la textura",
+        "Sin etiqueta propia: las kcal y el estado ya se ven arriba, en la tarjeta de Calorías (se quitó la etiqueta viva del centro por pedido del usuario, redundante)",
         "El modelo recibe SIEMPRE el estado de calorie-state.ts (arcFraction); no calcula su porcentaje"
       ],
-      "behavior": "la aguja recorre 270° con la meta a 2/3 (igual que el arco) · etiqueta: kcal grande + estado (SIN ANOTAR / BAJO / META / EXCEDIDO) con el color del estado · desde 120 % vibra y brilla (mismas clases que el arco)",
+      "behavior": "la aguja recorre 270° con la meta a 2/3 (igual que el arco) · sin número en el centro (ya se ve arriba) · desde 120 % vibra y brilla (mismas clases que el arco)",
       "metrics": {
         "triangles": 3660,
-        "drawCalls": 6,
-        "textures": "1 JPEG 1024 (dial)",
+        "drawCalls": 5,
+        "textures": "1 JPEG 1024 (dial, gris plomo)",
         "glbMb": {
-          "raw": 0.213,
-          "meshopt": 0.152
+          "raw": 0.182,
+          "meshopt": 0.121
         }
       },
       "mobileReady": false,
       "glb": {
         "meshopt": "public/models/gauge_meter_001_meshopt.glb"
+      }
+    },
+    {
+      "id": "gauge_battery_001",
+      "name": "Batería sci-fi — gráfico de calorías",
+      "module": "gym",
+      "category": "calorie-gauge",
+      "sceneCollection": "calorias-graficos",
+      "background": "transparent",
+      "source": "BlenderKit «Sci Fi Battery» (Avishka Induwara), descargado con el addon (búsqueda visual) dentro del Blender con ventana; no hay archivo original de terceros que preservar aparte, se partió de la copia que trajo el addon",
+      "license": "BlenderKit «royalty_free», validado en su ficha — solo leída, sin verificar los términos completos de BlenderKit",
+      "author": "Avishka Induwara (BlenderKit)",
+      "attribution": {
+        "required": false,
+        "text": "«Sci Fi Battery» por Avishka Induwara (BlenderKit)",
+        "url": "https://www.blenderkit.com/asset-gallery-detail/4a77a2c0-a872-47ac-8df6-01fe556e4e50/",
+        "status": "PENDIENTE: leer los términos completos de la licencia «royalty free» de BlenderKit antes de publicar"
+      },
+      "publishable": false,
+      "licenseNote": "«Royalty free» de BlenderKit suele permitir uso en proyectos, incluso comerciales, pero no revender el asset en sí; falta leer los términos completos antes de marcarlo publicable.",
+      "originalFile": null,
+      "originalSha256": null,
+      "build": "tools/3d/blender/63_battery_build.py",
+      "workingFile": "biblioteca de assets/_trabajo/gauge_battery.blend",
+      "inspection": {
+        "objects": "3 mallas (Body/carcasa, core/cristal, Glass/tubo) bajo un empty; verificado contra la ficha de BlenderKit (mismo nombre, mismo autor)",
+        "materials": "Body trae 4 materiales (incluye «Light», las franjas de cobre de los extremos, ~1 % de las caras); core trae un material «Core» emisivo; Glass usa un vidrio de transmisión que el glTF no exporta bien"
+      },
+      "structure": [
+        "cuerpo (carcasa, decorativo)",
+        "nucleo (cristal, material VT_BatteryCore emisivo)",
+        "anillos (franjas de cobre, separadas del cuerpo, material VT_BatteryRing)",
+        "cristal (vidrio propio, translúcido — reemplaza el vidrio de transmisión original)"
+      ],
+      "adaptations": [
+        "Anillos de cobre (material «Light» del cuerpo) separados en un objeto propio para variar su brillo sin tocar el resto de la carcasa",
+        "Vidrio de transmisión original sustituido por un material translúcido propio (el glTF no exporta bien la transmisión de Cycles)",
+        "Texturas de 2K del cuerpo (metal/cobre) reducidas a 512 px antes de exportar",
+        "Núcleo y anillos reciben el color continuo y el nivel de calorie-state.ts; carcasa y vidrio no se tocan",
+        "Chispa breve de partículas (18, aditivas) al cruzar el 100 % por primera vez; no se repite mientras el nivel se mantenga arriba, vuelve a saltar si baja y sube de nuevo"
+      ],
+      "behavior": "apagado en 0 % · tenue ~25 % · brillante 50-100 % (color continuo de calorie-state) · al llegar al 100 % una chispa de partículas de ~0,9 s, una sola vez · desde 120 % vibra y brilla (mismas clases que el arco)",
+      "metrics": {
+        "triangles": 27928,
+        "drawCalls": 7,
+        "textures": "7 (metal/cobre reducidas a 512, más las propias)",
+        "glbMb": {
+          "raw": 1.592,
+          "meshopt": 0.597
+        }
+      },
+      "mobileReady": false,
+      "glb": {
+        "meshopt": "public/models/gauge_battery_001_meshopt.glb"
       }
     }
   ],
@@ -1640,7 +1694,8 @@
     "calorias-graficos": {
       "order": [
         "gauge_canister_001",
-        "gauge_meter_001"
+        "gauge_meter_001",
+        "gauge_battery_001"
       ],
       "note": "Valor continuo (no etapas de 7 días): cada modelo recibe el CalorieState de src/lib/gym/calorie-state.ts. Registro en runtime: src/lib/3d/gauge-registry.ts"
     }
