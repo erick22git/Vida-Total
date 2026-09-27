@@ -56,7 +56,7 @@ export function MealHomeScreen() {
   );
   const hasFood = foodsForMeal.length > 0;
   const totalKcal = foodsForMeal.reduce((sum, f) => sum + f.calorias, 0);
-  const openMealCircle = () => (hasFood ? setExpanded(true) : router.push(`/gym/calorias/buscar?meal=${meal}`));
+  const openMealCircle = () => (hasFood ? setExpanded(true) : router.push(`/gym/calorias/buscar-nuevo?meal=${meal}`));
 
   // El título sigue la hora real mientras el usuario no navegó a mano — si ya está mirando otra
   // comida, no se lo salteamos de abajo cada minuto.
@@ -88,7 +88,7 @@ export function MealHomeScreen() {
 
       <header className="flex items-center justify-between px-5 h-12">
         <button
-          onClick={() => router.push(`/gym/calorias/buscar?meal=${meal}`)}
+          onClick={() => router.push(`/gym/calorias/buscar-nuevo?meal=${meal}`)}
           aria-label="Agregar comida"
           className="w-10 h-10 flex items-center justify-center cursor-pointer"
         >
@@ -194,7 +194,7 @@ export function MealHomeScreen() {
                     meal={meal}
                     date={new Date()}
                     foods={loggedFoods.filter((f) => f.meal === meal)}
-                    onAdd={() => router.push(`/gym/calorias/buscar?meal=${meal}`)}
+                    onAdd={() => router.push(`/gym/calorias/buscar-nuevo?meal=${meal}`)}
                   />
                 </motion.div>
               )}
