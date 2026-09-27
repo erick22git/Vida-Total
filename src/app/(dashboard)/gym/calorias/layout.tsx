@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { PageBackdrop } from "@/components/layout/page-backdrop";
+import { CalorieGoalCelebration } from "@/components/gym/calorie-goal-celebration";
 
 /** Todas las pantallas de Calorías (buscar, lista, detalle de alimento,
  * configurar, escáner, progreso, recetas, etc.) comparten la misma foto de
@@ -18,6 +19,8 @@ export default function CaloriasLayout({ children }: { children: ReactNode }) {
       pintado debajo del PageBackdrop (fixed) sin importar el orden en el
       DOM. */}
       <div className="relative">{children}</div>
+      {/* Confeti + felicitación al cruzar la meta (evento calories.goal_reached, una vez por día). */}
+      <CalorieGoalCelebration />
     </>
   );
 }

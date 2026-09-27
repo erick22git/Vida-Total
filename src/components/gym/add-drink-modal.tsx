@@ -9,7 +9,7 @@ import type { DrinkOption } from "@/lib/data/drinks";
 
 type Step = "pick" | "volume" | "settings" | "edit";
 
-export function AddDrinkModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function AddDrinkModal({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded?: () => void }) {
   const [step, setStep] = useState<Step>("pick");
   const [pickedDrink, setPickedDrink] = useState<DrinkOption | null>(null);
   const [editingDrink, setEditingDrink] = useState<DrinkOption | null>(null);
@@ -37,6 +37,7 @@ export function AddDrinkModal({ open, onClose }: { open: boolean; onClose: () =>
         open={open && step === "volume"}
         onClose={handleClose}
         drink={pickedDrink}
+        onAdded={onAdded}
       />
       <DrinkSettingsModal
         open={open && step === "settings"}

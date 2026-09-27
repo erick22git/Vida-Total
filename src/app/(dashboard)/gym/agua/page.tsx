@@ -93,7 +93,11 @@ export default function AguaPage() {
         </button>
       </GlassCard>
 
-      <AddDrinkModal open={addDrinkOpen} onClose={() => setAddDrinkOpen(false)} />
+      <AddDrinkModal
+        open={addDrinkOpen}
+        onClose={() => setAddDrinkOpen(false)}
+        onAdded={() => window.setTimeout(() => glassRef.current?.pour(), 250)}
+      />
 
       <GlassCard className="flex flex-col gap-2" style={{ background: "var(--glass-bg-dark)" }}>
         <p className="text-sm font-semibold text-white/80">Registros de hoy</p>

@@ -14,10 +14,13 @@ const DEFAULT_ML = 250;
 export function DrinkVolumeSheet({
   open,
   onClose,
+  onAdded,
   drink,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Se llama justo después de registrar la bebida (p. ej. para soltar el chorro del vaso). */
+  onAdded?: () => void;
   drink: DrinkOption | null;
 }) {
   const addWater = useGymStore((s) => s.addWater);
@@ -36,6 +39,7 @@ export function DrinkVolumeSheet({
   function handleAgregar() {
     if (ml <= 0) return;
     addWater(ml, { id: drink!.id, nombre: drink!.nombre, emoji: drink!.emoji });
+    onAdded?.();
     onClose();
   }
 

@@ -33,8 +33,6 @@ export function CalorieArcCard({
   const [carbsInput, setCarbsInput] = useState(String(carbsGoal));
   const [fatInput, setFatInput] = useState(String(fatGoal));
 
-  const rangeLow = Math.round(calorieGoal * 0.9);
-  const rangeHigh = Math.round(calorieGoal * 1.1);
   const isFinishedToday = dayFinishedDate === new Date().toDateString();
   const hasProgress = totals.calorias > 0;
 
@@ -121,7 +119,7 @@ export function CalorieArcCard({
         <span className="text-lg text-white/35 tabular-nums">/ {calorieGoal.toLocaleString()}</span>
       </div>
 
-      <ArcChart low={rangeLow} high={rangeHigh} value={totals.calorias} />
+      <ArcChart goal={calorieGoal} value={totals.calorias} />
 
       <div className="grid grid-cols-3 gap-3">
         <MacroColumn label="Proteínas" value={totals.proteina} goal={proteinGoal} color={MACRO_COLORS.proteina} />

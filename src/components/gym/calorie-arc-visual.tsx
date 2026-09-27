@@ -1,5 +1,8 @@
 "use client";
 
+import { useId } from "react";
+import { ARC_GOAL_POS, arcSegments, CALORIE_COLORS, calorieState, STRONG_FACTOR } from "@/lib/gym/calorie-state";
+
 /** Shared visual pieces for the calorie arc + macro breakdown, used by both
  * the full `CalorieArcCard` (página Calorías) and the compact mini version
  * shown on the Gym hub. Keeping them here means both places render from the
@@ -35,50 +38,22 @@ export function MacroColumn({
   );
 }
 
-/** Bloque 12: plomo mientras no se anotó nada, amarillo mientras el consumo
- * del día no llega al mínimo del rango objetivo, verde dentro del rango,
- * rojo al superar el máximo. `low`/`high` ya vienen de
- * `calorieGoal * 0.9/1.1` (ver calorie-arc-card.tsx / CalorieArcMini) —
- * nunca hardcodeados acá. */
-const RANGE_COLORS = {
-  vacio: "#6b7280", // plomo — todavía no anotó nada en ese tramo de la curva
-  bajo: "#eab308", // amarillo — todavía no llega al mínimo
-  enRango: "#22c55e", // verde — dentro del rango objetivo
-  sobre: "#ef4444", // rojo — superó el máximo
-};
-
-/** Fracción [0,1] de la curva que debe pintarse, de izquierda (0 kcal) a
- * derecha, según el consumo acumulado. La punta izquierda de la curva
- * (t=0) es 0 kcal; los dos marcadores sobre la curva (t=0.3 y t=0.7, ver
- * `pointA`/`pointB` en `ArcChart`) representan `low` y `high`. Más allá de
- * `high` se sigue llenando de rojo hasta un techo (`high` + el ancho del
- * rango bueno) — pasado ese techo la curva queda completamente roja. */
-function calorieFillFraction(value: number, low: number, high: number): number {
-  if (value <= 0) return 0;
-  if (value <= low) return low > 0 ? (value / low) * 0.3 : 0.3;
-  if (value <= high) return 0.3 + ((value - low) / (high - low || 1)) * 0.4;
-  const veryHigh = high + (high - low || high);
-  if (value <= veryHigh) return 0.7 + ((value - high) / (veryHigh - high || 1)) * 0.3;
-  return 1;
-}
-
-/** Shallow "smile" arc with two range markers — replaces the circular ring per
- * el Fitia-style reference design. Points are placed along the same quadratic
- * Bézier used to draw the curve so they sit exactly on it. `value` (el
- * consumo acumulado del día) determina cuánto de la curva, y de qué color,
- * se pinta desde la izquierda (0 kcal) — ver `calorieFillFraction`. Si se
- * supera `high`, la curva vibra y muestra una luz roja suave detrás. */
+/** Arco de kcal — lee TODO de `calorieState` (src/lib/gym/calorie-state.ts): ni los umbrales ni los colores viven acá.
+ * Curva "sonrisa" con dos marcadores: la META (100 %, con su número) y el 120 % (punto rojo, sin número) a partir del cual
+ * la curva vibra y brilla. Los puntos se ubican sobre la misma Bézier cuadrática con la que se dibuja la curva.
+ *  - hasta la meta: degradado amarillo → verde según el avance (progresivo);
+ *  - pasada la meta: el resto de la curva se llena de rojo de inmediato, pero quieto;
+ *  - desde el 120 %: además vibra (shake) y brilla (glow pulsante). */
 export function ArcChart({
-  low,
-  high,
+  goal,
   value,
   compact = false,
 }: {
-  low: number;
-  high: number;
+  goal: number;
   value: number;
   compact?: boolean;
 }) {
+  const gradId = useId();
   const P0 = { x: 20, y: 58 };
   const P1 = { x: 160, y: 18 };
   const P2 = { x: 300, y: 58 };
@@ -89,86 +64,68 @@ export function ArcChart({
       y: mt * mt * P0.y + 2 * mt * t * P1.y + t * t * P2.y,
     };
   };
-  const pointA = bezier(0.3);
-  const pointB = bezier(0.7);
+  const goalPoint = bezier(ARC_GOAL_POS);
+  const strongPoint = bezier(ARC_GOAL_POS * STRONG_FACTOR);
 
-  // Progreso a lo largo de la curva: plomo = todavía no anotado, y de ahí
-  // amarillo -> verde -> rojo según lo que se va acumulando en el día. La
-  // punta izquierda (t=0) es 0 kcal. Cada tramo de color se dibuja con el
-  // truco de `pathLength=1` (normaliza la longitud del path a 1 unidad sin
-  // importar la geometría real), así el dasharray/offset queda en
-  // fracciones simples en vez de tener que medir el largo real del bezier.
-  const fraction = calorieFillFraction(value, low, high);
-  const yellowLen = Math.max(0, Math.min(fraction, 0.3));
-  const greenLen = Math.max(0, Math.min(fraction - 0.3, 0.4));
-  const redLen = Math.max(0, Math.min(fraction - 0.7, 0.3));
-  const isOver = value > high;
+  // Cada tramo se dibuja con `pathLength=1` (la longitud del path se normaliza a 1), así el dasharray queda en fracciones.
+  const s = calorieState(value, goal);
+  const { progress } = arcSegments(s.arcFraction);
   const pathD = `M ${P0.x} ${P0.y} Q ${P1.x} ${P1.y} ${P2.x} ${P2.y}`;
 
   return (
     <svg viewBox="0 0 320 90" className="w-full h-auto overflow-visible">
-      <g className={isOver ? "calorie-arc-shake" : undefined}>
-        {isOver && (
+      <defs>
+        {/* x de la Bézier es lineal en t: el degradado por posición coincide con el avance a lo largo de la curva */}
+        <linearGradient id={gradId} gradientUnits="userSpaceOnUse" x1={P0.x} y1="0" x2={goalPoint.x} y2="0">
+          <stop offset="0" stopColor={CALORIE_COLORS.bajo} />
+          <stop offset="1" stopColor={CALORIE_COLORS.logrado} />
+        </linearGradient>
+      </defs>
+      <g className={s.shake ? "calorie-arc-shake" : undefined}>
+        {s.glow && (
           <path
             d={pathD}
             fill="none"
-            stroke={RANGE_COLORS.sobre}
+            stroke={CALORIE_COLORS.excedidoFuerte}
             strokeWidth={10}
             strokeLinecap="round"
             className="calorie-arc-glow"
             style={{ filter: "blur(6px)" }}
           />
         )}
-        <path d={pathD} fill="none" stroke={RANGE_COLORS.vacio} strokeWidth={2} strokeLinecap="round" />
-        {yellowLen > 0 && (
+        <path d={pathD} fill="none" stroke={CALORIE_COLORS.vacio} strokeWidth={2} strokeLinecap="round" />
+        {/* Al pasar la meta TODO el tramo pintado se vuelve rojo de inmediato (no solo la punta): rojo quieto hasta 120 %. */}
+        {progress > 0 && !s.over && (
           <path
             d={pathD}
             fill="none"
-            stroke={RANGE_COLORS.bajo}
+            stroke={`url(#${gradId})`}
             strokeWidth={2}
             strokeLinecap="round"
             pathLength={1}
-            strokeDasharray={`${yellowLen} 10`}
+            strokeDasharray={`${progress} 10`}
             style={{ transition: "stroke-dasharray 0.4s ease" }}
           />
         )}
-        {greenLen > 0 && (
+        {s.over && (
           <path
             d={pathD}
             fill="none"
-            stroke={RANGE_COLORS.enRango}
+            stroke={CALORIE_COLORS.excedido}
             strokeWidth={2}
             strokeLinecap="round"
             pathLength={1}
-            strokeDasharray={`0.3 ${greenLen} 10`}
-            style={{ transition: "stroke-dasharray 0.4s ease" }}
-          />
-        )}
-        {redLen > 0 && (
-          <path
-            d={pathD}
-            fill="none"
-            stroke={RANGE_COLORS.sobre}
-            strokeWidth={2}
-            strokeLinecap="round"
-            pathLength={1}
-            strokeDasharray={`0.7 ${redLen} 10`}
+            strokeDasharray={`${s.arcFraction} 10`}
             style={{ transition: "stroke-dasharray 0.4s ease" }}
           />
         )}
       </g>
-      {[pointA, pointB].map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={4} fill="white" fillOpacity={0.85} />
-      ))}
+      <circle cx={goalPoint.x} cy={goalPoint.y} r={4} fill="white" fillOpacity={0.85} />
+      <circle cx={strongPoint.x} cy={strongPoint.y} r={3} fill={CALORIE_COLORS.excedido} fillOpacity={0.85} />
       {!compact && (
-        <>
-          <text x={pointA.x} y={pointA.y + 22} textAnchor="middle" fontSize="13" fill="rgba(255,255,255,0.55)">
-            {low.toLocaleString()}
-          </text>
-          <text x={pointB.x} y={pointB.y + 22} textAnchor="middle" fontSize="13" fill="rgba(255,255,255,0.55)">
-            {high.toLocaleString()}
-          </text>
-        </>
+        <text x={goalPoint.x} y={goalPoint.y + 22} textAnchor="middle" fontSize="13" fill="rgba(255,255,255,0.55)">
+          {goal.toLocaleString()}
+        </text>
       )}
     </svg>
   );
@@ -197,9 +154,6 @@ export function CalorieArcMini({
   carbsGoal: number;
   fatGoal: number;
 }) {
-  const rangeLow = Math.round(calorieGoal * 0.9);
-  const rangeHigh = Math.round(calorieGoal * 1.1);
-
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-baseline justify-center gap-1.5">
@@ -208,7 +162,7 @@ export function CalorieArcMini({
       </div>
 
       <div className="w-3/5 mx-auto">
-        <ArcChart low={rangeLow} high={rangeHigh} value={totals.calorias} compact />
+        <ArcChart goal={calorieGoal} value={totals.calorias} compact />
       </div>
 
       <div className="grid grid-cols-3 gap-1.5">
