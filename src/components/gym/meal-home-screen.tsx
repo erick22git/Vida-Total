@@ -56,6 +56,7 @@ export function MealHomeScreen() {
   );
   const hasFood = foodsForMeal.length > 0;
   const totalKcal = foodsForMeal.reduce((sum, f) => sum + f.calorias, 0);
+  const openMealCircle = () => (hasFood ? setExpanded(true) : router.push(`/gym/calorias/buscar?meal=${meal}`));
 
   // El título sigue la hora real mientras el usuario no navegó a mano — si ya está mirando otra
   // comida, no se lo salteamos de abajo cada minuto.
@@ -124,7 +125,7 @@ export function MealHomeScreen() {
         getAriaLabel={(i) => `Ir a ${MEAL_LABELS[MEALS[i]]}`}
       />
 
-      <main className="flex-1 min-h-0 relative touch-none">
+      <main className="flex-1 min-h-0 relative">
         <SwipeCarouselStage
           itemKey={meal}
           direction={direction}
@@ -145,10 +146,18 @@ export function MealHomeScreen() {
                   transition={{ duration: 0.22 }}
                   className="flex-1 flex flex-col items-center justify-center gap-7 px-6"
                 >
-                  <button
-                    onClick={() => (hasFood ? setExpanded(true) : router.push(`/gym/calorias/buscar?meal=${meal}`))}
+                  {/* No es un <button> nativo: sobre un botón normal, el toque en el celular lo capta el propio elemento y
+                      compite con el gesto de swipe de la fila de arriba (mismo motivo por el que HoldCircle, en Hábitos,
+                      tampoco es un <button>). Se maneja el toque a mano, igual que allá. */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openMealCircle()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") openMealCircle();
+                    }}
                     aria-label={hasFood ? `Ver ${MEAL_LABELS[meal]}` : `Agregar a ${MEAL_LABELS[meal]}`}
-                    className="w-[68vw] max-w-[340px] aspect-square cursor-pointer"
+                    className="w-[68vw] max-w-[340px] aspect-square cursor-pointer select-none"
                   >
                     <HabitOrb done={hasFood} className="w-full">
                       {hasFood ? (
@@ -163,7 +172,7 @@ export function MealHomeScreen() {
                         <Plus size={64} strokeWidth={2} className="text-white/70" />
                       )}
                     </HabitOrb>
-                  </button>
+                  </div>
                 </motion.div>
               ) : (
                 <motion.div
