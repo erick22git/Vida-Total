@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useImperativeHandle, useRef, type Ref } from "react";
 import { WaterGlassRenderer } from "@/lib/3d/water-glass";
+
+export interface WaterGlassHandle {
+  /** Suelta el chorro con salpicón. Se llama directo desde el clic (no depende de un re-render de React). */
+  pour: () => void;
+}
 
 /**
  * Vaso 3D con nivel de agua en vivo. Recibe la fracción YA calculada (src/lib/gym/water-state.ts) y el color del agua;
@@ -10,16 +15,15 @@ import { WaterGlassRenderer } from "@/lib/3d/water-glass";
 export function WaterGlass3D({
   fraction,
   color,
-  pourKey = 0,
   onError,
   className,
+  ref,
 }: {
   fraction: number;
   color?: string;
-  /** Sube en 1 cada vez que el usuario agrega agua: dispara el chorro con salpicón. */
-  pourKey?: number;
   onError?: () => void;
   className?: string;
+  ref?: Ref<WaterGlassHandle>;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<WaterGlassRenderer | null>(null);
@@ -30,6 +34,9 @@ export function WaterGlass3D({
     errRef.current = onError;
   });
 
+  // El clic llama a `pour()` directamente; si el modelo aún no cargó, el renderer guarda el aviso y lo reproduce al cargar.
+  useImperativeHandle(ref, () => ({ pour: () => rendererRef.current?.pour() }), []);
+
   useEffect(() => {
     const el = host.current;
     if (!el) return;
@@ -37,7 +44,7 @@ export function WaterGlass3D({
     let r: WaterGlassRenderer | null = null;
     try {
       const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-      r = new WaterGlassRenderer(el, { glbUrl: "/models/water_glass_001_meshopt.glb", reduceMotion: !!reduce });
+      r = new WaterGlassRenderer(el, { glbUrl: "/models/water_glass_002_meshopt.glb", reduceMotion: !!reduce });
       rendererRef.current = r;
       r.load()
         .then(() => {
@@ -66,13 +73,14 @@ export function WaterGlass3D({
   useEffect(() => {
     if (color) rendererRef.current?.setColor(color);
   }, [color]);
-  const lastPour = useRef(pourKey);
-  useEffect(() => {
-    if (pourKey !== lastPour.current) {
-      lastPour.current = pourKey;
-      rendererRef.current?.pour();
-    }
-  }, [pourKey]);
 
-  return <div ref={host} className={className ?? "w-64 h-96 mx-auto"} data-testid="water-glass-3d" aria-label={`Vaso de agua al ${Math.round(fraction * 100)} %`} role="img" />;
+  return (
+    <div
+      ref={host}
+      className={className ?? "w-full max-w-sm h-[30rem] mx-auto"}
+      data-testid="water-glass-3d"
+      aria-label={`Vaso de agua al ${Math.round(fraction * 100)} %`}
+      role="img"
+    />
+  );
 }

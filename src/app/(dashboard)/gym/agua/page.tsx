@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, Droplets, Plus, X } from "lucide-react";
 import { format } from "date-fns";
 import { GlassCard } from "@/components/glass/glass-card";
 import { WaterBottle } from "@/components/gym/water-bottle";
-import { WaterGlass3D } from "@/components/gym/water-glass-3d";
+import { WaterGlass3D, type WaterGlassHandle } from "@/components/gym/water-glass-3d";
 import { WeeklyWaterCard } from "@/components/gym/weekly-water-card";
 import { AddDrinkModal } from "@/components/gym/add-drink-modal";
 import { totalsByDrink } from "@/lib/gym/water-stats";
@@ -39,8 +39,8 @@ export default function AguaPage() {
   const removeWaterEntry = useGymStore((s) => s.removeWaterEntry);
   const todayEntries = useTodayWaterEntries();
   const [addDrinkOpen, setAddDrinkOpen] = useState(false);
-  // Cada toque en un botón rápido sube `pourKey`: el vaso suelta el chorro con salpicón.
-  const [pourKey, setPourKey] = useState(0);
+  // Cada toque en un botón rápido llama directo a `pour()`: el vaso suelta el chorro con salpicón (sin esperar un re-render).
+  const glassRef = useRef<WaterGlassHandle>(null);
   // Solo si WebGL o el modelo fallan se muestra la botella SVG (ya no es una opción que elija el usuario).
   const [glassFailed, setGlassFailed] = useState(false);
 
@@ -64,7 +64,7 @@ export default function AguaPage() {
 
       <GlassCard accentColor="#3b82f6" glow className="flex flex-col items-center gap-6 py-8" style={{ background: "var(--glass-bg-dark)" }}>
         {!glassFailed ? (
-          <WaterGlass3D fraction={water.fraction} color={waterColor} pourKey={pourKey} onError={() => setGlassFailed(true)} />
+          <WaterGlass3D fraction={water.fraction} color={waterColor} ref={glassRef} onError={() => setGlassFailed(true)} />
         ) : (
           <WaterBottle segments={todayByDrink.map((d) => ({ color: d.color, ml: d.ml }))} max={waterGoalMl} />
         )}
@@ -77,7 +77,7 @@ export default function AguaPage() {
               key={ml}
               onClick={() => {
                 addWater(ml);
-                setPourKey((k) => k + 1);
+                glassRef.current?.pour();
               }}
               className="rounded-2xl px-4 py-2.5 text-sm font-medium text-white cursor-pointer transition-transform hover:scale-105 bg-white/[0.08] hover:bg-white/[0.14] glass-specular-ring"
             >

@@ -1423,8 +1423,8 @@
       }
     },
     {
-      "id": "water_glass_001",
-      "name": "Vaso de agua con nivel en vivo",
+      "id": "water_glass_002",
+      "name": "Vaso de agua (tumbler corto alargado) con nivel en vivo",
       "module": "gym",
       "category": "live-indicator",
       "background": "transparent",
@@ -1432,42 +1432,40 @@
       "license": "UNVERIFIED",
       "author": null,
       "publishable": false,
-      "licenseNote": "El dueño indica que viene de BlendSwap («Glass of Water»); la página NO se ha revisado y el archivo no trae texto de licencia. BlendSwap suele exigir atribución: no asumir CC0.",
-      "originalFile": "biblioteca de assets/GYM/Agua/vaso de agua.blend",
-      "originalSha256": "a042d0bcd21ec965ebf27b2553fd91db065b254bdaf52297485ad84a5b3fe34a",
-      "workingFile": "biblioteca de assets/_trabajo/water_glass.blend",
+      "licenseNote": "El dueño puso vaso.blend el 2026-09-26; el archivo no declara autor ni licencia (origen no indicado). Sigue UNVERIFIED. La versión anterior (vaso de agua.blend, BlendSwap «Glass of Water» según el dueño) quedó reemplazada.",
+      "originalFile": "biblioteca de assets/GYM/Agua/vaso.blend",
+      "originalSha256": "5ea1ad7d805af5330cdaf2ec64ac27ca1d798cb7e59509f2a5bf0693ca248ae6",
+      "workingFile": "biblioteca de assets/_trabajo/water_glass2.blend",
       "format": "blend → glb (meshopt)",
-      "build": "tools/3d/blender/39_glass_probe.py + 40_glass_build.py",
+      "build": "tools/3d/blender/41_glass2_build.py (v1 con 'vaso de agua.blend': 39_/40_, reemplazada)",
       "runtime": "src/lib/3d/water-glass.ts + src/components/gym/water-glass-3d.tsx (nivel: src/lib/gym/water-state.ts)",
       "inspection": {
-        "objects": "17 mallas (vaso = 'Circle', efector de fluido); 'Cube' de 160 mil tris (dominio/agua horneada), suelo, fondo, piedras, esferas",
-        "tris": 266799,
+        "objects": "11 mallas: 3 vasos (2 copas de pie + 1 tumbler corto con base acanalada) con líquido de muestra, 2 cubos de hielo y 3 esferas",
+        "tris": "—",
         "licenseEvidence": "ninguna dentro del archivo"
       },
       "adaptations": [
-        "Solo se conserva el vaso ('Circle'); simulación de fluido, dominio, suelo y demás descartados",
-        "Subdivisión bajada a nivel 1: 19 456 → 1 216 tris",
-        "Escalado a 2 unidades de alto",
-        "Forma: el original es un cono (radio 0.385 abajo → 0.78 arriba); se modificó la MISMA malla escalando cada anillo en XY hasta un cilindro recto de radio 0.66",
-        "El AGUA es una pieza propia generada en runtime (tronco de cilindro + superficie con oleaje + menisco), con degradado de profundidad; no viene del original",
-        "Chorro con salpicón (22 partículas) y ondas al agregar agua (pour())",
-        "Perfil interior del vaso (radio = 0.65 + 0.006·z, pared 0.03) guardado en `vt_profile` del nodo"
+        "De los 3 vasos solo se conserva el tumbler corto y ancho (Circle.004); las dos copas de pie, el líquido de muestra, el hielo y las esferas se eliminan",
+        "Alargado un 30 % en altura y normalizado a 2 unidades",
+        "Subdivisión nivel 1 (7 680 tris)",
+        "El AGUA es una pieza propia generada en runtime; su forma sale del perfil INTERIOR medido en el modelo (tabla en `vt_profile`)",
+        "Agua casi transparente con leve tinte (la saturación del color de la bebida se reduce), degradado de profundidad, Fresnel en vidrio y agua, menisco",
+        "Chorro con salpicón (22 partículas) y ondas al agregar agua (pour(), llamado directo desde el clic; si el modelo no ha cargado se reproduce al cargar)"
       ],
       "behavior": "0 % vacío · 25/50/75 % niveles proporcionales a la altura interior · 100 % lleno; siempre como fracción de la meta configurada (waterState). Resorte hacia el nivel + oleaje; al tocar un botón rápido cae un chorro desde arriba que salpica y genera ondas. Color = mezcla de las bebidas de hoy con degradado de profundidad.",
       "mobileReady": false,
       "metrics": {
-        "glassTriangles": 1216,
-        "renderedTriangles": 4352,
-        "drawCalls": 6,
-        "materials": "3 (vaso, agua lateral y superficie comparten uno)",
+        "glassTriangles": 7680,
+        "drawCalls": 8,
+        "renderedTrianglesDuringPour": 17472,
         "textures": 0,
         "glbMb": {
-          "raw": 0.0232,
-          "meshopt": 0.0125
+          "raw": 0.1427,
+          "meshopt": 0.0694
         }
       },
       "glb": {
-        "meshopt": "public/models/water_glass_001_meshopt.glb"
+        "meshopt": "public/models/water_glass_002_meshopt.glb"
       }
     }
   ],

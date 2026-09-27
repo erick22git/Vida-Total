@@ -14,26 +14,39 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 interface Profile {
   floorZ: number;
   topZ: number;
-  rOuter0: number;
-  slope: number;
-  wall: number;
+  /** Radio INTERIOR medido en el modelo: pares [altura, radio], de abajo arriba (el agua toma su forma de aquí). */
+  inner: [number, number][];
 }
 
 const SEG = 48;
 const RINGS = 9;
-const STREAM_TOP = 2.9; // altura (en unidades del modelo) desde donde cae el chorro
+const STREAM_TOP = 2.55; // altura (en unidades del modelo) desde donde cae el chorro
 const POUR_DUR = 1.25; // segundos
 const N_SPLASH = 22;
-const DEFAULT_WATER = "#1f7fd8";
+const DEFAULT_WATER = "#9fd6f2";
 
 const _c = new THREE.Color();
+
+/** Borde brillante tipo Fresnel: el vidrio y el agua se ven más opacos y claros en los bordes y transparentes de frente. */
+function addFresnel(mat: THREE.MeshPhysicalMaterial, strength = 0.35) {
+  mat.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <opaque_fragment>",
+      `float vtF = pow(1.0 - abs(dot(normalize(vNormal), normalize(vViewPosition))), 3.0);
+       outgoingLight = mix(outgoingLight, vec3(1.0), vtF * ${strength.toFixed(2)});
+       diffuseColor.a = clamp(diffuseColor.a + vtF * 0.45, 0.0, 1.0);
+       #include <opaque_fragment>`,
+    );
+  };
+  mat.customProgramCacheKey = () => `vt-fresnel-${strength}`;
+}
 
 export class WaterGlassRenderer {
   readonly renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera = new THREE.PerspectiveCamera(28, 1, 0.1, 50);
   private root = new THREE.Group();
-  private profile: Profile = { floorZ: 0.12, topZ: 1.98, rOuter0: 0.65, slope: 0.006, wall: 0.03 };
+  private profile: Profile = { floorZ: 0.37, topZ: 1.97, inner: [[0.37, 0.52], [1.97, 0.57]] };
   private side: THREE.Mesh;
   private top: THREE.Mesh;
   private rim: THREE.Mesh;
@@ -65,6 +78,8 @@ export class WaterGlassRenderer {
   private io: IntersectionObserver | null = null;
   private ro: ResizeObserver | null = null;
   private disposed = false;
+  private pendingPour = false;
+  private loaded = false;
   private envTex: THREE.Texture | null = null;
 
   constructor(
@@ -110,6 +125,7 @@ export class WaterGlassRenderer {
       side: THREE.DoubleSide,
       depthWrite: false,
     });
+    addFresnel(this.waterMat, 0.1);
     this.side = new THREE.Mesh(this.buildSideGeometry(), this.waterMat);
     this.side.renderOrder = 1;
     const topGeo = new THREE.RingGeometry(0.0001, 1, SEG, RINGS);
@@ -195,9 +211,15 @@ export class WaterGlassRenderer {
       side: THREE.DoubleSide,
       depthWrite: false,
     });
+    addFresnel(g.material as THREE.MeshPhysicalMaterial, 0.45);
     g.renderOrder = 2;
     this.root.add(gltf.scene);
+    this.loaded = true;
     this.updateWater(true);
+    if (this.pendingPour) {
+      this.pendingPour = false;
+      this.pour();
+    }
   }
 
   /** Nivel objetivo 0..1 (lo calcula water-state.ts). El agua sube con un resorte y agita la superficie. */
@@ -214,7 +236,11 @@ export class WaterGlassRenderer {
 
   /** Color base del agua (mezcla de las bebidas); el degradado de profundidad se deriva de él. */
   setColor(hex: string) {
-    this.baseColor.set(hex);
+    // El agua real es casi transparente con un leve tinte: se baja la saturación del color de la bebida (la cola o el jugo
+    // siguen viéndose más oscuros/cálidos que el agua, pero sin el azul plano de la interfaz).
+    const hsl = { h: 0, s: 0, l: 0 };
+    this.baseColor.set(hex).getHSL(hsl);
+    this.baseColor.setHSL(hsl.h, Math.min(0.85, hsl.s * 0.75 + 0.1), Math.min(0.7, hsl.l * 0.8 + 0.02));
     this.paintSide();
     this.paintTop();
   }
@@ -222,6 +248,10 @@ export class WaterGlassRenderer {
   /** Dispara la animación del chorro: el agua cae desde arriba y salpica al tocar el nivel. Sin animación si `reduceMotion`. */
   pour() {
     if (this.opts.reduceMotion) return;
+    if (!this.loaded) {
+      this.pendingPour = true; // tocado antes de que cargara el modelo: se reproduce al cargar
+      return;
+    }
     this.pourT = 0;
     this.emitAcc = 0;
     this.amp = Math.min(0.05, this.amp + 0.012);
@@ -294,8 +324,16 @@ export class WaterGlassRenderer {
   }
 
   private innerR(z: number) {
-    const p = this.profile;
-    return Math.max(0.05, p.rOuter0 + p.slope * z - p.wall);
+    const t = this.profile.inner;
+    if (z <= t[0][0]) return t[0][1];
+    for (let i = 1; i < t.length; i++) {
+      if (z <= t[i][0]) {
+        const [z0, r0] = t[i - 1];
+        const [z1, r1] = t[i];
+        return r0 + ((r1 - r0) * (z - z0)) / Math.max(1e-6, z1 - z0);
+      }
+    }
+    return t[t.length - 1][1];
   }
 
   private buildSideGeometry() {
@@ -315,20 +353,20 @@ export class WaterGlassRenderer {
   /** Degradado de profundidad: abajo más oscuro y opaco, arriba más claro y translúcido. */
   private paintSide() {
     const col = this.side.geometry.attributes.color as THREE.BufferAttribute;
-    const deep = _c.copy(this.baseColor).multiplyScalar(0.5);
+    const deep = _c.copy(this.baseColor).multiplyScalar(0.6);
     const dr = deep.r, dg = deep.g, db = deep.b;
     const shallow = _c.copy(this.baseColor).lerp(new THREE.Color(1, 1, 1), 0.1);
     for (let i = 0; i <= SEG; i++) {
-      col.setXYZW(i * 2, dr, dg, db, 0.94); // fondo
-      col.setXYZW(i * 2 + 1, shallow.r, shallow.g, shallow.b, 0.5); // superficie
+      col.setXYZW(i * 2, dr, dg, db, 0.55); // fondo
+      col.setXYZW(i * 2 + 1, shallow.r, shallow.g, shallow.b, 0.28); // superficie
     }
     col.needsUpdate = true;
   }
 
   private paintTop() {
     const col = this.top.geometry.attributes.color as THREE.BufferAttribute;
-    const c = _c.copy(this.baseColor).lerp(new THREE.Color(1, 1, 1), 0.16);
-    for (let i = 0; i < col.count; i++) col.setXYZW(i, c.r, c.g, c.b, 0.72);
+    const c = _c.copy(this.baseColor).lerp(new THREE.Color(1, 1, 1), 0.1);
+    for (let i = 0; i < col.count; i++) col.setXYZW(i, c.r, c.g, c.b, 0.5);
     col.needsUpdate = true;
   }
 
@@ -345,8 +383,8 @@ export class WaterGlassRenderer {
     }
     const z0 = p.floorZ;
     const z1 = z0 + h;
-    const r0 = this.innerR(z0);
-    const r1 = this.innerR(z1);
+    const r0 = this.innerR(z0) - 0.006;
+    const r1 = this.innerR(z1) - 0.006;
     this.surfaceY = z1;
     this.surfaceR = r1;
     const sp = this.side.geometry.attributes.position as THREE.BufferAttribute;
@@ -460,9 +498,9 @@ export class WaterGlassRenderer {
   }
 
   private frame() {
-    // el modelo mide 2 de alto y ~0.65 de radio; el chorro sube hasta 2.9: cámara a 3/4 con margen arriba
-    this.camera.position.set(0, 1.7, 8.4);
-    this.camera.lookAt(0, 0.5, 0);
+    // el vaso mide 2 de alto y ~0.6 de radio; el chorro sube hasta 2.55: cámara cercana a 3/4 para que el vaso llene el cuadro
+    this.camera.position.set(0, 1.35, 5.9);
+    this.camera.lookAt(0, 0.28, 0);
   }
 
   private resize() {
