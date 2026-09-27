@@ -10,11 +10,14 @@ import { WaterGlassRenderer } from "@/lib/3d/water-glass";
 export function WaterGlass3D({
   fraction,
   color,
+  pourKey = 0,
   onError,
   className,
 }: {
   fraction: number;
   color?: string;
+  /** Sube en 1 cada vez que el usuario agrega agua: dispara el chorro con salpicón. */
+  pourKey?: number;
   onError?: () => void;
   className?: string;
 }) {
@@ -63,6 +66,13 @@ export function WaterGlass3D({
   useEffect(() => {
     if (color) rendererRef.current?.setColor(color);
   }, [color]);
+  const lastPour = useRef(pourKey);
+  useEffect(() => {
+    if (pourKey !== lastPour.current) {
+      lastPour.current = pourKey;
+      rendererRef.current?.pour();
+    }
+  }, [pourKey]);
 
-  return <div ref={host} className={className ?? "w-64 h-80 mx-auto"} data-testid="water-glass-3d" aria-label={`Vaso de agua al ${Math.round(fraction * 100)} %`} role="img" />;
+  return <div ref={host} className={className ?? "w-64 h-96 mx-auto"} data-testid="water-glass-3d" aria-label={`Vaso de agua al ${Math.round(fraction * 100)} %`} role="img" />;
 }

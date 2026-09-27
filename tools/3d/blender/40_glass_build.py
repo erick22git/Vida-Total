@@ -27,6 +27,14 @@ vs = [v.co for v in g.data.vertices]
 zmin, zmax = min(v.z for v in vs), max(v.z for v in vs)
 K = 2.0 / (zmax - zmin)                      # el vaso mide 2 unidades de alto
 g.data.transform(Matrix.Scale(K, 4))
+# Forma de vaso recto: el original es un cono (radio 0.385 abajo → 0.78 arriba). Se modifica la MISMA malla escalando cada anillo en XY para
+# que todos midan lo mismo (no se reconstruye desde cero): factor = radio_objetivo / radio_original(z).
+R_TARGET = 0.66
+for v in g.data.vertices:
+    z = v.co.z
+    f = R_TARGET / (0.3849 + 0.1967 * z)
+    v.co.x *= f
+    v.co.y *= f
 for p in g.data.polygons:
     p.use_smooth = True
 vs = [v.co for v in g.data.vertices]

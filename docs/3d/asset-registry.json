@@ -1448,10 +1448,12 @@
         "Solo se conserva el vaso ('Circle'); simulación de fluido, dominio, suelo y demás descartados",
         "Subdivisión bajada a nivel 1: 19 456 → 1 216 tris",
         "Escalado a 2 unidades de alto",
-        "El AGUA es una pieza propia generada en runtime (tronco de cono + superficie con oleaje), no viene del original",
-        "Perfil interior del vaso (recta radio = 0.385 + 0.1967·z, pared 0.03) guardado en `vt_profile` del nodo"
+        "Forma: el original es un cono (radio 0.385 abajo → 0.78 arriba); se modificó la MISMA malla escalando cada anillo en XY hasta un cilindro recto de radio 0.66",
+        "El AGUA es una pieza propia generada en runtime (tronco de cilindro + superficie con oleaje + menisco), con degradado de profundidad; no viene del original",
+        "Chorro con salpicón (22 partículas) y ondas al agregar agua (pour())",
+        "Perfil interior del vaso (radio = 0.65 + 0.006·z, pared 0.03) guardado en `vt_profile` del nodo"
       ],
-      "behavior": "0 % vacío · 25/50/75 % niveles proporcionales a la altura interior · 100 % lleno; siempre como fracción de la meta configurada (waterState). Resorte hacia el nivel + oleaje que se agita al cambiar. Color = mezcla de las bebidas de hoy.",
+      "behavior": "0 % vacío · 25/50/75 % niveles proporcionales a la altura interior · 100 % lleno; siempre como fracción de la meta configurada (waterState). Resorte hacia el nivel + oleaje; al tocar un botón rápido cae un chorro desde arriba que salpica y genera ondas. Color = mezcla de las bebidas de hoy con degradado de profundidad.",
       "mobileReady": false,
       "metrics": {
         "glassTriangles": 1216,

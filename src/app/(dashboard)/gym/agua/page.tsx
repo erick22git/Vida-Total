@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, Droplets, Plus, X } from "lucide-react";
@@ -15,19 +15,6 @@ import { waterState } from "@/lib/gym/water-state";
 import { useGymStore, useTodayWaterEntries } from "@/lib/store/gymStore";
 
 const QUICK_ADDS = [150, 250, 500];
-
-type WaterView = "glass" | "bottle";
-const VIEW_KEY = "vt-water-view";
-const viewListeners = new Set<() => void>();
-
-/** Preferencia del indicador (vaso 3D o botella), guardada en este dispositivo. */
-function readView(): WaterView {
-  try {
-    return localStorage.getItem(VIEW_KEY) === "bottle" ? "bottle" : "glass";
-  } catch {
-    return "glass";
-  }
-}
 
 /** Mezcla los colores de las bebidas de hoy (ponderados por ml) para teñir el agua del vaso. */
 function blendColor(parts: { color: string; ml: number }[]): string {
@@ -52,22 +39,15 @@ export default function AguaPage() {
   const removeWaterEntry = useGymStore((s) => s.removeWaterEntry);
   const todayEntries = useTodayWaterEntries();
   const [addDrinkOpen, setAddDrinkOpen] = useState(false);
-  const view = useSyncExternalStore(
-    (cb) => { viewListeners.add(cb); return () => viewListeners.delete(cb); },
-    readView,
-    () => "glass" as WaterView,
-  );
+  // Cada toque en un botón rápido sube `pourKey`: el vaso suelta el chorro con salpicón.
+  const [pourKey, setPourKey] = useState(0);
+  // Solo si WebGL o el modelo fallan se muestra la botella SVG (ya no es una opción que elija el usuario).
   const [glassFailed, setGlassFailed] = useState(false);
-  const setView = useCallback((v: WaterView) => {
-    try { localStorage.setItem(VIEW_KEY, v); } catch { /* sin almacenamiento: solo esta sesión */ }
-    viewListeners.forEach((l) => l());
-  }, []);
 
   const todayByDrink = useMemo(() => totalsByDrink(todayEntries, drinkOverrides), [todayEntries, drinkOverrides]);
   const totalMl = todayByDrink.reduce((sum, d) => sum + d.ml, 0);
   const water = waterState(totalMl, waterGoalMl);
   const waterColor = useMemo(() => blendColor(todayByDrink.map((d) => ({ color: d.color, ml: d.ml }))), [todayByDrink]);
-  const showGlass = view === "glass" && !glassFailed;
 
   return (
     // El fondo de foto ya lo pone gym/agua/layout.tsx (compartido por todas
@@ -83,21 +63,8 @@ export default function AguaPage() {
       </header>
 
       <GlassCard accentColor="#3b82f6" glow className="flex flex-col items-center gap-6 py-8" style={{ background: "var(--glass-bg-dark)" }}>
-        <div className="flex gap-1 rounded-full bg-white/[0.06] p-1 text-xs font-medium" role="radiogroup" aria-label="Indicador de agua">
-          {([["glass", "Vaso 3D"], ["bottle", "Botella"]] as const).map(([id, label]) => (
-            <button
-              key={id}
-              role="radio"
-              aria-checked={view === id}
-              onClick={() => setView(id)}
-              className={`rounded-full px-3 py-1 cursor-pointer transition-colors ${view === id ? "bg-white/15 text-white" : "text-white/50 hover:text-white/80"}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        {showGlass ? (
-          <WaterGlass3D fraction={water.fraction} color={waterColor} onError={() => setGlassFailed(true)} />
+        {!glassFailed ? (
+          <WaterGlass3D fraction={water.fraction} color={waterColor} pourKey={pourKey} onError={() => setGlassFailed(true)} />
         ) : (
           <WaterBottle segments={todayByDrink.map((d) => ({ color: d.color, ml: d.ml }))} max={waterGoalMl} />
         )}
@@ -108,7 +75,10 @@ export default function AguaPage() {
           {QUICK_ADDS.map((ml) => (
             <button
               key={ml}
-              onClick={() => addWater(ml)}
+              onClick={() => {
+                addWater(ml);
+                setPourKey((k) => k + 1);
+              }}
               className="rounded-2xl px-4 py-2.5 text-sm font-medium text-white cursor-pointer transition-transform hover:scale-105 bg-white/[0.08] hover:bg-white/[0.14] glass-specular-ring"
             >
               +{ml}ml
