@@ -5,7 +5,7 @@ import { createSceneConfig, type SceneProgressionConfig } from "./scene-progress
  * para montar una escena). Sumar una figura nueva (montaña, gimnasio…) es agregar una entrada acá
  * + su GLB: el motor de etapas, el reproductor, la colección y la interfaz no cambian.
  */
-export type SceneIcon = "forest" | "castle" | "house" | "windmill" | "room" | "bridge" | "skeleton" | "sedan" | "racecar" | "bomb";
+export type SceneIcon = "forest" | "castle" | "house" | "windmill" | "room" | "bridge" | "skeleton" | "sedan" | "racecar" | "bomb" | "island" | "diorama";
 
 /** Colecciones de figuras. Cada una tiene su propio orden y su propio desbloqueo (nunca se mezclan). */
 export type SceneCollectionId = "habitos" | "gym";
@@ -159,8 +159,34 @@ export const BOMB_SCENE: SceneAssetDef = {
   camera: { direction: [-0.56, 0.5, 0.64], fov: 24, targetY: 0.7 },
 };
 
+/** Diorama de playa con barca (GYM/Agua). Paleta y reparto por etapas: adaptación de prototipo. */
+export const DIORAMA_SCENE: SceneAssetDef = {
+  config: createSceneConfig("diorama_progression_001", ["Plato de piedra", "Arena y agua", "Rocas", "Plantas", "Barca y escalera", "Guijarros y rocas menores", "Brotes"], { clips: clipsFor(7) }),
+  name: "Diorama de playa",
+  icon: "diorama",
+  glbUrl: "/models/diorama_progression_001_meshopt.glb",
+  module: "gym",
+  license: "UNVERIFIED",
+  source: "UNVERIFIED",
+  celebrationStages: [7],
+  camera: { direction: [-0.56, 0.53, 0.64], fov: 24, targetY: 0.7 },
+};
+
+/** Isla flotante con cascada, cabaña y molino (GYM/Agua). */
+export const ISLAND_SCENE: SceneAssetDef = {
+  config: createSceneConfig("island_progression_001", ["Roca flotante", "Pasto", "Cascada y rocas", "Árboles", "Cabaña y puente", "Molino y detalles", "Nubes"], { clips: clipsFor(7) }),
+  name: "Isla flotante",
+  icon: "island",
+  glbUrl: "/models/island_progression_001_meshopt.glb",
+  module: "gym",
+  license: "UNVERIFIED",
+  source: "UNVERIFIED",
+  celebrationStages: [7],
+  camera: { direction: [-0.56, 0.53, 0.64], fov: 24, targetY: 0.7 },
+};
+
 /** Figuras de GYM EN ORDEN de desbloqueo (su desbloqueo es independiente del de Hábitos). */
-export const GYM_FIGURES: SceneAssetDef[] = [SKELETON_SCENE, BMW_SCENE, FORMULA2_SCENE, BOMB_SCENE];
+export const GYM_FIGURES: SceneAssetDef[] = [SKELETON_SCENE, BMW_SCENE, FORMULA2_SCENE, BOMB_SCENE, DIORAMA_SCENE, ISLAND_SCENE];
 
 export interface SceneCollectionDef {
   id: SceneCollectionId;

@@ -5,7 +5,7 @@ Dos colecciones de figuras independientes (cada una con 7 etapas por figura y su
 | Colección | Figuras (orden de desbloqueo) |
 |-----------|-------------------------------|
 | `habitos` | Bosque → Castillo → Casa → Molino → Cuarto → **Puente** |
-| `gym` | **Esqueleto → BMW M6 → Fórmula 2 → Bomba** |
+| `gym` | **Esqueleto → BMW M6 → Fórmula 2 → Bomba → Diorama de playa → Isla flotante** |
 
 Etapas de las nuevas: Puente (Base, Terreno, Río y estanque, Puente, Pagoda, Árboles y cerezo, Rocas y linterna) · Esqueleto (Base, Piernas, Pelvis, Columna, Caja torácica, Brazos, Cráneo) · BMW (Base, Chasis, Ruedas, Carrocería, Techo y cristales, Interior, Luces y detalles) · Fórmula 2 (Base, Chasis, Ruedas, Carrocería, Morro y alerón delantero, Trasera y alerón, Cabina y detalles) · Bomba (Base, Dinamita, Cintas, Circuito, Reloj, Cables, Luces).
 
@@ -56,3 +56,6 @@ Gym (agua / calorías / entrenamiento)
 
 ## Pendiente
 Rebote del check verificado solo por código (el panel del navegador de pruebas congela las animaciones); prueba en teléfono real; licencias `UNVERIFIED` de las 5 figuras nuevas (BMW y Esqueleto traen un texto de permiso dentro del archivo, sin verificar; BMW exige atribución); la Bomba no es un tema de gimnasio; ciclo 2 de colecciones; eventos futuros solo reservados (`meal.goal_reached`, `sleep.goal_reached`, `kegel.completed`, `meditation.completed`).
+
+## Islas (GYM/Agua) — añadidas a la colección `gym`
+`diorama 2.blend` (Diorama de playa: Plato de piedra, Arena y agua, Rocas, Plantas, Barca y escalera, Guijarros y rocas menores, Brotes; 3 966 tris, 19 draw calls, 0.14 MB) e `Island.blend` (Isla flotante: Roca flotante, Pasto, Cascada y rocas, Árboles, Cabaña y puente, Molino y detalles, Nubes; 43 321 tris, 48 draw calls, 0.60 MB). Categorías Agua, Gym y Comida comparten la fila (6 figuras; se separará por categoría más adelante). Build: `tools/3d/blender/30_island_7day.py`, `31_diorama_7day.py`; export `32_/33_`. Licencias `UNVERIFIED`, `publishable: false`.

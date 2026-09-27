@@ -33,6 +33,13 @@ export function FigureIcon({ icon, size = 26 }: { icon: SceneIcon; size?: number
           <circle {...common} cx="17.5" cy="17" r="1.9" />
         </>
       )}
+      {icon === "island" && <path {...common} d="M3 12c2 0 3-1.6 5-1.6S11 12 13 12s3-1.6 5-1.6S20 12 21 12M5 12c1 3.5 3 5.5 5 8.5M19 12c-1 3.5-3 5.5-5 8.5M9 9V6.5M9 6.5l2-1.2M9 6.5 7 5.3" />}
+      {icon === "diorama" && (
+        <>
+          <ellipse {...common} cx="12" cy="15" rx="9" ry="4" />
+          <path {...common} d="M3 15v2.2c0 2 4 3.8 9 3.8s9-1.8 9-3.8V15M10 13.5V7.5M10 9.5l3-2M10 11l-2.5-1.5" />
+        </>
+      )}
       {icon === "bomb" && (
         <>
           <circle {...common} cx="10.5" cy="14.5" r="6" />

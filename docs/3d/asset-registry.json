@@ -1118,6 +1118,208 @@
       "glb": {
         "meshopt": "public/models/bomb_progression_001_meshopt.glb"
       }
+    },
+    {
+      "category": "progression-scene",
+      "progressionStages": 7,
+      "background": "transparent",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "format": "blend -> glb (meshopt)",
+      "exports": {
+        "lights": false,
+        "cameras": false,
+        "background": false,
+        "fog": false
+      },
+      "mobileReady": false,
+      "mobile": {
+        "status": "cumple el presupuesto de gama media en medicion de escritorio; SIN prueba en telefono real",
+        "budget": {
+          "midRange": {
+            "drawCalls": 150,
+            "triangles": 150000,
+            "glbMbMeshopt": 3
+          }
+        },
+        "missing": [
+          "FPS y memoria en telefono real"
+        ]
+      },
+      "id": "diorama_progression_001",
+      "name": "Diorama de playa (plato con barca)",
+      "module": "gym",
+      "collectionOrder": 5,
+      "originalFile": "biblioteca de assets/GYM/Agua/diorama 2.blend",
+      "originalSha256": "b1e2a5b0832f9fd8a685d17b353ec3d2b1d833be96307915526aae5df34220b8",
+      "workingFile": "biblioteca de assets/_trabajo/diorama_progression.blend",
+      "stages": {
+        "count": 7,
+        "unit": "dias completados de la figura",
+        "thresholds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "names": [
+          "Plato de piedra",
+          "Arena y agua",
+          "Rocas",
+          "Plantas",
+          "Barca y escalera",
+          "Guijarros y rocas menores",
+          "Brotes"
+        ],
+        "celebrationStages": [
+          7
+        ],
+        "clips": {
+          "1": "STAGE_1",
+          "2": "STAGE_2",
+          "3": "STAGE_3",
+          "4": "STAGE_4",
+          "5": "STAGE_5",
+          "6": "STAGE_6",
+          "7": "STAGE_7"
+        }
+      },
+      "build": "tools/3d/blender/31_diorama_7day.py + 33_export_diorama.py",
+      "inspection": {
+        "objects": "36 mallas (20 con Mirror), 4 luces solares, 1 cámara",
+        "tris": 3966,
+        "materials": "7 (todos grises 0.8)",
+        "textures": "ninguna",
+        "licenseEvidence": "ninguna dentro del archivo"
+      },
+      "notes": "Ubicado por el dueño en GYM/Agua; se integra en la colección gym (compartida por Agua, Gym y Comida).",
+      "adaptations": [
+        "Modificadores Mirror horneados",
+        "Paleta asignada por pieza (arena, agua, roca, planta, madera): el original es monocromo",
+        "Luces y cámara eliminadas"
+      ],
+      "metrics": {
+        "triangles": 3966,
+        "drawCallsAtCompletion": 19,
+        "materials": 6,
+        "textures": 0,
+        "nodes": 36,
+        "glbMb": {
+          "raw": 0.16,
+          "meshopt": 0.138,
+          "draco": 0.084
+        }
+      },
+      "glb": {
+        "meshopt": "public/models/diorama_progression_001_meshopt.glb"
+      }
+    },
+    {
+      "category": "progression-scene",
+      "progressionStages": 7,
+      "background": "transparent",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "format": "blend -> glb (meshopt)",
+      "exports": {
+        "lights": false,
+        "cameras": false,
+        "background": false,
+        "fog": false
+      },
+      "mobileReady": false,
+      "mobile": {
+        "status": "cumple el presupuesto de gama media en medicion de escritorio; SIN prueba en telefono real",
+        "budget": {
+          "midRange": {
+            "drawCalls": 150,
+            "triangles": 150000,
+            "glbMbMeshopt": 3
+          }
+        },
+        "missing": [
+          "FPS y memoria en telefono real"
+        ]
+      },
+      "id": "island_progression_001",
+      "name": "Isla flotante (cascada, cabaña y molino)",
+      "module": "gym",
+      "collectionOrder": 6,
+      "originalFile": "biblioteca de assets/GYM/Agua/Island.blend",
+      "originalSha256": "9c781aad6aac69921ad4c9788c24ec6d9bf104afad718c02cb316bca71d68d55",
+      "workingFile": "biblioteca de assets/_trabajo/island_progression.blend",
+      "stages": {
+        "count": 7,
+        "unit": "dias completados de la figura",
+        "thresholds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "names": [
+          "Roca flotante",
+          "Pasto",
+          "Cascada y rocas",
+          "Árboles",
+          "Cabaña y puente",
+          "Molino y detalles",
+          "Nubes"
+        ],
+        "celebrationStages": [
+          7
+        ],
+        "clips": {
+          "1": "STAGE_1",
+          "2": "STAGE_2",
+          "3": "STAGE_3",
+          "4": "STAGE_4",
+          "5": "STAGE_5",
+          "6": "STAGE_6",
+          "7": "STAGE_7"
+        }
+      },
+      "build": "tools/3d/blender/30_island_7day.py + 32_export_island.py",
+      "inspection": {
+        "objects": "100 mallas (1 con Boolean), 2 luces, 1 cámara",
+        "tris": 43321,
+        "materials": 51,
+        "textures": "ninguna útil (miniaturas de 256 px embebidas)",
+        "licenseEvidence": "ninguna dentro del archivo"
+      },
+      "notes": "Ubicado por el dueño en GYM/Agua. En el original la colección 'Collection 1' (la isla) tiene el render desactivado; solo se veían las nubes. Se activa para trabajar.",
+      "adaptations": [
+        "Colecciones ocultas activadas",
+        "Materiales planos (51 → 22)",
+        "Nubes (32 cubos) unidas en 7 objetos y acercadas un 30% a la isla",
+        "Cascada inferior acortada de 4 m a ~1.5 m",
+        "Boolean horneado"
+      ],
+      "metrics": {
+        "triangles": 43321,
+        "drawCallsAtCompletion": 48,
+        "materials": 22,
+        "textures": 0,
+        "nodes": 49,
+        "glbMb": {
+          "raw": 1.69,
+          "meshopt": 0.598,
+          "draco": 0.248
+        }
+      },
+      "glb": {
+        "meshopt": "public/models/island_progression_001_meshopt.glb"
+      }
     }
   ],
   "replacementPlan": "Sustituir los cinco assets sin licencia por assets propios, CC0, con licencia comercial o creados para Vida Total. Cambiar colores/materiales no los vuelve propios ni publicables.",
@@ -1172,7 +1374,9 @@
         "skeleton_progression_001",
         "bmw_progression_001",
         "formula2_progression_001",
-        "bomb_progression_001"
+        "bomb_progression_001",
+        "diorama_progression_001",
+        "island_progression_001"
       ],
       "unlockRule": "igual que habitos, con su propio desbloqueo (nunca se mezcla con el de habitos)",
       "progressUnit": "repeticiones acumuladas del habito de categoria gym/agua/comida"

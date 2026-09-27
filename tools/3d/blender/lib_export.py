@@ -59,7 +59,11 @@ def export_figure(blend_path, out_dir, name, clutter_kinds=("pop", "drop_small")
                   export_animations=True, export_animation_mode="NLA_TRACKS", export_force_sampling=True,
                   export_optimize_animation_size=True, use_visible=True)
         kw.update(extra)
-        r = bpy.ops.export_scene.gltf(**kw)
+        # En una sesión con interfaz, tras abrir un archivo el contexto no trae `active_object` y el exportador falla.
+        act = next((o for o in bpy.data.objects if "vt_stage" in o.keys()), None)
+        wins = list(bpy.context.window_manager.windows)
+        with bpy.context.temp_override(window=wins[0] if wins else None, active_object=act, selected_objects=[], selected_editable_objects=[]):
+            r = bpy.ops.export_scene.gltf(**kw)
         res[fname] = {"op": list(r), "seconds": round(time.time() - t, 1), "mb": round(os.path.getsize(path) / 1e6, 3)}
 
     do_export(name + ".glb", {})

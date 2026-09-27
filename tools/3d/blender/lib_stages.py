@@ -736,6 +736,8 @@ def include_everything():
     def walk(lc):
         lc.exclude = False
         lc.hide_viewport = False
+        lc.collection.hide_render = False
+        lc.collection.hide_viewport = False
         for ch in lc.children:
             walk(ch)
     walk(bpy.context.view_layer.layer_collection)

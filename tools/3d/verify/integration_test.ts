@@ -40,13 +40,14 @@ eq("sourceId explícito manda", habitProgressSource({ categoryId: "trabajo", sou
 
 // 2) Colecciones independientes
 eq("habitos tiene 6 figuras", sceneFigures("habitos").map((f) => f.name), ["Bosque", "Castillo", "Casa", "Molino", "Cuarto", "Puente"]);
-eq("gym tiene 4 figuras", sceneFigures("gym").map((f) => f.name), ["Esqueleto", "BMW M6", "Fórmula 2", "Bomba"]);
+eq("gym tiene 6 figuras", sceneFigures("gym").map((f) => f.name), ["Esqueleto", "BMW M6", "Fórmula 2", "Bomba", "Diorama de playa", "Isla flotante"]);
 eq("7 etapas cada una", [...sceneFigures("habitos"), ...sceneFigures("gym")].every((f) => f.config.totalStages === 7), true);
 const gymCfg = figureConfigsFor("gym");
 const st = (t: number) => collectionStateFor(gymCfg, t).figures.map((f) => f.status[0] + f.stage);
-eq("gym 0", st(0), ["c0", "l0", "l0", "l0"]);
-eq("gym 7 desbloquea BMW", st(7), ["c7", "c0", "l0", "l0"]);
-eq("gym 28 todo", st(28), ["c7", "c7", "c7", "c7"]);
+eq("gym 0", st(0), ["c0", "l0", "l0", "l0", "l0", "l0"]);
+eq("gym 7 desbloquea BMW", st(7), ["c7", "c0", "l0", "l0", "l0", "l0"]);
+eq("gym 42 todo", st(42), ["c7", "c7", "c7", "c7", "c7", "c7"]);
+eq("gym 28 desbloquea el diorama", st(28), ["c7", "c7", "c7", "c7", "c0", "l0"]);
 eq("gym: completar el día 7 desbloquea la siguiente", collectionChange(gymCfg, 6, 7).unlockedFigureId, "bmw_progression_001");
 eq("hábitos no se afecta por gym", collectionStateFor(figureConfigsFor("habitos"), 7).figures.map((f) => f.status[0] + f.stage), ["c7", "c0", "l0", "l0", "l0", "l0"]);
 
