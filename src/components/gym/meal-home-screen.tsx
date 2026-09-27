@@ -9,9 +9,9 @@
  *   1 = detalle de nutrientes del día: número + gráfico elegido (`CalorieGaugeDisplay`, sin tarjeta,
  *       directo sobre el fondo) y, debajo, las 4 categorías de nutrientes (`NutrientCategoryTabs`,
  *       ahí viven los macros — no se repiten en ningún otro lado).
- *   2 = calendario de racha del año en DORADO (`CalorieYearView`, modo simple, igual que Hábitos) —
- *       tocar el fuego de abajo lleva a la página dedicada `/gym/calorias/rachas`, que sí distingue
- *       rojo (registrado) / verde (perfecto).
+ *   2 = calendario de racha del año (`CalorieYearView`) — cada día se colorea según el largo de la
+ *       racha a la que pertenece: aislado = dorado, racha de 2-6 días = rojo, racha de 7+ = verde.
+ *       Es la ÚNICA pantalla de racha (no hay página aparte, sería repetir lo mismo dos veces).
  * Las vistas 1 y 2 son del DÍA (no cambian al swipear entre comidas), así que solo la vista 0 vive
  * dentro del carrusel horizontal de comidas.
  *
@@ -348,7 +348,6 @@ export function MealHomeScreen() {
                 loggedDayKeys={loggedDays}
                 todayISO={todayISO}
                 streakCurrent={loggedStreak.current}
-                onFlameClick={() => router.push("/gym/calorias/rachas")}
                 viewIndex={2}
                 viewCount={VIEW_COUNT}
               />

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronRight, Scale } from "lucide-react";
+import { ArrowLeft, Scale } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -209,15 +209,7 @@ export default function ProgresoPage() {
 
       {/* 3. Mis Rachas */}
       <GlassCard padding="md" className="flex flex-col gap-4" style={{ background: "rgba(10,10,14,0.55)" }}>
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white/85">Mis Rachas</h2>
-          <Link
-            href="/gym/calorias/rachas"
-            className="flex items-center gap-1 text-xs font-medium text-white/50 hover:text-white transition-colors"
-          >
-            Ver calendario completo <ChevronRight size={14} />
-          </Link>
-        </div>
+        <h2 className="text-sm font-semibold text-white/85">Mis Rachas</h2>
         <div className="grid grid-cols-2 gap-3">
           <StreakMini label="Días Registrados" current={loggedStreak.current} best={loggedStreak.best} color="var(--gym)" />
           <StreakMini label="Días Perfectos" current={perfectStreak.current} best={perfectStreak.best} color="#22c55e" />
