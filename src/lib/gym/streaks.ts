@@ -1,5 +1,6 @@
 import { format, isSameDay, subDays } from "date-fns";
 import type { LoggedFood } from "@/lib/types";
+import { calorieStatus } from "./calorie-state";
 
 /** Groups logged foods by calendar-day key (yyyy-MM-dd, local time). Entries
  * the user un-checked (activo === false) are excluded — they don't count
@@ -20,13 +21,21 @@ function dayKcal(foods: LoggedFood[]): number {
   return foods.reduce((sum, f) => sum + f.calorias, 0);
 }
 
-/** A day counts as "perfect" when its total kcal lands within ±10% of the goal. */
-function isPerfectDay(foods: LoggedFood[], calorieGoal: number): boolean {
+/** Primer día que usa el criterio nuevo (calorie-state.ts). Los días ANTERIORES conservan la regla vieja (±10 %) para que
+ * ninguna racha ya acumulada cambie retroactivamente. */
+export const GOAL_RULE_FROM = "2026-09-27";
+
+/**
+ * Un día está "cumplido" cuando llegó a la meta (mismo criterio que el arco y los gráficos 3D: calorie-state.ts) —
+ * es decir, deja de ser "bajo": logrado o excedido. Para días anteriores a `GOAL_RULE_FROM` se mantiene la regla
+ * vieja de ±10 % de la meta.
+ */
+function isPerfectDay(foods: LoggedFood[], calorieGoal: number, dayKey: string): boolean {
   if (foods.length === 0) return false;
   const total = dayKcal(foods);
-  const low = calorieGoal * 0.9;
-  const high = calorieGoal * 1.1;
-  return total >= low && total <= high;
+  if (dayKey < GOAL_RULE_FROM) return total >= calorieGoal * 0.9 && total <= calorieGoal * 1.1;
+  const status = calorieStatus(total, calorieGoal);
+  return status !== "vacio" && status !== "bajo";
 }
 
 export interface StreakResult {
@@ -41,7 +50,7 @@ export interface StreakResult {
  */
 function computeStreak(
   loggedFoods: LoggedFood[],
-  predicate: (foods: LoggedFood[]) => boolean,
+  predicate: (foods: LoggedFood[], dayKey: string) => boolean,
 ): StreakResult {
   const byDay = groupLoggedFoodsByDay(loggedFoods);
   if (byDay.size === 0) return { current: 0, best: 0 };
@@ -55,7 +64,7 @@ function computeStreak(
   for (;;) {
     const key = format(cursor, "yyyy-MM-dd");
     const foods = byDay.get(key) ?? [];
-    if (predicate(foods)) {
+    if (predicate(foods, key)) {
       current += 1;
       cursor = subDays(cursor, 1);
     } else {
@@ -65,7 +74,7 @@ function computeStreak(
 
   // Best streak: sort all qualifying days and find the longest consecutive run.
   const qualifyingDays = Array.from(byDay.entries())
-    .filter(([, foods]) => predicate(foods))
+    .filter(([key, foods]) => predicate(foods, key))
     .map(([key]) => key)
     .sort();
 
@@ -97,7 +106,7 @@ export function computePerfectDaysStreak(
   loggedFoods: LoggedFood[],
   calorieGoal: number,
 ): StreakResult {
-  return computeStreak(loggedFoods, (foods) => isPerfectDay(foods, calorieGoal));
+  return computeStreak(loggedFoods, (foods, dayKey) => isPerfectDay(foods, calorieGoal, dayKey));
 }
 
 /** Whether the given date has at least one logged food entry. */
