@@ -9,8 +9,14 @@ import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
 import { ManualEntryModal } from "@/components/gym/manual-entry-modal";
 import { BASE_FOODS, defaultPortions, scaleNutrition } from "@/lib/food-utils";
+import { MONO_FONT } from "@/lib/ui/mono-font";
 import type { Food } from "@/lib/types";
 import type { AnalyzedFoodItem } from "@/app/api/food/analyze/route";
+
+// Rediseño Calorías, etapa 7 (visual, sin tocar la lógica de reconocimiento de voz): mismo fondo
+// oscuro con grano que el resto de las pantallas rediseñadas.
+const NOISE =
+  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.07'/></svg>\")";
 
 // Mismo sessionStorage que usa el Escáner (ver escaner/page.tsx y
 // escaner/resultados/page.tsx) — la Voz reutiliza esa pantalla de
@@ -211,12 +217,16 @@ export default function VozPage() {
   }
 
   return (
-    <div className="flex flex-col gap-5 pb-10">
+    <div className="relative min-h-screen">
+      <div className="fixed inset-0" style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }} aria-hidden />
+      <div className="relative z-10 flex flex-col gap-5 pb-10">
       <header className="flex items-center gap-3 pt-2">
         <Link href="/gym/calorias" className="text-white/50 hover:text-white transition-colors shrink-0">
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Registro por voz</h1>
+        <h1 className="text-[15px] uppercase tracking-[0.12em] text-white" style={MONO_FONT}>
+          Registro por voz
+        </h1>
       </header>
 
       <CaloriasMethodNav />
@@ -310,6 +320,7 @@ export default function VozPage() {
       )}
 
       <ManualEntryModal open={manualOpen} onClose={() => setManualOpen(false)} />
+      </div>
     </div>
   );
 }
