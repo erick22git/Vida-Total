@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AnimatePresence, motion, type PanInfo } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Plus, SlidersHorizontal } from "lucide-react";
 import { todayISO, useHabitsStore } from "@/lib/store/habitsStore";
 import { animationEngine } from "@/lib/animations/animation-engine";
@@ -20,24 +20,14 @@ import { MilestoneCelebration } from "@/components/habitos/milestone-celebration
 import { promptForHabit, useHabitPromptStore } from "@/lib/habits/habit-prompts";
 import { getProgressSource } from "@/lib/habits/progress-sources";
 import { flowTrace } from "@/lib/habits/flow-debug";
+import { MONO_FONT } from "@/lib/ui/mono-font";
+import { SwipeCarouselDots, SwipeCarouselStage, swipeSlide, useSwipeCarousel } from "@/components/shared/swipe-carousel";
 
-const MONO = { fontFamily: "var(--font-geist-mono), monospace" } as const;
+const MONO = MONO_FONT;
 
 // Textura de grano sutil del fondo (referencia: fondo gris oscuro granulado).
 const NOISE =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.07'/></svg>\")";
-
-/** Distancia/velocidad mínimas del swipe horizontal para cambiar de hábito. */
-const SWIPE_OFFSET = 70;
-const SWIPE_VELOCITY = 450;
-
-// Cambio de hábito: el actual sale y el siguiente entra desde el lado
-// contrario, con un poco de escala/opacidad para dar profundidad.
-const slide = {
-  enter: (dir: number) => ({ x: dir * 110, opacity: 0, scale: 0.9 }),
-  center: { x: 0, opacity: 1, scale: 1 },
-  exit: (dir: number) => ({ x: dir * -110, opacity: 0, scale: 0.9 }),
-};
 
 // Cambio de vista (vertical): la nueva sube/baja desde el borde.
 const slideY = {
@@ -61,7 +51,6 @@ function HabitScreen() {
     const i = habits.findIndex((h) => h.id === params.get("id"));
     return i >= 0 ? i : 0;
   });
-  const [direction, setDirection] = useState(1);
   const [view, setView] = useState(0);
   const [viewDir, setViewDir] = useState(1);
   const gestureStart = useRef<{ x: number; y: number } | null>(null);
@@ -94,20 +83,21 @@ function HabitScreen() {
     window.history.replaceState(null, "", `/habitos/habito?id=${encodeURIComponent(habit.id)}${debug}`);
   }, [habit]);
 
-  const goTo = useCallback(
-    (next: number) => {
-      if (next < 0 || next >= habits.length || next === safeIndex) return;
-      const dir = next > safeIndex ? 1 : -1;
-      setDirection(dir);
-      setIndex(next);
-      animationEngine.emit({
-        type: dir > 0 ? "habit.swipeNext" : "habit.swipePrevious",
-        tier: "action",
-        entityId: habits[next].id,
-      });
-    },
-    [habits, safeIndex],
-  );
+  const { direction, setDirection, goTo, onDragEnd } = useSwipeCarousel({
+    index: safeIndex,
+    length: habits.length,
+    onIndexChange: useCallback(
+      (next: number, dir: 1 | -1) => {
+        setIndex(next);
+        animationEngine.emit({
+          type: dir > 0 ? "habit.swipeNext" : "habit.swipePrevious",
+          tier: "action",
+          entityId: habits[next].id,
+        });
+      },
+      [habits],
+    ),
+  });
 
   const cancelAutoReturn = useCallback(() => {
     if (autoReturn.current) {
@@ -150,7 +140,7 @@ function HabitScreen() {
       setIndex(i);
       setView(0);
     });
-  }, []);
+  }, [setDirection]);
 
   useAnimationEvent((e) => {
     if (e.type !== "scene.stage.changed" || !habit || e.entityId !== habit.id) return;
@@ -209,11 +199,6 @@ function HabitScreen() {
     return () => window.removeEventListener("keydown", onKey);
   }, [goTo, goView, safeIndex, view]);
 
-  function onDragEnd(_: unknown, info: PanInfo) {
-    if (info.offset.x < -SWIPE_OFFSET || info.velocity.x < -SWIPE_VELOCITY) goTo(safeIndex + 1);
-    else if (info.offset.x > SWIPE_OFFSET || info.velocity.x > SWIPE_VELOCITY) goTo(safeIndex - 1);
-  }
-
   return (
     // z-[45]: por encima del BottomNav (z-40) para que la pantalla sea
     // completa como en la referencia, pero por debajo de los modales (z-50).
@@ -245,7 +230,7 @@ function HabitScreen() {
             <motion.h1
               key={habit?.id ?? "none"}
               custom={direction}
-              variants={slide}
+              variants={swipeSlide}
               initial="enter"
               animate="center"
               exit="exit"
@@ -268,33 +253,13 @@ function HabitScreen() {
       </header>
 
       {/* Indicador del hábito actual — discreto, no es una tab bar. */}
-      {habits.length > 1 && (
-        <div className="h-5 shrink-0 flex items-center justify-center gap-1" style={MONO}>
-          {habits.length > 8 ? (
-            <span className="text-[11px] text-white/45 tabular-nums">
-              {safeIndex + 1} / {habits.length}
-            </span>
-          ) : (
-            habits.map((h, i) => (
-              <button
-                key={h.id}
-                onClick={() => goTo(i)}
-                aria-label={`Ir a ${h.name}`}
-                className="w-4 h-4 flex items-center justify-center cursor-pointer"
-              >
-                <span
-                  className="rounded-full transition-all"
-                  style={{
-                    width: i === safeIndex ? 7 : 5,
-                    height: i === safeIndex ? 7 : 5,
-                    background: i === safeIndex ? "#fff" : "rgba(255,255,255,0.3)",
-                  }}
-                />
-              </button>
-            ))
-          )}
-        </div>
-      )}
+      <SwipeCarouselDots
+        length={habits.length}
+        index={safeIndex}
+        onSelect={goTo}
+        getKey={(i) => habits[i].id}
+        getAriaLabel={(i) => `Ir a ${habits[i].name}`}
+      />
 
       <main
         className="flex-1 min-h-0 relative touch-none"
@@ -304,24 +269,8 @@ function HabitScreen() {
         onWheel={onStageWheel}
       >
         {habit ? (
-          <AnimatePresence mode="popLayout" initial={false} custom={direction}>
-            <motion.div
-              key={habit.id}
-              custom={direction}
-              variants={slide}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ type: "spring", stiffness: 380, damping: 34 }}
-              // Swipe horizontal = otro hábito.
-              drag="x"
-              dragDirectionLock
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={habits.length > 1 ? 0.55 : 0.12}
-              dragSnapToOrigin
-              onDragEnd={onDragEnd}
-              className="absolute inset-0"
-            >
+          // Swipe horizontal = otro hábito (mismo carrusel que usa Calorías para navegar entre comidas).
+          <SwipeCarouselStage itemKey={habit.id} direction={direction} length={habits.length} onDragEnd={onDragEnd}>
               <AnimatePresence mode="popLayout" initial={false} custom={viewDir}>
                 <motion.div
                   key={view}
@@ -373,8 +322,7 @@ function HabitScreen() {
                   {view === 2 && <FigureView habit={habit} buildFromTotal={build && build.habitId === habit.id ? build.fromTotal : null} />}
                 </motion.div>
               </AnimatePresence>
-            </motion.div>
-          </AnimatePresence>
+          </SwipeCarouselStage>
         ) : (
           <div className="w-full h-full flex items-center justify-center px-6">
             <button onClick={() => setCreateOpen(true)} className="w-[68vw] max-w-[340px] cursor-pointer">
