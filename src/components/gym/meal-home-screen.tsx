@@ -19,6 +19,7 @@ import { ChevronLeft, Plus } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { HabitOrb } from "@/components/habitos/habit-orb";
 import { MealCard } from "@/components/gym/meal-card";
+import { AddFoodMenu } from "@/components/gym/add-food-menu";
 import { useGymStore, useLoggedFoodsForDate } from "@/lib/store/gymStore";
 import { activeLoggedFoods } from "@/lib/food-utils";
 import { mealForTime } from "@/lib/gym/meal-time";
@@ -56,7 +57,8 @@ export function MealHomeScreen() {
   );
   const hasFood = foodsForMeal.length > 0;
   const totalKcal = foodsForMeal.reduce((sum, f) => sum + f.calorias, 0);
-  const openMealCircle = () => (hasFood ? setExpanded(true) : router.push(`/gym/calorias/buscar-nuevo?meal=${meal}`));
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const openMealCircle = () => (hasFood ? setExpanded(true) : setAddMenuOpen(true));
 
   // El título sigue la hora real mientras el usuario no navegó a mano — si ya está mirando otra
   // comida, no se lo salteamos de abajo cada minuto.
@@ -88,7 +90,7 @@ export function MealHomeScreen() {
 
       <header className="flex items-center justify-between px-5 h-12">
         <button
-          onClick={() => router.push(`/gym/calorias/buscar-nuevo?meal=${meal}`)}
+          onClick={() => setAddMenuOpen(true)}
           aria-label="Agregar comida"
           className="w-10 h-10 flex items-center justify-center cursor-pointer"
         >
@@ -194,7 +196,7 @@ export function MealHomeScreen() {
                     meal={meal}
                     date={new Date()}
                     foods={loggedFoods.filter((f) => f.meal === meal)}
-                    onAdd={() => router.push(`/gym/calorias/buscar-nuevo?meal=${meal}`)}
+                    onAdd={() => setAddMenuOpen(true)}
                   />
                 </motion.div>
               )}
@@ -202,6 +204,8 @@ export function MealHomeScreen() {
           </div>
         </SwipeCarouselStage>
       </main>
+
+      <AddFoodMenu open={addMenuOpen} onClose={() => setAddMenuOpen(false)} meal={meal} />
     </div>
   );
 }
