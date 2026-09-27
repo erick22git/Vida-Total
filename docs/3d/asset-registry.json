@@ -1517,6 +1517,64 @@
       "glb": {
         "meshopt": "public/models/gauge_canister_001_meshopt.glb"
       }
+    },
+    {
+      "id": "gauge_meter_001",
+      "name": "Medidor de energía (Energy Meter - Open Gauges) — gráfico de calorías",
+      "module": "gym",
+      "category": "calorie-gauge",
+      "sceneCollection": "calorias-graficos",
+      "background": "transparent",
+      "source": "Sketchfab «Energy Meter - Open Gauges» https://sketchfab.com/3d-models/energy-meter-open-gauges-6c68aa444f4c42729e2b485f50558fc9 (FBX descargado por el dueño; la página se leyó, no se descargó nada desde aquí)",
+      "license": "CC-BY-4.0 (según la página de Sketchfab; sin verificar más allá de esa lectura)",
+      "author": "digitalurban",
+      "attribution": {
+        "required": true,
+        "text": "«Energy Meter - Open Gauges» por digitalurban (Sketchfab), licencia CC BY 4.0. Modificado: textura del dial propia, aguja recortada y estructura reducida.",
+        "url": "https://sketchfab.com/3d-models/energy-meter-open-gauges-6c68aa444f4c42729e2b485f50558fc9",
+        "license_url": "https://creativecommons.org/licenses/by/4.0/",
+        "status": "PENDIENTE: mostrar crédito visible (créditos/acerca de) antes de publicar"
+      },
+      "publishable": false,
+      "licenseNote": "CC BY 4.0 permite uso comercial y modificación CON atribución. Queda publishable:false hasta (1) agregar el crédito visible en la app y (2) verificar la licencia con evidencia. La textura del dial es propia (no se usa Energy_(1).png).",
+      "originalFile": "biblioteca de assets/GYM/calorias/contador/source/WindGauge_SmallerTest v1.fbx",
+      "originalSha256": "65bdf56f75324e5f4fc19919d82f7cbb49247d514c6b950120eb91e28d18bb4c",
+      "build": "tools/3d/blender/62_meter_build.py",
+      "dialTexture": "tools/3d/blender/61_meter_dial_texture.py",
+      "workingFile": "biblioteca de assets/_trabajo/gauge_meter.blend",
+      "inspection": {
+        "objects": "9 mallas (soporte, engranajes 30/14 dientes, aguja, montura, cristal, dial…) ≈ 11 700 tris, coincide con los 11,8 k de Sketchfab; además cámara, luz y suelo",
+        "text": "El texto del dial («WATTS/PER HOUR», «COFFEE MACHINE»…) es TEXTURA (Energy_(1).png, sin enlazar en el FBX), no malla",
+        "importNote": "Blender 5.2: el importador de FBX falla con luces (lamp.cycles.cast_shadow); el script lo evita"
+      },
+      "structure": [
+        "soporte",
+        "marco",
+        "dial (textura propia)",
+        "aguja (origen en el eje)",
+        "cristal"
+      ],
+      "adaptations": [
+        "Descartados engranajes, soportes internos, cámara, luz y suelo",
+        "Dial con textura propia: arco de 270°, amarillo→verde hasta la meta (2/3), rojo pasada la meta, marcas BAJO / META / EXCEDIDO",
+        "Aguja de doble punta recortada (queda un contrapeso corto); se elimina la acción del FBX que reescribía su posición",
+        "Número de kcal y estado = etiqueta VIVA (canvas → plano) delante del cristal, no parte de la textura",
+        "El modelo recibe SIEMPRE el estado de calorie-state.ts (arcFraction); no calcula su porcentaje"
+      ],
+      "behavior": "la aguja recorre 270° con la meta a 2/3 (igual que el arco) · etiqueta: kcal grande + estado (SIN ANOTAR / BAJO / META / EXCEDIDO) con el color del estado · desde 120 % vibra y brilla (mismas clases que el arco)",
+      "metrics": {
+        "triangles": 3660,
+        "drawCalls": 6,
+        "textures": "1 JPEG 1024 (dial)",
+        "glbMb": {
+          "raw": 0.213,
+          "meshopt": 0.152
+        }
+      },
+      "mobileReady": false,
+      "glb": {
+        "meshopt": "public/models/gauge_meter_001_meshopt.glb"
+      }
     }
   ],
   "replacementPlan": "Sustituir los cinco assets sin licencia por assets propios, CC0, con licencia comercial o creados para Vida Total. Cambiar colores/materiales no los vuelve propios ni publicables.",
@@ -1581,7 +1639,8 @@
     },
     "calorias-graficos": {
       "order": [
-        "gauge_canister_001"
+        "gauge_canister_001",
+        "gauge_meter_001"
       ],
       "note": "Valor continuo (no etapas de 7 días): cada modelo recibe el CalorieState de src/lib/gym/calorie-state.ts. Registro en runtime: src/lib/3d/gauge-registry.ts"
     }

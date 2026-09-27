@@ -35,3 +35,6 @@ Ninguno de los cinco trae origen ni licencia registrados. Hasta tenerlos, todos 
 
 ## Bote de gritos (Scream Canister) — gráfico de calorías
 `biblioteca de assets/GYM/calorias/Bote de gritos` (FBX + 4 PNG de 4096 px). **Asset de Monsters, Inc. (Disney/Pixar): referencia/prototipo NO comercial y NO publicable tal cual.** Está en el registro con `publishable: false` y **debe reemplazarse por un modelo propio antes de cualquier lanzamiento comercial**. Integrado como opción del selector de gráficos de Calorías (`src/lib/3d/gauge-registry.ts`); 4 620 tris, 8 draw calls, 0,19 MB tras reducir las texturas (72 MB → ~0,15 MB).
+
+## Medidor de energía (Energy Meter - Open Gauges) — gráfico de calorías
+`biblioteca de assets/GYM/calorias/contador` (FBX «WindGauge_SmallerTest v1» + textura). Coincide con el modelo de Sketchfab «Energy Meter - Open Gauges» (digitalurban, 11,8 k tris). **Licencia CC BY 4.0 según la página (solo leída): exige atribución.** Queda `publishable: false` hasta agregar el crédito visible en la app (créditos/acerca de) y verificar la licencia con evidencia; el texto de atribución está en `asset-registry.json`. El texto original del dial es textura, no malla: se reemplazó por una textura propia con marcas BAJO / META / EXCEDIDO, y el número de kcal + estado son una etiqueta viva. 3 660 tris, 6 draw calls, 0,15 MB.

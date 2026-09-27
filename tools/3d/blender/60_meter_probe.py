@@ -8,8 +8,11 @@ except Exception as e: print("cycles", e)
 bpy.context.scene.render.engine = "CYCLES"
 # Blender 5.2: el importador de FBX aún escribe lamp.cycles.cast_shadow (propiedad retirada) → se re-crea como propiedad ficticia
 _l = bpy.data.lights.new("_t", "POINT")
-if not hasattr(_l.cycles, "cast_shadow"):
-    type(_l.cycles).cast_shadow = bpy.props.BoolProperty(default=True)
+_cls = type(_l.cycles)
+try:
+    if hasattr(_cls, "cast_shadow"): delattr(_cls, "cast_shadow")
+except Exception: pass
+_cls.cast_shadow = bpy.props.BoolProperty(default=True)
 bpy.data.lights.remove(_l)
 bpy.ops.import_scene.fbx(filepath=BASE + "source/WindGauge_SmallerTest v1.fbx")
 bpy.context.view_layer.update()
