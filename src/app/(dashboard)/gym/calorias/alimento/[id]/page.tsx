@@ -1,51 +1,53 @@
 "use client";
 
 /**
- * Rediseño Calorías, etapa 3 (WIP, estilo provisional): fondo oscuro (no la foto del módulo), la barra
- * de gramos reemplaza los botones "Cantidad"/"Porción" con teclado modal, "Información Nutricional" y
- * "Micronutrientes" se fusionaron en una sola tarjeta con pestañas. Ahora también sirve para EDITAR un
- * alimento ya registrado (`?entryId=`, botón "Actualizar" + eliminar) además de agregar uno nuevo — antes
- * eso vivía aparte, en el modal `FoodEntrySheet` (que sigue existiendo y se sigue usando desde MealCard;
- * no se tocó esa parte todavía, ver informe de la etapa).
+ * Rediseño de detalle de alimento (fotos de referencia del usuario): sin tarjetas — ícono/nombre,
+ * kcal+macros, anillo de distribución y las dos ruedas (gramos / cantidad) van directo sobre el
+ * fondo oscuro. Dos carruseles nuevos, con la misma mecánica que ya usa el resto del rediseño:
+ *   - HORIZONTAL (los puntos de arriba, bajo el título): un alimento de la comida a la vez — cada
+ *     alimento YA registrado en esta comida (mismo día) es una "página"; deslizar cambia de uno a
+ *     otro. Solo aplica editando (`entryId`); agregando uno nuevo desde el buscador no hay carrusel.
+ *   - VERTICAL (dentro del bloque de números, con sus propios 3 puntos): kcal+macros → información
+ *     nutricional → micronutrientes.
+ * El botón "Actualizar" (editando) empieza negro/apagado y se pone blanco recién cuando se tocó algo
+ * (gramos, cocido/crudo, cantidad) — agregando uno nuevo (desde el buscador) dice "Agregar" y va
+ * blanco directo, sin ese estado "sin cambios".
  */
 import { Suspense, use, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Heart, Share2, MoreVertical, Sparkles, Plus, Check, Trash2, ShieldCheck } from "lucide-react";
-import { GlassCard } from "@/components/glass/glass-card";
-import { GlassButton } from "@/components/glass/glass-button";
+import { isSameDay, startOfDay } from "date-fns";
+import { ChevronLeft, MoreVertical, Share2, Sparkles, Check, Circle, CheckCircle2, Trash2, ShieldCheck, Plus } from "lucide-react";
 import { FoodPhoto } from "@/components/gym/food-photo";
-import { GramSlider } from "@/components/gym/gram-slider";
+import { FoodWheelPicker } from "@/components/gym/food-wheel-picker";
+import { MacroRingChart } from "@/components/gym/macro-ring-chart";
+import { MealActionsMenu, MenuItem } from "@/components/gym/meal-actions-menu";
+import { SwipeCarouselDots, SwipeCarouselStage, useSwipeCarousel } from "@/components/shared/swipe-carousel";
 import { useGymStore } from "@/lib/store/gymStore";
-import { BASE_FOODS, defaultPortions, parsePorcionGramos, scaleNutrition, scaleMicronutrients, MICRONUTRIENT_LABELS, DAILY_VALUES } from "@/lib/food-utils";
+import {
+  BASE_FOODS,
+  defaultPortions,
+  parsePorcionGramos,
+  scaleNutrition,
+  scaleMicronutrients,
+  MICRONUTRIENT_LABELS,
+  DAILY_VALUES,
+} from "@/lib/food-utils";
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import { useAdminMode } from "@/lib/gym/admin-mode";
+import { MEAL_LABELS } from "@/lib/types";
 import type { CookedState, MealType } from "@/lib/types";
+import { MONO_FONT } from "@/lib/ui/mono-font";
 
-/** Rough water-loss factor applied when a food is marked "cocido" (cooked): the
- * same displayed weight of a cooked food packs more nutrients per gram than raw,
- * so we scale the effective grams used for the nutrition lookup up by ~1/0.7.
- * Kept consistent with src/components/gym/food-entry-sheet.tsx. */
+/** Mismo factor que food-entry-sheet.tsx: un alimento "cocido" concentra más nutrientes por gramo. */
 const COOKED_FACTOR = 0.7;
 
-/** Ver recetas/crear/page.tsx: mismo key de sessionStorage usado para pasar
- * el formulario de la receta en progreso ida y vuelta a esta pantalla. */
 const RECIPE_DRAFT_KEY = "vt-recipe-draft";
 
-const ADD_TARGETS: { key: string; label: string; meal: MealType }[] = [
-  { key: "desayuno", label: "Desayuno", meal: "desayuno" },
-  { key: "almuerzo", label: "Almuerzo", meal: "almuerzo" },
-  { key: "cena", label: "Cena", meal: "cena" },
-  { key: "snack1", label: "Snack 1", meal: "snack1" },
-  { key: "snack2", label: "Snack 2", meal: "snack2" },
-];
-
-const MACRO_COLORS = { proteina: "#22c55e", carbos: "#eab308", grasas: "#f97316" };
-
-// Mismo grano de fondo oscuro que Hábitos y la nueva home de Calorías — reemplaza la foto del módulo
-// (que sigue de fondo en el resto de las pantallas de Calorías todavía sin rediseñar).
 const NOISE =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.07'/></svg>\")";
+
+const INFO_VIEW_COUNT = 3;
 
 export default function FoodDetailPage({ params }: { params: Promise<{ id: string }> }) {
   return (
@@ -59,17 +61,12 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Si llegamos acá desde "Agregar ingrediente" al crear una receta (ver
-  // recetas/crear/page.tsx), el botón principal configura cantidad/porción
-  // de este alimento para la receta en vez de registrarlo en una comida.
   const returnTo = searchParams.get("returnTo");
   const isForRecipe = returnTo === "recipe";
-  // Editar un alimento YA registrado (viene de MealCard/otro flujo con ?entryId=) en vez de agregar uno nuevo.
   const entryId = searchParams.get("entryId");
+  const mealParam = (searchParams.get("meal") as MealType | null) ?? "desayuno";
 
   const customFoods = useGymStore((s) => s.customFoods);
-  const favoriteFoodIds = useGymStore((s) => s.favoriteFoodIds);
-  const toggleFavoriteFood = useGymStore((s) => s.toggleFavoriteFood);
   const addLoggedFood = useGymStore((s) => s.addLoggedFood);
   const updateLoggedFood = useGymStore((s) => s.updateLoggedFood);
   const removeLoggedFood = useGymStore((s) => s.removeLoggedFood);
@@ -78,42 +75,66 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
 
   const existingEntry = useMemo(() => (entryId ? loggedFoods.find((f) => f.id === entryId) : undefined), [entryId, loggedFoods]);
   const isEditing = !!existingEntry;
+  const mealDate = useMemo(
+    () => (existingEntry ? startOfDay(new Date(existingEntry.timestamp)) : startOfDay(new Date())),
+    [existingEntry],
+  );
+  const meal = existingEntry?.meal ?? mealParam;
 
+  // Carrusel HORIZONTAL: un alimento de esta comida (mismo día) a la vez — solo cuando se está
+  // editando uno ya registrado (agregando uno nuevo desde el buscador no hay "otros" con quién armar
+  // el carrusel todavía).
+  const mealFoods = useMemo(
+    () => loggedFoods.filter((f) => f.meal === meal && isSameDay(new Date(f.timestamp), mealDate)),
+    [loggedFoods, meal, mealDate],
+  );
+  const showCarousel = isEditing && mealFoods.length > 0;
+  const derivedIndex = Math.max(0, mealFoods.findIndex((f) => f.id === entryId));
+  const [manualIndex, setManualIndex] = useState<number | null>(null);
+  const index = manualIndex ?? derivedIndex;
+  const { direction, goTo, onDragEnd } = useSwipeCarousel({
+    index,
+    length: mealFoods.length,
+    onIndexChange: (next) => {
+      setManualIndex(next);
+      const entry = mealFoods[next];
+      if (entry) window.history.replaceState(null, "", `/gym/calorias/alimento/${entry.foodId}?meal=${meal}&entryId=${entry.id}`);
+    },
+  });
+
+  const currentEntry = showCarousel ? mealFoods[index] : existingEntry;
+  const currentFoodId = currentEntry?.foodId ?? id;
   const food = useMemo(
-    () => customFoods.find((f) => f.id === id) ?? BASE_FOODS.find((f) => f.id === id),
-    [customFoods, id],
+    () => customFoods.find((f) => f.id === currentFoodId) ?? BASE_FOODS.find((f) => f.id === currentFoodId),
+    [customFoods, currentFoodId],
   );
 
-  const initialTargetIdx = useMemo(() => {
-    const mealParam = existingEntry?.meal ?? searchParams.get("meal");
-    if (!mealParam) return 0;
-    const idx = ADD_TARGETS.findIndex((t) => t.meal === mealParam);
-    return idx >= 0 ? idx : 0;
-  }, [searchParams, existingEntry]);
-
-  // El store (Zustand persist) hidrata desde localStorage de forma asíncrona: en una carga directa de esta
-  // URL (no navegación dentro de la app) `existingEntry` puede llegar undefined en el primer render y recién
-  // aparecer un instante después. Por eso el estado solo guarda lo que el usuario TOCÓ a mano (null = nada
-  // todavía) y, mientras no toque nada, se sigue leyendo en vivo de `existingEntry` — sin useEffect ni
-  // sincronización: cuando el store termina de hidratar y el componente se vuelve a renderizar, el valor ya
-  // sale bien solo.
-  const [manualGramos, setManualGramos] = useState<number | null>(null);
-  const [manualCooked, setManualCooked] = useState<CookedState | null>(null);
-  const gramos = manualGramos ?? existingEntry?.gramos ?? (food ? parsePorcionGramos(food) : 100);
-  const cookedState = manualCooked ?? existingEntry?.cookedState ?? "crudo";
-  const setGramos = setManualGramos;
+  // "Sucio" por alimento (para el botón Actualizar negro/blanco) — el store (Zustand persist)
+  // hidrata de forma asíncrona, así que solo se guarda lo que el usuario TOCÓ a mano; mientras no
+  // toque nada se sigue leyendo en vivo de `currentEntry` (mismo patrón "controlado con anulación"
+  // de siempre, sin useEffect).
+  const overrideKey = currentEntry?.id ?? "new";
+  const [overrides, setOverrides] = useState<Record<string, { gramos?: number; cooked?: CookedState }>>({});
+  const dirty = !!overrides[overrideKey];
+  const gramos = overrides[overrideKey]?.gramos ?? currentEntry?.gramos ?? (food ? parsePorcionGramos(food) : 100);
+  const cookedState = overrides[overrideKey]?.cooked ?? currentEntry?.cookedState ?? "crudo";
+  const setGramos = (v: number) => setOverrides((o) => ({ ...o, [overrideKey]: { ...o[overrideKey], gramos: v } }));
   const setCookedState = (updater: CookedState | ((c: CookedState) => CookedState)) =>
-    setManualCooked(typeof updater === "function" ? updater(cookedState) : updater);
-  const [addMenuOpen, setAddMenuOpen] = useState(false);
-  const [addedTarget, setAddedTarget] = useState<string | null>(null);
-  const [targetIdx, setTargetIdx] = useState(initialTargetIdx);
-  const [nutriTab, setNutriTab] = useState<"macros" | "micro">("macros");
+    setOverrides((o) => ({
+      ...o,
+      [overrideKey]: { ...o[overrideKey], cooked: typeof updater === "function" ? updater(cookedState) : updater },
+    }));
+
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Carrusel VERTICAL (dentro del bloque de números): calorías+macros → información nutricional →
+  // micronutrientes — misma mecánica que MealHomeScreen (swipe/wheel verticales).
+  const [infoView, setInfoView] = useState(0);
+
   if (!food) {
     return (
-      <div className="flex flex-col items-center gap-4 py-16">
+      <div className="flex flex-col items-center gap-4 py-16 text-white">
         <p className="text-white/60">Alimento no encontrado.</p>
         <Link href="/gym/calorias/buscar" className="text-sm text-[var(--gym)]">
           Volver a la búsqueda
@@ -125,28 +146,19 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const effectiveGramos = cookedState === "cocido" ? gramos / COOKED_FACTOR : gramos;
   const nutrition = scaleNutrition(food, effectiveGramos);
   const micronutrients = scaleMicronutrients(food, effectiveGramos);
-  const isFavorite = favoriteFoodIds.includes(food.id);
   const portionsForRatio = defaultPortions(food);
-  const approxCantidad = gramos / (portionsForRatio[0]?.gramos || 100);
+  const portionGramos = portionsForRatio[0]?.gramos || 100;
+  const approxCantidad = gramos / portionGramos;
 
-  const macroKcal = {
-    proteina: nutrition.proteina * 4,
-    carbos: nutrition.carbos * 4,
-    grasas: nutrition.grasas * 9,
-  };
+  const macroKcal = { proteina: nutrition.proteina * 4, carbos: nutrition.carbos * 4, grasas: nutrition.grasas * 9 };
   const totalMacroKcal = macroKcal.proteina + macroKcal.carbos + macroKcal.grasas || 1;
   const macroPct = {
-    proteina: Math.round((macroKcal.proteina / totalMacroKcal) * 100),
-    carbos: Math.round((macroKcal.carbos / totalMacroKcal) * 100),
-    grasas: Math.round((macroKcal.grasas / totalMacroKcal) * 100),
+    proteina: (macroKcal.proteina / totalMacroKcal) * 100,
+    carbos: (macroKcal.carbos / totalMacroKcal) * 100,
+    grasas: (macroKcal.grasas / totalMacroKcal) * 100,
   };
 
-  const aiInsight = buildAiInsight(nutrition, food.categoria);
-
   const nutritionRows: { label: string; value: number | undefined; unit: string; dvKey: string }[] = [
-    { label: "Carbohidratos", value: nutrition.carbos, unit: "g", dvKey: "carbos" },
-    { label: "Proteínas", value: nutrition.proteina, unit: "g", dvKey: "proteina" },
-    { label: "Grasas Totales", value: nutrition.grasas, unit: "g", dvKey: "grasas" },
     { label: "Grasas Saturadas", value: nutrition.grasasSaturadas, unit: "g", dvKey: "grasasSaturadas" },
     { label: "Grasas Trans", value: nutrition.grasasTrans, unit: "g", dvKey: "" },
     { label: "Colesterol", value: nutrition.colesterol, unit: "mg", dvKey: "colesterol" },
@@ -155,11 +167,10 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
     { label: "Azúcares", value: nutrition.azucares, unit: "g", dvKey: "azucares" },
     { label: "Azúcares Añadidos", value: nutrition.azucaresAnadidos, unit: "g", dvKey: "azucaresAnadidos" },
   ];
-
   const vitaminEntries = Object.entries(micronutrients ?? {}).filter(([k]) => MICRONUTRIENT_LABELS[k]?.group === "vitamina");
   const mineralEntries = Object.entries(micronutrients ?? {}).filter(([k]) => MICRONUTRIENT_LABELS[k]?.group === "mineral");
 
-  function buildPayload(target: MealType) {
+  function buildPayload() {
     return {
       foodId: food!.id,
       nombre: food!.nombre,
@@ -167,7 +178,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
       proteina: nutrition.proteina,
       carbos: nutrition.carbos,
       grasas: nutrition.grasas,
-      meal: target,
+      meal,
       gramos: Math.round(gramos * 10) / 10,
       porcionNombre: `${Math.round(gramos * 10) / 10} g`,
       photoUrl: food!.photoUrl,
@@ -175,26 +186,21 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
     };
   }
 
-  function handleConfirm(target: (typeof ADD_TARGETS)[number]) {
-    // Bloque 10: un alimento sin datos reales cargados no puede registrarse
-    // en una comida (se vería como si 0 kcal fuera un valor real) — se
-    // manda directo a completarlo primero.
+  function handleConfirm() {
     if (food && food.configurado === false) {
       router.push(`/gym/calorias/crear-alimento?editId=${food.id}`);
       return;
     }
-    if (isEditing && existingEntry) {
-      updateLoggedFood(existingEntry.id, buildPayload(target.meal));
+    if (isEditing && currentEntry) {
+      updateLoggedFood(currentEntry.id, buildPayload());
     } else {
-      addLoggedFood(buildPayload(target.meal));
+      addLoggedFood(buildPayload());
     }
-    setAddedTarget(target.key);
-    setAddMenuOpen(false);
-    setTimeout(() => router.push("/gym/calorias"), 550);
+    router.push("/gym/calorias");
   }
 
   function handleDelete() {
-    if (existingEntry) removeLoggedFood(existingEntry.id);
+    if (currentEntry) removeLoggedFood(currentEntry.id);
     router.push("/gym/calorias");
   }
 
@@ -229,82 +235,109 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
   }
 
   return (
-    <div className="relative min-h-screen text-white">
-      {/* Tapa la foto de fondo del módulo (PageBackdrop, en el layout — sigue detrás en el resto de Calorías,
-          todavía sin rediseñar). El contenido de acá abajo lleva z-10 explícito para quedar siempre arriba. */}
-      <div className="fixed inset-0" style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }} aria-hidden />
-      <div className="relative z-10 flex flex-col gap-5 pb-44 md:pb-28 px-4 pt-2 max-w-md mx-auto">
-        <header className="flex items-center justify-between pt-2 gap-2">
-          <button onClick={() => router.back()} className="text-white/50 hover:text-white transition-colors shrink-0">
-            <ArrowLeft size={20} />
+    <div className="relative min-h-screen text-white select-none" style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }}>
+      <div className="relative z-10 flex flex-col gap-5 pb-40 px-4 pt-2 max-w-md mx-auto">
+        <header className="flex items-center justify-between gap-2 pt-[max(env(safe-area-inset-top),10px)]">
+          <button
+            onClick={() => router.back()}
+            aria-label="Volver"
+            className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer active:scale-95 transition-transform shrink-0"
+            style={{ background: "#0d0d0d" }}
+          >
+            <ChevronLeft size={22} strokeWidth={2.6} />
           </button>
-          <h1 className="text-lg md:text-xl font-semibold tracking-tight truncate flex-1 text-center">{food.nombre}</h1>
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={() => toggleFavoriteFood(food.id)}
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.15] transition-colors cursor-pointer"
-            >
-              <Heart size={16} fill={isFavorite ? "#ff5c5c" : "none"} color={isFavorite ? "#ff5c5c" : "white"} />
-            </button>
-            <div className="relative">
-              <button
-                onClick={() => setOptionsOpen((v) => !v)}
-                className="flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.15] transition-colors cursor-pointer"
-              >
-                <MoreVertical size={16} className="text-white" />
-              </button>
-              {optionsOpen && (
-                <>
-                  <div className="fixed inset-0 z-30" onClick={() => setOptionsOpen(false)} />
-                  <div className="absolute right-0 top-11 z-40 w-52 rounded-2xl glass-panel shadow-2xl overflow-hidden">
-                    <button
-                      className="w-full flex items-center gap-2 text-left px-4 py-3 text-sm text-white hover:bg-white/[0.08] cursor-pointer"
+          <h1 className="text-[15px] uppercase tracking-[0.12em] truncate" style={MONO_FONT}>
+            {MEAL_LABELS[meal]}
+          </h1>
+          <button
+            onClick={() => setOptionsOpen((v) => !v)}
+            aria-label="Más opciones"
+            className="w-10 h-10 flex items-center justify-center cursor-pointer shrink-0"
+          >
+            <MoreVertical size={20} className="text-white/70" />
+          </button>
+        </header>
+
+        {/* El menú vive fuera del header (mismo motivo que en MealCard): los paneles de "Vaciar
+            comida"/"Ajustar porciones"/"Guardar como plantilla" necesitan todo el ancho, no el
+            hueco de 40px del botón "...". El desplegable en sí queda igual de pegado a la derecha. */}
+        <MealActionsMenu
+            meal={meal}
+            date={mealDate}
+            foods={mealFoods}
+            open={optionsOpen}
+            onOpenChange={setOptionsOpen}
+            beforeItems={
+              <>
+                {adminMode && (
+                  <MenuItem
+                    icon={<Sparkles size={14} />}
+                    label="Verificar"
+                    onClick={() => {
+                      setOptionsOpen(false);
+                      router.push(`/gym/calorias/crear-alimento?editId=${food.id}`);
+                    }}
+                  />
+                )}
+                <MenuItem
+                  icon={<Share2 size={14} />}
+                  label="Compartir"
+                  onClick={() => {
+                    if (typeof navigator !== "undefined" && navigator.share) {
+                      navigator.share({ title: food.nombre, text: `${food.nombre} — ${Math.round(nutrition.calorias)} kcal` }).catch(() => {});
+                    }
+                    setOptionsOpen(false);
+                  }}
+                />
+                <div className="h-px mx-3 my-1 bg-white/10" />
+              </>
+            }
+            afterItems={
+              <>
+                {currentEntry && (
+                  <>
+                    <div className="h-px mx-3 my-1 bg-white/10" />
+                    <MenuItem
+                      icon={currentEntry.activo === false ? <Circle size={14} /> : <CheckCircle2 size={14} />}
+                      label={currentEntry.activo === false ? "Contar este alimento" : "No contar este alimento"}
                       onClick={() => {
-                        if (typeof navigator !== "undefined" && navigator.share) {
-                          navigator.share({ title: food.nombre, text: `${food.nombre} — ${nutrition.calorias} kcal` }).catch(() => {});
-                        }
+                        updateLoggedFood(currentEntry.id, { activo: currentEntry.activo === false });
                         setOptionsOpen(false);
                       }}
-                    >
-                      <Share2 size={14} /> Compartir
-                    </button>
-                    {adminMode && (
-                      <button
-                        className="w-full flex items-center gap-2 text-left px-4 py-3 text-sm text-white hover:bg-white/[0.08] cursor-pointer border-t border-white/[0.06]"
-                        onClick={() => {
-                          setOptionsOpen(false);
-                          router.push(`/gym/calorias/crear-alimento?editId=${food.id}`);
-                        }}
-                      >
-                        <Sparkles size={14} /> Verificación
-                      </button>
-                    )}
-                    <button
-                      className="w-full flex items-center justify-between gap-2 text-left px-4 py-3 text-sm text-white/70 hover:bg-white/[0.08] cursor-pointer border-t border-white/[0.06]"
-                      onClick={() => setAdminMode(!adminMode)}
-                    >
-                      <span className="flex items-center gap-2">
-                        <ShieldCheck size={14} /> Modo admin
-                      </span>
-                      {adminMode && <Check size={14} className="text-[var(--gym)]" />}
-                    </button>
-                    {isEditing && (
-                      <button
-                        className="w-full flex items-center gap-2 text-left px-4 py-3 text-sm text-red-300 hover:bg-red-500/10 cursor-pointer border-t border-white/[0.06]"
-                        onClick={() => {
-                          setOptionsOpen(false);
-                          setConfirmDelete(true);
-                        }}
-                      >
-                        <Trash2 size={14} /> Eliminar de la comida
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </header>
+                    />
+                  </>
+                )}
+                <div className="h-px mx-3 my-1 bg-white/10" />
+                <MenuItem
+                  icon={<ShieldCheck size={14} />}
+                  label="Modo admin"
+                  trailing={adminMode ? <Check size={14} className="text-[var(--gym)]" /> : undefined}
+                  onClick={() => setAdminMode(!adminMode)}
+                />
+                {isEditing && (
+                  <MenuItem
+                    icon={<Trash2 size={14} />}
+                    label="Eliminar de la comida"
+                    danger
+                    onClick={() => {
+                      setOptionsOpen(false);
+                      setConfirmDelete(true);
+                    }}
+                  />
+                )}
+              </>
+            }
+          />
+
+        {showCarousel && (
+          <SwipeCarouselDots
+            length={mealFoods.length}
+            index={index}
+            onSelect={goTo}
+            getKey={(i) => mealFoods[i].id}
+            getAriaLabel={(i) => `Ver ${mealFoods[i].nombre}`}
+          />
+        )}
 
         {confirmDelete && (
           <div className="flex items-center justify-between gap-2 rounded-2xl bg-red-500/10 border border-red-500/30 px-4 py-2.5">
@@ -320,205 +353,143 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
           </div>
         )}
 
-        <div className="flex flex-col items-center gap-2">
-          {/* Ícono transparente (sin foto real todavía) en vez de una figura 3D — mismo lugar que el
-              modelo animado de Not Boring Weather. */}
-          <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={104} rounded="rounded-full" emoji={categoryEmoji(food.categoria)} />
-          {food.verificado && (
-            <span className="flex items-center gap-1 text-[11px] text-emerald-400">
-              <Check size={12} /> Verificado
-            </span>
-          )}
-        </div>
-
-        {food.configurado === false ? (
-          <GlassCard padding="md" className="flex flex-col items-center gap-2 text-center">
-            <p className="text-sm font-semibold text-amber-300/90">Sin configurar</p>
-            <p className="text-xs text-white/50">
-              Este alimento todavía no tiene calorías ni macros reales cargados. Complétalos para poder registrarlo.
-            </p>
-          </GlassCard>
-        ) : (
-          <>
-            <div className="grid grid-cols-4 gap-2">
-              <MacroCard label="Kcal" value={Math.round(nutrition.calorias)} color="var(--gym)" />
-              <MacroCard label="Proteínas" value={`${Math.round(nutrition.proteina)}g`} color={MACRO_COLORS.proteina} />
-              <MacroCard label="Carbos" value={`${Math.round(nutrition.carbos)}g`} color={MACRO_COLORS.carbos} />
-              <MacroCard label="Grasas" value={`${Math.round(nutrition.grasas)}g`} color={MACRO_COLORS.grasas} />
-            </div>
-
-            {/* Barra de gramos: reemplaza los botones "Cantidad"/"Porción" con teclado modal — todo acá,
-                sin abrir nada, con decimales. Al lado, "Tipo de Peso" sigue como antes. */}
-            <GlassCard padding="md" className="flex flex-col gap-3">
-              <GramSlider gramos={gramos} onChange={setGramos} />
-              <div className="flex items-center justify-between text-xs text-white/45">
-                <span>≈ {Math.round(approxCantidad * 100) / 100} {portionsForRatio[0]?.nombre ?? "porción"}</span>
-                <button
-                  onClick={() => setCookedState((v) => (v === "cocido" ? "crudo" : "cocido"))}
-                  className="rounded-full bg-white/[0.06] px-3 py-1 capitalize cursor-pointer text-white/70"
-                >
-                  {cookedState}
-                </button>
-              </div>
-            </GlassCard>
-          </>
-        )}
-
-        <GlassCard padding="md" className="flex items-center gap-3" glow>
-          <div
-            className="flex items-center justify-center w-10 h-10 rounded-full shrink-0"
-            style={{ background: "linear-gradient(135deg, #a855f7, #6366f1)", boxShadow: "0 0 16px #a855f755" }}
-          >
-            <Sparkles size={17} className="text-white" />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs font-semibold text-white/80 mb-0.5">Analizar con IA</p>
-            <p className="text-xs text-white/50">{aiInsight}</p>
-          </div>
-        </GlassCard>
-
-        <GlassCard padding="md" className="flex flex-col gap-2">
-          <p className="text-xs font-semibold text-white/70">Distribución de macros</p>
-          <div className="h-2.5 w-full rounded-full overflow-hidden flex bg-white/[0.06]">
-            <div style={{ width: `${macroPct.proteina}%`, background: MACRO_COLORS.proteina }} />
-            <div style={{ width: `${macroPct.carbos}%`, background: MACRO_COLORS.carbos }} />
-            <div style={{ width: `${macroPct.grasas}%`, background: MACRO_COLORS.grasas }} />
-          </div>
-          <div className="flex justify-between text-[11px] text-white/50">
-            <span className="flex items-center gap-1"><Dot color={MACRO_COLORS.proteina} /> Proteína {macroPct.proteina}%</span>
-            <span className="flex items-center gap-1"><Dot color={MACRO_COLORS.carbos} /> Carbos {macroPct.carbos}%</span>
-            <span className="flex items-center gap-1"><Dot color={MACRO_COLORS.grasas} /> Grasas {macroPct.grasas}%</span>
-          </div>
-        </GlassCard>
-
-        {/* Información Nutricional / Micronutrientes fusionadas en una sola tarjeta con pestañas (antes
-            eran dos tarjetas separadas, cada una con su propio desplegable). */}
-        <GlassCard padding="md" className="flex flex-col gap-3">
-          <div className="flex rounded-full bg-white/[0.06] p-1">
-            <button
-              onClick={() => setNutriTab("macros")}
-              className={`flex-1 rounded-full py-1.5 text-xs font-semibold cursor-pointer transition-colors ${nutriTab === "macros" ? "bg-white text-black" : "text-white/60"}`}
-            >
-              Información Nutricional
-            </button>
-            <button
-              onClick={() => setNutriTab("micro")}
-              className={`flex-1 rounded-full py-1.5 text-xs font-semibold cursor-pointer transition-colors ${nutriTab === "micro" ? "bg-white text-black" : "text-white/60"}`}
-            >
-              Micronutrientes
-            </button>
-          </div>
-
-          {nutriTab === "macros" ? (
-            <div className="flex flex-col gap-3">
-              {nutritionRows
-                .filter((r) => r.value !== undefined)
-                .map((row) => {
-                  const dv = DAILY_VALUES[row.dvKey];
-                  const pct = dv ? Math.min(100, Math.round(((row.value ?? 0) / dv) * 100)) : null;
-                  return (
-                    <div key={row.label} className="flex flex-col gap-1">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-white/70">{row.label}</span>
-                        <span className="text-white/50">
-                          {Math.round((row.value ?? 0) * 10) / 10}
-                          {row.unit}
-                          {dv ? ` / ${dv}${row.unit}` : ""}
-                        </span>
-                      </div>
-                      {pct !== null && (
-                        <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "var(--gym)" }} />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-            </div>
-          ) : vitaminEntries.length === 0 && mineralEntries.length === 0 ? (
-            <p className="text-xs text-white/40">Este alimento no tiene micronutrientes registrados.</p>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {vitaminEntries.length > 0 && (
-                <div className="flex flex-col gap-1.5">
-                  <p className="text-[11px] text-white/40 uppercase tracking-wide">Vitaminas</p>
-                  {vitaminEntries.map(([key, value]) => (
-                    <div key={key} className="flex justify-between text-xs">
-                      <span className="text-white/70">{MICRONUTRIENT_LABELS[key]?.label}</span>
-                      <span className="text-white/50">
-                        {value} {MICRONUTRIENT_LABELS[key]?.unit}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {mineralEntries.length > 0 && (
-                <div className="flex flex-col gap-1.5">
-                  <p className="text-[11px] text-white/40 uppercase tracking-wide">Minerales</p>
-                  {mineralEntries.map(([key, value]) => (
-                    <div key={key} className="flex justify-between text-xs">
-                      <span className="text-white/70">{MICRONUTRIENT_LABELS[key]?.label}</span>
-                      <span className="text-white/50">
-                        {value} {MICRONUTRIENT_LABELS[key]?.unit}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+        <SwipeCarouselStage itemKey={currentEntry?.id ?? currentFoodId} direction={direction} length={mealFoods.length || 1} onDragEnd={onDragEnd}>
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col items-center gap-3 pt-2">
+              <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={84} rounded="rounded-full" emoji={categoryEmoji(food.categoria)} />
+              <span className="rounded-full border border-white/25 px-5 py-2 text-xs uppercase tracking-[0.1em] text-white/85" style={MONO_FONT}>
+                {food.nombre}
+              </span>
+              {food.verificado && (
+                <span className="flex items-center gap-1 text-[11px] text-emerald-400">
+                  <Check size={12} /> Verificado
+                </span>
               )}
             </div>
-          )}
-        </GlassCard>
 
-        <div className="fixed bottom-0 left-0 right-0 z-30 p-4 backdrop-blur-xl bg-[color-mix(in_srgb,#1c1c1c_85%,transparent)] border-t border-white/[0.08] flex flex-col gap-2">
-          <div className="max-w-md mx-auto w-full relative">
-            {isForRecipe ? (
-              <GlassButton className="w-full flex items-center justify-center gap-2" size="lg" onClick={handleAddToRecipe}>
-                <Plus size={16} /> {food.configurado === false ? "Configurar alimento" : "Agregar a la receta"}
-              </GlassButton>
+            {food.configurado === false ? (
+              <p className="text-center text-sm text-amber-300/90 px-4">
+                Sin configurar — este alimento todavía no tiene calorías ni macros reales cargados.
+              </p>
             ) : (
-              <div className="flex items-stretch gap-2">
-                <GlassButton
-                  className="flex-1 flex items-center justify-center gap-2"
-                  size="lg"
-                  onClick={() => handleConfirm(ADD_TARGETS[targetIdx])}
+              <>
+                {/* Bloque de números — 3 vistas con swipe/scroll vertical, sin tarjeta. */}
+                <div
+                  className="flex flex-col gap-3"
+                  onWheel={(e) => {
+                    if (Math.abs(e.deltaY) < 30) return;
+                    setInfoView((v) => Math.max(0, Math.min(INFO_VIEW_COUNT - 1, v + (e.deltaY > 0 ? 1 : -1))));
+                  }}
                 >
-                  <Plus size={16} />{" "}
-                  {food.configurado === false
-                    ? "Configurar alimento"
-                    : isEditing
-                      ? "Actualizar"
-                      : `Agregar a ${ADD_TARGETS[targetIdx].label}`}
-                </GlassButton>
-                <div className="relative shrink-0">
-                  {addMenuOpen && (
-                    <>
-                      <div className="fixed inset-0 z-30" onClick={() => setAddMenuOpen(false)} />
-                      <div className="absolute bottom-full mb-2 right-0 z-40 w-48 rounded-2xl glass-panel shadow-2xl overflow-hidden">
-                        {ADD_TARGETS.map((t, i) => (
-                          <button
-                            key={t.key}
-                            className="w-full flex items-center justify-between text-left px-4 py-3 text-sm text-white hover:bg-white/[0.08] cursor-pointer"
-                            onClick={() => {
-                              setTargetIdx(i);
-                              handleConfirm(t);
-                            }}
-                          >
-                            {t.label}
-                            {addedTarget === t.key && <Check size={14} className="text-[var(--gym)]" />}
-                          </button>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 flex flex-col gap-3">
+                      {infoView === 0 && (
+                        <>
+                          <StatRow label="Kcal" value={`${Math.round(nutrition.calorias)}`} big />
+                          <StatRow label="Proteínas" value={`${Math.round(nutrition.proteina)} g`} />
+                          <StatRow label="Carbohidratos" value={`${Math.round(nutrition.carbos)} g`} />
+                          <StatRow label="Grasas" value={`${Math.round(nutrition.grasas)} g`} />
+                        </>
+                      )}
+                      {infoView === 1 &&
+                        nutritionRows
+                          .filter((r) => r.value !== undefined)
+                          .map((row) => {
+                            const dv = DAILY_VALUES[row.dvKey];
+                            return (
+                              <StatRow
+                                key={row.label}
+                                label={row.label}
+                                value={`${Math.round((row.value ?? 0) * 10) / 10}${row.unit}${dv ? ` / ${dv}${row.unit}` : ""}`}
+                              />
+                            );
+                          })}
+                      {infoView === 2 &&
+                        (vitaminEntries.length === 0 && mineralEntries.length === 0 ? (
+                          <p className="text-xs text-white/40">Sin micronutrientes registrados.</p>
+                        ) : (
+                          <>
+                            {vitaminEntries.map(([key, value]) => (
+                              <StatRow key={key} label={MICRONUTRIENT_LABELS[key]?.label} value={`${value} ${MICRONUTRIENT_LABELS[key]?.unit}`} />
+                            ))}
+                            {mineralEntries.map(([key, value]) => (
+                              <StatRow key={key} label={MICRONUTRIENT_LABELS[key]?.label} value={`${value} ${MICRONUTRIENT_LABELS[key]?.unit}`} />
+                            ))}
+                          </>
                         ))}
-                      </div>
-                    </>
-                  )}
-                  <button
-                    onClick={() => setAddMenuOpen((v) => !v)}
-                    aria-label="Elegir otra comida"
-                    className="h-full w-11 flex items-center justify-center rounded-2xl bg-white/[0.06] glass-specular-ring hover:bg-white/[0.1] transition-colors cursor-pointer"
-                  >
-                    {ADD_TARGETS[targetIdx].label[0]}
-                  </button>
+                    </div>
+                    <div className="flex flex-col gap-1.5 pt-1.5 shrink-0">
+                      {Array.from({ length: INFO_VIEW_COUNT }, (_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setInfoView(i)}
+                          aria-label={["Calorías y macros", "Información nutricional", "Micronutrientes"][i]}
+                          className="w-4 h-4 flex items-center justify-center cursor-pointer"
+                        >
+                          <span
+                            className="rounded-full"
+                            style={{ width: 6, height: 6, background: i === infoView ? "#fff" : "rgba(255,255,255,0.3)" }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
+
+                <MacroRingChart proteinaPct={macroPct.proteina} carbosPct={macroPct.carbos} grasasPct={macroPct.grasas} />
+
+                <div className="flex items-end justify-center gap-6 pt-2">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <FoodWheelPicker value={gramos} onChange={setGramos} decimals={1} min={0} sensitivity={0.6} />
+                    <span className="text-xs font-semibold text-white tabular-nums">{Math.round(gramos * 10) / 10} G</span>
+                  </div>
+                  <button
+                    onClick={() => setCookedState((v) => (v === "cocido" ? "crudo" : "cocido"))}
+                    className="rounded-full bg-white/[0.08] px-4 py-2 text-xs uppercase tracking-wide cursor-pointer text-white/80 mb-6"
+                  >
+                    {cookedState}
+                  </button>
+                  <div className="flex flex-col items-center gap-1.5">
+                    <FoodWheelPicker
+                      value={Math.round(approxCantidad)}
+                      onChange={(v) => setGramos(Math.max(0, v) * portionGramos)}
+                      decimals={0}
+                      min={0}
+                      sensitivity={0.08}
+                    />
+                    <span className="text-xs font-semibold text-white tabular-nums text-center">
+                      {Math.round(approxCantidad)}
+                      <br />
+                      <span className="text-[10px] font-normal text-white/40 uppercase">Cantidad</span>
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </SwipeCarouselStage>
+
+        <div className="fixed bottom-0 left-0 right-0 z-30 p-4 backdrop-blur-xl bg-[color-mix(in_srgb,#1c1c1c_85%,transparent)] border-t border-white/[0.08]">
+          <div className="max-w-md mx-auto w-full">
+            {isForRecipe ? (
+              <button
+                onClick={handleAddToRecipe}
+                className="w-full flex items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold cursor-pointer bg-white text-black"
+              >
+                <Plus size={16} /> {food.configurado === false ? "Configurar alimento" : "Agregar a la receta"}
+              </button>
+            ) : (
+              <button
+                onClick={handleConfirm}
+                className="w-full flex items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold cursor-pointer transition-colors"
+                style={
+                  food.configurado === false || !isEditing || dirty
+                    ? { background: "white", color: "black" }
+                    : { background: "#0d0d0d", color: "rgba(255,255,255,0.4)" }
+                }
+              >
+                {food.configurado === false ? "Configurar alimento" : isEditing ? "Actualizar" : "Agregar"}
+              </button>
             )}
           </div>
         </div>
@@ -527,25 +498,18 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
   );
 }
 
-function MacroCard({ label, value, color }: { label: string; value: string | number; color: string }) {
+function StatRow({ label, value, big }: { label: string; value: string; big?: boolean }) {
   return (
-    <GlassCard padding="sm" className="flex flex-col items-center gap-0.5 text-center" accentColor={color}>
-      <span className="text-base font-bold text-white">{value}</span>
-      <span className="text-[10px] text-white/45">{label}</span>
-    </GlassCard>
+    <div className="flex items-center gap-3">
+      <span
+        className={big ? "text-sm font-bold uppercase tracking-wide text-white shrink-0" : "text-xs uppercase tracking-wide text-white/70 shrink-0"}
+      >
+        {label}
+      </span>
+      <span className="flex-1 h-px bg-white/15" />
+      <span className={big ? "text-xl font-bold text-white tabular-nums shrink-0" : "text-sm font-semibold text-white tabular-nums shrink-0"}>
+        {value}
+      </span>
+    </div>
   );
-}
-
-function Dot({ color }: { color: string }) {
-  return <span className="inline-block w-2 h-2 rounded-full" style={{ background: color }} />;
-}
-
-function buildAiInsight(nutrition: { calorias: number; proteina: number; carbos: number; grasas: number; fibra?: number; sodio?: number }, categoria: string) {
-  const proteinRatio = nutrition.calorias > 0 ? (nutrition.proteina * 4) / nutrition.calorias : 0;
-  if (proteinRatio > 0.35) return "Buena fuente de proteína — ideal para mantener saciedad y masa muscular.";
-  if ((nutrition.fibra ?? 0) > 4) return "Alto en fibra, favorece la digestión y la saciedad.";
-  if ((nutrition.sodio ?? 0) > 500) return "Contenido alto de sodio — modera su consumo diario.";
-  if (nutrition.carbos * 4 > nutrition.calorias * 0.6) return "Predominan los carbohidratos, buena fuente de energía rápida.";
-  if (categoria === "Fruta" || categoria === "Verdura") return "Alimento natural, aporta vitaminas y bajo en calorías.";
-  return "Alimento equilibrado dentro de una dieta variada.";
 }
