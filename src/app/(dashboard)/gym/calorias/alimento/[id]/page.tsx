@@ -235,7 +235,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
   }
 
   return (
-    <div className="relative min-h-screen text-white select-none" style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }}>
+    <div className="relative min-h-screen overflow-x-hidden text-white select-none" style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }}>
       <div className="relative z-10 flex flex-col gap-5 pb-40 px-4 pt-2 max-w-md mx-auto">
         <header className="flex items-center justify-between gap-2 pt-[max(env(safe-area-inset-top),10px)]">
           <button
@@ -356,7 +356,9 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
         <SwipeCarouselStage itemKey={currentEntry?.id ?? currentFoodId} direction={direction} length={mealFoods.length || 1} onDragEnd={onDragEnd}>
           <div className="flex flex-col gap-5">
             <div className="flex flex-col items-center gap-3 pt-2">
-              <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={84} rounded="rounded-full" emoji={categoryEmoji(food.categoria)} />
+              <div style={{ filter: "drop-shadow(0 18px 30px rgba(0,0,0,0.55))" }}>
+                <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={208} rounded="rounded-full" emoji={categoryEmoji(food.categoria)} />
+              </div>
               <span className="rounded-full border border-white/25 px-5 py-2 text-xs uppercase tracking-[0.1em] text-white/85" style={MONO_FONT}>
                 {food.nombre}
               </span>
@@ -381,7 +383,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
                     setInfoView((v) => Math.max(0, Math.min(INFO_VIEW_COUNT - 1, v + (e.deltaY > 0 ? 1 : -1))));
                   }}
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 flex flex-col gap-3">
                       {infoView === 0 && (
                         <>
@@ -418,7 +420,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
                           </>
                         ))}
                     </div>
-                    <div className="flex flex-col gap-1.5 pt-1.5 shrink-0">
+                    <div className="flex flex-col gap-2 shrink-0">
                       {Array.from({ length: INFO_VIEW_COUNT }, (_, i) => (
                         <button
                           key={i}
@@ -438,14 +440,14 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
 
                 <MacroRingChart proteinaPct={macroPct.proteina} carbosPct={macroPct.carbos} grasasPct={macroPct.grasas} />
 
-                <div className="flex items-end justify-center gap-6 pt-2">
+                <div className="flex items-center justify-center gap-6 pt-2">
                   <div className="flex flex-col items-center gap-1.5">
-                    <FoodWheelPicker value={gramos} onChange={setGramos} decimals={1} min={0} sensitivity={0.6} />
+                    <FoodWheelPicker value={gramos} onChange={setGramos} decimals={1} min={0} sensitivity={0.6} variant="cylinder" />
                     <span className="text-xs font-semibold text-white tabular-nums">{Math.round(gramos * 10) / 10} G</span>
                   </div>
                   <button
                     onClick={() => setCookedState((v) => (v === "cocido" ? "crudo" : "cocido"))}
-                    className="rounded-full bg-white/[0.08] px-4 py-2 text-xs uppercase tracking-wide cursor-pointer text-white/80 mb-6"
+                    className="rounded-full bg-white/[0.08] px-4 py-2 text-xs uppercase tracking-wide cursor-pointer text-white/80"
                   >
                     {cookedState}
                   </button>
@@ -456,12 +458,9 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
                       decimals={0}
                       min={0}
                       sensitivity={0.08}
+                      variant="counter"
                     />
-                    <span className="text-xs font-semibold text-white tabular-nums text-center">
-                      {Math.round(approxCantidad)}
-                      <br />
-                      <span className="text-[10px] font-normal text-white/40 uppercase">Cantidad</span>
-                    </span>
+                    <span className="text-[10px] font-normal text-white/40 uppercase">Cantidad</span>
                   </div>
                 </div>
               </>
