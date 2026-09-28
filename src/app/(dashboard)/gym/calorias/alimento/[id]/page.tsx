@@ -17,12 +17,12 @@ import { Suspense, use, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { isSameDay, startOfDay } from "date-fns";
-import { ChevronLeft, MoreVertical, Share2, Sparkles, Check, Plus } from "lucide-react";
+import { ChevronLeft, MoreVertical, Share2, Sparkles, Check, Circle, CheckCircle2, Plus } from "lucide-react";
 import { FoodPhoto } from "@/components/gym/food-photo";
 import { DigitWheel } from "@/components/gym/digit-wheel";
 import { CantidadCounter } from "@/components/gym/cantidad-counter";
 import { MacroRingChart } from "@/components/gym/macro-ring-chart";
-import { MenuItem } from "@/components/gym/meal-actions-menu";
+import { MealActionsMenu, MenuItem } from "@/components/gym/meal-actions-menu";
 import { SwipeCarouselDots, SwipeCarouselStage, useSwipeCarousel } from "@/components/shared/swipe-carousel";
 import { useGymStore } from "@/lib/store/gymStore";
 import {
@@ -241,7 +241,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
       <div className="relative z-10 flex flex-col gap-3 pb-24 px-4 pt-1 max-w-md mx-auto">
         <header className="flex items-center justify-between gap-2 pt-[max(env(safe-area-inset-top),10px)]">
           <button
-            onClick={() => router.push("/gym/calorias")}
+            onClick={() => router.push(isEditing ? "/gym/calorias" : `/gym/calorias/buscar-nuevo?meal=${meal}`)}
             aria-label="Volver"
             className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer active:scale-95 transition-transform shrink-0"
             style={{ background: "#0d0d0d" }}
@@ -260,39 +260,54 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
           </button>
         </header>
 
-        {/* Por ahora, el "..." solo tiene Verificar y Compartir — el usuario pidió explícitamente
-            dejar el resto (Copiar/Pegar/Repetir/Vaciar/Ajustar porciones/Guardar como receta, el
-            check de "contar este alimento", Modo admin, Eliminar) afuera del menú por el momento,
-            SIN borrar el código: sigue en `MealActionsMenu`/este mismo archivo, listo para volver a
-            engancharse apenas lo pida. Por eso el menú vive fuera del header: si en el futuro se
-            reactivan los paneles de Vaciar/Ajustar/Plantilla, necesitan todo el ancho. */}
-        <div className="relative">
-          {optionsOpen && (
+        {/* El menú vive fuera del header (mismo motivo que en MealCard antes de sacarlo): los
+            paneles de "Vaciar comida"/"Ajustar porciones"/"Guardar como plantilla" necesitan todo
+            el ancho, no el hueco de 40px del botón "...". */}
+        <MealActionsMenu
+          meal={meal}
+          date={mealDate}
+          foods={mealFoods}
+          open={optionsOpen}
+          onOpenChange={setOptionsOpen}
+          beforeItems={
             <>
-              <div className="fixed inset-0 z-30" onClick={() => setOptionsOpen(false)} />
-              <div className="absolute right-4 top-1 z-40 w-48 rounded-2xl glass-panel shadow-2xl overflow-hidden py-1">
-                <MenuItem
-                  icon={<Sparkles size={14} />}
-                  label="Verificar"
-                  onClick={() => {
-                    setOptionsOpen(false);
-                    router.push(`/gym/calorias/crear-alimento?editId=${food.id}`);
-                  }}
-                />
-                <MenuItem
-                  icon={<Share2 size={14} />}
-                  label="Compartir"
-                  onClick={() => {
-                    if (typeof navigator !== "undefined" && navigator.share) {
-                      navigator.share({ title: food.nombre, text: `${food.nombre} — ${Math.round(nutrition.calorias)} kcal` }).catch(() => {});
-                    }
-                    setOptionsOpen(false);
-                  }}
-                />
-              </div>
+              <MenuItem
+                icon={<Sparkles size={14} />}
+                label="Verificar"
+                onClick={() => {
+                  setOptionsOpen(false);
+                  router.push(`/gym/calorias/crear-alimento?editId=${food.id}`);
+                }}
+              />
+              <MenuItem
+                icon={<Share2 size={14} />}
+                label="Compartir"
+                onClick={() => {
+                  if (typeof navigator !== "undefined" && navigator.share) {
+                    navigator.share({ title: food.nombre, text: `${food.nombre} — ${Math.round(nutrition.calorias)} kcal` }).catch(() => {});
+                  }
+                  setOptionsOpen(false);
+                }}
+              />
+              <div className="h-px mx-3 my-1 bg-white/10" />
             </>
-          )}
-        </div>
+          }
+          afterItems={
+            currentEntry && (
+              <>
+                <div className="h-px mx-3 my-1 bg-white/10" />
+                <MenuItem
+                  icon={currentEntry.activo === false ? <Circle size={14} /> : <CheckCircle2 size={14} />}
+                  label={currentEntry.activo === false ? "Contar este alimento" : "No contar este alimento"}
+                  onClick={() => {
+                    updateLoggedFood(currentEntry.id, { activo: currentEntry.activo === false });
+                    setOptionsOpen(false);
+                  }}
+                />
+              </>
+            )
+          }
+        />
 
         {showCarousel && (
           <SwipeCarouselDots

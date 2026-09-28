@@ -24,7 +24,6 @@ import { ChevronLeft, Plus, SlidersHorizontal } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { isToday, startOfDay } from "date-fns";
 import { HabitOrb } from "@/components/habitos/habit-orb";
-import { MealCard } from "@/components/gym/meal-card";
 import { AddFoodMenu } from "@/components/gym/add-food-menu";
 import { CalorieSettingsSheet } from "@/components/gym/calorie-settings-sheet";
 import { CalorieWeekStrip } from "@/components/gym/calorie-week-strip";
@@ -66,14 +65,10 @@ export function MealHomeScreen() {
   const loggedDays = useMemo(() => loggedDayKeys(allLoggedFoods), [allLoggedFoods]);
 
   const [index, setIndex] = useState(() => MEALS.indexOf(mealForTime()));
-  const [expanded, setExpanded] = useState(false);
   const { direction, goTo, onDragEnd } = useSwipeCarousel({
     index,
     length: MEALS.length,
-    onIndexChange: (next) => {
-      setIndex(next);
-      setExpanded(false); // cada comida arranca colapsada al llegar a ella
-    },
+    onIndexChange: (next) => setIndex(next),
   });
 
   const meal = MEALS[index];
@@ -85,9 +80,16 @@ export function MealHomeScreen() {
   const totalKcal = foodsForMeal.reduce((sum, f) => sum + f.calorias, 0);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Tocar el círculo con comida ya no expande una lista acá mismo — navega a la pantalla de detalle
+  // de alimento (la misma que abre el buscador), en modo "editar": ahí el swipe horizontal muestra
+  // cada alimento de esta comida, uno por uno, y el botón de abajo dice "Actualizar".
   const openMealCircle = () => {
-    if (hasFood) setExpanded(true);
-    else if (viendoHoy) setAddMenuOpen(true);
+    if (hasFood) {
+      const first = foodsForMeal[0];
+      router.push(`/gym/calorias/alimento/${first.foodId}?meal=${meal}&entryId=${first.id}`);
+    } else if (viendoHoy) {
+      setAddMenuOpen(true);
+    }
   };
 
   // Totales del día para la vista de nutrientes (número, gráfico, macros, categorías).
@@ -132,7 +134,6 @@ export function MealHomeScreen() {
     setView(next);
   }
   function onStagePointerDown(e: React.PointerEvent) {
-    if (view === 0 && expanded) return;
     gestureStart.current = { x: e.clientX, y: e.clientY };
   }
   function onStagePointerUp(e: React.PointerEvent) {
@@ -144,7 +145,6 @@ export function MealHomeScreen() {
     if (Math.abs(dy) > SWIPE_Y && Math.abs(dy) > Math.abs(dx) * 1.4) goView(view + (dy < 0 ? 1 : -1));
   }
   function onStageWheel(e: React.WheelEvent) {
-    if (view === 0 && expanded) return;
     if (wheelLock.current || Math.abs(e.deltaY) < 30) return;
     wheelLock.current = true;
     setTimeout(() => (wheelLock.current = false), 500);
@@ -249,94 +249,55 @@ export function MealHomeScreen() {
                 }}
               >
                 <div className="w-full h-full flex flex-col">
-                  <AnimatePresence mode="popLayout" initial={false}>
-                    {!expanded ? (
-                      <motion.div
-                        key="collapsed"
-                        initial={{ opacity: 0, scale: 0.96 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.96 }}
-                        transition={{ duration: 0.22 }}
-                        className="flex-1 flex flex-col items-center justify-center gap-7 px-6"
-                      >
-                        {/* No es un <button> nativo: sobre un botón normal, el toque en el celular lo capta el propio
-                            elemento y compite con el gesto de swipe (mismo motivo por el que HoldCircle, en Hábitos,
-                            tampoco es un <button>). Se maneja el toque a mano, igual que allá. */}
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => openMealCircle()}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") openMealCircle();
-                          }}
-                          aria-label={
-                            hasFood
-                              ? `Ver ${MEAL_LABELS[meal]}`
-                              : viendoHoy
-                                ? `Agregar a ${MEAL_LABELS[meal]}`
-                                : `Sin registro en ${MEAL_LABELS[meal]}`
-                          }
-                          className={`w-[68vw] max-w-[340px] aspect-square select-none ${hasFood || viendoHoy ? "cursor-pointer" : "cursor-default"}`}
-                        >
-                          <HabitOrb done={hasFood} className="w-full">
-                            {hasFood ? (
-                              <div className="flex flex-col items-center gap-1 px-6">
-                                <span className="text-4xl">🍽️</span>
-                                <span className="text-2xl font-bold text-black tabular-nums">{Math.round(totalKcal)} kcal</span>
-                                <span className="text-[11px] uppercase tracking-[0.12em] text-black/50" style={MONO_FONT}>
-                                  {foodsForMeal.length} {foodsForMeal.length === 1 ? "alimento" : "alimentos"}
-                                </span>
-                              </div>
-                            ) : (
-                              <Plus size={64} strokeWidth={2} className={viendoHoy ? "text-white/70" : "text-white/25"} />
-                            )}
-                          </HabitOrb>
-                        </div>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="expanded"
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 12 }}
-                        transition={{ duration: 0.22 }}
-                        className="flex-1 min-h-0 flex flex-col gap-3 px-4 pt-2 overflow-y-auto"
-                        style={{ touchAction: "pan-y" }}
-                      >
-                        <button
-                          onClick={() => setExpanded(false)}
-                          className="flex items-center justify-center gap-2 py-2 text-white/50 text-xs cursor-pointer"
-                          style={MONO_FONT}
-                        >
-                          {Math.round(totalKcal)} kcal · toca para colapsar
-                        </button>
-                        <MealCard
-                          meal={meal}
-                          date={selectedDate}
-                          disableAdd={!viendoHoy}
-                          foods={loggedFoods.filter((f) => f.meal === meal)}
-                          onAdd={() => viendoHoy && setAddMenuOpen(true)}
-                        />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  <div className="flex-1 flex flex-col items-center justify-center gap-7 px-6">
+                    {/* No es un <button> nativo: sobre un botón normal, el toque en el celular lo capta el propio
+                        elemento y compite con el gesto de swipe (mismo motivo por el que HoldCircle, en Hábitos,
+                        tampoco es un <button>). Se maneja el toque a mano, igual que allá. */}
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openMealCircle()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") openMealCircle();
+                      }}
+                      aria-label={
+                        hasFood
+                          ? `Ver ${MEAL_LABELS[meal]}`
+                          : viendoHoy
+                            ? `Agregar a ${MEAL_LABELS[meal]}`
+                            : `Sin registro en ${MEAL_LABELS[meal]}`
+                      }
+                      className={`w-[68vw] max-w-[340px] aspect-square select-none ${hasFood || viendoHoy ? "cursor-pointer" : "cursor-default"}`}
+                    >
+                      <HabitOrb done={hasFood} className="w-full">
+                        {hasFood ? (
+                          <div className="flex flex-col items-center gap-1 px-6">
+                            <span className="text-4xl">🍽️</span>
+                            <span className="text-2xl font-bold text-black tabular-nums">{Math.round(totalKcal)} kcal</span>
+                            <span className="text-[11px] uppercase tracking-[0.12em] text-black/50" style={MONO_FONT}>
+                              {foodsForMeal.length} {foodsForMeal.length === 1 ? "alimento" : "alimentos"}
+                            </span>
+                          </div>
+                        ) : (
+                          <Plus size={64} strokeWidth={2} className={viendoHoy ? "text-white/70" : "text-white/25"} />
+                        )}
+                      </HabitOrb>
+                    </div>
+                  </div>
 
-                  {!expanded && (
-                    <div className="pb-[max(env(safe-area-inset-bottom),20px)]">
+                  <div className="pb-[max(env(safe-area-inset-bottom),20px)]">
                       <CalorieWeekStrip
                         loggedDayKeys={loggedDays}
                         selectedDate={selectedDate}
                         onSelectDate={(d) => {
                           setFollowClock(false);
                           setSelectedDate(startOfDay(d));
-                          setExpanded(false);
                         }}
                         todayISO={todayISO}
                         viewIndex={0}
                         viewCount={VIEW_COUNT}
                       />
-                    </div>
-                  )}
+                  </div>
                 </div>
               </SwipeCarouselStage>
             )}
