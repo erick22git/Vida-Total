@@ -20,6 +20,7 @@ import { isSameDay, startOfDay } from "date-fns";
 import { ChevronLeft, MoreVertical, Share2, Sparkles, Check, Plus } from "lucide-react";
 import { FoodPhoto } from "@/components/gym/food-photo";
 import { DigitWheel } from "@/components/gym/digit-wheel";
+import { CantidadCounter } from "@/components/gym/cantidad-counter";
 import { MacroRingChart } from "@/components/gym/macro-ring-chart";
 import { MenuItem } from "@/components/gym/meal-actions-menu";
 import { SwipeCarouselDots, SwipeCarouselStage, useSwipeCarousel } from "@/components/shared/swipe-carousel";
@@ -34,7 +35,6 @@ import {
   DAILY_VALUES,
 } from "@/lib/food-utils";
 import { categoryEmoji } from "@/lib/food-category-emoji";
-import { useAdminMode } from "@/lib/gym/admin-mode";
 import { MEAL_LABELS } from "@/lib/types";
 import type { CookedState, MealType } from "@/lib/types";
 import { MONO_FONT } from "@/lib/ui/mono-font";
@@ -71,7 +71,6 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const updateLoggedFood = useGymStore((s) => s.updateLoggedFood);
   const removeLoggedFood = useGymStore((s) => s.removeLoggedFood);
   const loggedFoods = useGymStore((s) => s.loggedFoods);
-  const [adminMode] = useAdminMode();
 
   const existingEntry = useMemo(() => (entryId ? loggedFoods.find((f) => f.id === entryId) : undefined), [entryId, loggedFoods]);
   const isEditing = !!existingEntry;
@@ -236,10 +235,10 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <div
-      className="fixed inset-0 z-[45] overflow-y-auto overflow-x-hidden text-white select-none"
+      className="fixed inset-0 z-[45] overflow-hidden text-white select-none"
       style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }}
     >
-      <div className="relative z-10 flex flex-col gap-5 pb-40 px-4 pt-2 max-w-md mx-auto">
+      <div className="relative z-10 flex flex-col gap-3 pb-24 px-4 pt-1 max-w-md mx-auto">
         <header className="flex items-center justify-between gap-2 pt-[max(env(safe-area-inset-top),10px)]">
           <button
             onClick={() => router.push("/gym/calorias")}
@@ -272,16 +271,14 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
             <>
               <div className="fixed inset-0 z-30" onClick={() => setOptionsOpen(false)} />
               <div className="absolute right-4 top-1 z-40 w-48 rounded-2xl glass-panel shadow-2xl overflow-hidden py-1">
-                {adminMode && (
-                  <MenuItem
-                    icon={<Sparkles size={14} />}
-                    label="Verificar"
-                    onClick={() => {
-                      setOptionsOpen(false);
-                      router.push(`/gym/calorias/crear-alimento?editId=${food.id}`);
-                    }}
-                  />
-                )}
+                <MenuItem
+                  icon={<Sparkles size={14} />}
+                  label="Verificar"
+                  onClick={() => {
+                    setOptionsOpen(false);
+                    router.push(`/gym/calorias/crear-alimento?editId=${food.id}`);
+                  }}
+                />
                 <MenuItem
                   icon={<Share2 size={14} />}
                   label="Compartir"
@@ -331,10 +328,10 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
           onDragEnd={onDragEnd}
           className="relative w-full"
         >
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col items-center gap-2 pt-9">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col items-center gap-1.5 pt-7">
               <div style={{ filter: "drop-shadow(0 18px 30px rgba(0,0,0,0.55))" }}>
-                <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={188} rounded="rounded-full" emoji={categoryEmoji(food.categoria)} />
+                <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={150} rounded="rounded-full" emoji={categoryEmoji(food.categoria)} />
               </div>
               <span className="rounded-full border border-white/25 px-5 py-2 text-xs uppercase tracking-[0.1em] text-white/85" style={MONO_FONT}>
                 {food.nombre}
@@ -423,8 +420,8 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
                       wrap
                       faces={[]}
                       onStep={(steps) => setGramos(Math.max(0, gramos + steps * 5))}
-                      width={31}
-                      height={68}
+                      width={25}
+                      height={54}
                       pxPerStep={10}
                       label="Gramos"
                     />
@@ -438,13 +435,9 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
                     <span className="text-[10px] font-normal text-white/40 uppercase tracking-wide">{cookedState}</span>
                   </div>
                   <div className="flex flex-col items-center gap-1">
-                    <DigitWheel
-                      faces={["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]}
-                      index={Math.max(0, Math.min(9, Math.round(approxCantidad)))}
-                      onIndexChange={(v) => setGramos(Math.max(0, v) * portionGramos)}
-                      width={54}
-                      height={54}
-                      label="Cantidad"
+                    <CantidadCounter
+                      value={Math.max(0, Math.min(9, Math.round(approxCantidad)))}
+                      onChange={(v) => setGramos(Math.max(0, v) * portionGramos)}
                     />
                     <span className="text-[10px] font-normal text-white/40 uppercase">Cantidad</span>
                   </div>
@@ -489,29 +482,33 @@ function CookedToggle({ cocido, onChange }: { cocido: boolean; onChange: (cocido
   // Todo el gesto (tocar Y arrastrar) se resuelve acá, en los eventos de puntero — sin onClick
   // aparte, para no terminar invirtiendo el valor dos veces (uno por el arrastre, otro por el click
   // que el navegador dispara igual al soltar).
-  const dragRef = useRef<{ startX: number; moved: boolean } | null>(null);
+  const dragRef = useRef<{ startX: number } | null>(null);
   const [dragX, setDragX] = useState<number | null>(null);
-  const TRACK = 47;
-  const KNOB = 21;
+  const TRACK = 38;
+  const KNOB = 17;
   const MAX_X = TRACK - KNOB - 4;
 
   function onPointerDown(e: React.PointerEvent) {
-    (e.target as Element).setPointerCapture(e.pointerId);
-    dragRef.current = { startX: e.clientX, moved: false };
+    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    dragRef.current = { startX: e.clientX };
     setDragX(cocido ? MAX_X : 2);
   }
   function onPointerMove(e: React.PointerEvent) {
     if (!dragRef.current) return;
     const delta = e.clientX - dragRef.current.startX;
-    if (Math.abs(delta) > 4) dragRef.current.moved = true;
     const base = cocido ? MAX_X : 2;
     setDragX(Math.max(2, Math.min(MAX_X, base + delta)));
   }
   function onPointerUp() {
-    const drag = dragRef.current;
-    if (drag) {
-      // Toque simple (no se movió): invierte. Arrastre: queda del lado donde soltó el dedo.
-      onChange(drag.moved ? (dragX ?? 0) > MAX_X / 2 : !cocido);
+    if (dragRef.current) {
+      const base = cocido ? MAX_X : 2;
+      // Un toque simple (o un temblor mínimo del dedo, normal al tocar una pantalla) invierte el
+      // estado. Solo cuenta como arrastre "de verdad" cuando recorrió más de la mitad de la pista —
+      // antes el umbral era de apenas 4px, que un toque normal ya supera por vibración/temblor,
+      // así que a veces NO invertía (quedaba "a mitad de camino" y el color no cambiaba).
+      const traveled = dragX !== null ? Math.abs(dragX - base) : 0;
+      const draggedFarEnough = traveled > MAX_X * 0.55;
+      onChange(draggedFarEnough ? (dragX ?? 0) > MAX_X / 2 : !cocido);
     }
     dragRef.current = null;
     setDragX(null);
@@ -530,7 +527,7 @@ function CookedToggle({ cocido, onChange }: { cocido: boolean; onChange: (cocido
       role="switch"
       aria-checked={cocido}
       className="relative rounded-full cursor-pointer touch-none shrink-0"
-      style={{ width: TRACK, height: 27, background: cocido ? "#ff6b35" : "rgba(255,255,255,0.12)", transition: "background 0.15s" }}
+      style={{ width: TRACK, height: 22, background: cocido ? "#ff6b35" : "rgba(255,255,255,0.12)", transition: "background 0.15s" }}
     >
       <span
         className="absolute top-[3px] rounded-full bg-white"
