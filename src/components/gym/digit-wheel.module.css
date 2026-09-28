@@ -1,0 +1,57 @@
+@import url("https://fonts.googleapis.com/css2?family=Xanh+Mono:ital@0;1&display=swap");
+
+/* Adaptado del CSS que pasó el usuario (rueda de dígitos 3D, estilo "odómetro" físico) — acá es un
+   componente, no la página entera: en vez de vh/vw fijos, el tamaño lo pone quien lo usa vía
+   --wheel-w/--wheel-h. */
+.flexDigits {
+  display: flex;
+  background: black;
+  border-radius: 15%;
+  width: var(--wheel-w);
+  height: var(--wheel-h);
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.digits {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-left: 1px solid white;
+  border-right: 1px solid white;
+  border-image: linear-gradient(to bottom, black, rgb(48, 48, 48), white, rgb(48, 48, 48), black) 1;
+  border-radius: 10%;
+  font-family: "Xanh Mono", monospace;
+  font-weight: 500;
+  font-size: calc(var(--wheel-h) * 0.55);
+  text-align: center;
+  perspective: calc(var(--wheel-h) * 2.2);
+}
+
+.digit {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  border-radius: 10%;
+  color: rgba(255, 255, 255, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    rgb(10, 10, 10),
+    rgb(22, 22, 22),
+    rgb(44, 44, 44),
+    rgb(99, 99, 99),
+    rgb(44, 44, 44),
+    rgb(22, 22, 22),
+    rgb(10, 10, 10)
+  );
+  background-size: 100% 100%;
+  mix-blend-mode: multiply;
+  backface-visibility: hidden;
+}

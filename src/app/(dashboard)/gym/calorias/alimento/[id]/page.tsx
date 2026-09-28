@@ -19,7 +19,7 @@ import Link from "next/link";
 import { isSameDay, startOfDay } from "date-fns";
 import { ChevronLeft, MoreVertical, Share2, Sparkles, Check, Circle, CheckCircle2, Trash2, ShieldCheck, Plus } from "lucide-react";
 import { FoodPhoto } from "@/components/gym/food-photo";
-import { FoodWheelPicker } from "@/components/gym/food-wheel-picker";
+import { DigitWheel } from "@/components/gym/digit-wheel";
 import { MacroRingChart } from "@/components/gym/macro-ring-chart";
 import { MealActionsMenu, MenuItem } from "@/components/gym/meal-actions-menu";
 import { SwipeCarouselDots, SwipeCarouselStage, useSwipeCarousel } from "@/components/shared/swipe-carousel";
@@ -242,7 +242,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
       <div className="relative z-10 flex flex-col gap-5 pb-40 px-4 pt-2 max-w-md mx-auto">
         <header className="flex items-center justify-between gap-2 pt-[max(env(safe-area-inset-top),10px)]">
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push("/gym/calorias")}
             aria-label="Volver"
             className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer active:scale-95 transition-transform shrink-0"
             style={{ background: "#0d0d0d" }}
@@ -445,7 +445,15 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
 
                 <div className="flex items-center justify-center gap-6 pt-2">
                   <div className="flex flex-col items-center gap-1.5">
-                    <FoodWheelPicker value={gramos} onChange={setGramos} decimals={1} min={0} sensitivity={0.6} variant="cylinder" />
+                    <DigitWheel
+                      wrap
+                      faces={[]}
+                      onStep={(steps) => setGramos(Math.max(0, gramos + steps * 5))}
+                      width={40}
+                      height={96}
+                      pxPerStep={10}
+                      label="Gramos"
+                    />
                     <span className="text-xs font-semibold text-white tabular-nums">{Math.round(gramos * 10) / 10} G</span>
                   </div>
                   <div className="flex flex-col items-center gap-1.5">
@@ -456,13 +464,13 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
                     <span className="text-[10px] font-normal text-white/40 uppercase tracking-wide">{cookedState}</span>
                   </div>
                   <div className="flex flex-col items-center gap-1.5">
-                    <FoodWheelPicker
-                      value={Math.round(approxCantidad)}
-                      onChange={(v) => setGramos(Math.max(0, v) * portionGramos)}
-                      decimals={0}
-                      min={0}
-                      sensitivity={0.08}
-                      variant="counter"
+                    <DigitWheel
+                      faces={["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]}
+                      index={Math.max(0, Math.min(9, Math.round(approxCantidad)))}
+                      onIndexChange={(v) => setGramos(Math.max(0, v) * portionGramos)}
+                      width={72}
+                      height={72}
+                      label="Cantidad"
                     />
                     <span className="text-[10px] font-normal text-white/40 uppercase">Cantidad</span>
                   </div>
