@@ -356,9 +356,18 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
           </div>
         )}
 
-        <SwipeCarouselStage itemKey={currentEntry?.id ?? currentFoodId} direction={direction} length={mealFoods.length || 1} onDragEnd={onDragEnd}>
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-col items-center gap-3 pt-6">
+        {/* className explícito (no el default "absolute inset-0"): sin esto, el carrusel se estira
+            por TODO el contenedor relativo de arriba —el mismo que envuelve el header— y su capa
+            arrastrable queda tapando el botón de volver y el de "..." (no respondían al toque). */}
+        <SwipeCarouselStage
+          itemKey={currentEntry?.id ?? currentFoodId}
+          direction={direction}
+          length={mealFoods.length || 1}
+          onDragEnd={onDragEnd}
+          className="relative w-full"
+        >
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col items-center gap-2 pt-9">
               <div style={{ filter: "drop-shadow(0 18px 30px rgba(0,0,0,0.55))" }}>
                 <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={208} rounded="rounded-full" emoji={categoryEmoji(food.categoria)} />
               </div>
@@ -443,33 +452,33 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
 
                 <MacroRingChart proteinaPct={macroPct.proteina} carbosPct={macroPct.carbos} grasasPct={macroPct.grasas} />
 
-                <div className="flex items-center justify-center gap-6 pt-2">
-                  <div className="flex flex-col items-center gap-1.5">
+                <div className="flex items-center justify-center gap-5 pt-1">
+                  <div className="flex flex-col items-center gap-1">
                     <DigitWheel
                       wrap
                       faces={[]}
                       onStep={(steps) => setGramos(Math.max(0, gramos + steps * 5))}
-                      width={40}
-                      height={96}
+                      width={34}
+                      height={76}
                       pxPerStep={10}
                       label="Gramos"
                     />
                     <span className="text-xs font-semibold text-white tabular-nums">{Math.round(gramos * 10) / 10} G</span>
                   </div>
-                  <div className="flex flex-col items-center gap-1.5">
+                  <div className="flex flex-col items-center gap-1">
                     <CookedToggle
                       cocido={cookedState === "cocido"}
                       onChange={(cocido) => setCookedState(cocido ? "cocido" : "crudo")}
                     />
                     <span className="text-[10px] font-normal text-white/40 uppercase tracking-wide">{cookedState}</span>
                   </div>
-                  <div className="flex flex-col items-center gap-1.5">
+                  <div className="flex flex-col items-center gap-1">
                     <DigitWheel
                       faces={["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]}
                       index={Math.max(0, Math.min(9, Math.round(approxCantidad)))}
                       onIndexChange={(v) => setGramos(Math.max(0, v) * portionGramos)}
-                      width={72}
-                      height={72}
+                      width={60}
+                      height={60}
                       label="Cantidad"
                     />
                     <span className="text-[10px] font-normal text-white/40 uppercase">Cantidad</span>
@@ -556,7 +565,7 @@ function CookedToggle({ cocido, onChange }: { cocido: boolean; onChange: (cocido
       role="switch"
       aria-checked={cocido}
       className="relative rounded-full cursor-pointer touch-none shrink-0"
-      style={{ width: TRACK, height: 30, background: cocido ? "var(--gym)" : "rgba(255,255,255,0.12)", transition: "background 0.15s" }}
+      style={{ width: TRACK, height: 30, background: cocido ? "#ff6b35" : "rgba(255,255,255,0.12)", transition: "background 0.15s" }}
     >
       <span
         className="absolute top-[3px] rounded-full bg-white"
