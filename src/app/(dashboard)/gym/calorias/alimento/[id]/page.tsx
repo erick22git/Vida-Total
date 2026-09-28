@@ -527,7 +527,17 @@ function CookedToggle({ cocido, onChange }: { cocido: boolean; onChange: (cocido
       role="switch"
       aria-checked={cocido}
       className="relative rounded-full cursor-pointer touch-none shrink-0"
-      style={{ width: TRACK, height: 22, background: cocido ? "#6b6b6b" : "rgba(255,255,255,0.12)", transition: "background 0.15s" }}
+      style={{
+        width: TRACK,
+        height: 22,
+        background: cocido
+          ? "linear-gradient(rgb(58,58,58), rgb(38,38,38))"
+          : "rgba(255,255,255,0.12)",
+        boxShadow: cocido
+          ? "inset 0 1px 2px rgba(255,255,255,0.15), inset 0 -1px 3px rgba(0,0,0,0.6)"
+          : "none",
+        transition: "background 0.15s",
+      }}
     >
       <span
         className="absolute top-[3px] rounded-full bg-white"
