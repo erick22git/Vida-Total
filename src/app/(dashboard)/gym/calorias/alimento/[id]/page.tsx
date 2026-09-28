@@ -434,10 +434,10 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
                     <DigitWheel
                       wrap
                       faces={[]}
-                      onStep={(steps) => setGramos(Math.max(0, gramos + steps * 5))}
+                      onStep={(steps) => setGramos(Math.max(0, Math.round((gramos + steps * 0.1) * 10) / 10))}
                       width={25}
                       height={54}
-                      pxPerStep={10}
+                      pxPerStep={2}
                       label="Gramos"
                     />
                     <span className="text-xs font-semibold text-white tabular-nums">{Math.round(gramos * 10) / 10} G</span>
