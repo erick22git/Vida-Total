@@ -19,7 +19,7 @@
  * comidas). El botón de arriba a la izquierda vuelve a `/gym`.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Plus, SlidersHorizontal } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { isToday, startOfDay } from "date-fns";
@@ -53,6 +53,7 @@ const NOISE =
 
 export function MealHomeScreen() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
   const viendoHoy = isToday(selectedDate);
   const todayISO = new Date().toISOString().slice(0, 10);
@@ -78,16 +79,16 @@ export function MealHomeScreen() {
   const hasFood = foodsForMeal.length > 0;
   const totalKcal = foodsForMeal.reduce((sum, f) => sum + f.calorias, 0);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  // Tocar el círculo con comida ya no expande una lista acá mismo — navega a la pantalla de detalle
-  // de alimento (la misma que abre el buscador), en modo "editar": ahí el swipe horizontal muestra
-  // cada alimento de esta comida, uno por uno, y el botón de abajo dice "Actualizar".
-  const openMealCircle = () => {
-    if (hasFood) {
-      const first = foodsForMeal[0];
-      router.push(`/gym/calorias/alimento/${first.foodId}?meal=${meal}&entryId=${first.id}`);
-    } else if (viendoHoy) {
-      router.push(`/gym/calorias/buscar-nuevo?meal=${meal}`);
-    }
+  // El círculo (el "+") siempre lleva a buscar para AGREGAR más. Para EDITAR hay que tocar el fondo negro
+  // de atrás: ahí se abre la pantalla de edición (misma interfaz que la de agregar, pero es otra página),
+  // empezando por el ÚLTIMO alimento agregado — deslizando sobre su foto/nombre se ven los demás.
+  const openSearch = () => {
+    if (viendoHoy) router.push(`/gym/calorias/buscar-nuevo?meal=${meal}`);
+  };
+  const openEdit = () => {
+    if (!hasFood) return;
+    const last = foodsForMeal[foodsForMeal.length - 1];
+    router.push(`/gym/calorias/editar/${last.foodId}?meal=${meal}&entryId=${last.id}`);
   };
 
   // Totales del día para la vista de nutrientes (número, gráfico, macros, categorías).
@@ -121,7 +122,8 @@ export function MealHomeScreen() {
   // Swipe VERTICAL = cambia de vista (comida / nutrientes / racha) — igual mecánica que
   // `/habitos/habito` (el horizontal es entre comidas, drag="x" con dragDirectionLock, así que no
   // compite con esto). Se desactiva mientras la comida está expandida (esa lista ya scrollea sola).
-  const [view, setView] = useState(0);
+  // Al terminar de agregar un alimento se vuelve con ?vista=calorias: abre directo el contador de calorías.
+  const [view, setView] = useState(() => (searchParams.get("vista") === "calorias" ? 1 : 0));
   const [viewDir, setViewDir] = useState(1);
   const gestureStart = useRef<{ x: number; y: number } | null>(null);
   const wheelLock = useRef(false);
@@ -247,25 +249,25 @@ export function MealHomeScreen() {
                 }}
               >
                 <div className="w-full h-full flex flex-col">
-                  <div className="flex-1 flex flex-col items-center justify-center gap-7 px-6">
+                  <div
+                    className={`flex-1 flex flex-col items-center justify-center gap-7 px-6 ${hasFood ? "cursor-pointer" : ""}`}
+                    onClick={openEdit}
+                  >
                     {/* No es un <button> nativo: sobre un botón normal, el toque en el celular lo capta el propio
                         elemento y compite con el gesto de swipe (mismo motivo por el que HoldCircle, en Hábitos,
                         tampoco es un <button>). Se maneja el toque a mano, igual que allá. */}
                     <div
                       role="button"
                       tabIndex={0}
-                      onClick={() => openMealCircle()}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") openMealCircle();
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openSearch();
                       }}
-                      aria-label={
-                        hasFood
-                          ? `Ver ${MEAL_LABELS[meal]}`
-                          : viendoHoy
-                            ? `Agregar a ${MEAL_LABELS[meal]}`
-                            : `Sin registro en ${MEAL_LABELS[meal]}`
-                      }
-                      className={`w-[68vw] max-w-[340px] aspect-square select-none ${hasFood || viendoHoy ? "cursor-pointer" : "cursor-default"}`}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") openSearch();
+                      }}
+                      aria-label={viendoHoy ? `Agregar a ${MEAL_LABELS[meal]}` : `Sin registro en ${MEAL_LABELS[meal]}`}
+                      className={`w-[68vw] max-w-[340px] aspect-square select-none ${viendoHoy ? "cursor-pointer" : "cursor-default"}`}
                     >
                       <HabitOrb done={hasFood} className="w-full">
                         {hasFood ? (
