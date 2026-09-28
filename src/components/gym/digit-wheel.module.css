@@ -31,6 +31,10 @@
   font-size: calc(var(--wheel-h) * 0.55);
   text-align: center;
   perspective: calc(var(--wheel-h) * 2.2);
+  /* Clave: sin esto, el navegador NO ordena las caras giradas por profundidad real — las apila por
+     orden del DOM nomás, así que una cara de costado (recién girada) puede pintarse ENCIMA de la
+     que de verdad mira al frente, dando el número cortado/mal puesto que vio el usuario. */
+  transform-style: preserve-3d;
 }
 
 .digit {

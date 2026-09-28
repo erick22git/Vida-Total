@@ -17,11 +17,11 @@ import { Suspense, use, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { isSameDay, startOfDay } from "date-fns";
-import { ChevronLeft, MoreVertical, Share2, Sparkles, Check, Circle, CheckCircle2, Trash2, ShieldCheck, Plus } from "lucide-react";
+import { ChevronLeft, MoreVertical, Share2, Sparkles, Check, Plus } from "lucide-react";
 import { FoodPhoto } from "@/components/gym/food-photo";
 import { DigitWheel } from "@/components/gym/digit-wheel";
 import { MacroRingChart } from "@/components/gym/macro-ring-chart";
-import { MealActionsMenu, MenuItem } from "@/components/gym/meal-actions-menu";
+import { MenuItem } from "@/components/gym/meal-actions-menu";
 import { SwipeCarouselDots, SwipeCarouselStage, useSwipeCarousel } from "@/components/shared/swipe-carousel";
 import { useGymStore } from "@/lib/store/gymStore";
 import {
@@ -71,7 +71,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const updateLoggedFood = useGymStore((s) => s.updateLoggedFood);
   const removeLoggedFood = useGymStore((s) => s.removeLoggedFood);
   const loggedFoods = useGymStore((s) => s.loggedFoods);
-  const [adminMode, setAdminMode] = useAdminMode();
+  const [adminMode] = useAdminMode();
 
   const existingEntry = useMemo(() => (entryId ? loggedFoods.find((f) => f.id === entryId) : undefined), [entryId, loggedFoods]);
   const isEditing = !!existingEntry;
@@ -261,17 +261,17 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
           </button>
         </header>
 
-        {/* El menú vive fuera del header (mismo motivo que en MealCard): los paneles de "Vaciar
-            comida"/"Ajustar porciones"/"Guardar como plantilla" necesitan todo el ancho, no el
-            hueco de 40px del botón "...". El desplegable en sí queda igual de pegado a la derecha. */}
-        <MealActionsMenu
-            meal={meal}
-            date={mealDate}
-            foods={mealFoods}
-            open={optionsOpen}
-            onOpenChange={setOptionsOpen}
-            beforeItems={
-              <>
+        {/* Por ahora, el "..." solo tiene Verificar y Compartir — el usuario pidió explícitamente
+            dejar el resto (Copiar/Pegar/Repetir/Vaciar/Ajustar porciones/Guardar como receta, el
+            check de "contar este alimento", Modo admin, Eliminar) afuera del menú por el momento,
+            SIN borrar el código: sigue en `MealActionsMenu`/este mismo archivo, listo para volver a
+            engancharse apenas lo pida. Por eso el menú vive fuera del header: si en el futuro se
+            reactivan los paneles de Vaciar/Ajustar/Plantilla, necesitan todo el ancho. */}
+        <div className="relative">
+          {optionsOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setOptionsOpen(false)} />
+              <div className="absolute right-4 top-1 z-40 w-48 rounded-2xl glass-panel shadow-2xl overflow-hidden py-1">
                 {adminMode && (
                   <MenuItem
                     icon={<Sparkles size={14} />}
@@ -292,45 +292,10 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
                     setOptionsOpen(false);
                   }}
                 />
-                <div className="h-px mx-3 my-1 bg-white/10" />
-              </>
-            }
-            afterItems={
-              <>
-                {currentEntry && (
-                  <>
-                    <div className="h-px mx-3 my-1 bg-white/10" />
-                    <MenuItem
-                      icon={currentEntry.activo === false ? <Circle size={14} /> : <CheckCircle2 size={14} />}
-                      label={currentEntry.activo === false ? "Contar este alimento" : "No contar este alimento"}
-                      onClick={() => {
-                        updateLoggedFood(currentEntry.id, { activo: currentEntry.activo === false });
-                        setOptionsOpen(false);
-                      }}
-                    />
-                  </>
-                )}
-                <div className="h-px mx-3 my-1 bg-white/10" />
-                <MenuItem
-                  icon={<ShieldCheck size={14} />}
-                  label="Modo admin"
-                  trailing={adminMode ? <Check size={14} className="text-[var(--gym)]" /> : undefined}
-                  onClick={() => setAdminMode(!adminMode)}
-                />
-                {isEditing && (
-                  <MenuItem
-                    icon={<Trash2 size={14} />}
-                    label="Eliminar de la comida"
-                    danger
-                    onClick={() => {
-                      setOptionsOpen(false);
-                      setConfirmDelete(true);
-                    }}
-                  />
-                )}
-              </>
-            }
-          />
+              </div>
+            </>
+          )}
+        </div>
 
         {showCarousel && (
           <SwipeCarouselDots
@@ -369,7 +334,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col items-center gap-2 pt-9">
               <div style={{ filter: "drop-shadow(0 18px 30px rgba(0,0,0,0.55))" }}>
-                <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={208} rounded="rounded-full" emoji={categoryEmoji(food.categoria)} />
+                <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={188} rounded="rounded-full" emoji={categoryEmoji(food.categoria)} />
               </div>
               <span className="rounded-full border border-white/25 px-5 py-2 text-xs uppercase tracking-[0.1em] text-white/85" style={MONO_FONT}>
                 {food.nombre}
@@ -458,8 +423,8 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
                       wrap
                       faces={[]}
                       onStep={(steps) => setGramos(Math.max(0, gramos + steps * 5))}
-                      width={34}
-                      height={76}
+                      width={31}
+                      height={68}
                       pxPerStep={10}
                       label="Gramos"
                     />
@@ -477,8 +442,8 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
                       faces={["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]}
                       index={Math.max(0, Math.min(9, Math.round(approxCantidad)))}
                       onIndexChange={(v) => setGramos(Math.max(0, v) * portionGramos)}
-                      width={60}
-                      height={60}
+                      width={54}
+                      height={54}
                       label="Cantidad"
                     />
                     <span className="text-[10px] font-normal text-white/40 uppercase">Cantidad</span>
@@ -526,8 +491,8 @@ function CookedToggle({ cocido, onChange }: { cocido: boolean; onChange: (cocido
   // que el navegador dispara igual al soltar).
   const dragRef = useRef<{ startX: number; moved: boolean } | null>(null);
   const [dragX, setDragX] = useState<number | null>(null);
-  const TRACK = 52;
-  const KNOB = 24;
+  const TRACK = 47;
+  const KNOB = 21;
   const MAX_X = TRACK - KNOB - 4;
 
   function onPointerDown(e: React.PointerEvent) {
@@ -565,7 +530,7 @@ function CookedToggle({ cocido, onChange }: { cocido: boolean; onChange: (cocido
       role="switch"
       aria-checked={cocido}
       className="relative rounded-full cursor-pointer touch-none shrink-0"
-      style={{ width: TRACK, height: 30, background: cocido ? "#ff6b35" : "rgba(255,255,255,0.12)", transition: "background 0.15s" }}
+      style={{ width: TRACK, height: 27, background: cocido ? "#ff6b35" : "rgba(255,255,255,0.12)", transition: "background 0.15s" }}
     >
       <span
         className="absolute top-[3px] rounded-full bg-white"

@@ -5,10 +5,12 @@
  * caras dispuestas en cilindro vía `rotateX`, se gira arrastrando el dedo o con la rueda del mouse).
  * Dos modos, según quién la use:
  *   - `wrap={false}` (Cantidad): caras 0-9 con tope duro en los extremos, como en el original — el
- *     valor que "mira al frente" es real y se refleja en `index`/`onIndexChange`.
- *   - `wrap={true}` (Gramos): caras en blanco (`faces` vacío) que giran sin límite — no representa
- *     un valor propio, solo avisa "avancé/retrocedí" vía `onStep`; quien la usa decide cuánto vale
- *     cada paso (así puede ser más rápido/fino que Cantidad, como pidió el usuario).
+ *     valor que "mira al frente" es real y se refleja en `index`/`onIndexChange` (estado del padre).
+ *   - `wrap={true}` (Gramos): caras en blanco (`faces` vacío) que giran SIN límite — folución sigue
+ *     acumulando internamente aunque se suelte y se vuelva a agarrar (como el `wheelMoves` del
+ *     código original, que nunca se resetea), para que no "salte" a la posición de reposo entre un
+ *     arrastre y el siguiente. No representa un valor propio: solo avisa "avancé/retrocedí" vía
+ *     `onStep`; quien la usa decide cuánto vale cada paso.
  */
 import { useRef, useState } from "react";
 import styles from "./digit-wheel.module.css";
@@ -39,23 +41,26 @@ export function DigitWheel({
   const faceCount = faces && faces.length > 0 ? faces.length : 12;
   const anglePerFace = 360 / faceCount;
   const drag = useRef<{ startY: number; lastWhole: number } | null>(null);
-  const [liveOffset, setLiveOffset] = useState(0);
-
-  function clampIndex(next: number) {
-    if (wrap) return next;
-    return Math.max(0, Math.min(faceCount - 1, next));
-  }
+  const [liveFrac, setLiveFrac] = useState(0);
+  // Solo para wrap=true: rotación acumulada que NUNCA se resetea entre gestos (mismo espíritu que
+  // el `wheelMoves` del código original) — así el tambor sigue girando en vez de "saltar" a 0 cada
+  // vez que se suelta el dedo.
+  const [spin, setSpin] = useState(0);
 
   function applyWholeSteps(steps: number) {
     if (steps === 0) return;
-    if (wrap) onStep?.(steps);
-    else onIndexChange?.(clampIndex(index + steps));
+    if (wrap) {
+      setSpin((s) => s + steps);
+      onStep?.(steps);
+    } else {
+      onIndexChange?.(Math.max(0, Math.min(faceCount - 1, index + steps)));
+    }
   }
 
   function onPointerDown(e: React.PointerEvent) {
     (e.target as Element).setPointerCapture(e.pointerId);
     drag.current = { startY: e.clientY, lastWhole: 0 };
-    setLiveOffset(0);
+    setLiveFrac(0);
   }
   function onPointerMove(e: React.PointerEvent) {
     if (!drag.current) return;
@@ -66,18 +71,19 @@ export function DigitWheel({
       applyWholeSteps(whole - drag.current.lastWhole);
       drag.current.lastWhole = whole;
     }
-    setLiveOffset(steps - whole);
+    setLiveFrac(steps - whole);
   }
   function onPointerUp() {
     drag.current = null;
-    setLiveOffset(0);
+    setLiveFrac(0);
   }
   function onWheel(e: React.WheelEvent) {
     e.preventDefault();
     applyWholeSteps(e.deltaY > 0 ? 1 : -1);
   }
 
-  const liveIndex = wrap ? liveOffset : index + liveOffset;
+  const baseIndex = wrap ? spin : index;
+  const liveIndex = baseIndex + liveFrac;
 
   return (
     <div
