@@ -8,8 +8,8 @@
  */
 import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { GlassInput } from "@/components/glass/glass-input";
+import { FoodSectionHeader } from "@/components/gym/food-section-header";
 import { FoodSearchCarousel } from "@/components/gym/food-search-carousel";
 import { useGymStore } from "@/lib/store/gymStore";
 import { mergeFoods } from "@/lib/food-utils";
@@ -60,12 +60,7 @@ function BuscarNuevoContent() {
     <div className="relative min-h-screen text-white">
       <div className="fixed inset-0" style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }} aria-hidden />
       <div className="relative z-10 flex flex-col gap-4 pb-24 px-4 pt-2 max-w-md mx-auto">
-        <header className="flex items-center gap-3 pt-2">
-          <button onClick={() => router.back()} className="text-white/50 hover:text-white transition-colors shrink-0 cursor-pointer">
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="text-lg font-semibold">Buscar</h1>
-        </header>
+        <FoodSectionHeader current="buscar" />
 
         <GlassInput
           value={query}

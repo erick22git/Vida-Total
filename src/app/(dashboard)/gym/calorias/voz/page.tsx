@@ -1,15 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Mic, Square, Check, X, Keyboard } from "lucide-react";
-import { CaloriasMethodNav } from "@/components/gym/calorias-method-nav";
+import { Mic, Square, Check, X, Keyboard } from "lucide-react";
+import { FoodSectionHeader } from "@/components/gym/food-section-header";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
 import { ManualEntryModal } from "@/components/gym/manual-entry-modal";
 import { BASE_FOODS, defaultPortions, scaleNutrition } from "@/lib/food-utils";
-import { MONO_FONT } from "@/lib/ui/mono-font";
 import type { Food } from "@/lib/types";
 import type { AnalyzedFoodItem } from "@/app/api/food/analyze/route";
 
@@ -220,16 +218,7 @@ export default function VozPage() {
     <div className="relative min-h-screen">
       <div className="fixed inset-0" style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }} aria-hidden />
       <div className="relative z-10 flex flex-col gap-5 pb-10">
-      <header className="flex items-center gap-3 pt-2">
-        <Link href="/gym/calorias" className="text-white/50 hover:text-white transition-colors shrink-0">
-          <ArrowLeft size={20} />
-        </Link>
-        <h1 className="text-[15px] uppercase tracking-[0.12em] text-white" style={MONO_FONT}>
-          Registro por voz
-        </h1>
-      </header>
-
-      <CaloriasMethodNav />
+      <FoodSectionHeader current="voz" />
 
       {!supported ? (
         <GlassCard padding="lg" className="flex flex-col items-center gap-4 text-center">

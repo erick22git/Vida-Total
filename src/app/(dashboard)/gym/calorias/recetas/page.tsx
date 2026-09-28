@@ -1,14 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Search, Sparkles, Plus, Heart, Clock, Users } from "lucide-react";
+import { Search, Sparkles, Plus, Heart, Clock, Users } from "lucide-react";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassModal } from "@/components/glass/glass-modal";
-import { CaloriasMethodNav } from "@/components/gym/calorias-method-nav";
+import { FoodSectionHeader, FOOD_SECTION_BG } from "@/components/gym/food-section-header";
 import { useGymStore } from "@/lib/store/gymStore";
 import { MEAL_LABELS, type MealType } from "@/lib/types";
 import { generateAiRecipe } from "@/lib/ai-recipe";
@@ -67,15 +66,9 @@ export default function RecetasPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 pb-10">
-      <header className="flex items-center gap-3 pt-2">
-        <Link href="/gym/calorias" className="text-white/50 hover:text-white transition-colors shrink-0">
-          <ArrowLeft size={20} />
-        </Link>
-        <h1 className="text-xl md:text-2xl font-semibold tracking-tight flex-1">Recetas</h1>
-      </header>
-
-      <CaloriasMethodNav />
+    <div className="fixed inset-0 z-[45] overflow-y-auto text-white" style={FOOD_SECTION_BG}>
+    <div className="max-w-md mx-auto px-4 flex flex-col gap-4 pb-10">
+      <FoodSectionHeader current="recetas" />
 
       <GlassInput icon={<Search size={16} />} placeholder="Buscar recetas" value={query} onChange={(e) => setQuery(e.target.value)} />
 
@@ -168,6 +161,7 @@ export default function RecetasPage() {
           </GlassButton>
         </div>
       </GlassModal>
+    </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Clock, CornerUpLeft, Plus, X } from "lucide-react";
-import { CaloriasMethodNav } from "@/components/gym/calorias-method-nav";
+import { FoodSectionHeader, FOOD_SECTION_BG } from "@/components/gym/food-section-header";
 import { GlassCard } from "@/components/glass/glass-card";
 import { useGymStore } from "@/lib/store/gymStore";
 import { mergeFoods, defaultPortions, scaleNutrition } from "@/lib/food-utils";
@@ -178,20 +178,9 @@ export default function ListaPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 pb-40 md:pb-24">
-      <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 pt-2">
-        <button
-          onClick={() => router.push("/gym/calorias")}
-          className="text-white/50 hover:text-white transition-colors shrink-0 cursor-pointer"
-          aria-label="Volver"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-center">Lista</h1>
-        <span className="w-5" />
-      </header>
-
-      <CaloriasMethodNav />
+    <div className="fixed inset-0 z-[45] overflow-y-auto text-white" style={FOOD_SECTION_BG}>
+    <div className="max-w-md mx-auto px-4 flex flex-col gap-4 pb-40 md:pb-24">
+      <FoodSectionHeader current="lista" />
 
       <div className="flex flex-col gap-3">
         {MEALS.map((meal) => (
@@ -220,6 +209,7 @@ export default function ListaPage() {
       >
         <Check size={24} className="text-white" strokeWidth={3} />
       </button>
+    </div>
     </div>
   );
 }

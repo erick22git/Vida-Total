@@ -1,22 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Camera as CameraIcon, RotateCcw, Sparkles } from "lucide-react";
-import { CaloriasMethodNav } from "@/components/gym/calorias-method-nav";
+import { Camera as CameraIcon, Plus, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
+import { FoodSectionHeader, FOOD_SECTION_BG } from "@/components/gym/food-section-header";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassModal } from "@/components/glass/glass-modal";
 import { useGymStore } from "@/lib/store/gymStore";
-import { cn } from "@/lib/utils";
-import { MONO_FONT } from "@/lib/ui/mono-font";
 import type { AnalyzedFoodItem } from "@/app/api/food/analyze/route";
-
-// Rediseño Calorías, etapa 7 (visual, sin tocar la lógica de cámara/IA): mismo fondo oscuro con
-// grano que el resto de las pantallas rediseñadas — sin fotos de referencia todavía, así que el
-// resto (tarjetas, botones) queda igual, solo cambia el fondo y el título.
-const NOISE =
-  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.07'/></svg>\")";
 
 type Mode = "foto" | "codigo";
 
@@ -47,6 +38,7 @@ export default function EscanerPage() {
   const [permissionState, setPermissionState] = useState<"idle" | "granted" | "denied" | "error">("idle");
   const [status, setStatus] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [torch, setTorch] = useState(false);
 
   // Modo Foto: análisis con IA de visión (Groq).
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
@@ -174,6 +166,17 @@ export default function EscanerPage() {
     };
   }, [mode, permissionState, handleBarcodeDetected]);
 
+  async function toggleTorch() {
+    const track = streamRef.current?.getVideoTracks()[0];
+    const next = !torch;
+    try {
+      await track?.applyConstraints({ advanced: [{ torch: next }] } as unknown as MediaTrackConstraints);
+      setTorch(next);
+    } catch {
+      setStatus("Este dispositivo no permite usar la linterna desde acá.");
+    }
+  }
+
   function persistPhotoForFallback(dataUrl: string) {
     try {
       sessionStorage.setItem(PHOTO_KEY, dataUrl);
@@ -276,128 +279,194 @@ export default function EscanerPage() {
     analyzePhoto(capturedPhoto);
   }
 
+  const round = {
+    background: "linear-gradient(#383838, #262626)",
+    boxShadow: "inset 0 2px 3px rgba(255,255,255,0.10), inset 0 -2px 4px rgba(0,0,0,0.5), 0 4px 10px rgba(0,0,0,0.6)",
+  } as const;
+
   return (
-    <div className="relative min-h-screen">
-      <div className="fixed inset-0" style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }} aria-hidden />
-      <div className="relative z-10 flex flex-col gap-4 pb-10">
-      <header className="flex items-center gap-3 pt-2">
-        <Link href="/gym/calorias" className="text-white/50 hover:text-white transition-colors shrink-0">
-          <ArrowLeft size={20} />
-        </Link>
-        <h1 className="text-[15px] uppercase tracking-[0.12em] text-white" style={MONO_FONT}>
-          Escáner
-        </h1>
-      </header>
+    <div className="fixed inset-0 z-[45] overflow-hidden text-white flex flex-col select-none" style={FOOD_SECTION_BG}>
+      <div className="px-4 max-w-md mx-auto w-full">
+        <FoodSectionHeader current="escaner" />
+      </div>
 
-      <CaloriasMethodNav />
-
-      <div className="relative w-full aspect-[3/4] max-h-[70vh] rounded-3xl overflow-hidden bg-black flex items-center justify-center">
-        {permissionState === "denied" ? (
-          <div className="flex flex-col items-center gap-3 text-center px-6">
-            <CameraIcon size={32} className="text-white/40" />
-            <p className="text-sm text-white/70">
-              No pudimos acceder a tu cámara. Revisa los permisos del navegador e inténtalo de nuevo.
-            </p>
-            <GlassButton size="sm" onClick={startCamera} className="flex items-center gap-1.5">
-              <RotateCcw size={14} /> Reintentar
-            </GlassButton>
+      <div className="flex-1 min-h-0 flex flex-col gap-3 px-4 pb-4 pt-1 max-w-md mx-auto w-full">
+        {/* Controles de arriba: modo, perilla y linterna — estilo de la cámara de referencia. */}
+        <div className="flex items-stretch gap-3 h-[92px] shrink-0">
+          <div className="flex flex-col gap-2 shrink-0">
+            <button
+              onClick={() => setMode((m) => (m === "foto" ? "codigo" : "foto"))}
+              aria-label="Cambiar entre foto y código de barras"
+              className="w-11 h-11 rounded-full flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+              style={round}
+            >
+              <SlidersHorizontal size={18} />
+            </button>
+            <button
+              onClick={goToManualCreate}
+              aria-label="Crear alimento manualmente"
+              className="w-11 h-11 rounded-full flex items-center justify-center cursor-pointer active:scale-95 transition-transform text-lg font-bold"
+              style={round}
+            >
+              A
+            </button>
           </div>
-        ) : capturedPhoto ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={capturedPhoto} alt="Foto capturada" className="w-full h-full object-cover" />
-            {analyzing && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/55 backdrop-blur-[2px]">
-                <div className="relative w-12 h-12">
-                  <div className="absolute inset-0 rounded-full border-2 border-white/20" />
-                  <div
-                    className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
-                    style={{ borderTopColor: "var(--gym)", borderRightColor: "var(--gym)" }}
-                  />
-                  <Sparkles size={18} className="absolute inset-0 m-auto text-white/90" />
-                </div>
-                <p className="text-sm font-medium text-white">Analizando...</p>
-                <p className="text-xs text-white/60 px-8 text-center">
-                  Identificando alimentos y estimando porciones con IA
-                </p>
-              </div>
-            )}
-            {!analyzing && !analyzeError && (
-              <button
-                onClick={() => {
-                  setCapturedPhoto(null);
-                  startCamera();
-                }}
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/60 backdrop-blur-md px-4 py-2 text-xs text-white flex items-center gap-1.5 cursor-pointer"
-              >
-                <RotateCcw size={13} /> Tomar otra foto
-              </button>
-            )}
-          </>
-        ) : (
-          <>
-            <video
-              ref={videoRef}
-              className="w-full h-full object-cover"
-              playsInline
-              muted
-              autoPlay
-              // Respaldo: si `play()` fue interrumpido en `startCamera()`
-              // (p.ej. llamado antes de que el video tuviera metadata lista,
-              // algo común en iOS Safari) reintenta apenas la metadata está
-              // disponible, para no quedar con un frame negro congelado.
-              onLoadedMetadata={(e) => {
-                e.currentTarget.play().catch(() => {});
-              }}
+          <div
+            className="flex-1 rounded-xl flex items-center justify-center"
+            style={{
+              background: "repeating-linear-gradient(90deg, #171717 0px, #171717 3px, #2c2c2c 3px, #2c2c2c 9px)",
+              boxShadow: "inset 0 3px 8px rgba(0,0,0,0.7), 0 3px 10px rgba(0,0,0,0.5)",
+            }}
+          >
+            <span className="rounded-full bg-black/70 px-3 py-1 text-[11px] uppercase tracking-[0.12em] text-white/80">
+              {mode === "foto" ? "Foto" : "Código"}
+            </span>
+          </div>
+          <button
+            onClick={toggleTorch}
+            aria-label="Linterna"
+            aria-pressed={torch}
+            className="w-[52px] rounded-full relative cursor-pointer shrink-0 transition-colors"
+            style={{
+              background: torch ? "linear-gradient(#ffd000, #ffab00)" : "#1e1e1e",
+              boxShadow: "inset 0 3px 6px rgba(0,0,0,0.55), 0 3px 10px rgba(0,0,0,0.5)",
+            }}
+          >
+            <span
+              className="absolute left-1/2 -translate-x-1/2 w-10 h-10 rounded-full transition-all"
+              style={{ ...round, top: torch ? "calc(100% - 44px)" : "4px" }}
             />
-            <canvas ref={canvasRef} className="hidden" />
+          </button>
+        </div>
 
-            {mode === "codigo" && (
-              <div className="absolute inset-x-10 top-1/2 -translate-y-1/2 h-24 border-2 border-white/70 rounded-2xl" />
-            )}
-
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full bg-black/50 backdrop-blur-md p-1">
-              {(["foto", "codigo"] as Mode[]).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className={cn(
-                    "rounded-full px-4 py-1.5 text-xs font-medium transition-colors cursor-pointer",
-                    mode === m ? "text-white" : "text-white/60",
-                  )}
-                  style={mode === m ? { background: "var(--gym)" } : undefined}
-                >
-                  {m === "foto" ? "Foto" : "Código"}
-                </button>
-              ))}
-            </div>
-
-            {status && (
-              <div className="absolute bottom-4 left-4 right-4 rounded-xl bg-black/60 backdrop-blur-md px-3 py-2 text-center text-xs text-white">
-                {status}
-              </div>
-            )}
-
-            {mode === "codigo" && !status && scanning && (
-              <p className="absolute bottom-4 left-4 right-4 text-center text-xs text-white/60">
-                Apunta al código de barras del producto
+        {/* Visor */}
+        <div className="relative flex-1 min-h-0 w-full rounded-2xl overflow-hidden bg-black flex items-center justify-center">
+          {permissionState === "denied" ? (
+            <div className="flex flex-col items-center gap-3 text-center px-6">
+              <CameraIcon size={32} className="text-white/40" />
+              <p className="text-sm text-white/70">
+                No pudimos acceder a tu cámara. Revisa los permisos del navegador e inténtalo de nuevo.
               </p>
-            )}
-
-            {mode === "foto" && (
-              <>
-                <p className="absolute bottom-20 left-4 right-4 text-center text-xs text-white/60">
-                  Encuadra el plato y toma la foto para identificar los alimentos
-                </p>
+              <GlassButton size="sm" onClick={startCamera} className="flex items-center gap-1.5">
+                <RotateCcw size={14} /> Reintentar
+              </GlassButton>
+            </div>
+          ) : capturedPhoto ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={capturedPhoto} alt="Foto capturada" className="w-full h-full object-cover" />
+              {analyzing && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/55 backdrop-blur-[2px]">
+                  <div className="relative w-12 h-12">
+                    <div className="absolute inset-0 rounded-full border-2 border-white/20" />
+                    <div
+                      className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
+                      style={{ borderTopColor: "var(--gym)", borderRightColor: "var(--gym)" }}
+                    />
+                    <Sparkles size={18} className="absolute inset-0 m-auto text-white/90" />
+                  </div>
+                  <p className="text-sm font-medium text-white">Analizando...</p>
+                  <p className="text-xs text-white/60 px-8 text-center">
+                    Identificando alimentos y estimando porciones con IA
+                  </p>
+                </div>
+              )}
+              {!analyzing && !analyzeError && (
                 <button
-                  onClick={capturePhoto}
-                  className="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white border-4 border-white/40 active:scale-90 transition-transform cursor-pointer"
-                  aria-label="Capturar foto"
-                />
-              </>
-            )}
-          </>
-        )}
+                  onClick={() => {
+                    setCapturedPhoto(null);
+                    startCamera();
+                  }}
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/60 backdrop-blur-md px-4 py-2 text-xs text-white flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw size={13} /> Tomar otra foto
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <video
+                ref={videoRef}
+                className="w-full h-full object-cover"
+                playsInline
+                muted
+                autoPlay
+                // Respaldo: si `play()` fue interrumpido en `startCamera()`
+                // (p.ej. llamado antes de que el video tuviera metadata lista,
+                // algo común en iOS Safari) reintenta apenas la metadata está
+                // disponible, para no quedar con un frame negro congelado.
+                onLoadedMetadata={(e) => {
+                  e.currentTarget.play().catch(() => {});
+                }}
+              />
+              <canvas ref={canvasRef} className="hidden" />
+
+              {/* Cuadrícula de tercios */}
+              <div className="absolute inset-0 pointer-events-none" aria-hidden>
+                <div className="absolute inset-y-0 left-1/3 w-px bg-white/25" />
+                <div className="absolute inset-y-0 left-2/3 w-px bg-white/25" />
+                <div className="absolute inset-x-0 top-1/3 h-px bg-white/25" />
+                <div className="absolute inset-x-0 top-2/3 h-px bg-white/25" />
+              </div>
+
+              {mode === "codigo" && (
+                <div className="absolute inset-x-10 top-1/2 -translate-y-1/2 h-24 border-2 border-white/70 rounded-2xl" />
+              )}
+
+              {status && (
+                <div className="absolute bottom-4 left-4 right-4 rounded-xl bg-black/60 backdrop-blur-md px-3 py-2 text-center text-xs text-white">
+                  {status}
+                </div>
+              )}
+
+              {mode === "codigo" && !status && scanning && (
+                <p className="absolute bottom-4 left-4 right-4 text-center text-xs text-white/60">
+                  Apunta al código de barras del producto
+                </p>
+              )}
+              {mode === "foto" && !status && (
+                <p className="absolute bottom-3 left-4 right-4 text-center text-xs text-white/60">
+                  Encuadra el plato y toma la foto
+                </p>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Controles de abajo: contador/miniatura, obturador y rueda */}
+        <div className="flex items-center justify-between gap-3 h-[104px] shrink-0">
+          <div className="flex flex-col gap-2 shrink-0">
+            <div
+              className="w-11 h-11 rounded-lg flex items-center justify-center text-lg font-bold"
+              style={{ background: "#151515", boxShadow: "inset 0 2px 6px rgba(0,0,0,0.7)" }}
+            >
+              {mode === "foto" ? 1 : 2}
+            </div>
+            <div className="w-11 h-11 rounded-full overflow-hidden" style={{ background: "#151515", boxShadow: "inset 0 2px 6px rgba(0,0,0,0.7)" }}>
+              {capturedPhoto && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={capturedPhoto} alt="Última foto" className="w-full h-full object-cover" />
+              )}
+            </div>
+          </div>
+          <button
+            onClick={mode === "foto" ? capturePhoto : undefined}
+            disabled={mode !== "foto" || !!capturedPhoto || permissionState !== "granted"}
+            aria-label="Capturar foto"
+            className="w-24 h-24 rounded-full flex items-center justify-center cursor-pointer active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-default"
+            style={round}
+          >
+            <Plus size={44} strokeWidth={2.2} />
+          </button>
+          <div
+            className="w-14 h-24 rounded-xl shrink-0"
+            style={{
+              background: "repeating-linear-gradient(0deg, #141414 0px, #141414 3px, #303030 3px, #303030 8px)",
+              boxShadow: "inset 0 3px 8px rgba(0,0,0,0.7), 0 3px 10px rgba(0,0,0,0.5)",
+            }}
+            aria-hidden
+          />
+        </div>
       </div>
 
       <GlassModal
@@ -454,7 +523,6 @@ export default function EscanerPage() {
           </div>
         </div>
       </GlassModal>
-      </div>
     </div>
   );
 }

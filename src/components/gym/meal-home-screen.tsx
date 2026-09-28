@@ -24,7 +24,6 @@ import { ChevronLeft, Plus, SlidersHorizontal } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { isToday, startOfDay } from "date-fns";
 import { HabitOrb } from "@/components/habitos/habit-orb";
-import { AddFoodMenu } from "@/components/gym/add-food-menu";
 import { CalorieSettingsSheet } from "@/components/gym/calorie-settings-sheet";
 import { CalorieWeekStrip } from "@/components/gym/calorie-week-strip";
 import { CalorieYearView } from "@/components/gym/calorie-year-view";
@@ -78,7 +77,6 @@ export function MealHomeScreen() {
   );
   const hasFood = foodsForMeal.length > 0;
   const totalKcal = foodsForMeal.reduce((sum, f) => sum + f.calorias, 0);
-  const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   // Tocar el círculo con comida ya no expande una lista acá mismo — navega a la pantalla de detalle
   // de alimento (la misma que abre el buscador), en modo "editar": ahí el swipe horizontal muestra
@@ -88,7 +86,7 @@ export function MealHomeScreen() {
       const first = foodsForMeal[0];
       router.push(`/gym/calorias/alimento/${first.foodId}?meal=${meal}&entryId=${first.id}`);
     } else if (viendoHoy) {
-      setAddMenuOpen(true);
+      router.push(`/gym/calorias/buscar-nuevo?meal=${meal}`);
     }
   };
 
@@ -317,7 +315,6 @@ export function MealHomeScreen() {
         </AnimatePresence>
       </main>
 
-      <AddFoodMenu open={addMenuOpen} onClose={() => setAddMenuOpen(false)} meal={meal} />
       <CalorieSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
