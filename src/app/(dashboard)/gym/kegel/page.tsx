@@ -1,162 +1,242 @@
 "use client";
 
+/**
+ * Kegel — rediseño estilo Not Boring (Hábitos). Dos vistas que se cambian deslizando en vertical:
+ *   0 = "El Plan Personal de Hoy" (5 sesiones en línea de tiempo + franja de los últimos 7 días)
+ *   1 = año (conos dorados por cada día cumplido)
+ * Tocar una sesión abre `/gym/kegel/sesion/[id]`; al terminar su tiempo vuelve acá y queda marcada.
+ */
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Flame, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
-import { GlassCard } from "@/components/glass/glass-card";
-import { GlassButton } from "@/components/glass/glass-button";
-import { ProgressBar } from "@/components/ui/progress-bar";
-import { PageBackdrop } from "@/components/layout/page-backdrop";
+import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
+import { BookOpen, Check, ChevronLeft, Clock, Dumbbell, Flower2, SlidersHorizontal } from "lucide-react";
+import { addDays, format } from "date-fns";
+import { ViewDots } from "@/components/habitos/view-dots";
+import { CalorieYearView } from "@/components/gym/calorie-year-view";
+import { MONO_FONT } from "@/lib/ui/mono-font";
+import { KEGEL_SESSIONS, formatDuration, type KegelSessionKind } from "@/lib/gym/kegel-plan";
+import { fullyDoneDays, useKegelPlanStore } from "@/lib/store/kegelPlanStore";
 import { useGymStore } from "@/lib/store/gymStore";
 
-const TOTAL_REPS = 10;
-type Phase = "idle" | "squeeze" | "release" | "done";
+const WEEKDAY = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
+const VIEW_COUNT = 2;
+const SWIPE_Y = 60;
+
+const slideY = {
+  enter: (dir: number) => ({ y: dir * 70, opacity: 0 }),
+  center: { y: 0, opacity: 1 },
+  exit: (dir: number) => ({ y: dir * -70, opacity: 0 }),
+};
+
+const NOISE =
+  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.07'/></svg>\")";
+
+function SessionIcon({ kind }: { kind: KegelSessionKind }) {
+  const props = { size: 22, strokeWidth: 2.4, fill: "#fff", color: "#fff" };
+  if (kind === "pesa") return <Dumbbell {...props} />;
+  if (kind === "loto") return <Flower2 {...props} fill="none" />;
+  return <BookOpen {...props} />;
+}
 
 export default function KegelPage() {
-  const kegelLevel = useGymStore((s) => s.kegelLevel);
-  const kegelStreak = useGymStore((s) => s.kegelStreak);
-  const completeKegelSession = useGymStore((s) => s.completeKegelSession);
+  const router = useRouter();
+  const completed = useKegelPlanStore((s) => s.completed);
+  const streak = useGymStore((s) => s.kegelStreak);
 
-  const [sessionActive, setSessionActive] = useState(false);
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [rep, setRep] = useState(0);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [view, setView] = useState(0);
+  const [dir, setDir] = useState(1);
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const wheelLock = useRef(false);
 
-  const squeezeMs = (3 + kegelLevel * 0.2) * 1000; // 3.2s - 5s
-  const releaseMs = 3000;
+  const todayISO = format(new Date(), "yyyy-MM-dd");
+  const doneToday = completed[todayISO] ?? [];
+  const doneDays = fullyDoneDays(completed);
+
+  function goView(next: number) {
+    if (next < 0 || next >= VIEW_COUNT || next === view) return;
+    setDir(next > view ? 1 : -1);
+    setView(next);
+  }
 
   useEffect(() => {
-    if (!sessionActive) return;
-    if (phase === "squeeze") {
-      timeoutRef.current = setTimeout(() => setPhase("release"), squeezeMs);
-    } else if (phase === "release") {
-      timeoutRef.current = setTimeout(() => {
-        if (rep + 1 >= TOTAL_REPS) {
-          setPhase("done");
-        } else {
-          setRep((r) => r + 1);
-          setPhase("squeeze");
-        }
-      }, releaseMs);
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "ArrowDown") goView(view + 1);
+      if (e.key === "ArrowUp") goView(view - 1);
     }
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, sessionActive]);
+  }, [view]);
 
-  useEffect(() => {
-    if (phase !== "done") return;
-    const id = setTimeout(() => {
-      completeKegelSession();
-      setSessionActive(false);
-    }, 0);
-    return () => clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
-
-  function startSession() {
-    setRep(0);
-    setPhase("squeeze");
-    setSessionActive(true);
-  }
-
-  function stopSession() {
-    setSessionActive(false);
-    setPhase("idle");
-    setRep(0);
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-  }
+  const days = Array.from({ length: 7 }, (_, i) => addDays(new Date(`${todayISO}T12:00:00`), i - 6));
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageBackdrop src="/backgrounds/kegel.webp" />
-
-      {/* `relative`: sin position, estos hijos se pintan debajo del
-      PageBackdrop (fixed) sin importar el orden en el DOM. */}
-      <div className="relative flex flex-col gap-6">
-      <header className="flex items-center gap-3 pt-2">
-        <Link href="/gym" className="text-white/50 hover:text-white transition-colors">
-          <ArrowLeft size={20} />
-        </Link>
-        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2">
-          <Sparkles style={{ color: "var(--paz-mental)" }} /> Kegel
-        </h1>
+    <div
+      className="fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden"
+      style={view === 0 ? { backgroundColor: "#000" } : { backgroundColor: "#0d0d0d", backgroundImage: NOISE }}
+    >
+      <header className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),10px)] h-[calc(3.25rem+max(env(safe-area-inset-top),10px))] shrink-0">
+        <button
+          onClick={() => router.push("/gym")}
+          aria-label="Volver a Gym"
+          className="w-10 h-10 -ml-2 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+        >
+          <ChevronLeft size={26} strokeWidth={2.4} />
+        </button>
+        {view === 0 ? (
+          <h1 className="text-[22px] font-bold tracking-tight">Kegel</h1>
+        ) : (
+          <h1 className="text-[20px] uppercase tracking-[0.12em]" style={MONO_FONT}>
+            Kegel
+          </h1>
+        )}
+        <span className="w-10 h-10 -mr-2 flex items-center justify-center" aria-hidden>
+          <SlidersHorizontal size={22} strokeWidth={2.2} />
+        </span>
       </header>
 
-      {!sessionActive ? (
-        <>
-          <GlassCard accentColor="var(--paz-mental)" glow className="flex flex-col gap-3">
-            <p className="text-sm text-white/60">Nivel actual</p>
-            <p className="text-2xl font-bold">Nivel {kegelLevel} / 10</p>
-            <ProgressBar value={kegelLevel} max={10} color="var(--paz-mental)" />
-          </GlassCard>
+      <main
+        className="flex-1 min-h-0 relative touch-none"
+        onPointerDown={(e) => (start.current = { x: e.clientX, y: e.clientY })}
+        onPointerUp={(e) => {
+          const st = start.current;
+          start.current = null;
+          if (!st) return;
+          const dx = e.clientX - st.x;
+          const dy = e.clientY - st.y;
+          if (Math.abs(dy) > SWIPE_Y && Math.abs(dy) > Math.abs(dx) * 1.4) goView(view + (dy < 0 ? 1 : -1));
+        }}
+        onPointerCancel={() => (start.current = null)}
+        onWheel={(e) => {
+          if (wheelLock.current || Math.abs(e.deltaY) < 30) return;
+          wheelLock.current = true;
+          setTimeout(() => (wheelLock.current = false), 500);
+          goView(view + (e.deltaY > 0 ? 1 : -1));
+        }}
+      >
+        <AnimatePresence mode="popLayout" initial={false} custom={dir}>
+          <motion.div
+            key={view}
+            custom={dir}
+            variants={slideY}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0"
+          >
+            {view === 0 ? (
+              <div className="w-full h-full flex flex-col">
+                <div className="flex-1 min-h-0 overflow-hidden px-5 pt-2">
+                  <h2 className="text-[26px] font-bold tracking-tight leading-tight mb-5">El Plan Personal de Hoy</h2>
+                  <ol className="relative">
+                    <span
+                      className="absolute left-[27px] top-[-14px] bottom-[26px] w-[2px]"
+                      style={{ background: "rgba(255,255,255,0.35)" }}
+                      aria-hidden
+                    />
+                    {KEGEL_SESSIONS.map((s) => {
+                      const done = doneToday.includes(s.id);
+                      return (
+                        <li key={s.id} className="relative mb-6 last:mb-0">
+                          <button
+                            onClick={() => router.push(`/gym/kegel/sesion/${s.id}`)}
+                            className="flex items-center gap-5 w-full text-left cursor-pointer active:opacity-70"
+                          >
+                            <span
+                              className="relative w-[56px] h-[56px] rounded-full flex items-center justify-center shrink-0"
+                              style={{
+                                background: "#0a0a0a",
+                                border: "2px solid rgba(255,255,255,0.4)",
+                                boxShadow: "inset 0 1px 2px rgba(255,255,255,0.12)",
+                              }}
+                            >
+                              {done ? (
+                                <span className="w-[38px] h-[38px] rounded-full bg-white flex items-center justify-center">
+                                  <Check size={22} strokeWidth={3.2} color="#000" />
+                                </span>
+                              ) : (
+                                <SessionIcon kind={s.icon} />
+                              )}
+                            </span>
+                            <span className="flex flex-col gap-1.5">
+                              <span className="text-[24px] font-bold tracking-tight leading-none">{s.title}</span>
+                              <span className="flex items-center gap-2 text-[17px] leading-none" style={{ color: "#aab4c8" }}>
+                                <Clock size={19} fill="#fff" color="#000" strokeWidth={2.4} />
+                                {formatDuration(s.durationSec)}
+                              </span>
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
 
-          <GlassCard accentColor="#f97316" glow className="flex items-center gap-4">
-            <div
-              className="flex items-center justify-center w-14 h-14 rounded-2xl shrink-0"
-              style={{ background: "#f9731622", animation: "flame-flicker 1.6s ease-in-out infinite" }}
-            >
-              <Flame size={26} style={{ color: "#f97316" }} />
-            </div>
-            <div>
-              <p className="text-sm text-white/55">Racha actual</p>
-              <p className="text-2xl font-bold">{kegelStreak} días</p>
-            </div>
-          </GlassCard>
-
-          <GlassButton accentColor="var(--paz-mental)" size="lg" onClick={startSession} className="self-center">
-            Iniciar sesión
-          </GlassButton>
-        </>
-      ) : (
-        <div className="flex flex-col items-center gap-8 py-6">
-          <p className="text-sm text-white/50">
-            Repetición {Math.min(rep + 1, TOTAL_REPS)} de {TOTAL_REPS}
-          </p>
-
-          <div className="relative w-56 h-56 flex items-center justify-center">
-            <motion.div
-              className="absolute rounded-full"
-              style={{
-                background:
-                  "radial-gradient(circle, var(--paz-mental) 0%, transparent 72%)",
-              }}
-              animate={{
-                width: phase === "squeeze" ? 224 : 120,
-                height: phase === "squeeze" ? 224 : 120,
-                opacity: phase === "squeeze" ? 0.9 : 0.5,
-              }}
-              transition={{
-                duration: (phase === "squeeze" ? squeezeMs : releaseMs) / 1000,
-                ease: "easeInOut",
-              }}
-            />
-            <motion.div
-              className="rounded-full border-2"
-              style={{ borderColor: "var(--paz-mental)" }}
-              animate={{
-                width: phase === "squeeze" ? 200 : 100,
-                height: phase === "squeeze" ? 200 : 100,
-              }}
-              transition={{
-                duration: (phase === "squeeze" ? squeezeMs : releaseMs) / 1000,
-                ease: "easeInOut",
-              }}
-            />
-          </div>
-
-          <p className="text-xl font-semibold text-white">
-            {phase === "squeeze" ? "Aprieta" : phase === "release" ? "Suelta" : "¡Listo!"}
-          </p>
-
-          <GlassButton variant="outline" accentColor="var(--paz-mental)" onClick={stopSession}>
-            Detener sesión
-          </GlassButton>
-        </div>
-      )}
-      </div>
+                <div
+                  className="mx-3 mb-[max(env(safe-area-inset-bottom),14px)] rounded-[26px] flex items-center pl-3 pr-3 py-3 shrink-0"
+                  style={{ background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.05)" }}
+                >
+                  <div className="flex flex-1 justify-between">
+                    {days.slice(0, 6).map((d) => {
+                      const iso = format(d, "yyyy-MM-dd");
+                      const done = doneDays.has(iso);
+                      return (
+                        <div key={iso} className="flex flex-col items-center gap-2 w-[15%]">
+                          <span
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] tabular-nums"
+                            style={{
+                              ...MONO_FONT,
+                              background: done ? "#fff" : "#050505",
+                              color: done ? "#000" : "#fff",
+                              boxShadow: done
+                                ? "inset 0 1px 2px rgba(255,255,255,0.9), 0 2px 6px rgba(0,0,0,0.4)"
+                                : "inset 0 1px 2px rgba(255,255,255,0.10), 0 2px 6px rgba(0,0,0,0.5)",
+                            }}
+                          >
+                            {done ? <Check size={17} strokeWidth={3} /> : format(d, "d")}
+                          </span>
+                          <span className="text-[11px] tracking-wide text-white/85" style={MONO_FONT}>
+                            {WEEKDAY[d.getDay()]}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="w-px self-stretch bg-white/10 mx-2" />
+                  <div className="flex flex-col items-center gap-2 w-[15%]">
+                    <span
+                      className="w-8 h-8 flex items-center justify-center text-[15px] tabular-nums"
+                      style={{ ...MONO_FONT, color: doneDays.has(todayISO) ? "#fff" : "rgba(255,255,255,0.45)" }}
+                    >
+                      {doneDays.has(todayISO) ? <Check size={20} strokeWidth={3} /> : format(new Date(), "d")}
+                    </span>
+                    <span className="flex flex-col items-center gap-1">
+                      <span className="text-[11px] tracking-wide text-white/85" style={MONO_FONT}>
+                        HOY
+                      </span>
+                      <span className="h-[2px] w-6 rounded-full" style={{ background: "#f5a800" }} />
+                    </span>
+                  </div>
+                  <div className="pl-2 pb-3">
+                    <ViewDots index={view} count={VIEW_COUNT} />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <CalorieYearView
+                loggedDayKeys={doneDays}
+                todayISO={todayISO}
+                streakCurrent={streak}
+                viewIndex={view}
+                viewCount={VIEW_COUNT}
+                allGold
+                showStreak={false}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </main>
     </div>
   );
 }

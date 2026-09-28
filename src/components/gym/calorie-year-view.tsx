@@ -74,12 +74,17 @@ export function CalorieYearView({
   streakCurrent,
   viewIndex = 2,
   viewCount = 3,
+  allGold = false,
+  showStreak = true,
 }: {
   loggedDayKeys: Set<string>;
   todayISO: string;
   streakCurrent: number;
   viewIndex?: number;
   viewCount?: number;
+  /** Kegel: todos los días cumplidos en dorado (sin rojo/verde por largo de racha) y sin el fuego de abajo. */
+  allGold?: boolean;
+  showStreak?: boolean;
 }) {
   const year = Number(todayISO.slice(0, 4));
   const dayColors = streakColorsByDay(loggedDayKeys);
@@ -94,7 +99,7 @@ export function CalorieYearView({
         continue;
       }
       const iso = `${year}-${pad(m + 1)}-${pad(d)}`;
-      const streakColor = dayColors.get(iso);
+      const streakColor = loggedDayKeys.has(iso) && allGold ? "dorado" : dayColors.get(iso);
       const isToday = iso === todayISO;
       cells.push(
         <div key={key} className="flex items-center justify-center min-h-0">
@@ -132,10 +137,10 @@ export function CalorieYearView({
         >
           {year}
         </span>
-        <span className="flex items-center gap-1" aria-label={`Racha actual: ${streakCurrent}`}>
+        {showStreak && <span className="flex items-center gap-1" aria-label={`Racha actual: ${streakCurrent}`}>
           <span className="text-2xl leading-none">🔥</span>
           <span className="text-lg font-bold tabular-nums">{streakCurrent}</span>
-        </span>
+        </span>}
         {viewCount > 1 && (
           <div className="absolute right-1 bottom-4">
             <ViewDots index={viewIndex} count={viewCount} />
