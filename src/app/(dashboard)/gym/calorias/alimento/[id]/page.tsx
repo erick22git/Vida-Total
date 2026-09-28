@@ -527,7 +527,7 @@ function CookedToggle({ cocido, onChange }: { cocido: boolean; onChange: (cocido
       role="switch"
       aria-checked={cocido}
       className="relative rounded-full cursor-pointer touch-none shrink-0"
-      style={{ width: TRACK, height: 22, background: cocido ? "#ff6b35" : "rgba(255,255,255,0.12)", transition: "background 0.15s" }}
+      style={{ width: TRACK, height: 22, background: cocido ? "#6b6b6b" : "rgba(255,255,255,0.12)", transition: "background 0.15s" }}
     >
       <span
         className="absolute top-[3px] rounded-full bg-white"
@@ -547,12 +547,12 @@ function StatRow({ label, value, big }: { label: string; value: string; big?: bo
   return (
     <div className="flex items-center gap-3">
       <span
-        className={big ? "text-sm font-bold uppercase tracking-wide text-white shrink-0" : "text-xs uppercase tracking-wide text-white/70 shrink-0"}
+        className={big ? "text-[12.5px] font-bold uppercase tracking-wide text-white shrink-0" : "text-[11px] uppercase tracking-wide text-white/70 shrink-0"}
       >
         {label}
       </span>
       <span className="flex-1 h-px bg-white/15" />
-      <span className={big ? "text-xl font-bold text-white tabular-nums shrink-0" : "text-sm font-semibold text-white tabular-nums shrink-0"}>
+      <span className={big ? "text-lg font-bold text-white tabular-nums shrink-0" : "text-[12.5px] font-semibold text-white tabular-nums shrink-0"}>
         {value}
       </span>
     </div>

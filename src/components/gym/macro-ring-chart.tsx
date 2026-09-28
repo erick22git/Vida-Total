@@ -15,7 +15,7 @@ export function MacroRingChart({
   carbosPct: number;
   grasasPct: number;
 }) {
-  const size = 61;
+  const size = 67;
   const stroke = 10;
   const r = (size - stroke) / 2;
   const circumference = 2 * Math.PI * r;
