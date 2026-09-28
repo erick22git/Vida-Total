@@ -26,3 +26,18 @@ export function mealForTime(date: Date = new Date()): MealType {
   }
   return current;
 }
+
+/**
+ * ¿Ya pasó el horario de esa comida? — para pintar de blanco el círculo de las comidas que "ya fueron" (ej. el
+ * desayuno a la 1 pm). Un día anterior a hoy: todas pasaron; un día futuro: ninguna. Hoy: pasó si la hora actual
+ * ya alcanzó el inicio de la comida siguiente. El "snack2" (23:00 → 5:00) no se da por pasado en el mismo día.
+ */
+export function mealTimePassed(meal: MealType, day: Date, now: Date = new Date()): boolean {
+  const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if (dayStart < todayStart) return true;
+  if (dayStart > todayStart) return false;
+  const i = RANGES.findIndex((r) => r.meal === meal);
+  if (i < 0 || i === RANGES.length - 1) return false;
+  return now.getHours() >= RANGES[i + 1].from;
+}

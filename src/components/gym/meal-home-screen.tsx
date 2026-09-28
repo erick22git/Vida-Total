@@ -20,10 +20,10 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, Plus, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, SlidersHorizontal } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { isToday, startOfDay } from "date-fns";
-import { HabitOrb } from "@/components/habitos/habit-orb";
+import { MealHoldOrb } from "@/components/gym/meal-hold-orb";
 import { CalorieSettingsSheet } from "@/components/gym/calorie-settings-sheet";
 import { CalorieWeekStrip } from "@/components/gym/calorie-week-strip";
 import { CalorieYearView } from "@/components/gym/calorie-year-view";
@@ -31,7 +31,7 @@ import { NutrientDetailView } from "@/components/gym/nutrient-detail-view";
 import { useGymStore, useLoggedFoodsForDate } from "@/lib/store/gymStore";
 import { activeLoggedFoods, mergeFoods, nutrientTotalsForLoggedFoods } from "@/lib/food-utils";
 import { computeLoggedDaysStreak, loggedDayKeys } from "@/lib/gym/streaks";
-import { mealForTime } from "@/lib/gym/meal-time";
+import { mealForTime, mealTimePassed } from "@/lib/gym/meal-time";
 import { MEAL_LABELS, type Food, type MealType, type TrackableNutrient } from "@/lib/types";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { SwipeCarouselDots, SwipeCarouselStage, swipeSlide, useSwipeCarousel } from "@/components/shared/swipe-carousel";
@@ -109,6 +109,11 @@ export function MealHomeScreen() {
 
   // El título sigue la hora real mientras el usuario no navegó a mano ni cambió de día — si ya
   // está mirando otra comida o un día pasado, no se lo salteamos de abajo cada minuto.
+  const [, setMinuteTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setMinuteTick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
   const [followClock, setFollowClock] = useState(true);
   useEffect(() => {
     if (!followClock || !viendoHoy) return;
@@ -253,36 +258,14 @@ export function MealHomeScreen() {
                     className={`flex-1 flex flex-col items-center justify-center gap-7 px-6 ${hasFood ? "cursor-pointer" : ""}`}
                     onClick={openEdit}
                   >
-                    {/* No es un <button> nativo: sobre un botón normal, el toque en el celular lo capta el propio
-                        elemento y compite con el gesto de swipe (mismo motivo por el que HoldCircle, en Hábitos,
-                        tampoco es un <button>). Se maneja el toque a mano, igual que allá. */}
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openSearch();
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") openSearch();
-                      }}
-                      aria-label={viendoHoy ? `Agregar a ${MEAL_LABELS[meal]}` : `Sin registro en ${MEAL_LABELS[meal]}`}
-                      className={`w-[68vw] max-w-[340px] aspect-square select-none ${viendoHoy ? "cursor-pointer" : "cursor-default"}`}
-                    >
-                      <HabitOrb done={hasFood} className="w-full">
-                        {hasFood ? (
-                          <div className="flex flex-col items-center gap-1 px-6">
-                            <span className="text-4xl">🍽️</span>
-                            <span className="text-2xl font-bold text-black tabular-nums">{Math.round(totalKcal)} kcal</span>
-                            <span className="text-[11px] uppercase tracking-[0.12em] text-black/50" style={MONO_FONT}>
-                              {foodsForMeal.length} {foodsForMeal.length === 1 ? "alimento" : "alimentos"}
-                            </span>
-                          </div>
-                        ) : (
-                          <Plus size={64} strokeWidth={2} className={viendoHoy ? "text-white/70" : "text-white/25"} />
-                        )}
-                      </HabitOrb>
-                    </div>
+                    <MealHoldOrb
+                      passed={mealTimePassed(meal, selectedDate)}
+                      canAdd={viendoHoy}
+                      kcal={totalKcal}
+                      foodCount={foodsForMeal.length}
+                      label={MEAL_LABELS[meal]}
+                      onTap={openSearch}
+                    />
                   </div>
 
                   <div className="pb-[max(env(safe-area-inset-bottom),20px)]">
