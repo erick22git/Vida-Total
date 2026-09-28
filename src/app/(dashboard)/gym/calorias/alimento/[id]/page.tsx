@@ -13,7 +13,7 @@
  * (gramos, cocido/crudo, cantidad) — agregando uno nuevo (desde el buscador) dice "Agregar" y va
  * blanco directo, sin ese estado "sin cambios".
  */
-import { Suspense, use, useMemo, useState } from "react";
+import { Suspense, use, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { isSameDay, startOfDay } from "date-fns";
@@ -235,7 +235,10 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
   }
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden text-white select-none" style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }}>
+    <div
+      className="fixed inset-0 z-[45] overflow-y-auto overflow-x-hidden text-white select-none"
+      style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }}
+    >
       <div className="relative z-10 flex flex-col gap-5 pb-40 px-4 pt-2 max-w-md mx-auto">
         <header className="flex items-center justify-between gap-2 pt-[max(env(safe-area-inset-top),10px)]">
           <button
@@ -355,7 +358,7 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
 
         <SwipeCarouselStage itemKey={currentEntry?.id ?? currentFoodId} direction={direction} length={mealFoods.length || 1} onDragEnd={onDragEnd}>
           <div className="flex flex-col gap-5">
-            <div className="flex flex-col items-center gap-3 pt-2">
+            <div className="flex flex-col items-center gap-3 pt-6">
               <div style={{ filter: "drop-shadow(0 18px 30px rgba(0,0,0,0.55))" }}>
                 <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={208} rounded="rounded-full" emoji={categoryEmoji(food.categoria)} />
               </div>
@@ -445,12 +448,13 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
                     <FoodWheelPicker value={gramos} onChange={setGramos} decimals={1} min={0} sensitivity={0.6} variant="cylinder" />
                     <span className="text-xs font-semibold text-white tabular-nums">{Math.round(gramos * 10) / 10} G</span>
                   </div>
-                  <button
-                    onClick={() => setCookedState((v) => (v === "cocido" ? "crudo" : "cocido"))}
-                    className="rounded-full bg-white/[0.08] px-4 py-2 text-xs uppercase tracking-wide cursor-pointer text-white/80"
-                  >
-                    {cookedState}
-                  </button>
+                  <div className="flex flex-col items-center gap-1.5">
+                    <CookedToggle
+                      cocido={cookedState === "cocido"}
+                      onChange={(cocido) => setCookedState(cocido ? "cocido" : "crudo")}
+                    />
+                    <span className="text-[10px] font-normal text-white/40 uppercase tracking-wide">{cookedState}</span>
+                  </div>
                   <div className="flex flex-col items-center gap-1.5">
                     <FoodWheelPicker
                       value={Math.round(approxCantidad)}
@@ -494,6 +498,69 @@ function FoodDetailContent({ params }: { params: Promise<{ id: string }> }) {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Interruptor crudo/cocido — se puede tocar (invierte) o arrastrar el círculo de un lado al otro
+ * (referencia visual del usuario: no es un botón de texto, es un switch de verdad). */
+function CookedToggle({ cocido, onChange }: { cocido: boolean; onChange: (cocido: boolean) => void }) {
+  // Todo el gesto (tocar Y arrastrar) se resuelve acá, en los eventos de puntero — sin onClick
+  // aparte, para no terminar invirtiendo el valor dos veces (uno por el arrastre, otro por el click
+  // que el navegador dispara igual al soltar).
+  const dragRef = useRef<{ startX: number; moved: boolean } | null>(null);
+  const [dragX, setDragX] = useState<number | null>(null);
+  const TRACK = 52;
+  const KNOB = 24;
+  const MAX_X = TRACK - KNOB - 4;
+
+  function onPointerDown(e: React.PointerEvent) {
+    (e.target as Element).setPointerCapture(e.pointerId);
+    dragRef.current = { startX: e.clientX, moved: false };
+    setDragX(cocido ? MAX_X : 2);
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    if (!dragRef.current) return;
+    const delta = e.clientX - dragRef.current.startX;
+    if (Math.abs(delta) > 4) dragRef.current.moved = true;
+    const base = cocido ? MAX_X : 2;
+    setDragX(Math.max(2, Math.min(MAX_X, base + delta)));
+  }
+  function onPointerUp() {
+    const drag = dragRef.current;
+    if (drag) {
+      // Toque simple (no se movió): invierte. Arrastre: queda del lado donde soltó el dedo.
+      onChange(drag.moved ? (dragX ?? 0) > MAX_X / 2 : !cocido);
+    }
+    dragRef.current = null;
+    setDragX(null);
+  }
+
+  return (
+    <button
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={() => {
+        dragRef.current = null;
+        setDragX(null);
+      }}
+      aria-label={cocido ? "Cambiar a crudo" : "Cambiar a cocido"}
+      role="switch"
+      aria-checked={cocido}
+      className="relative rounded-full cursor-pointer touch-none shrink-0"
+      style={{ width: TRACK, height: 30, background: cocido ? "var(--gym)" : "rgba(255,255,255,0.12)", transition: "background 0.15s" }}
+    >
+      <span
+        className="absolute top-[3px] rounded-full bg-white"
+        style={{
+          width: KNOB,
+          height: KNOB,
+          left: dragX ?? (cocido ? MAX_X : 2),
+          transition: dragX === null ? "left 0.15s" : "none",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.4)",
+        }}
+      />
+    </button>
   );
 }
 
