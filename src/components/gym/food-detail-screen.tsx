@@ -180,7 +180,7 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
     return (
       <div className="flex flex-col items-center gap-4 py-16 text-white">
         <p className="text-white/60">Alimento no encontrado.</p>
-        <Link href="/gym/calorias/buscar" className="text-sm text-[var(--gym)]">
+        <Link href="/gym/calorias/buscar-nuevo" className="text-sm text-[var(--gym)]">
           Volver a la búsqueda
         </Link>
       </div>
