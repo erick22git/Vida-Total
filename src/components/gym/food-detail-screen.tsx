@@ -460,7 +460,12 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
                     setInfoView((v) => Math.max(0, Math.min(INFO_VIEW_COUNT - 1, v + (e.deltaY > 0 ? 1 : -1))));
                   }}
                 >
-                  <div className="flex items-center justify-between gap-3">
+                  {/* `relative` + los puntos en `absolute`: si fueran flex normales, quedarían
+                      centrados verticalmente CONTRA el contenido — y como el contenido tiene distinta
+                      altura en cada página (4 filas / hasta 7 / micronutrientes), los puntos saltaban
+                      de posición al cambiar de página. Fijos así, siempre quedan en el mismo lugar
+                      (más abajo que antes) sin importar cuánto contenido haya al lado. */}
+                  <div className="relative pr-6">
                     <div className="flex-1 flex flex-col gap-3">
                       {infoView === 0 && (
                         <>
@@ -497,7 +502,7 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
                           </>
                         ))}
                     </div>
-                    <div className="flex flex-col gap-2 shrink-0">
+                    <div className="absolute right-0 top-11 flex flex-col gap-2 shrink-0">
                       {Array.from({ length: INFO_VIEW_COUNT }, (_, i) => (
                         <button
                           key={i}

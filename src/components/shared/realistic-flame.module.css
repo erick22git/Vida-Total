@@ -1,0 +1,112 @@
+/* Fuego con volumen (varias lenguas superpuestas, cada una parpadea distinto) + humo arriba —
+   ver realistic-flame.tsx para el porqué. Todo CSS puro: gradientes + blur + keyframes. */
+
+.wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: visible;
+}
+
+.glow {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  width: 190%;
+  height: 130%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 140, 20, 0.55) 0%, rgba(255, 90, 0, 0.22) 45%, transparent 72%);
+  filter: blur(3px);
+  animation: glowPulse 1.8s ease-in-out infinite;
+}
+
+.tongue {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform-origin: 50% 100%;
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+}
+
+.tongueOuter {
+  width: 76%;
+  height: 96%;
+  background: linear-gradient(180deg, #ffb238 0%, #ff7a1a 42%, #d8340f 78%, #7a1400 100%);
+  filter: blur(1.2px);
+  animation: flickerA 1.05s ease-in-out infinite;
+}
+
+.tongueMid {
+  width: 54%;
+  height: 78%;
+  background: linear-gradient(180deg, #fff2b0 0%, #ffc23c 45%, #ff7a1a 85%, #e2430f 100%);
+  animation: flickerB 0.85s ease-in-out infinite;
+}
+
+.tongueCore {
+  width: 30%;
+  height: 54%;
+  background: radial-gradient(ellipse at 50% 78%, #ffffff 0%, #fff6cf 35%, #ffd35c 68%, #ff9a2e 100%);
+  filter: blur(0.3px);
+  animation: flickerC 0.65s ease-in-out infinite;
+}
+
+.smoke {
+  position: absolute;
+  left: 50%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(210, 210, 215, 0.5) 0%, rgba(200, 200, 205, 0.18) 55%, transparent 78%);
+  filter: blur(2.5px);
+  opacity: 0;
+}
+.smoke1 {
+  bottom: 92%;
+  width: 46%;
+  height: 46%;
+  animation: smokeRise 2.6s ease-in infinite;
+}
+.smoke2 {
+  bottom: 94%;
+  width: 34%;
+  height: 34%;
+  animation: smokeRise 3.1s ease-in infinite 0.9s;
+}
+.smoke3 {
+  bottom: 90%;
+  width: 30%;
+  height: 30%;
+  animation: smokeRise 2.3s ease-in infinite 1.7s;
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.75; transform: translateX(-50%) scale(1); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.08); }
+}
+
+@keyframes flickerA {
+  0% { transform: translateX(-52%) scaleY(1) scaleX(1) skewX(0deg); }
+  25% { transform: translateX(-49%) scaleY(1.06) scaleX(0.94) skewX(-2deg); }
+  50% { transform: translateX(-53%) scaleY(0.94) scaleX(1.05) skewX(2deg); }
+  75% { transform: translateX(-50%) scaleY(1.03) scaleX(0.97) skewX(-1deg); }
+  100% { transform: translateX(-52%) scaleY(1) scaleX(1) skewX(0deg); }
+}
+@keyframes flickerB {
+  0% { transform: translateX(-51%) scaleY(1) scaleX(1); }
+  30% { transform: translateX(-48%) scaleY(1.1) scaleX(0.9) skewX(3deg); }
+  60% { transform: translateX(-53%) scaleY(0.9) scaleX(1.08) skewX(-3deg); }
+  100% { transform: translateX(-51%) scaleY(1) scaleX(1); }
+}
+@keyframes flickerC {
+  0% { transform: translateX(-50%) scaleY(1) scaleX(1); opacity: 1; }
+  40% { transform: translateX(-46%) scaleY(1.15) scaleX(0.85) skewX(-4deg); opacity: 0.92; }
+  70% { transform: translateX(-54%) scaleY(0.85) scaleX(1.1) skewX(4deg); opacity: 1; }
+  100% { transform: translateX(-50%) scaleY(1) scaleX(1); opacity: 1; }
+}
+
+@keyframes smokeRise {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
+  15% { opacity: 0.4; }
+  100% { opacity: 0; transform: translate(-80%, -160%) scale(1.6); }
+}

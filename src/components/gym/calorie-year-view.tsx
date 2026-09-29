@@ -15,6 +15,7 @@
  */
 import { getDaysInMonth } from "date-fns";
 import { ViewDots } from "@/components/habitos/view-dots";
+import { RealisticFlame } from "@/components/shared/realistic-flame";
 
 const MONO = { fontFamily: "var(--font-geist-mono), monospace" } as const;
 const MONTH_LETTERS = ["E", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
@@ -137,8 +138,8 @@ export function CalorieYearView({
         >
           {year}
         </span>
-        {showStreak && <span className="flex items-center gap-1" aria-label={`Racha actual: ${streakCurrent}`}>
-          <span className="text-2xl leading-none">🔥</span>
+        {showStreak && <span className="flex items-center gap-1.5" aria-label={`Racha actual: ${streakCurrent}`}>
+          <RealisticFlame size={22} />
           <span className="text-lg font-bold tabular-nums">{streakCurrent}</span>
         </span>}
         {viewCount > 1 && (

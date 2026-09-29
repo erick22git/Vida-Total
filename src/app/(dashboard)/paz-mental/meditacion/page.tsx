@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
+import { RealisticFlame } from "@/components/shared/realistic-flame";
 import {
   usePazMentalStore,
   useMeditationStreak,
@@ -186,8 +187,9 @@ export default function MeditacionPage() {
           </h1>
         </div>
         {streak > 0 && (
-          <span className="ml-auto text-xs text-white/50 flex items-center gap-1">
-            🔥 {streak} días
+          <span className="ml-auto text-xs text-white/50 flex items-center gap-1.5">
+            <RealisticFlame size={16} />
+            {streak} días
           </span>
         )}
       </header>
