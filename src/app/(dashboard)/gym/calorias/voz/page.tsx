@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Mic, Square, Check, X, Keyboard } from "lucide-react";
 import { FoodSectionHeader } from "@/components/gym/food-section-header";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
 import { ManualEntryModal } from "@/components/gym/manual-entry-modal";
 import { BASE_FOODS, defaultPortions, scaleNutrition } from "@/lib/food-utils";
-import type { Food } from "@/lib/types";
+import type { Food, MealType } from "@/lib/types";
 import type { AnalyzedFoodItem } from "@/app/api/food/analyze/route";
+
+const VALID_MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 
 // Rediseño Calorías, etapa 7 (visual, sin tocar la lógica de reconocimiento de voz): mismo fondo
 // oscuro con grano que el resto de las pantallas rediseñadas.
@@ -113,7 +115,18 @@ function matchFoodsFromText(text: string): DetectedItem[] {
 }
 
 export default function VozPage() {
+  return (
+    <Suspense fallback={null}>
+      <VozContent />
+    </Suspense>
+  );
+}
+
+function VozContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const mealParam = searchParams.get("meal") as MealType | null;
+  const meal: MealType = mealParam && VALID_MEALS.includes(mealParam) ? mealParam : "snack1";
 
   const [supported, setSupported] = useState(true);
   const [recording, setRecording] = useState(false);
@@ -211,7 +224,7 @@ export default function VozPage() {
     } catch {
       return;
     }
-    router.push("/gym/calorias/escaner/resultados");
+    router.push(`/gym/calorias/escaner/resultados?meal=${meal}`);
   }
 
   return (
@@ -308,7 +321,12 @@ export default function VozPage() {
         </>
       )}
 
-      <ManualEntryModal open={manualOpen} onClose={() => setManualOpen(false)} />
+      <ManualEntryModal
+        open={manualOpen}
+        onClose={() => setManualOpen(false)}
+        defaultMeal={meal}
+        onSaved={(m) => router.push(`/gym/calorias?justAdded=${m}`)}
+      />
       </div>
     </div>
   );

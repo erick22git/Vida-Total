@@ -1,15 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Camera as CameraIcon, Plus, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
 import { FoodSectionHeader, FOOD_SECTION_BG } from "@/components/gym/food-section-header";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassModal } from "@/components/glass/glass-modal";
 import { useGymStore } from "@/lib/store/gymStore";
+import type { MealType } from "@/lib/types";
 import type { AnalyzedFoodItem } from "@/app/api/food/analyze/route";
 
 type Mode = "foto" | "codigo";
+
+const VALID_MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 
 interface OpenFoodFactsProduct {
   product_name?: string;
@@ -27,7 +30,20 @@ const PHOTO_KEY = "vt-scanned-photo";
 const RESULTS_KEY = "vt-scan-results";
 
 export default function EscanerPage() {
+  return (
+    <Suspense fallback={null}>
+      <EscanerContent />
+    </Suspense>
+  );
+}
+
+function EscanerContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Qué comida está eligiendo (viene de deslizar desde otra sección, o de la home) — se propaga a
+  // dónde termine cada camino (resultados de foto/voz, alimento por código de barras, buscador).
+  const mealParam = searchParams.get("meal") as MealType | null;
+  const meal: MealType = mealParam && VALID_MEALS.includes(mealParam) ? mealParam : "desayuno";
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -100,7 +116,7 @@ export default function EscanerPage() {
             photoUrl: p.image_front_url ?? null,
           });
           stopCamera();
-          router.push(`/gym/calorias/alimento/${created.id}`);
+          router.push(`/gym/calorias/alimento/${created.id}?meal=${meal}`);
         } else {
           setStatus("Producto no encontrado. Puedes crearlo manualmente.");
           stopCamera();
@@ -113,7 +129,7 @@ export default function EscanerPage() {
         setTimeout(() => router.push(`/gym/calorias/crear-alimento?barcode=${barcode}&fromScan=1`), 900);
       }
     },
-    [addCustomFood, router, stopCamera],
+    [addCustomFood, meal, router, stopCamera],
   );
 
   useEffect(() => {
@@ -195,8 +211,8 @@ export default function EscanerPage() {
 
   const goToManualSearch = useCallback(() => {
     stopCamera();
-    router.push("/gym/calorias/buscar");
-  }, [router, stopCamera]);
+    router.push(`/gym/calorias/buscar-nuevo?meal=${meal}`);
+  }, [meal, router, stopCamera]);
 
   async function analyzePhoto(dataUrl: string) {
     setAnalyzing(true);
@@ -244,7 +260,7 @@ export default function EscanerPage() {
       }
 
       stopCamera();
-      router.push("/gym/calorias/escaner/resultados");
+      router.push(`/gym/calorias/escaner/resultados?meal=${meal}`);
     } catch (err) {
       const isAbort = err instanceof DOMException && err.name === "AbortError";
       const offline = typeof navigator !== "undefined" && navigator.onLine === false;

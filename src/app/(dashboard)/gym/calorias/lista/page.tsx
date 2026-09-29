@@ -154,7 +154,9 @@ export default function ListaPage() {
       });
     }
     setDraftItems([]);
-    router.push("/gym/calorias");
+    // Si todo fue a una sola comida, se vuelve mostrando sus kcal (igual que agregar por búsqueda).
+    // Si tocó varias comidas distintas, no hay un único círculo que revelar — se vuelve sin eso.
+    router.push(mealsWithItems.length === 1 ? `/gym/calorias?justAdded=${mealsWithItems[0]}` : "/gym/calorias");
   }
 
   if (step === "confirmar") {

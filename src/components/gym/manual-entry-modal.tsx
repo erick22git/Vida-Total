@@ -12,10 +12,15 @@ const MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 export function ManualEntryModal({
   open,
   onClose,
+  onSaved,
   defaultMeal = "snack1",
 }: {
   open: boolean;
   onClose: () => void;
+  /** Se llama (con la comida elegida) justo después de guardar — además de `onClose`, que también
+   * se dispara al cancelar. Quien use este modal puede volver a la home con `?justAdded=` para que
+   * el círculo de esa comida muestre las kcal, igual que agregar por búsqueda. */
+  onSaved?: (meal: MealType) => void;
   defaultMeal?: MealType;
 }) {
   const addLoggedFood = useGymStore((s) => s.addLoggedFood);
@@ -47,6 +52,7 @@ export function ManualEntryModal({
       meal,
     });
     reset();
+    onSaved?.(meal);
     onClose();
   }
 
