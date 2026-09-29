@@ -21,10 +21,11 @@ import { Suspense, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { isSameDay, startOfDay } from "date-fns";
-import { ChevronLeft, MoreVertical, Share2, Sparkles, Check, Circle, CheckCircle2, Plus } from "lucide-react";
+import { ChevronLeft, MoreVertical, Share2, Sparkles, Check, Circle, CheckCircle2, Plus, Copy } from "lucide-react";
 import { FoodPhoto } from "@/components/gym/food-photo";
 import { DigitWheel } from "@/components/gym/digit-wheel";
 import { CantidadCounter } from "@/components/gym/cantidad-counter";
+import { GramsKeypadSheet } from "@/components/gym/grams-keypad-sheet";
 import { MacroRingChart } from "@/components/gym/macro-ring-chart";
 import { MealActionsMenu, MenuItem } from "@/components/gym/meal-actions-menu";
 import { SwipeCarouselDots, SwipeCarouselStage, useSwipeCarousel } from "@/components/shared/swipe-carousel";
@@ -73,6 +74,7 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
   const addLoggedFood = useGymStore((s) => s.addLoggedFood);
   const updateLoggedFood = useGymStore((s) => s.updateLoggedFood);
   const removeLoggedFood = useGymStore((s) => s.removeLoggedFood);
+  const copyFoodEntry = useGymStore((s) => s.copyFoodEntry);
   const loggedFoods = useGymStore((s) => s.loggedFoods);
 
   const existingEntry = useMemo(() => (entryId ? loggedFoods.find((f) => f.id === entryId) : undefined), [entryId, loggedFoods]);
@@ -129,12 +131,52 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
 
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [keypadOpen, setKeypadOpen] = useState(false);
 
   // Carrusel VERTICAL (dentro del bloque de números): calorías+macros → información nutricional →
   // micronutrientes — misma mecánica que MealHomeScreen (swipe/wheel verticales).
   const [infoView, setInfoView] = useState(0);
 
   if (!food) {
+    // Editando una comida que todavía no tiene ningún alimento (se llega acá manteniendo presionado
+    // el fondo vacío): sin foto ni datos — solo el "..." para poder Pegar (o Copiar todo/Repetir, etc.).
+    if (mode === "editar") {
+      return (
+        <div
+          className="fixed inset-0 z-[45] overflow-hidden text-white select-none"
+          style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }}
+        >
+          <div className="relative z-10 flex flex-col gap-3 pb-24 px-4 pt-1 max-w-md mx-auto">
+            <header className="flex items-center justify-between gap-2 pt-[max(env(safe-area-inset-top),10px)]">
+              <button
+                onClick={() => router.push("/gym/calorias")}
+                aria-label="Volver"
+                className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer active:scale-95 transition-transform shrink-0"
+                style={{ background: "#0d0d0d" }}
+              >
+                <ChevronLeft size={22} strokeWidth={2.6} />
+              </button>
+              <h1 className="text-[15px] uppercase tracking-[0.12em] truncate" style={MONO_FONT}>
+                {MEAL_LABELS[meal]}
+              </h1>
+              <button
+                onClick={() => setOptionsOpen((v) => !v)}
+                aria-label="Más opciones"
+                className="w-10 h-10 flex items-center justify-center cursor-pointer shrink-0"
+              >
+                <MoreVertical size={20} className="text-white/70" />
+              </button>
+            </header>
+            <MealActionsMenu meal={meal} date={mealDate} foods={mealFoods} open={optionsOpen} onOpenChange={setOptionsOpen} />
+            <div className="flex flex-col items-center gap-2 pt-20">
+              <span className="text-sm uppercase tracking-[0.15em] text-white/35" style={MONO_FONT}>
+                Vacío
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center gap-4 py-16 text-white">
         <p className="text-white/60">Alimento no encontrado.</p>
@@ -198,8 +240,8 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
       router.push("/gym/calorias");
     } else {
       addLoggedFood(buildPayload());
-      // Al terminar de agregar, se muestra el contador de calorías (vista 1 de la home).
-      router.push("/gym/calorias?vista=calorias");
+      // Al volver, el círculo de ESTA comida muestra sus kcal un par de segundos (solo) y vuelve al "+".
+      router.push(`/gym/calorias?justAdded=${meal}`);
     }
   }
 
@@ -295,6 +337,16 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
                   setOptionsOpen(false);
                 }}
               />
+              {currentEntry && (
+                <MenuItem
+                  icon={<Copy size={14} />}
+                  label="Copiar solo este alimento"
+                  onClick={() => {
+                    copyFoodEntry(currentEntry);
+                    setOptionsOpen(false);
+                  }}
+                />
+              )}
               <div className="h-px mx-3 my-1 bg-white/10" />
             </>
           }
@@ -476,7 +528,13 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
                       pxPerStep={2}
                       label="Gramos"
                     />
-                    <span className="text-xs font-semibold text-white tabular-nums">{Math.round(gramos * 10) / 10} G</span>
+                    <button
+                      onClick={() => setKeypadOpen(true)}
+                      className="text-xs font-semibold text-white tabular-nums cursor-pointer"
+                      aria-label="Poner los gramos con el teclado"
+                    >
+                      {Math.round(gramos * 10) / 10} G
+                    </button>
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <CookedToggle
@@ -522,6 +580,18 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
           </div>
         </div>
       </div>
+
+      {keypadOpen && (
+        <GramsKeypadSheet
+          initial={gramos}
+          portionGramos={portionGramos}
+          onConfirm={(v) => {
+            setGramos(v);
+            setKeypadOpen(false);
+          }}
+          onClose={() => setKeypadOpen(false)}
+        />
+      )}
     </div>
   );
 }

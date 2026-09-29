@@ -12,7 +12,7 @@ import { useGymStore } from "@/lib/store/gymStore";
 import { MEAL_LABELS, type Food, type MealType, type RecipeIngredient } from "@/lib/types";
 
 type CreationMode = "manual" | "foto" | "enlace" | null;
-const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snack1", "snack2"];
+const MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 
 /** Al tocar "Agregar" en Ingredientes, en vez de sumar el alimento directo
  * con una porción default, se navega a la pantalla de detalle de ese

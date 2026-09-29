@@ -111,7 +111,8 @@ export function MealActionsMenu({
               {beforeItems}
               <MenuItem
                 icon={<Copy size={14} />}
-                label="Copiar"
+                label="Copiar todo"
+                disabled={foods.length === 0}
                 onClick={() => {
                   copyMeal(meal, date);
                   onOpenChange(false);

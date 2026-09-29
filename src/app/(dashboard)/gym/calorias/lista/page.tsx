@@ -10,7 +10,7 @@ import { mergeFoods, defaultPortions, scaleNutrition } from "@/lib/food-utils";
 import { MEAL_LABELS, type Food, type MealType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snack1", "snack2"];
+const MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 
 // Palabras que no forman parte del nombre del alimento en sí, sino de su
 // estado de preparación — se ignoran al buscar coincidencias en el dataset

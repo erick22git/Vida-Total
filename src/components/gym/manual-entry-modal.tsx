@@ -7,7 +7,7 @@ import { GlassButton } from "@/components/glass/glass-button";
 import { useGymStore } from "@/lib/store/gymStore";
 import { MEAL_LABELS, type MealType } from "@/lib/types";
 
-const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snack1", "snack2"];
+const MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 
 export function ManualEntryModal({
   open,

@@ -13,7 +13,7 @@ import type { AnalyzedFoodItem } from "@/app/api/food/analyze/route";
 
 const RESULTS_KEY = "vt-scan-results";
 
-const MEAL_OPTIONS: MealType[] = ["desayuno", "almuerzo", "cena", "snack1", "snack2"];
+const MEAL_OPTIONS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);

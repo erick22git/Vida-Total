@@ -12,7 +12,7 @@ import { defaultPortions, parsePorcionGramos, scaleNutrition } from "@/lib/food-
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import { MEAL_LABELS, type CookedState, type Food, type FoodPortion, type LoggedFood, type MealType } from "@/lib/types";
 
-const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snack1", "snack2"];
+const MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 const GRAMS_PER_OZ = 28.3495;
 /** Rough water-loss factor applied when a food is marked "cocido" (cooked): the
  * same displayed weight of a cooked food packs more nutrients per gram than raw,

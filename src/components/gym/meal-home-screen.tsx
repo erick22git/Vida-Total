@@ -36,7 +36,7 @@ import { MEAL_LABELS, type Food, type MealType, type TrackableNutrient } from "@
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { SwipeCarouselDots, SwipeCarouselStage, swipeSlide, useSwipeCarousel } from "@/components/shared/swipe-carousel";
 
-const MEALS: MealType[] = ["desayuno", "almuerzo", "cena", "snack1", "snack2"];
+const MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 const VIEW_COUNT = 3; // 0 = comida, 1 = nutrientes, 2 = racha (año)
 const SWIPE_Y = 60;
 
@@ -79,17 +79,52 @@ export function MealHomeScreen() {
   const hasFood = foodsForMeal.length > 0;
   const totalKcal = foodsForMeal.reduce((sum, f) => sum + f.calorias, 0);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  // El círculo (el "+") siempre lleva a buscar para AGREGAR más. Para EDITAR hay que tocar el fondo negro
-  // de atrás: ahí se abre la pantalla de edición (misma interfaz que la de agregar, pero es otra página),
-  // empezando por el ÚLTIMO alimento agregado — deslizando sobre su foto/nombre se ven los demás.
+  // El círculo (el "+") siempre lleva a buscar para AGREGAR más. Para EDITAR hay que mantener presionado
+  // 2 s el fondo negro de atrás: ahí se abre la pantalla de edición (misma interfaz que la de agregar,
+  // pero es otra página), empezando por el ÚLTIMO alimento agregado — deslizando sobre su foto/nombre se
+  // ven los demás. Si la comida todavía no tiene nada, igual se abre (vacía, sin foto) para poder pegar
+  // desde el "..." (ver `food-detail-screen.tsx`).
   const openSearch = () => {
     if (viendoHoy) router.push(`/gym/calorias/buscar-nuevo?meal=${meal}`);
   };
   const openEdit = () => {
-    if (!hasFood) return;
+    if (!hasFood) {
+      router.push(`/gym/calorias/editar/vacio?meal=${meal}`);
+      return;
+    }
     const last = foodsForMeal[foodsForMeal.length - 1];
     router.push(`/gym/calorias/editar/${last.foodId}?meal=${meal}&entryId=${last.id}`);
   };
+
+  // Mantener presionado el fondo (2 s) abre editar — no es un simple toque, para no chocar con el
+  // gesto de swipe horizontal (cambiar de comida) ni con el círculo del "+" (que corta la propagación).
+  const bgHold = useRef<{ timer: ReturnType<typeof setTimeout> | null; start: { x: number; y: number } | null; moved: boolean }>({
+    timer: null,
+    start: null,
+    moved: false,
+  });
+  function cancelBgHold() {
+    if (bgHold.current.timer) clearTimeout(bgHold.current.timer);
+    bgHold.current.timer = null;
+    bgHold.current.start = null;
+  }
+  function onBgPointerDown(e: React.PointerEvent) {
+    cancelBgHold();
+    bgHold.current.start = { x: e.clientX, y: e.clientY };
+    bgHold.current.moved = false;
+    bgHold.current.timer = setTimeout(() => {
+      bgHold.current.timer = null;
+      openEdit();
+    }, 2000);
+  }
+  function onBgPointerMove(e: React.PointerEvent) {
+    const st = bgHold.current.start;
+    if (!st || bgHold.current.moved) return;
+    if (Math.hypot(e.clientX - st.x, e.clientY - st.y) > 10) {
+      bgHold.current.moved = true;
+      cancelBgHold();
+    }
+  }
 
   // Totales del día para la vista de nutrientes (número, gráfico, macros, categorías).
   const totals = activeLoggedFoods(loggedFoods).reduce(
@@ -127,11 +162,28 @@ export function MealHomeScreen() {
   // Swipe VERTICAL = cambia de vista (comida / nutrientes / racha) — igual mecánica que
   // `/habitos/habito` (el horizontal es entre comidas, drag="x" con dragDirectionLock, así que no
   // compite con esto). Se desactiva mientras la comida está expandida (esa lista ya scrollea sola).
-  // Al terminar de agregar un alimento se vuelve con ?vista=calorias: abre directo el contador de calorías.
-  const [view, setView] = useState(() => (searchParams.get("vista") === "calorias" ? 1 : 0));
+  const [view, setView] = useState(0);
   const [viewDir, setViewDir] = useState(1);
   const gestureStart = useRef<{ x: number; y: number } | null>(null);
   const wheelLock = useRef(false);
+
+  // Al terminar de agregar un alimento se vuelve con ?justAdded=<comida>: se abre en esa comida (vista 0,
+  // sin tocar `view`) y se dispara sola la revelación de kcal del círculo — como si se hubiera mantenido
+  // presionado — por un par de segundos, y después vuelve al "+" solo.
+  const [autoRevealMeal, setAutoRevealMeal] = useState<{ meal: MealType; nonce: number } | null>(null);
+  useEffect(() => {
+    const justAdded = searchParams.get("justAdded") as MealType | null;
+    if (!justAdded || !MEALS.includes(justAdded)) return;
+    const id = setTimeout(() => {
+      setIndex(MEALS.indexOf(justAdded));
+      setFollowClock(false);
+      setAutoRevealMeal({ meal: justAdded, nonce: Date.now() });
+      router.replace("/gym/calorias");
+    }, 0);
+    return () => clearTimeout(id);
+    // Solo al montar (leer el param una vez, ya lo limpiamos de la URL después).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function goView(next: number) {
     if (next < 0 || next >= VIEW_COUNT || next === view) return;
@@ -255,8 +307,12 @@ export function MealHomeScreen() {
               >
                 <div className="w-full h-full flex flex-col">
                   <div
-                    className={`flex-1 flex flex-col items-center justify-center gap-7 px-6 ${hasFood ? "cursor-pointer" : ""}`}
-                    onClick={openEdit}
+                    className="flex-1 flex flex-col items-center justify-center gap-7 px-6 cursor-pointer"
+                    onPointerDown={onBgPointerDown}
+                    onPointerMove={onBgPointerMove}
+                    onPointerUp={cancelBgHold}
+                    onPointerCancel={cancelBgHold}
+                    onPointerLeave={cancelBgHold}
                   >
                     <MealHoldOrb
                       passed={mealTimePassed(meal, selectedDate)}
@@ -265,6 +321,7 @@ export function MealHomeScreen() {
                       foodCount={foodsForMeal.length}
                       label={MEAL_LABELS[meal]}
                       onTap={openSearch}
+                      autoReveal={autoRevealMeal?.meal === meal ? autoRevealMeal.nonce : undefined}
                     />
                   </div>
 

@@ -122,6 +122,8 @@ export interface GymState {
   // se puede copiar/repetir/vaciar la comida de un día pasado.
   mealClipboard: LoggedFood[] | null;
   copyMeal: (meal: MealType, date?: Date) => void;
+  /** "Copiar solo este alimento" del menú de detalle — usa el mismo portapapeles/Pegar que copiar la comida entera. */
+  copyFoodEntry: (entry: LoggedFood) => void;
   pasteMeal: (meal: MealType, date?: Date) => void;
   repeatMeal: (meal: MealType, date?: Date) => boolean;
   clearMeal: (meal: MealType, date?: Date) => void;
@@ -368,6 +370,7 @@ export const useGymStore = create<GymState>()(
           );
           return { mealClipboard: items.length ? items : null };
         }),
+      copyFoodEntry: (entry) => set({ mealClipboard: [entry] }),
       pasteMeal: (meal, date) => {
         const day = date ?? new Date();
         let pasted: LoggedFood[] = [];
