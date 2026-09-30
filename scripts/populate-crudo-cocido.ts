@@ -20,6 +20,7 @@ if (!isUsdaConfigured()) {
 }
 
 const FOODS_PATH = "src/lib/data/foods.json";
+const REGIONAL_PATH = "src/lib/data/foods-regional.json";
 
 interface Target {
   id: string;
@@ -217,6 +218,13 @@ interface ReportRow {
 
 async function main() {
   const foods = JSON.parse(readFileSync(FOODS_PATH, "utf-8")) as FoodEntryRaw[];
+  // foods-regional.json es OTRO archivo con su propio array — un id que ya exista ahí (y no en
+  // foods.json) igual cuenta como "ya existe" (BASE_FOODS concatena los dos): si este script lo
+  // trata como nuevo y lo agrega también a foods.json, queda duplicado (mismo id en dos arrays —
+  // ya pasó una vez con "pan-marraqueta", ver el commit que lo corrigió).
+  const regionalIds = new Set(
+    (JSON.parse(readFileSync(REGIONAL_PATH, "utf-8")) as FoodEntryRaw[]).map((f) => f.id),
+  );
   const report: ReportRow[] = [];
 
   for (const t of TARGETS) {
@@ -235,6 +243,10 @@ async function main() {
     }
 
     let entry = foods.find((f) => f.id === t.id);
+    if (!entry && regionalIds.has(t.id)) {
+      console.log(`! ${t.id} ya existe en foods-regional.json — este script no lo toca (actualizalo ahí a mano) para no duplicar el id.`);
+      continue;
+    }
     if (!entry) {
       entry = {
         id: t.id,
