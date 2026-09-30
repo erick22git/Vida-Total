@@ -21,7 +21,7 @@ import { Suspense, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { isSameDay, startOfDay } from "date-fns";
-import { ChevronLeft, MoreVertical, Share2, Sparkles, Check, Circle, CheckCircle2, Plus, Copy } from "lucide-react";
+import { ChevronLeft, MoreVertical, Share2, Sparkles, Check, Circle, CheckCircle2, Plus, Copy, Trash2 } from "lucide-react";
 import { FoodPhoto } from "@/components/gym/food-photo";
 import { DigitWheel } from "@/components/gym/digit-wheel";
 import { CantidadCounter } from "@/components/gym/cantidad-counter";
@@ -43,7 +43,7 @@ import {
 } from "@/lib/food-utils";
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import { MEAL_LABELS } from "@/lib/types";
-import type { CookedState, MealType } from "@/lib/types";
+import type { CookedState, Food, MealType } from "@/lib/types";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 
 const RECIPE_DRAFT_KEY = "vt-recipe-draft";
@@ -107,10 +107,33 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
 
   const currentEntry = showCarousel ? mealFoods[index] : existingEntry;
   const currentFoodId = currentEntry?.foodId ?? id;
-  const food = useMemo(
+  const catalogFood = useMemo(
     () => customFoods.find((f) => f.id === currentFoodId) ?? BASE_FOODS.find((f) => f.id === currentFoodId),
     [customFoods, currentFoodId],
   );
+  // Entradas de escáner IA / manuales / lista de compras tienen un `foodId` que no existe en el
+  // catálogo (`scan-…`, `manual-…`, `lista-…`), o el alimento pudo borrarse después: antes caía en
+  // "Vacío" sin salida. Se arma un alimento sintético con los datos que la propia entrada guardó,
+  // así se puede ver, ajustar gramos, eliminar y seguir deslizando el carrusel.
+  const isSynthetic = !catalogFood && !!currentEntry;
+  const food = useMemo<Food | undefined>(() => {
+    if (catalogFood) return catalogFood;
+    if (!currentEntry) return undefined;
+    const base = currentEntry.gramos ?? 100;
+    return {
+      id: currentEntry.foodId,
+      nombre: currentEntry.nombre,
+      categoria: "Otros",
+      porcion: `${base} g`,
+      pesoGramos: base,
+      calorias: currentEntry.calorias,
+      proteina: currentEntry.proteina,
+      carbos: currentEntry.carbos,
+      grasas: currentEntry.grasas,
+      photoUrl: currentEntry.photoUrl ?? null,
+      configurado: true,
+    };
+  }, [catalogFood, currentEntry]);
 
   // "Sucio" por alimento (para el botón Actualizar negro/blanco) — el store (Zustand persist)
   // hidrata de forma asíncrona, así que solo se guarda lo que el usuario TOCÓ a mano; mientras no
@@ -332,14 +355,16 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
           onOpenChange={setOptionsOpen}
           beforeItems={
             <>
-              <MenuItem
-                icon={<Sparkles size={14} />}
-                label="Verificar"
-                onClick={() => {
-                  setOptionsOpen(false);
-                  router.push(`/gym/calorias/crear-alimento?editId=${food.id}`);
-                }}
-              />
+              {!isSynthetic && (
+                <MenuItem
+                  icon={<Sparkles size={14} />}
+                  label="Verificar"
+                  onClick={() => {
+                    setOptionsOpen(false);
+                    router.push(`/gym/calorias/crear-alimento?editId=${food.id}`);
+                  }}
+                />
+              )}
               <MenuItem
                 icon={<Share2 size={14} />}
                 label="Compartir"
@@ -373,6 +398,15 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
                   onClick={() => {
                     updateLoggedFood(currentEntry.id, { activo: currentEntry.activo === false });
                     setOptionsOpen(false);
+                  }}
+                />
+                <MenuItem
+                  icon={<Trash2 size={14} />}
+                  label="Eliminar este alimento"
+                  danger
+                  onClick={() => {
+                    setOptionsOpen(false);
+                    setConfirmDelete(true);
                   }}
                 />
               </>
