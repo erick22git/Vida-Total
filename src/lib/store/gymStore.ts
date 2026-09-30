@@ -109,6 +109,15 @@ export interface GymProfile {
   nivelActividad?: NivelActividad;
   objetivoCalorico?: ObjetivoCalorico;
   intensidadObjetivo?: string;
+  // ---- Modo PRO (Katch-McArdle + % de grasa corporal) — coexiste con lo de
+  // arriba, no lo reemplaza: cambiar entre Básico y PRO no borra nada. ----
+  modoPro?: boolean;
+  grasaCorporalPct?: number;
+  metodoGrasaCorporal?: "manual" | "navy";
+  medidaCuelloCm?: number;
+  medidaCinturaCm?: number;
+  /** Solo se usa en mujeres — la fórmula Navy para hombres no la necesita. */
+  medidaCaderaCm?: number;
 }
 
 export interface GymState {

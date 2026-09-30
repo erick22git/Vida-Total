@@ -61,6 +61,39 @@ export function calcBMRMifflin(sexo: Sexo, pesoKg: number, alturaCm: number, eda
   return sexo === "hombre" ? base + 5 : base - 161;
 }
 
+/** BMR por Katch-McArdle (Modo PRO) — usa masa magra en vez de peso total,
+ * más preciso cuando se conoce el % de grasa corporal real (vs. estimarlo
+ * indirectamente de sexo/edad/altura como hace Mifflin-St Jeor). */
+export function calcBMRKatchMcArdle(pesoKg: number, grasaCorporalPct: number): number {
+  const lbm = pesoKg * (1 - grasaCorporalPct / 100);
+  return 370 + 21.6 * lbm;
+}
+
+/**
+ * Estimación de % de grasa corporal por el método Navy (circunferencias, cm).
+ * Hombres: cuello + cintura + altura. Mujeres: además necesita cadera.
+ * Devuelve `null` si faltan medidas requeridas para el sexo indicado, en vez
+ * de aproximar con un valor inventado.
+ */
+export function calcBodyFatNavy(
+  sexo: Sexo,
+  medidas: { cuelloCm?: number; cinturaCm?: number; caderaCm?: number; alturaCm?: number },
+): number | null {
+  const { cuelloCm, cinturaCm, caderaCm, alturaCm } = medidas;
+  if (!cuelloCm || !cinturaCm || !alturaCm) return null;
+  if (sexo === "hombre") {
+    const waistNeck = cinturaCm - cuelloCm;
+    if (waistNeck <= 0) return null;
+    const bfp = 495 / (1.0324 - 0.19077 * Math.log10(waistNeck) + 0.15456 * Math.log10(alturaCm)) - 450;
+    return Math.round(bfp * 10) / 10;
+  }
+  if (!caderaCm) return null;
+  const combined = cinturaCm + caderaCm - cuelloCm;
+  if (combined <= 0) return null;
+  const bfp = 495 / (1.29579 - 0.35004 * Math.log10(combined) + 0.221 * Math.log10(alturaCm)) - 450;
+  return Math.round(bfp * 10) / 10;
+}
+
 export function activityMultiplier(nivel: NivelActividad): number {
   return ACTIVITY_LEVELS.find((a) => a.value === nivel)?.multiplier ?? 1.2;
 }
@@ -81,6 +114,9 @@ export interface CalorieCalcInput {
   nivelActividad: NivelActividad;
   objetivoCalorico: ObjetivoCalorico;
   intensidadObjetivo: string;
+  /** Modo PRO: si se da, el BMR se calcula con Katch-McArdle en vez de
+   * Mifflin-St Jeor (más preciso al conocer la composición corporal real). */
+  grasaCorporalPct?: number;
 }
 
 export interface CalorieCalcResult {
@@ -88,19 +124,24 @@ export interface CalorieCalcResult {
   tdee: number;
   pct: number;
   calorieGoal: number;
+  formula: "mifflin" | "katch";
   explicacion: string;
 }
 
 /** Desglose completo BMR -> TDEE -> ajuste -> meta, para mostrar transparencia
  * en la pantalla de resultado (nunca solo "el número mágico"). */
 export function calcCalorieGoal(input: CalorieCalcInput): CalorieCalcResult {
-  const bmr = calcBMRMifflin(input.sexo, input.pesoKg, input.alturaCm, input.edad);
+  const usaKatch = typeof input.grasaCorporalPct === "number" && input.grasaCorporalPct > 0;
+  const bmr = usaKatch
+    ? calcBMRKatchMcArdle(input.pesoKg, input.grasaCorporalPct!)
+    : calcBMRMifflin(input.sexo, input.pesoKg, input.alturaCm, input.edad);
   const tdee = calcTDEE(bmr, input.nivelActividad);
   const preset = findIntensidadPreset(input.objetivoCalorico, input.intensidadObjetivo);
   const pct = preset?.pct ?? 0;
   const calorieGoal = Math.round(tdee * (1 + pct));
   const signo = pct > 0 ? "+" : pct < 0 ? "−" : "";
   const pctTxt = pct === 0 ? "sin ajuste" : `${signo}${Math.round(Math.abs(pct) * 100)}%`;
-  const explicacion = `BMR ${Math.round(bmr)} kcal × actividad = TDEE ${Math.round(tdee)} kcal, ${pctTxt} (${OBJETIVO_LABELS[input.objetivoCalorico]}) = ${calorieGoal} kcal/día.`;
-  return { bmr, tdee, pct, calorieGoal, explicacion };
+  const formulaTxt = usaKatch ? "Katch-McArdle (con tu % de grasa)" : "Mifflin-St Jeor";
+  const explicacion = `BMR ${Math.round(bmr)} kcal (${formulaTxt}) × actividad = TDEE ${Math.round(tdee)} kcal, ${pctTxt} (${OBJETIVO_LABELS[input.objetivoCalorico]}) = ${calorieGoal} kcal/día.`;
+  return { bmr, tdee, pct, calorieGoal, formula: usaKatch ? "katch" : "mifflin", explicacion };
 }
