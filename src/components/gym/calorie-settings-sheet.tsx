@@ -157,7 +157,10 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
                 }}
                 className="w-full text-left px-3.5 py-3 rounded-xl text-sm text-white/85 hover:bg-white/[0.06] cursor-pointer"
               >
-                Configuración de calorías
+                <span className="flex items-center justify-between">
+                  Configuración de calorías
+                  <span className="text-white/45 tabular-nums">{calorieGoal} kcal</span>
+                </span>
               </button>
               <button
                 onClick={() => {

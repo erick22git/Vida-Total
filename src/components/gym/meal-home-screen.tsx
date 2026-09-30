@@ -78,7 +78,8 @@ export function MealHomeScreen() {
   );
   const hasFood = foodsForMeal.length > 0;
   const totalKcal = foodsForMeal.reduce((sum, f) => sum + f.calorias, 0);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  // Al aplicar la meta desde la calculadora se vuelve con ?ajustes=1 para ver Ajustes ya abierto.
+  const [settingsOpen, setSettingsOpen] = useState(() => searchParams.get("ajustes") === "1");
   // El círculo (el "+") siempre lleva a buscar para AGREGAR más. Para EDITAR hay que mantener presionado
   // 2 s el fondo negro de atrás: ahí se abre la pantalla de edición (misma interfaz que la de agregar,
   // pero es otra página), empezando por el ÚLTIMO alimento agregado — deslizando sobre su foto/nombre se
@@ -357,7 +358,13 @@ export function MealHomeScreen() {
         </AnimatePresence>
       </main>
 
-      <CalorieSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <CalorieSettingsSheet
+        open={settingsOpen}
+        onClose={() => {
+          setSettingsOpen(false);
+          if (searchParams.get("ajustes") === "1") router.replace("/gym/calorias");
+        }}
+      />
     </div>
   );
 }

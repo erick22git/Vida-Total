@@ -238,6 +238,7 @@ export default function ConfigurarCaloriasPage() {
     }
     updateGymProfileFields(patch);
     setApplied(true);
+    router.replace("/gym/calorias?ajustes=1");
   }
 
   const intensidadPresets = objetivoCalorico ? GOAL_INTENSITY_PRESETS[objetivoCalorico] : [];
