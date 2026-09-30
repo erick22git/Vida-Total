@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
   ListPlus,
+  Plus,
   Shield,
   User,
   CalendarRange,
@@ -226,13 +227,21 @@ export default function EntrenamientoPage() {
             {!activePlan && <p className="text-xs text-white/45">Todavía no elegiste una planificación</p>}
           </div>
           {activePlan ? (
-            <Link
-              href={`/gym/entrenamiento/planificaciones/${activePlan.id}`}
-              className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold text-white glass-specular-ring flex items-center gap-1"
-              style={{ background: "rgba(255,255,255,0.1)" }}
-            >
-              Ver plan <ChevronRight size={13} />
-            </Link>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                href="/gym/entrenamiento/planificaciones/manual"
+                className="rounded-full px-3 py-1.5 text-xs font-semibold text-white/70 hover:text-white flex items-center gap-1 bg-white/[0.06]"
+              >
+                <Plus size={13} /> Nuevo plan
+              </Link>
+              <Link
+                href={`/gym/entrenamiento/planificaciones/${activePlan.id}`}
+                className="rounded-full px-3 py-1.5 text-xs font-semibold text-white glass-specular-ring flex items-center gap-1"
+                style={{ background: "rgba(255,255,255,0.1)" }}
+              >
+                Ver plan <ChevronRight size={13} />
+              </Link>
+            </div>
           ) : (
             <Link href="/gym/entrenamiento/planificaciones" className="shrink-0 text-xs font-medium text-white/50 hover:text-white flex items-center gap-1">
               Más planes <ChevronRight size={13} />

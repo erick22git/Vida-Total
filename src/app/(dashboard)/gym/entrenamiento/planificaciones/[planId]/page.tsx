@@ -2,7 +2,7 @@
 
 import { use, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Moon, Dumbbell, MoreVertical, LayoutGrid, List, ListChecks } from "lucide-react";
+import { ArrowLeft, Moon, Dumbbell, MoreVertical, LayoutGrid, List, ListChecks, Copy, ClipboardPaste } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
 import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
@@ -11,9 +11,27 @@ import { useGymStore } from "@/lib/store/gymStore";
 import { dominantMuscleGroup } from "@/lib/gym-utils";
 import { MUSCLE_GROUPS } from "@/lib/data/gym-meta";
 import { cn } from "@/lib/utils";
-import type { RoutineExercise, MuscleGroup } from "@/lib/types";
+import type { RoutineExercise, MuscleGroup, WeeklyPlanDay } from "@/lib/types";
 
 const DAY_LABELS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+
+// Portapapeles de "copiar/pegar día": vive en sessionStorage para poder copiar un día de un plan
+// y pegarlo en otro plan distinto sin perderlo al navegar.
+const DAY_CLIPBOARD_KEY = "vt-day-clipboard";
+interface DayClipboard {
+  grupoMuscular: WeeklyPlanDay["grupoMuscular"];
+  ejercicios: RoutineExercise[] | null;
+}
+
+function readDayClipboard(): DayClipboard | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(DAY_CLIPBOARD_KEY);
+    return raw ? (JSON.parse(raw) as DayClipboard) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function PlanDetailPage({
   params,
@@ -31,6 +49,13 @@ export default function PlanDetailPage({
   const updatePlanDay = useGymStore((s) => s.updatePlanDay);
   const setActivePlan = useGymStore((s) => s.setActivePlan);
   const applyPlanToWeek = useGymStore((s) => s.applyPlanToWeek);
+  const [dayClipboard, setDayClipboard] = useState<DayClipboard | null>(readDayClipboard);
+  const [toast, setToast] = useState<string | null>(null);
+
+  function flashToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 1800);
+  }
 
   const plan = plans.find((p) => p.id === planId);
 
@@ -79,6 +104,75 @@ export default function PlanDetailPage({
     updatePlanDay(plan!.id, i, { grupoMuscular: "Descanso", routineId: undefined });
   }
 
+  function copyDay(i: number) {
+    setMenuDay(null);
+    const day = plan!.dias[i];
+    const routine = day.routineId ? routines.find((r) => r.id === day.routineId) : undefined;
+    const clip: DayClipboard = {
+      grupoMuscular: day.grupoMuscular,
+      ejercicios: routine ? (JSON.parse(JSON.stringify(routine.ejercicios)) as RoutineExercise[]) : null,
+    };
+    try {
+      sessionStorage.setItem(DAY_CLIPBOARD_KEY, JSON.stringify(clip));
+    } catch {
+      /* sin sessionStorage: queda solo en memoria de esta pantalla */
+    }
+    setDayClipboard(clip);
+    flashToast(`${DAY_LABELS[i]} copiado`);
+  }
+
+  function pasteDay(i: number) {
+    setMenuDay(null);
+    if (!dayClipboard) return;
+    const { ejercicios, grupoMuscular } = dayClipboard;
+    if (!ejercicios || ejercicios.length === 0 || grupoMuscular === "Descanso") {
+      updatePlanDay(plan!.id, i, { grupoMuscular: "Descanso", routineId: undefined });
+    } else {
+      // Siempre se clona: la rutina pegada es independiente de la original, así que editar un día
+      // nunca modifica el otro.
+      const cloned = JSON.parse(JSON.stringify(ejercicios)) as RoutineExercise[];
+      const targetRoutineId = plan!.dias[i].routineId;
+      if (targetRoutineId && routines.some((r) => r.id === targetRoutineId)) {
+        updateRoutine(targetRoutineId, { ejercicios: cloned });
+        updatePlanDay(plan!.id, i, { grupoMuscular });
+      } else {
+        const routine = saveRoutine(`${plan!.nombre} - ${DAY_LABELS[i]}`, cloned);
+        updatePlanDay(plan!.id, i, { grupoMuscular, routineId: routine.id });
+      }
+    }
+    flashToast(`Pegado en ${DAY_LABELS[i]}`);
+  }
+
+  // Guarda el borrador del día en el momento en que cambia, no recién al tocar "Listo": antes, salir
+  // del editor con el botón atrás del teléfono o la barra de abajo perdía todo lo armado. Un borrador
+  // vacío NO se guarda acá (es el paso de elegir ejercicios); eso lo resuelve closeEditor.
+  function persistDay(dayIndex: number, next: RoutineExercise[], muscleOverride: MuscleGroup | null) {
+    if (next.length === 0) return;
+    const state = useGymStore.getState();
+    const currentPlan = state.plans.find((p) => p.id === planId);
+    const day = currentPlan?.dias[dayIndex];
+    if (!currentPlan || !day) return;
+    const grupo = muscleOverride ?? dominantMuscleGroup(next, allExercises) ?? "Cardio";
+    const existing = day.routineId ? state.routines.find((r) => r.id === day.routineId) : undefined;
+    if (existing) {
+      updateRoutine(existing.id, { ejercicios: next });
+      updatePlanDay(currentPlan.id, dayIndex, { grupoMuscular: grupo });
+    } else {
+      const routine = saveRoutine(`${currentPlan.nombre} - ${DAY_LABELS[dayIndex]}`, next);
+      updatePlanDay(currentPlan.id, dayIndex, { grupoMuscular: grupo, routineId: routine.id });
+    }
+  }
+
+  function changeDraft(next: RoutineExercise[]) {
+    setDraft(next);
+    if (editingDay !== null) persistDay(editingDay, next, dayMuscleOverride);
+  }
+
+  function changeMuscleOverride(next: MuscleGroup | null) {
+    setDayMuscleOverride(next);
+    if (editingDay !== null) persistDay(editingDay, draft, next);
+  }
+
   function closeEditor() {
     if (editingDay === null) return;
     const day = plan!.dias[editingDay];
@@ -122,7 +216,7 @@ export default function PlanDetailPage({
             <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">Grupo muscular (opcional)</span>
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => setDayMuscleOverride(null)}
+                onClick={() => changeMuscleOverride(null)}
                 className={cn(
                   "rounded-full px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors border",
                   dayMuscleOverride === null
@@ -135,7 +229,7 @@ export default function PlanDetailPage({
               {MUSCLE_GROUPS.map((m) => (
                 <button
                   key={m.value}
-                  onClick={() => setDayMuscleOverride(m.value)}
+                  onClick={() => changeMuscleOverride(m.value)}
                   className={cn(
                     "rounded-full px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors border",
                     dayMuscleOverride === m.value
@@ -157,7 +251,7 @@ export default function PlanDetailPage({
               multiple
               confirmButtonClassName="z-30"
               onConfirmSelection={(exs) =>
-                setDraft(
+                changeDraft(
                   exs.map<RoutineExercise>((e) => ({
                     exerciseId: e.id,
                     sets: [
@@ -171,7 +265,7 @@ export default function PlanDetailPage({
             />
           </>
         ) : (
-          <ExerciseSessionBuilder draft={draft} onDraftChange={setDraft} />
+          <ExerciseSessionBuilder draft={draft} onDraftChange={changeDraft} />
         )}
       </div>
     );
@@ -179,6 +273,11 @@ export default function PlanDetailPage({
 
   return (
     <div className="flex flex-col gap-6 pb-8">
+      {toast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-full px-4 py-2 text-xs font-medium text-white bg-black/80 border border-white/15">
+          {toast}
+        </div>
+      )}
       <header className="flex items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-3 min-w-0">
           <button onClick={() => router.back()} className="text-white/50 hover:text-white transition-colors cursor-pointer shrink-0">
@@ -241,6 +340,29 @@ export default function PlanDetailPage({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    copyDay(i);
+                  }}
+                  className="text-white/40 hover:text-white shrink-0 p-1.5 cursor-pointer"
+                  title="Copiar día"
+                  aria-label={`Copiar ${DAY_LABELS[i]}`}
+                >
+                  <Copy size={15} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    pasteDay(i);
+                  }}
+                  disabled={!dayClipboard}
+                  className="text-white/40 hover:text-white shrink-0 p-1.5 cursor-pointer disabled:opacity-25 disabled:cursor-default"
+                  title="Pegar día"
+                  aria-label={`Pegar en ${DAY_LABELS[i]}`}
+                >
+                  <ClipboardPaste size={15} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setMenuDay(menuDay === i ? null : i);
                   }}
                   className="text-white/40 hover:text-white shrink-0 p-1.5 cursor-pointer"
@@ -259,6 +381,19 @@ export default function PlanDetailPage({
                       className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-left cursor-pointer transition-colors hover:bg-white/10 text-white/85"
                     >
                       <ListChecks size={15} /> Editar ejercicios
+                    </button>
+                    <button
+                      onClick={() => copyDay(i)}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-left cursor-pointer transition-colors hover:bg-white/10 text-white/85"
+                    >
+                      <Copy size={15} /> Copiar día
+                    </button>
+                    <button
+                      onClick={() => pasteDay(i)}
+                      disabled={!dayClipboard}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-left cursor-pointer transition-colors hover:bg-white/10 text-white/85 disabled:opacity-30 disabled:cursor-default"
+                    >
+                      <ClipboardPaste size={15} /> Pegar día
                     </button>
                     <button
                       onClick={() => markRest(i)}

@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { ArrowLeft, Plus, Key, Pencil, Sparkles } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassBadge } from "@/components/glass/glass-badge";
@@ -16,6 +18,8 @@ export default function PlanificacionesPage() {
   const router = useRouter();
   const plans = useGymStore((s) => s.plans);
   const routines = useGymStore((s) => s.routines);
+  const planHistory = useGymStore((s) => s.planHistory);
+  const sessions = useGymStore((s) => s.sessions);
   const setActivePlan = useGymStore((s) => s.setActivePlan);
   const applyPlanToWeek = useGymStore((s) => s.applyPlanToWeek);
   const allExercises = useAllExercises();
@@ -192,6 +196,44 @@ export default function PlanificacionesPage() {
           </div>
         );
       })}
+
+      {planHistory.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <h3 className="text-base font-semibold text-white/85">Historial de planes</h3>
+          <div className="flex flex-col gap-2">
+            {[...planHistory]
+              .sort((a, b) => new Date(b.fechaInicio).getTime() - new Date(a.fechaInicio).getTime())
+              .map((h) => {
+                const plan = plans.find((p) => p.id === h.planId);
+                const inicio = new Date(h.fechaInicio);
+                const fin = h.fechaFin ? new Date(h.fechaFin) : null;
+                const hechos = sessions.filter((s) => {
+                  const d = new Date(s.date);
+                  return d >= inicio && (!fin || d < fin);
+                }).length;
+                return (
+                  <GlassCard
+                    key={h.planId + h.fechaInicio}
+                    padding="sm"
+                    interactive={false}
+                    className="flex items-center justify-between gap-3"
+                    style={{ background: "var(--glass-bg-dark)" }}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-white truncate">{plan?.nombre ?? "Plan eliminado"}</p>
+                      <p className="text-xs text-white/45">
+                        {format(inicio, "d MMM yyyy", { locale: es })} → {fin ? format(fin, "d MMM yyyy", { locale: es }) : "hoy"}
+                      </p>
+                    </div>
+                    <span className="text-xs text-white/40 shrink-0">
+                      {hechos} {hechos === 1 ? "entrenamiento" : "entrenamientos"}
+                    </span>
+                  </GlassCard>
+                );
+              })}
+          </div>
+        </div>
+      )}
 
       <EditPlanModal
         key={editingPlan?.id ?? "none"}
