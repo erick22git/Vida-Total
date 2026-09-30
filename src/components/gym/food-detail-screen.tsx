@@ -36,6 +36,8 @@ import {
   parsePorcionGramos,
   scaleNutrition,
   scaleMicronutrients,
+  scaleCookedNutrition,
+  scaleCookedMicronutrients,
   MICRONUTRIENT_LABELS,
   DAILY_VALUES,
 } from "@/lib/food-utils";
@@ -43,9 +45,6 @@ import { categoryEmoji } from "@/lib/food-category-emoji";
 import { MEAL_LABELS } from "@/lib/types";
 import type { CookedState, MealType } from "@/lib/types";
 import { MONO_FONT } from "@/lib/ui/mono-font";
-
-/** Mismo factor que food-entry-sheet.tsx: un alimento "cocido" concentra más nutrientes por gramo. */
-const COOKED_FACTOR = 0.7;
 
 const RECIPE_DRAFT_KEY = "vt-recipe-draft";
 
@@ -121,7 +120,10 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
   const [overrides, setOverrides] = useState<Record<string, { gramos?: number; cooked?: CookedState }>>({});
   const dirty = !!overrides[overrideKey];
   const gramos = overrides[overrideKey]?.gramos ?? currentEntry?.gramos ?? (food ? parsePorcionGramos(food) : 100);
-  const cookedState = overrides[overrideKey]?.cooked ?? currentEntry?.cookedState ?? "crudo";
+  // Un alimento nuevo (sin entrada registrada todavía) puede definir con qué estado prefiere abrir
+  // (arroz/avena/pollo/huevo suelen registrarse ya cocidos) — un `LoggedFood` ya guardado siempre
+  // conserva el estado con el que se registró, eso nunca lo pisa `estadoDefault`.
+  const cookedState = overrides[overrideKey]?.cooked ?? currentEntry?.cookedState ?? food?.estadoDefault ?? "crudo";
   const setGramos = (v: number) => setOverrides((o) => ({ ...o, [overrideKey]: { ...o[overrideKey], gramos: v } }));
   const setCookedState = (updater: CookedState | ((c: CookedState) => CookedState)) =>
     setOverrides((o) => ({
@@ -187,9 +189,14 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
     );
   }
 
-  const effectiveGramos = cookedState === "cocido" ? gramos / COOKED_FACTOR : gramos;
-  const nutrition = scaleNutrition(food, effectiveGramos);
-  const micronutrients = scaleMicronutrients(food, effectiveGramos);
+  // Sin datos reales de cocido cargados para este alimento, el estado queda forzado a "crudo" — ya
+  // no existe una fórmula que invente un valor cocido (antes era `gramos ÷ 0.7`).
+  const hasCocido = !!food.cocido;
+  const effectiveCookedState: CookedState = hasCocido ? cookedState : "crudo";
+  const nutrition =
+    effectiveCookedState === "cocido" ? scaleCookedNutrition(food, gramos)! : scaleNutrition(food, gramos);
+  const micronutrients =
+    effectiveCookedState === "cocido" ? scaleCookedMicronutrients(food, gramos) : scaleMicronutrients(food, gramos);
   const portionsForRatio = defaultPortions(food);
   const portionGramos = portionsForRatio[0]?.gramos || 100;
   const approxCantidad = gramos / portionGramos;
@@ -205,11 +212,17 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
   const nutritionRows: { label: string; value: number | undefined; unit: string; dvKey: string }[] = [
     { label: "Grasas Saturadas", value: nutrition.grasasSaturadas, unit: "g", dvKey: "grasasSaturadas" },
     { label: "Grasas Trans", value: nutrition.grasasTrans, unit: "g", dvKey: "" },
+    { label: "Grasas Monoinsaturadas", value: nutrition.grasasMonoinsaturadas, unit: "g", dvKey: "" },
+    { label: "Grasas Poliinsaturadas", value: nutrition.grasasPoliinsaturadas, unit: "g", dvKey: "" },
+    { label: "Omega-3 (ALA)", value: nutrition.omega3Ala, unit: "g", dvKey: "" },
+    { label: "Omega-6 (Linoleico)", value: nutrition.omega6Linoleico, unit: "g", dvKey: "" },
     { label: "Colesterol", value: nutrition.colesterol, unit: "mg", dvKey: "colesterol" },
     { label: "Sodio", value: nutrition.sodio, unit: "mg", dvKey: "sodio" },
     { label: "Fibra", value: nutrition.fibra, unit: "g", dvKey: "fibra" },
     { label: "Azúcares", value: nutrition.azucares, unit: "g", dvKey: "azucares" },
     { label: "Azúcares Añadidos", value: nutrition.azucaresAnadidos, unit: "g", dvKey: "azucaresAnadidos" },
+    { label: "Agua", value: nutrition.agua, unit: "g", dvKey: "" },
+    { label: "Ceniza", value: nutrition.ceniza, unit: "g", dvKey: "" },
   ];
   const vitaminEntries = Object.entries(micronutrients ?? {}).filter(([k]) => MICRONUTRIENT_LABELS[k]?.group === "vitamina");
   const mineralEntries = Object.entries(micronutrients ?? {}).filter(([k]) => MICRONUTRIENT_LABELS[k]?.group === "mineral");
@@ -226,7 +239,7 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
       gramos: Math.round(gramos * 10) / 10,
       porcionNombre: `${Math.round(gramos * 10) / 10} g`,
       photoUrl: food!.photoUrl,
-      cookedState,
+      cookedState: effectiveCookedState,
     };
   }
 
@@ -542,11 +555,19 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
                     </button>
                   </div>
                   <div className="flex flex-col items-center gap-1">
-                    <CookedToggle
-                      cocido={cookedState === "cocido"}
-                      onChange={(cocido) => setCookedState(cocido ? "cocido" : "crudo")}
-                    />
-                    <span className="text-[10px] font-normal text-white/40 uppercase tracking-wide">{cookedState}</span>
+                    {hasCocido ? (
+                      <CookedToggle
+                        cocido={effectiveCookedState === "cocido"}
+                        onChange={(cocido) => setCookedState(cocido ? "cocido" : "crudo")}
+                      />
+                    ) : (
+                      // Sin datos reales de cocido para este alimento — nada que tocar (antes acá
+                      // se simulaba "cocido" con una fórmula fija; ahora directamente no se ofrece).
+                      <div className="w-[38px] h-[22px] rounded-full opacity-25" style={{ background: "rgba(255,255,255,0.12)" }} />
+                    )}
+                    <span className="text-[10px] font-normal text-white/40 uppercase tracking-wide">
+                      {hasCocido ? effectiveCookedState : "crudo"}
+                    </span>
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <CantidadCounter

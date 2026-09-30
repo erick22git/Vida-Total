@@ -61,9 +61,11 @@ export interface FoodMicronutrients {
   vitaminaB1?: number; // mg
   vitaminaB2?: number; // mg
   vitaminaB3?: number; // mg
+  vitaminaB5?: number; // mg (ácido pantoténico)
   vitaminaB6?: number; // mg
   vitaminaB12?: number; // mcg
   folato?: number; // mcg
+  colina?: number; // mg
   calcio?: number; // mg
   hierro?: number; // mg
   magnesio?: number; // mg
@@ -73,6 +75,42 @@ export interface FoodMicronutrients {
   selenio?: number; // mcg
   cobre?: number; // mg
   manganeso?: number; // mg
+}
+
+/**
+ * Perfil nutricional completo de un alimento por su porción base (100g por convención USDA) —
+ * comparte forma entre el estado "crudo" (los campos sueltos de `Food`, por compatibilidad con
+ * los ~124 alimentos que ya existían antes de este campo) y el estado "cocido" (`Food.cocido`,
+ * opcional). Antes "cocido" era una fórmula fija (gramos ÷ 0.7) sobre el mismo perfil crudo — un
+ * alimento cocido de verdad tiene su propio dato real (USDA reporta cada estado por separado:
+ * la absorción de agua, el índice glicémico y hasta las calorías cambian con la cocción), así que
+ * ahora son dos sets de datos independientes, cada uno con su propia fuente documentada.
+ */
+export interface NutritionProfile {
+  calorias: number;
+  proteina: number;
+  carbos: number;
+  grasas: number;
+  grasasSaturadas?: number;
+  grasasTrans?: number;
+  grasasMonoinsaturadas?: number;
+  grasasPoliinsaturadas?: number;
+  omega3Ala?: number; // g — ácido alfa-linolénico (18:3 n-3)
+  omega6Linoleico?: number; // g — ácido linoleico (18:2 n-6)
+  colesterol?: number; // mg
+  sodio?: number; // mg
+  fibra?: number;
+  azucares?: number;
+  azucaresAnadidos?: number;
+  agua?: number; // g
+  ceniza?: number; // g
+  micronutrientes?: FoodMicronutrients;
+}
+
+export interface CookedNutritionProfile extends NutritionProfile {
+  /** fdcId de USDA FoodData Central usado para ESTE estado (cocido) — trazabilidad, igual que
+   * `Food.fdcIdCrudo` para el estado crudo. */
+  fdcId?: number;
 }
 
 export const FOOD_CATEGORIES = [
@@ -87,32 +125,22 @@ export const FOOD_CATEGORIES = [
 ] as const;
 export type FoodCategory = (typeof FOOD_CATEGORIES)[number];
 
-export interface Food {
+export interface Food extends NutritionProfile {
   id: string;
   nombre: string;
   marca?: string;
   categoria: string;
   porcion: string; // default portion label, e.g. "100 g"
   pesoGramos?: number; // grams represented by the default porcion
-  calorias: number;
-  proteina: number;
-  carbos: number;
-  grasas: number;
-  grasasSaturadas?: number;
-  grasasTrans?: number;
-  colesterol?: number; // mg
-  sodio?: number; // mg
-  fibra?: number;
-  azucares?: number;
-  azucaresAnadidos?: number;
-  micronutrientes?: FoodMicronutrients;
   photoUrl?: string | null;
   barcode?: string;
   /** true = sus valores fueron cruzados contra una fuente real (USDA,
    * revisión manual del usuario) y confirmados. NUNCA asumir `true` por
    * default para un alimento nuevo — antes se hardcodeaba así para toda
    * la base (ver food-utils.ts), lo que hacía aparecer el check verde de
-   * "Verificado" en alimentos que nadie había verificado de verdad. */
+   * "Verificado" en alimentos que nadie había verificado de verdad.
+   * Con el modelo crudo/cocido: si el alimento tiene ambos estados
+   * aplicables, solo se marca `true` cuando los dos están completos. */
   verificado?: boolean;
   /** false = el alimento existe (tiene id, aparece en listas) pero sus
    * valores nutricionales todavía no fueron completados con datos reales
@@ -123,6 +151,23 @@ export interface Food {
   configurado?: boolean;
   creadoPorUsuario?: boolean;
   porciones?: FoodPortion[]; // alternate selectable units
+  /** fdcId de USDA FoodData Central usado para el estado CRUDO (los campos de `NutritionProfile`
+   * de arriba). Ausente = no viene de USDA (dato manual, plato compuesto, etc.). */
+  fdcIdCrudo?: number;
+  /** Estado "cocido" — un perfil nutricional COMPLETO e independiente (no una fórmula sobre el
+   * crudo). Ausente = todavía no se cargó el dato real de cocido para este alimento; el switch
+   * crudo/cocido de la pantalla de detalle se deshabilita en ese caso (ver food-detail-screen.tsx),
+   * no inventa un valor. */
+  cocido?: CookedNutritionProfile;
+  /** true = este alimento NO tiene un estado "cocido" que tenga sentido (p.ej. pan, marraqueta —
+   * ya son productos horneados) o NO tiene un estado "crudo" que tenga sentido (p.ej. cebolla
+   * caramelizada, pollo apanado — son preparaciones). Evita que el formulario de verificación siga
+   * insistiendo con la alerta de "falta llenar cocido" para un alimento de un solo estado real. */
+  unSoloEstado?: boolean;
+  /** Con qué estado abre por default un alimento NUEVO en la pantalla de detalle (arroz, avena,
+   * pollo, huevo suelen registrarse ya cocidos, no crudos). Ausente = "crudo". No afecta un
+   * `LoggedFood` ya guardado (cada uno conserva su propio `cookedState` de cuando se registró). */
+  estadoDefault?: CookedState;
 }
 
 export type MealType = "desayuno" | "almuerzo" | "cena" | "snack1" | "snack2";

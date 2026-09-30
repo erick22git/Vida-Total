@@ -101,6 +101,13 @@ const NUTRIENT_NUMBER = {
   carbos: "205",
   grasas: "204",
   grasasSaturadas: "606",
+  grasasTrans: "605", // Fatty acids, total trans — faltaba, el formulario ya pedía este campo pero no se traía de USDA
+  grasasMonoinsaturadas: "645", // Fatty acids, total monounsaturated
+  grasasPoliinsaturadas: "646", // Fatty acids, total polyunsaturated
+  omega3Ala: "851", // 18:3 n-3 c,c,c (ALA) — representativo de omega-3, no la suma de todos los omega-3
+  omega6Linoleico: "675", // 18:2 n-6 c,c (ácido linoleico) — representativo de omega-6
+  agua: "255", // Water
+  ceniza: "207", // Ash
   colesterol: "601",
   sodio: "307",
   fibra: "291",
@@ -113,9 +120,11 @@ const NUTRIENT_NUMBER = {
   vitaminaB1: "404", // Thiamin
   vitaminaB2: "405", // Riboflavin
   vitaminaB3: "406", // Niacin
+  vitaminaB5: "410", // Pantothenic acid
   vitaminaB6: "415",
   vitaminaB12: "418",
   folato: "417",
+  colina: "421", // Choline, total
   calcio: "301",
   hierro: "303",
   magnesio: "304",
@@ -136,6 +145,13 @@ export interface NormalizedUsdaNutrition {
   carbos: number;
   grasas: number;
   grasasSaturadas?: number;
+  grasasTrans?: number;
+  grasasMonoinsaturadas?: number;
+  grasasPoliinsaturadas?: number;
+  omega3Ala?: number;
+  omega6Linoleico?: number;
+  agua?: number;
+  ceniza?: number;
   colesterol?: number;
   sodio?: number;
   fibra?: number;
@@ -149,9 +165,11 @@ export interface NormalizedUsdaNutrition {
     vitaminaB1?: number;
     vitaminaB2?: number;
     vitaminaB3?: number;
+    vitaminaB5?: number;
     vitaminaB6?: number;
     vitaminaB12?: number;
     folato?: number;
+    colina?: number;
     calcio?: number;
     hierro?: number;
     magnesio?: number;
@@ -189,6 +207,13 @@ export function normalizeUsdaFood(detail: UsdaFoodDetail): NormalizedUsdaNutriti
     carbos: findAmount(n, NUTRIENT_NUMBER.carbos) ?? 0,
     grasas: findAmount(n, NUTRIENT_NUMBER.grasas) ?? 0,
     grasasSaturadas: findAmount(n, NUTRIENT_NUMBER.grasasSaturadas),
+    grasasTrans: findAmount(n, NUTRIENT_NUMBER.grasasTrans),
+    grasasMonoinsaturadas: findAmount(n, NUTRIENT_NUMBER.grasasMonoinsaturadas),
+    grasasPoliinsaturadas: findAmount(n, NUTRIENT_NUMBER.grasasPoliinsaturadas),
+    omega3Ala: findAmount(n, NUTRIENT_NUMBER.omega3Ala),
+    omega6Linoleico: findAmount(n, NUTRIENT_NUMBER.omega6Linoleico),
+    agua: findAmount(n, NUTRIENT_NUMBER.agua),
+    ceniza: findAmount(n, NUTRIENT_NUMBER.ceniza),
     colesterol: findAmount(n, NUTRIENT_NUMBER.colesterol),
     sodio: findAmount(n, NUTRIENT_NUMBER.sodio),
     fibra: findAmount(n, NUTRIENT_NUMBER.fibra),
@@ -202,9 +227,11 @@ export function normalizeUsdaFood(detail: UsdaFoodDetail): NormalizedUsdaNutriti
       vitaminaB1: findAmount(n, NUTRIENT_NUMBER.vitaminaB1),
       vitaminaB2: findAmount(n, NUTRIENT_NUMBER.vitaminaB2),
       vitaminaB3: findAmount(n, NUTRIENT_NUMBER.vitaminaB3),
+      vitaminaB5: findAmount(n, NUTRIENT_NUMBER.vitaminaB5),
       vitaminaB6: findAmount(n, NUTRIENT_NUMBER.vitaminaB6),
       vitaminaB12: findAmount(n, NUTRIENT_NUMBER.vitaminaB12),
       folato: findAmount(n, NUTRIENT_NUMBER.folato),
+      colina: findAmount(n, NUTRIENT_NUMBER.colina),
       calcio: findAmount(n, NUTRIENT_NUMBER.calcio),
       hierro: findAmount(n, NUTRIENT_NUMBER.hierro),
       magnesio: findAmount(n, NUTRIENT_NUMBER.magnesio),

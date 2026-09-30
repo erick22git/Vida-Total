@@ -1,6 +1,6 @@
 import foodsData from "@/lib/data/foods.json";
 import foodsRegionalData from "@/lib/data/foods-regional.json";
-import type { Food, FoodPortion, LoggedFood, TrackableNutrient } from "@/lib/types";
+import type { Food, FoodPortion, LoggedFood, NutritionProfile, TrackableNutrient } from "@/lib/types";
 
 /** `verificado: true` significa específicamente "un admin revisó estos
  * datos y confirmó que están bien" — nunca "un script encontró una fuente".
@@ -61,42 +61,78 @@ export interface ScaledNutrition {
   grasas: number;
   grasasSaturadas?: number;
   grasasTrans?: number;
+  grasasMonoinsaturadas?: number;
+  grasasPoliinsaturadas?: number;
+  omega3Ala?: number;
+  omega6Linoleico?: number;
   colesterol?: number;
   sodio?: number;
   fibra?: number;
   azucares?: number;
   azucaresAnadidos?: number;
+  agua?: number;
+  ceniza?: number;
 }
 
-/** Scales a food's nutrition data (defined per its base `porcion`) to an arbitrary gram amount. */
-export function scaleNutrition(food: Food, gramos: number): ScaledNutrition {
-  const baseGramos = parsePorcionGramos(food) || 100;
+function scaleProfile(profile: NutritionProfile, baseGramos: number, gramos: number): ScaledNutrition {
   const factor = baseGramos > 0 ? gramos / baseGramos : 0;
   const scale = (v?: number) => (v === undefined ? undefined : Math.round(v * factor * 100) / 100);
   return {
-    calorias: Math.round((food.calorias ?? 0) * factor),
-    proteina: scale(food.proteina) ?? 0,
-    carbos: scale(food.carbos) ?? 0,
-    grasas: scale(food.grasas) ?? 0,
-    grasasSaturadas: scale(food.grasasSaturadas),
-    grasasTrans: scale(food.grasasTrans),
-    colesterol: scale(food.colesterol),
-    sodio: scale(food.sodio),
-    fibra: scale(food.fibra),
-    azucares: scale(food.azucares),
-    azucaresAnadidos: scale(food.azucaresAnadidos),
+    calorias: Math.round((profile.calorias ?? 0) * factor),
+    proteina: scale(profile.proteina) ?? 0,
+    carbos: scale(profile.carbos) ?? 0,
+    grasas: scale(profile.grasas) ?? 0,
+    grasasSaturadas: scale(profile.grasasSaturadas),
+    grasasTrans: scale(profile.grasasTrans),
+    grasasMonoinsaturadas: scale(profile.grasasMonoinsaturadas),
+    grasasPoliinsaturadas: scale(profile.grasasPoliinsaturadas),
+    omega3Ala: scale(profile.omega3Ala),
+    omega6Linoleico: scale(profile.omega6Linoleico),
+    colesterol: scale(profile.colesterol),
+    sodio: scale(profile.sodio),
+    fibra: scale(profile.fibra),
+    azucares: scale(profile.azucares),
+    azucaresAnadidos: scale(profile.azucaresAnadidos),
+    agua: scale(profile.agua),
+    ceniza: scale(profile.ceniza),
   };
 }
 
-export function scaleMicronutrients(food: Food, gramos: number) {
-  if (!food.micronutrientes) return undefined;
-  const baseGramos = parsePorcionGramos(food) || 100;
+function scaleProfileMicronutrients(profile: NutritionProfile, baseGramos: number, gramos: number) {
+  if (!profile.micronutrientes) return undefined;
   const factor = baseGramos > 0 ? gramos / baseGramos : 0;
   const out: Record<string, number> = {};
-  for (const [key, value] of Object.entries(food.micronutrientes)) {
+  for (const [key, value] of Object.entries(profile.micronutrientes)) {
     if (typeof value === "number") out[key] = Math.round(value * factor * 100) / 100;
   }
   return out;
+}
+
+/** Scales a food's CRUDO nutrition data (defined per its base `porcion`) to an arbitrary gram amount. */
+export function scaleNutrition(food: Food, gramos: number): ScaledNutrition {
+  return scaleProfile(food, parsePorcionGramos(food) || 100, gramos);
+}
+
+export function scaleMicronutrients(food: Food, gramos: number) {
+  return scaleProfileMicronutrients(food, parsePorcionGramos(food) || 100, gramos);
+}
+
+/**
+ * Igual que `scaleNutrition`/`scaleMicronutrients` pero para el estado COCIDO (`food.cocido`) — un
+ * perfil real e independiente, no una fórmula sobre el crudo (antes era `gramos ÷ 0.7`). `null`/
+ * `undefined` si el alimento todavía no tiene datos reales de cocido cargados — quien llama debe
+ * tratar eso como "no disponible" (deshabilitar el switch), nunca aproximar un valor.
+ */
+export function scaleCookedNutrition(food: Food, gramos: number): ScaledNutrition | null {
+  if (!food.cocido) return null;
+  // USDA ya reporta el estado cocido por 100g del alimento COCIDO — la misma base de gramos que
+  // usa el crudo (la porción declarada del alimento) sigue sirviendo, sin ningún factor extra.
+  return scaleProfile(food.cocido, parsePorcionGramos(food) || 100, gramos);
+}
+
+export function scaleCookedMicronutrients(food: Food, gramos: number) {
+  if (!food.cocido) return undefined;
+  return scaleProfileMicronutrients(food.cocido, parsePorcionGramos(food) || 100, gramos);
 }
 
 export const MICRONUTRIENT_LABELS: Record<string, { label: string; unit: string; group: "vitamina" | "mineral" }> = {
@@ -108,9 +144,14 @@ export const MICRONUTRIENT_LABELS: Record<string, { label: string; unit: string;
   vitaminaB1: { label: "Vitamina B1 (Tiamina)", unit: "mg", group: "vitamina" },
   vitaminaB2: { label: "Vitamina B2 (Riboflavina)", unit: "mg", group: "vitamina" },
   vitaminaB3: { label: "Vitamina B3 (Niacina)", unit: "mg", group: "vitamina" },
+  vitaminaB5: { label: "Vitamina B5 (Ác. Pantoténico)", unit: "mg", group: "vitamina" },
   vitaminaB6: { label: "Vitamina B6", unit: "mg", group: "vitamina" },
   vitaminaB12: { label: "Vitamina B12", unit: "mcg", group: "vitamina" },
   folato: { label: "Folato", unit: "mcg", group: "vitamina" },
+  // Colina no es estrictamente una vitamina (es su propio grupo en nutrición clínica), pero para
+  // esta pantalla se agrupa junto a las vitaminas — no hay un tercer grupo en la UI, y es la
+  // convención más común en apps de nutrición al consumidor.
+  colina: { label: "Colina", unit: "mg", group: "vitamina" },
   calcio: { label: "Calcio", unit: "mg", group: "mineral" },
   hierro: { label: "Hierro", unit: "mg", group: "mineral" },
   magnesio: { label: "Magnesio", unit: "mg", group: "mineral" },
