@@ -1,15 +1,20 @@
 "use client";
 
+/**
+ * Rediseño Calorías: Crear/Editar Receta, al estilo oscuro del resto del módulo (mismo fondo con
+ * grano, cabecera con círculo de volver + título centrado, bloques sin tarjeta de vidrio). La lógica
+ * de guardado/borrador es la misma de siempre — esto solo cambia el envoltorio visual. El selector de
+ * "cómo crear" (manual/foto/enlace) y el picker de ingredientes quedan como hojas oscuras propias en
+ * vez de `GlassModal`.
+ */
 import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { X, Plus, Minus, Trash2, Camera, Link2, FileEdit } from "lucide-react";
-import { GlassInput } from "@/components/glass/glass-input";
-import { GlassButton } from "@/components/glass/glass-button";
-import { GlassCard } from "@/components/glass/glass-card";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ChevronLeft, X, Plus, Minus, Trash2, Camera, Link2, FileEdit } from "lucide-react";
+import { FOOD_SECTION_BG } from "@/components/gym/food-section-header";
 import { RecipeIngredientPicker } from "@/components/gym/recipe-ingredient-picker";
 import { useGymStore } from "@/lib/store/gymStore";
 import { MEAL_LABELS, type Food, type MealType, type RecipeIngredient } from "@/lib/types";
+import { MONO_FONT } from "@/lib/ui/mono-font";
 
 type CreationMode = "manual" | "foto" | "enlace" | null;
 const MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
@@ -172,231 +177,264 @@ function CrearRecetaForm() {
 
   if (choosing) {
     return (
-      <GlassModal
-        open
-        onClose={() => router.push("/gym/calorias/recetas")}
-        title="Elige cómo crear tu receta"
-      >
-        <div className="flex flex-col gap-2">
-          <button
-            className="flex items-center gap-3 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] glass-specular-ring px-4 py-3.5 text-left cursor-pointer"
+      <div className="fixed inset-0 z-[45] flex items-end sm:items-center justify-center" style={FOOD_SECTION_BG}>
+        <div className="w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 flex flex-col gap-2" style={{ background: "#141414" }}>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-[15px] uppercase tracking-[0.1em] text-white" style={MONO_FONT}>
+              Elegí cómo crear tu receta
+            </h2>
+            <button
+              onClick={() => router.push("/gym/calorias/recetas")}
+              className="w-8 h-8 flex items-center justify-center cursor-pointer text-white/50"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <ChoiceRow
+            icon={<FileEdit size={18} style={{ color: "var(--gym)" }} />}
+            title="Manual"
+            subtitle="Completá el formulario paso a paso"
             onClick={() => {
               setMode("manual");
               setChoosing(false);
             }}
-          >
-            <FileEdit size={18} className="text-[var(--gym)]" />
-            <div>
-              <p className="text-sm font-medium text-white">Manual</p>
-              <p className="text-xs text-white/45">Completa el formulario paso a paso</p>
-            </div>
-          </button>
-          <button
-            className="flex items-center gap-3 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] glass-specular-ring px-4 py-3.5 text-left cursor-pointer"
+          />
+          <ChoiceRow
+            icon={<Camera size={18} style={{ color: "var(--gym)" }} />}
+            title="Desde una foto"
+            subtitle="Subí una foto y completá los datos después"
             onClick={() => {
               setMode("foto");
               setChoosing(false);
             }}
-          >
-            <Camera size={18} className="text-[var(--gym)]" />
-            <div>
-              <p className="text-sm font-medium text-white">Desde una foto</p>
-              <p className="text-xs text-white/45">Sube una foto y completa los datos después</p>
-            </div>
-          </button>
-          <button
-            className="flex items-center gap-3 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] glass-specular-ring px-4 py-3.5 text-left cursor-pointer"
+          />
+          <ChoiceRow
+            icon={<Link2 size={18} style={{ color: "var(--gym)" }} />}
+            title="Desde un enlace"
+            subtitle="Guardá el enlace y completá el resto manualmente"
             onClick={() => {
               setMode("enlace");
               setChoosing(false);
             }}
-          >
-            <Link2 size={18} className="text-[var(--gym)]" />
-            <div>
-              <p className="text-sm font-medium text-white">Desde un enlace</p>
-              <p className="text-xs text-white/45">Guarda el enlace y completa el resto manualmente</p>
-            </div>
-          </button>
+          />
         </div>
-      </GlassModal>
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-5 pb-28">
-      <header className="flex items-center justify-between pt-2">
-        <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
-          {existing ? "Editar Receta" : "Crear Receta"}
-        </h1>
-        <button
-          onClick={() => router.push("/gym/calorias/recetas")}
-          className="flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.15] transition-colors cursor-pointer"
-        >
-          <X size={18} className="text-white" />
-        </button>
-      </header>
+    <div className="fixed inset-0 z-[45] overflow-y-auto text-white select-none" style={FOOD_SECTION_BG}>
+      <div className="max-w-md mx-auto px-4 pb-28 flex flex-col gap-5">
+        <header className="flex items-center justify-between gap-2 pt-[max(env(safe-area-inset-top),14px)]">
+          <button
+            onClick={() => router.push("/gym/calorias/recetas")}
+            aria-label="Cerrar"
+            className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+            style={{ background: "#0d0d0d" }}
+          >
+            <ChevronLeft size={22} strokeWidth={2.6} />
+          </button>
+          <h1 className="text-[15px] uppercase tracking-[0.12em]" style={MONO_FONT}>
+            {existing ? "Editar receta" : "Crear receta"}
+          </h1>
+          <span className="w-10 h-10" />
+        </header>
 
-      {mode === "enlace" && (
-        <GlassCard padding="md" className="flex flex-col gap-2">
-          <label className="text-xs text-white/50">Enlace de la receta</label>
-          <GlassInput placeholder="https://..." value={enlace} onChange={(e) => setEnlace(e.target.value)} />
-          <p className="text-[11px] text-white/35">Guardamos el enlace de referencia; completa los datos abajo manualmente.</p>
-        </GlassCard>
-      )}
-
-      <GlassCard padding="md" className="flex flex-col gap-3">
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full h-36 rounded-2xl bg-white/[0.04] border border-dashed border-white/[0.15] flex items-center justify-center overflow-hidden cursor-pointer"
-        >
-          {foto ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={foto} alt="Foto de la receta" className="w-full h-full object-cover" />
-          ) : (
-            <span className="flex flex-col items-center gap-1 text-white/40 text-xs">
-              <Camera size={22} /> {mode === "foto" ? "Sube la foto de tu plato" : "Agregar foto (opcional)"}
-            </span>
-          )}
-        </button>
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-        {mode === "foto" && (
-          <p className="text-[11px] text-white/35">
-            No hay reconocimiento automático de ingredientes — completa los datos manualmente abajo.
-          </p>
+        {mode === "enlace" && (
+          <div className="flex flex-col gap-2 rounded-3xl p-4" style={{ background: "#0d0d0d" }}>
+            <label className="text-[11px] uppercase tracking-wide text-white/40">Enlace de la receta</label>
+            <PlainInput placeholder="https://..." value={enlace} onChange={setEnlace} />
+            <p className="text-[11px] text-white/35">Guardamos el enlace de referencia; completá los datos abajo manualmente.</p>
+          </div>
         )}
 
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-white/50">
-            Nombre <span className="text-[var(--gym)]">*</span>
-          </label>
-          <GlassInput placeholder="Ej. Bowl de pollo y quinua" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-        </div>
+        <div className="flex flex-col gap-4 rounded-3xl p-4" style={{ background: "#0d0d0d" }}>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full h-36 rounded-2xl bg-white/[0.04] border border-dashed border-white/[0.15] flex items-center justify-center overflow-hidden cursor-pointer"
+          >
+            {foto ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={foto} alt="Foto de la receta" className="w-full h-full object-cover" />
+            ) : (
+              <span className="flex flex-col items-center gap-1 text-white/40 text-xs">
+                <Camera size={22} /> {mode === "foto" ? "Subí la foto de tu plato" : "Agregar foto (opcional)"}
+              </span>
+            )}
+          </button>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+          {mode === "foto" && (
+            <p className="text-[11px] text-white/35 -mt-2">No hay reconocimiento automático de ingredientes — completá los datos manualmente abajo.</p>
+          )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <Stepper label="Porciones" value={porciones} onChange={setPorciones} min={1} />
-          <Stepper label="Tiempo prep. (min)" value={tiempoPrepMin} onChange={setTiempoPrepMin} min={0} step={5} />
-        </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] uppercase tracking-wide text-white/40">
+              Nombre <span style={{ color: "var(--gym)" }}>*</span>
+            </label>
+            <PlainInput placeholder="Ej. Bowl de pollo y quinua" value={nombre} onChange={setNombre} big />
+          </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-white/50">Tipo de comida</label>
-          <div className="flex gap-1.5 flex-wrap">
-            {MEALS.map((m) => (
-              <button
-                key={m}
-                onClick={() => toggleTipo(m)}
-                className="rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer"
-                style={
-                  tipos.includes(m)
-                    ? { background: "var(--gym)", color: "white" }
-                    : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)" }
-                }
-              >
-                {MEAL_LABELS[m]}
-              </button>
-            ))}
+          <div className="grid grid-cols-2 gap-3">
+            <Stepper label="Porciones" value={porciones} onChange={setPorciones} min={1} />
+            <Stepper label="Tiempo prep. (min)" value={tiempoPrepMin} onChange={setTiempoPrepMin} min={0} step={5} />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] uppercase tracking-wide text-white/40">Tipo de comida</label>
+            <div className="flex gap-1.5 flex-wrap">
+              {MEALS.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => toggleTipo(m)}
+                  className="rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer"
+                  style={
+                    tipos.includes(m)
+                      ? { background: "#fff", color: "#000" }
+                      : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)" }
+                  }
+                >
+                  {MEAL_LABELS[m]}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </GlassCard>
 
-      <GlassCard padding="md" className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">Ingredientes</h2>
-          <button
-            onClick={() => setPickerOpen(true)}
-            className="flex items-center gap-1 text-xs text-[var(--gym)] cursor-pointer"
-          >
-            <Plus size={14} /> Agregar
-          </button>
-        </div>
-        {ingredientes.length === 0 ? (
-          <p className="text-xs text-white/35">Agrega ingredientes para calcular la información nutricional.</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {ingredientes.map((ing, idx) => (
-              <div key={`${ing.foodId}-${idx}`} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] glass-specular-ring px-3 py-2">
-                <div className="min-w-0">
-                  <p className="text-sm text-white truncate">{ing.nombre}</p>
-                  <p className="text-[11px] text-white/45">
-                    {ing.cantidad} {ing.porcionNombre} · {Math.round(ing.calorias)} kcal
-                  </p>
+        <div className="flex flex-col gap-3 rounded-3xl p-4" style={{ background: "#0d0d0d" }}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-[11px] uppercase tracking-wide text-white/40">Ingredientes</h2>
+            <button onClick={() => setPickerOpen(true)} className="flex items-center gap-1 text-xs cursor-pointer" style={{ color: "var(--gym)" }}>
+              <Plus size={14} /> Agregar
+            </button>
+          </div>
+          {ingredientes.length === 0 ? (
+            <p className="text-xs text-white/35">Agregá ingredientes para calcular la información nutricional.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {ingredientes.map((ing, idx) => (
+                <div key={`${ing.foodId}-${idx}`} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-sm text-white truncate">{ing.nombre}</p>
+                    <p className="text-[11px] text-white/45">
+                      {ing.cantidad} {ing.porcionNombre} · {Math.round(ing.calorias)} kcal
+                    </p>
+                  </div>
+                  <button onClick={() => removeIngredient(idx)} className="text-white/30 hover:text-red-400 cursor-pointer shrink-0">
+                    <Trash2 size={15} />
+                  </button>
                 </div>
-                <button onClick={() => removeIngredient(idx)} className="text-white/30 hover:text-red-400 cursor-pointer shrink-0">
-                  <Trash2 size={15} />
-                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-3xl p-4" style={{ background: "#0d0d0d" }}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-[11px] uppercase tracking-wide text-white/40">Instrucciones</h2>
+            <button
+              onClick={() => setInstrucciones((prev) => [...prev, ""])}
+              className="flex items-center gap-1 text-xs cursor-pointer"
+              style={{ color: "var(--gym)" }}
+            >
+              <Plus size={14} /> Paso
+            </button>
+          </div>
+          <div className="flex flex-col gap-2">
+            {instrucciones.map((step, idx) => (
+              <div key={idx} className="flex items-start gap-2">
+                <span className="text-xs text-white/40 mt-2 w-4 shrink-0">{idx + 1}.</span>
+                <div className="flex-1">
+                  <PlainInput value={step} onChange={(v) => updateStep(idx, v)} placeholder={`Paso ${idx + 1}`} />
+                </div>
+                {instrucciones.length > 1 && (
+                  <button
+                    onClick={() => setInstrucciones((prev) => prev.filter((_, i) => i !== idx))}
+                    className="text-white/30 hover:text-red-400 cursor-pointer mt-1.5 shrink-0"
+                  >
+                    <X size={15} />
+                  </button>
+                )}
               </div>
             ))}
           </div>
-        )}
-      </GlassCard>
-
-      <GlassCard padding="md" className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">Instrucciones</h2>
-          <button
-            onClick={() => setInstrucciones((prev) => [...prev, ""])}
-            className="flex items-center gap-1 text-xs text-[var(--gym)] cursor-pointer"
-          >
-            <Plus size={14} /> Paso
-          </button>
         </div>
-        <div className="flex flex-col gap-2">
-          {instrucciones.map((step, idx) => (
-            <div key={idx} className="flex items-start gap-2">
-              <span className="text-xs text-white/40 mt-2.5 w-4 shrink-0">{idx + 1}.</span>
-              <GlassInput
-                value={step}
-                onChange={(e) => updateStep(idx, e.target.value)}
-                placeholder={`Paso ${idx + 1}`}
-                className="flex-1"
-              />
-              {instrucciones.length > 1 && (
-                <button
-                  onClick={() => setInstrucciones((prev) => prev.filter((_, i) => i !== idx))}
-                  className="text-white/30 hover:text-red-400 cursor-pointer mt-2.5 shrink-0"
-                >
-                  <X size={15} />
-                </button>
-              )}
+
+        <div className="flex flex-col gap-2 rounded-3xl p-4" style={{ background: "#0d0d0d" }}>
+          <h2 className="text-[11px] uppercase tracking-wide text-white/40">Información nutricional (total)</h2>
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div>
+              <p className="text-base font-bold text-white">{Math.round(totales.calorias)}</p>
+              <p className="text-[10px] text-white/45">kcal</p>
             </div>
-          ))}
+            <div>
+              <p className="text-base font-bold text-white">{Math.round(totales.proteina)}g</p>
+              <p className="text-[10px] text-white/45">Proteína</p>
+            </div>
+            <div>
+              <p className="text-base font-bold text-white">{Math.round(totales.carbos)}g</p>
+              <p className="text-[10px] text-white/45">Carbos</p>
+            </div>
+            <div>
+              <p className="text-base font-bold text-white">{Math.round(totales.grasas)}g</p>
+              <p className="text-[10px] text-white/45">Grasas</p>
+            </div>
+          </div>
+          <p className="text-[11px] text-white/35 text-center">{Math.round(totales.calorias / Math.max(1, porciones))} kcal por porción</p>
         </div>
-      </GlassCard>
+      </div>
 
-      <GlassCard padding="md" className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold text-white">Información Nutricional (total)</h2>
-        <div className="grid grid-cols-4 gap-2 text-center">
-          <div>
-            <p className="text-base font-bold text-white">{Math.round(totales.calorias)}</p>
-            <p className="text-[10px] text-white/45">kcal</p>
-          </div>
-          <div>
-            <p className="text-base font-bold text-white">{Math.round(totales.proteina)}g</p>
-            <p className="text-[10px] text-white/45">Proteína</p>
-          </div>
-          <div>
-            <p className="text-base font-bold text-white">{Math.round(totales.carbos)}g</p>
-            <p className="text-[10px] text-white/45">Carbos</p>
-          </div>
-          <div>
-            <p className="text-base font-bold text-white">{Math.round(totales.grasas)}g</p>
-            <p className="text-[10px] text-white/45">Grasas</p>
-          </div>
-        </div>
-        <p className="text-[11px] text-white/35 text-center">
-          {Math.round(totales.calorias / Math.max(1, porciones))} kcal por porción
-        </p>
-      </GlassCard>
-
-      <div className="fixed bottom-0 left-0 right-0 z-30 p-4 backdrop-blur-xl bg-[color-mix(in_srgb,var(--background)_85%,transparent)] border-t border-white/[0.08]">
+      <div className="fixed bottom-0 left-0 right-0 z-30 p-4 backdrop-blur-xl bg-[color-mix(in_srgb,#1c1c1c_85%,transparent)] border-t border-white/[0.08]">
         <div className="max-w-md mx-auto">
-          <GlassButton className="w-full" size="lg" disabled={!canSave} onClick={handleSave}>
-            {existing ? "Guardar Receta" : "Crear Receta"}
-          </GlassButton>
+          <button
+            onClick={handleSave}
+            disabled={!canSave}
+            className="w-full rounded-full py-3.5 text-sm font-semibold cursor-pointer disabled:opacity-30 bg-white text-black"
+          >
+            {existing ? "Guardar receta" : "Crear receta"}
+          </button>
         </div>
       </div>
 
       <RecipeIngredientPicker open={pickerOpen} onClose={() => setPickerOpen(false)} onPick={goToConfigureIngredient} />
     </div>
+  );
+}
+
+function ChoiceRow({ icon, title, subtitle, onClick }: { icon: React.ReactNode; title: string; subtitle: string; onClick: () => void }) {
+  return (
+    <button
+      className="flex items-center gap-3 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] transition-colors px-4 py-3.5 text-left cursor-pointer"
+      onClick={onClick}
+    >
+      {icon}
+      <div>
+        <p className="text-sm font-medium text-white">{title}</p>
+        <p className="text-xs text-white/45">{subtitle}</p>
+      </div>
+    </button>
+  );
+}
+
+function PlainInput({
+  value,
+  onChange,
+  placeholder,
+  big,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  big?: boolean;
+}) {
+  return (
+    <input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={`w-full bg-transparent outline-none text-white placeholder:text-white/25 border-b border-white/15 focus:border-white/45 transition-colors py-1.5 ${
+        big ? "text-base" : "text-sm"
+      }`}
+    />
   );
 }
 
@@ -415,15 +453,15 @@ function Stepper({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-xs text-white/50">{label}</label>
-      <div className="flex items-center gap-2 rounded-2xl bg-white/[0.06] glass-specular-ring px-2 py-1.5">
+      <label className="text-[11px] uppercase tracking-wide text-white/40">{label}</label>
+      <div className="flex items-center gap-2 rounded-2xl bg-white/[0.06] px-2 py-1.5">
         <button
           onClick={() => onChange(Math.max(min, value - step))}
           className="flex items-center justify-center w-7 h-7 rounded-full bg-white/[0.08] hover:bg-white/[0.15] cursor-pointer"
         >
           <Minus size={13} className="text-white" />
         </button>
-        <span className="flex-1 text-center text-sm font-medium text-white">{value}</span>
+        <span className="flex-1 text-center text-sm font-medium text-white tabular-nums">{value}</span>
         <button
           onClick={() => onChange(value + step)}
           className="flex items-center justify-center w-7 h-7 rounded-full bg-white/[0.08] hover:bg-white/[0.15] cursor-pointer"
