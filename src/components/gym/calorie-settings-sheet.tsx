@@ -136,6 +136,16 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
 
           <GlassModal open={goalModalOpen} onClose={() => setGoalModalOpen(false)} title="Configuración de calorías">
             <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setGoalModalOpen(false);
+                  onClose();
+                  router.push("/gym/calorias/configurar-calorias");
+                }}
+                className="w-full text-center rounded-2xl py-3 text-sm font-semibold cursor-pointer bg-white/[0.08] hover:bg-white/[0.14] transition-colors"
+              >
+                Calcular con mis datos (BMR/TDEE)
+              </button>
               <GlassInput
                 type="number"
                 inputMode="numeric"

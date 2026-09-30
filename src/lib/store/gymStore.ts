@@ -95,11 +95,20 @@ function timestampForDate(date: Date): number {
   return d.getTime();
 }
 
+export type NivelActividad = "sedentario" | "ligero" | "moderado" | "intenso" | "muy_intenso";
+export type ObjetivoCalorico = "perder" | "mantener" | "ganar";
+
 export interface GymProfile {
   pesoKg?: number;
   alturaCm?: number;
   lesiones?: string;
   objetivo?: string;
+  // ---- Calculadora de calorías (Configuración > Calorías, Modo Básico) ----
+  sexo?: "hombre" | "mujer";
+  edad?: number;
+  nivelActividad?: NivelActividad;
+  objetivoCalorico?: ObjetivoCalorico;
+  intensidadObjetivo?: string;
 }
 
 export interface GymState {
@@ -193,6 +202,14 @@ export interface GymState {
   gymProfile: GymProfile | null;
   onboardingCompleted: boolean;
   saveGymProfile: (profile: GymProfile) => void;
+  /** Mergea campos parciales dentro de `gymProfile` sin reemplazar el resto y
+   * sin tocar `onboardingCompleted` — a diferencia de `saveGymProfile` (que
+   * reemplaza todo el objeto y siempre marca el onboarding de Entrenamiento
+   * como completado). La calculadora de calorías (Configuración > Calorías)
+   * usa esta acción, no `saveGymProfile`, para no pisar pesoKg/alturaCm/
+   * lesiones/objetivo ya guardados por Entrenamiento ni activar su
+   * onboarding-skip por accidente. */
+  updateGymProfileFields: (patch: Partial<GymProfile>) => void;
   /** Momento (Date.now()) en que arrancó el "traspaso" al ejercicio activo
    * actual — se activa al avanzar automáticamente de un ejercicio a otro
    * (terminaste el anterior), y se registra en `transicionSegundos` del
@@ -678,6 +695,8 @@ export const useGymStore = create<GymState>()(
       gymProfile: null,
       onboardingCompleted: false,
       saveGymProfile: (profile) => set({ gymProfile: profile, onboardingCompleted: true }),
+      updateGymProfileFields: (patch) =>
+        set((state) => ({ gymProfile: { ...state.gymProfile, ...patch } })),
       transitionStartedAt: null,
       startTransition: () => set({ transitionStartedAt: Date.now() }),
       acceptTransition: () =>
