@@ -219,6 +219,12 @@ export interface GymState {
    * lesiones/objetivo ya guardados por Entrenamiento ni activar su
    * onboarding-skip por accidente. */
   updateGymProfileFields: (patch: Partial<GymProfile>) => void;
+  /** Última sugerencia de ajuste adaptativo (Fase 3) que el usuario descartó —
+   * para no volver a mostrar la MISMA sugerencia cada vez que abre Ajustes.
+   * Si el cálculo da una meta sugerida distinta más adelante, se vuelve a
+   * mostrar igual. Local, no se sincroniza (no hace falta entre dispositivos). */
+  adaptiveDismissed: { goal: number; at: number } | null;
+  dismissAdaptiveSuggestion: (goal: number) => void;
   /** Momento (Date.now()) en que arrancó el "traspaso" al ejercicio activo
    * actual — se activa al avanzar automáticamente de un ejercicio a otro
    * (terminaste el anterior), y se registra en `transicionSegundos` del
@@ -706,6 +712,8 @@ export const useGymStore = create<GymState>()(
       saveGymProfile: (profile) => set({ gymProfile: profile, onboardingCompleted: true }),
       updateGymProfileFields: (patch) =>
         set((state) => ({ gymProfile: { ...state.gymProfile, ...patch } })),
+      adaptiveDismissed: null,
+      dismissAdaptiveSuggestion: (goal) => set({ adaptiveDismissed: { goal, at: Date.now() } }),
       transitionStartedAt: null,
       startTransition: () => set({ transitionStartedAt: Date.now() }),
       acceptTransition: () =>

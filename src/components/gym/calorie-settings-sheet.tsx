@@ -7,7 +7,7 @@
  * historial — más el acceso a Progreso. Ya NO hay acceso a Racha desde acá (se llega solo tocando
  * el fuego dentro de la vista de racha, o de la franja de los 7 días).
  */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, TrendingUp, Check } from "lucide-react";
@@ -17,6 +17,8 @@ import { GlassButton } from "@/components/glass/glass-button";
 import { GAUGES } from "@/lib/3d/gauge-registry";
 import { useGymStore } from "@/lib/store/gymStore";
 import { useCalorieChartPref, type CalorieChartKind } from "@/lib/gym/calorie-chart-pref";
+import { calcCalorieGoal } from "@/lib/gym/calorie-calc";
+import { evaluateAdaptiveCalories } from "@/lib/gym/calorie-adaptive";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 
 const CHART_OPTIONS: { id: CalorieChartKind; label: string }[] = [
@@ -34,7 +36,37 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
   const fatGoal = useGymStore((s) => s.fatGoal);
   const showRemaining = useGymStore((s) => s.showRemaining);
   const toggleShowRemaining = useGymStore((s) => s.toggleShowRemaining);
+  const gymProfile = useGymStore((s) => s.gymProfile);
+  const weightEntries = useGymStore((s) => s.weightEntries);
+  const loggedFoods = useGymStore((s) => s.loggedFoods);
+  const adaptiveDismissed = useGymStore((s) => s.adaptiveDismissed);
+  const dismissAdaptiveSuggestion = useGymStore((s) => s.dismissAdaptiveSuggestion);
   const [chartKind, setChartKind] = useCalorieChartPref();
+
+  // Ajuste adaptativo (Fase 3): solo se puede evaluar si ya se configuró la meta con la
+  // calculadora (necesitamos el TDEE calculado por fórmula para comparar contra el real).
+  const adaptive = useMemo(() => {
+    const p = gymProfile;
+    if (!p?.sexo || !p.edad || !p.pesoKg || !p.alturaCm || !p.nivelActividad || !p.objetivoCalorico || !p.intensidadObjetivo) {
+      return null;
+    }
+    const calc = calcCalorieGoal({
+      sexo: p.sexo,
+      pesoKg: p.pesoKg,
+      alturaCm: p.alturaCm,
+      edad: p.edad,
+      nivelActividad: p.nivelActividad,
+      objetivoCalorico: p.objetivoCalorico,
+      intensidadObjetivo: p.intensidadObjetivo,
+      grasaCorporalPct: p.modoPro ? p.grasaCorporalPct : undefined,
+    });
+    return evaluateAdaptiveCalories({ weightEntries, loggedFoods, calorieGoal, calculatedTDEE: calc.tdee });
+  }, [gymProfile, weightEntries, loggedFoods, calorieGoal]);
+
+  const showSuggestion =
+    adaptive?.status === "suggestion" &&
+    adaptive.suggestedCalorieGoal !== undefined &&
+    adaptiveDismissed?.goal !== adaptive.suggestedCalorieGoal;
 
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [macroModalOpen, setMacroModalOpen] = useState(false);
@@ -79,6 +111,36 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
               <TrendingUp size={14} className="text-white/70" />
               <span className="text-xs font-semibold text-white/80">Ver progreso</span>
             </button>
+
+            {showSuggestion && adaptive?.suggestedCalorieGoal !== undefined && (
+              <div className="flex flex-col gap-2.5 rounded-2xl p-4" style={{ background: "#0d0d0d" }}>
+                <span className="text-[10px] uppercase tracking-[0.1em] text-white/40" style={MONO_FONT}>
+                  Ajuste sugerido
+                </span>
+                <p className="text-xs text-white/70">{adaptive.mensaje}</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      useGymStore.setState({ calorieGoal: adaptive.suggestedCalorieGoal! });
+                      dismissAdaptiveSuggestion(adaptive.suggestedCalorieGoal!);
+                    }}
+                    className="flex-1 rounded-full py-2.5 text-xs font-semibold cursor-pointer bg-white text-black"
+                  >
+                    Aceptar ({adaptive.suggestedCalorieGoal} kcal)
+                  </button>
+                  <button
+                    onClick={() => dismissAdaptiveSuggestion(adaptive.suggestedCalorieGoal!)}
+                    className="flex-1 rounded-full py-2.5 text-xs font-medium cursor-pointer text-white/50 bg-white/[0.06]"
+                  >
+                    Descartar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {adaptive?.status === "insufficient_data" && (
+              <p className="text-[11px] text-white/35 px-1 -mt-1">{adaptive.mensaje}</p>
+            )}
 
             <div className="flex flex-col gap-1">
               <button
