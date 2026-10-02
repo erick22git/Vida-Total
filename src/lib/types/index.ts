@@ -371,6 +371,9 @@ export interface WorkoutSet {
    * solo número, como el volumen total), pero la lista completa vive acá
    * para mostrarla en el historial. */
   pesosDescendentes?: number[];
+  /** Repeticiones de cada bajada del dropset (SIN la serie principal, que usa `reps`) — paralelo
+   * a `pesosDescendentes.slice(1)`. `0` = todavía sin anotar (se muestra la referencia de 10). */
+  repsDescendentes?: number[];
   /** Momento (Date.now()) en que se marcó completada — usado para calcular
    * `descansoTomado` de la siguiente serie. */
   completadoAt?: number;

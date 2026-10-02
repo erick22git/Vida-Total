@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Reorder, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -24,7 +24,7 @@ import { RoutineSetTable } from "@/components/gym/routine-set-table";
 import { RestDurationModal, formatRestDuration } from "@/components/gym/rest-duration-modal";
 import { PillActionButton } from "@/components/gym/pill-action-button";
 import { RestBar } from "@/components/gym/rest-bar";
-import { cn } from "@/lib/utils";
+import { ReorderableExerciseCircle } from "@/components/gym/session-exercise-carousel";
 import type { RoutineExercise } from "@/lib/types";
 
 /**
@@ -54,9 +54,6 @@ export function ExerciseSessionBuilder({
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [groupSelection, setGroupSelection] = useState<string[]>([]);
-  const [movingId, setMovingId] = useState<string | null>(null);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressFired = useRef(false);
 
   // Planning-only rest preview: this screen has no live session, so the
   // "descanso" bar shown after checking a set is a local, informative
@@ -156,34 +153,6 @@ export function ExerciseSessionBuilder({
     setPlanRestEndsAt(Date.now() + (active?.restSeconds ?? 90) * 1000);
   }
 
-  function startLongPress(id: string) {
-    longPressFired.current = false;
-    longPressTimer.current = setTimeout(() => {
-      longPressFired.current = true;
-      navigator.vibrate?.(20);
-      setMovingId(id);
-    }, 350);
-  }
-
-  function cancelLongPress() {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  }
-
-  function handleCircleClick(id: string) {
-    if (longPressFired.current) {
-      longPressFired.current = false;
-      return;
-    }
-    if (movingId) {
-      setMovingId(null);
-      return;
-    }
-    selectExercise(id);
-  }
-
   if (draft.length === 0) return null;
 
   return (
@@ -196,44 +165,15 @@ export function ExerciseSessionBuilder({
       >
         {draft.map((ex) => {
           const exData = allExercises.find((e) => e.id === ex.exerciseId);
-          const isMoving = movingId === ex.exerciseId;
           return (
-            <Reorder.Item
+            <ReorderableExerciseCircle
               key={ex.exerciseId}
               value={ex}
-              dragListener={isMoving}
-              dragTransition={{ bounceStiffness: 500, bounceDamping: 32 }}
-              transition={{ type: "spring", stiffness: 600, damping: 34 }}
-              onPointerDown={() => startLongPress(ex.exerciseId)}
-              onPointerUp={cancelLongPress}
-              onPointerLeave={cancelLongPress}
-              onClick={() => handleCircleClick(ex.exerciseId)}
-              className={cn(
-                "shrink-0 flex flex-col items-center gap-1 cursor-pointer select-none",
-                isMoving && "cursor-grabbing",
-              )}
-            >
-              <div
-                className="w-14 h-14 rounded-full flex items-center justify-center overflow-hidden bg-white/[0.06] transition-transform"
-                style={{
-                  border: ex.exerciseId === active?.exerciseId ? "2px solid white" : "2px solid transparent",
-                  boxShadow: isMoving
-                    ? "0 0 0 3px rgba(255,255,255,0.5)"
-                    : ex.exerciseId === active?.exerciseId
-                      ? "0 0 16px rgba(255,255,255,0.55)"
-                      : undefined,
-                  transform: isMoving ? "scale(1.08)" : undefined,
-                }}
-              >
-                {exData?.imagen ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={exData.imagen} alt="" className="w-full h-full object-cover pointer-events-none" />
-                ) : (
-                  <Dumbbell size={20} className="text-white/40" />
-                )}
-              </div>
-              <span className="text-[10px] text-white/50 max-w-14 truncate">{exData?.nombre}</span>
-            </Reorder.Item>
+              imagen={exData?.imagen}
+              nombre={exData?.nombre}
+              isActive={ex.exerciseId === active?.exerciseId}
+              onSelect={() => selectExercise(ex.exerciseId)}
+            />
           );
         })}
         <button

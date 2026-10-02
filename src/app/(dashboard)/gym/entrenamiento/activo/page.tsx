@@ -26,9 +26,8 @@ import { PillActionButton } from "@/components/gym/pill-action-button";
 import { SessionTimer } from "@/components/gym/session-timer";
 import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
 import { SetTypeModal } from "@/components/gym/set-type-modal";
-import { DropsetWeightsModal } from "@/components/gym/dropset-weights-modal";
 import { useGymStore } from "@/lib/store/gymStore";
-import { previaLabelFor } from "@/lib/gym-utils";
+import { initialDropsetPatch, previaLabelFor } from "@/lib/gym-utils";
 
 export default function ActiveWorkoutPage() {
   const router = useRouter();
@@ -56,7 +55,7 @@ export default function ActiveWorkoutPage() {
   const [notesOpen, setNotesOpen] = useState(false);
   const [restConfigOpen, setRestConfigOpen] = useState(false);
   const [dropsetTypeOpen, setDropsetTypeOpen] = useState(false);
-  const [dropsetWeightsOpen, setDropsetWeightsOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<"remove" | "discard" | null>(null);
   const [aiComingSoonOpen, setAiComingSoonOpen] = useState(false);
 
   if (!activeSession) {
@@ -224,11 +223,7 @@ export default function ActiveWorkoutPage() {
           icon={Trash2}
           title="Eliminar"
           danger
-          onClick={() => {
-            if (confirm(`¿Sacar "${exercise?.nombre ?? "este ejercicio"}" del entrenamiento de hoy?`)) {
-              removeExerciseFromSession(currentLog.exerciseId);
-            }
-          }}
+          onClick={() => setConfirmAction("remove")}
         />
       </div>
 
@@ -249,6 +244,8 @@ export default function ActiveWorkoutPage() {
             set={set}
             soloReps={soloReps}
             previa={previaLabelFor(lastLog?.sets[i], soloReps)}
+            pesoRef={lastLog?.sets[i]?.peso || (i > 0 ? currentLog.sets[i - 1].peso : 0) || undefined}
+            repsRef={lastLog?.sets[i]?.reps || (i > 0 ? currentLog.sets[i - 1].reps : 0) || undefined}
             restSeconds={restSeconds}
             onChange={(patch) => handleSetChange(set.id, patch)}
           />
@@ -294,20 +291,51 @@ export default function ActiveWorkoutPage() {
         value={firstUncheckedSet?.tipo ?? "normal"}
         onSelect={(tipo) => {
           if (!firstUncheckedSet) return;
-          updateSet(currentLog.exerciseId, firstUncheckedSet.id, { tipo });
+          // Dropset: ya no abre ningún modal — la bajada aparece debajo de la misma serie.
+          updateSet(
+            currentLog.exerciseId,
+            firstUncheckedSet.id,
+            tipo === "descendente" ? { tipo, ...initialDropsetPatch(firstUncheckedSet) } : { tipo },
+          );
           setDropsetTypeOpen(false);
-          if (tipo === "descendente") setDropsetWeightsOpen(true);
         }}
       />
-      <DropsetWeightsModal
-        open={dropsetWeightsOpen}
-        onClose={() => setDropsetWeightsOpen(false)}
-        initialWeights={firstUncheckedSet?.pesosDescendentes ?? []}
-        onSave={(weights) => {
-          if (!firstUncheckedSet) return;
-          updateSet(currentLog.exerciseId, firstUncheckedSet.id, { pesosDescendentes: weights, peso: weights[0] ?? 0 });
-        }}
-      />
+
+      <GlassModal
+        open={confirmAction !== null}
+        onClose={() => setConfirmAction(null)}
+        title={confirmAction === "discard" ? "Descartar entrenamiento" : "Sacar ejercicio de hoy"}
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-white/65">
+            {confirmAction === "discard"
+              ? "Se pierde lo que anotaste en este entrenamiento. Esto no se puede deshacer."
+              : `"${exercise?.nombre ?? "Este ejercicio"}" se saca solo del entrenamiento de hoy; tu rutina no cambia.`}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setConfirmAction(null)}
+              className="flex-1 rounded-full py-3 text-sm font-semibold text-white/80 bg-white/[0.08] cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => {
+                if (confirmAction === "discard") {
+                  cancelWorkout();
+                  router.push("/gym/entrenamiento");
+                } else {
+                  removeExerciseFromSession(currentLog.exerciseId);
+                }
+                setConfirmAction(null);
+              }}
+              className="flex-1 rounded-full py-3 text-sm font-semibold text-white bg-red-500 cursor-pointer"
+            >
+              {confirmAction === "discard" ? "Descartar" : "Sacar"}
+            </button>
+          </div>
+        </div>
+      </GlassModal>
 
       <GlassModal open={aiComingSoonOpen} onClose={() => setAiComingSoonOpen(false)} title="Escáner de técnica IA">
         <p className="text-sm text-white/60">
@@ -338,12 +366,7 @@ export default function ActiveWorkoutPage() {
       />
 
       <button
-        onClick={() => {
-          if (confirm("¿Descartar el entrenamiento en curso?")) {
-            cancelWorkout();
-            router.push("/gym/entrenamiento");
-          }
-        }}
+        onClick={() => setConfirmAction("discard")}
         className="text-center text-xs text-white/30 hover:text-white/50 transition-colors cursor-pointer"
       >
         Descartar entrenamiento

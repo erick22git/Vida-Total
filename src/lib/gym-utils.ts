@@ -11,6 +11,29 @@ export function effectiveWeight(set: WorkoutSet): number {
   return set.peso;
 }
 
+/** Repeticiones de referencia que se muestran (atenuadas) en cada bajada de un dropset. */
+export const DROP_REPS_REF = 10;
+
+/** Peso de referencia de una bajada: ~20% menos que la anterior, redondeado hacia abajo a 2.5 kg.
+ * `0` si no hay peso previo del que partir. */
+export function refDropWeight(prev: number): number {
+  return prev > 0 ? Math.max(0, Math.floor((prev * 0.8) / 2.5) * 2.5) : 0;
+}
+
+/** Bajadas de un dropset SIN la serie principal (que usa `peso`/`reps`). `pesosDescendentes[0]` es
+ * el peso de la principal; el resto son las bajadas. `reps: 0` = todavía sin anotar. */
+export function dropsOf(set: WorkoutSet): { peso: number; reps: number }[] {
+  const weights = (set.pesosDescendentes ?? []).slice(1);
+  return weights.map((peso, k) => ({ peso, reps: set.repsDescendentes?.[k] ?? 0 }));
+}
+
+/** Al convertir una serie en dropset: arranca con UNA bajada vacía (con referencias atenuadas)
+ * debajo de la serie principal, sin abrir ningún modal. */
+export function initialDropsetPatch(set: WorkoutSet): Partial<WorkoutSet> {
+  if ((set.pesosDescendentes?.length ?? 0) > 1) return {};
+  return { pesosDescendentes: [set.peso, 0], repsDescendentes: [0] };
+}
+
 /** Texto "Previa" (peso x reps, o la secuencia de bajadas si era dropset)
  * para mostrar al lado de una serie: con cuánto la hiciste la última vez.
  * Compartido entre RoutineSetTable (planificando) y SessionSetRow (sesión

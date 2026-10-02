@@ -2837,5 +2837,58 @@
       "Suelta el peso de forma controlada al terminar."
     ],
     "imagen": "/exercises/gifs/farmers-walk.jpg"
+  },
+  {
+    "id": "pullover-dorsal-mancuerna",
+    "nombre": "Pullover para dorsal con mancuerna",
+    "categoria": "Espalda",
+    "musculoPrimario": "Dorsal ancho",
+    "musculosSecundarios": [
+      "Pectoral",
+      "Triceps"
+    ],
+    "equipo": "Mancuerna",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Acuéstate a lo largo del banco con solo la parte alta de la espalda apoyada y los pies firmes en el suelo.",
+      "Sostén una mancuerna con ambas manos sobre el pecho, con los codos ligeramente flexionados.",
+      "Baja la mancuerna en arco por detrás de la cabeza manteniendo los codos semicerrados y las costillas abajo.",
+      "Vuelve al inicio llevando los codos hacia las caderas, pensando en jalar con el dorsal y no con los brazos."
+    ]
+  },
+  {
+    "id": "pullover-maquina",
+    "nombre": "Pullover en máquina",
+    "categoria": "Espalda",
+    "musculoPrimario": "Dorsal ancho",
+    "musculosSecundarios": [
+      "Triceps",
+      "Pectoral"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Ajusta el asiento para que los hombros queden alineados con el eje de giro de la máquina.",
+      "Agarra el mango o apoya los codos en las almohadillas según el modelo.",
+      "Lleva el peso hacia abajo y adelante en arco, contrayendo el dorsal.",
+      "Regresa lento hasta sentir el estiramiento del dorsal, sin soltar el peso de golpe."
+    ]
+  },
+  {
+    "id": "pullover-barra-z",
+    "nombre": "Pullover con barra Z",
+    "categoria": "Espalda",
+    "musculoPrimario": "Dorsal ancho",
+    "musculosSecundarios": [
+      "Pectoral",
+      "Triceps"
+    ],
+    "equipo": "Barra Z",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Acuéstate en el banco y sostén la barra Z con agarre cerrado sobre el pecho.",
+      "Baja la barra en arco por detrás de la cabeza con los codos ligeramente flexionados.",
+      "Regresa a la posición inicial jalando con el dorsal, manteniendo el core firme."
+    ]
   }
 ]

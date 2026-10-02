@@ -116,6 +116,23 @@ body {
   background: #0a0a0f;
 }
 
+/* La app se usa con toques repetidos (series, ruedas, carruseles): sin esto el navegador
+   selecciona texto con doble toque / toque largo y se "traba" el gesto. Los campos de texto
+   siguen siendo seleccionables. */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 body {
   background: linear-gradient(180deg, #0a0a0f 0%, #121218 100%);
   color: var(--foreground);
