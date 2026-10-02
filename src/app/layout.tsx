@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { GlassEngineProvider } from "@/components/glass/glass-engine-provider";
+import { ThemeApplier } from "@/components/theme/theme-applier";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -23,8 +24,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        {/* Pone el tema guardado antes del primer pintado para que no parpadee oscuro -> blanco. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{document.documentElement.dataset.theme=localStorage.getItem("vt-theme")==="light"?"light":"dark"}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
+        <ThemeApplier />
         {/* Motor óptico de vidrio real — portado de
             C:\Erick\Gym\src\glass-engine (ver src/glass-engine/*.ts):
             este provider dispara, solo en cliente, el fetch() e

@@ -10,7 +10,7 @@ export function PageBackdrop({ src, positionClass }: { src: string; positionClas
   // primero, antes que el resto del contenido de la página — para quedar
   // visualmente detrás sin necesidad de z-index.
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none">
+    <div className="vt-backdrop fixed inset-0 overflow-hidden pointer-events-none">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}

@@ -553,15 +553,35 @@ body {
   --t-menu: #1a1a1a;
 }
 
-.vt-theme-light {
-  --t-bg: #f1f1f1 url("/backgrounds/tema-claro.webp") center / cover no-repeat;
-  --t-fg: #111111;
-  --t-fg-dim: rgba(0, 0, 0, 0.58);
-  --t-fg-faint: rgba(0, 0, 0, 0.35);
-  --t-card: #ffffff;
-  --t-line: rgba(0, 0, 0, 0.12);
-  --t-accent: #111111;
-  --t-on-accent: #ffffff;
-  --t-ring: rgba(0, 0, 0, 0.28);
-  --t-menu: #ffffff;
+/* Modo blanco global: la app está diseñada en oscuro, así que el modo blanco invierte toda la
+   interfaz desde la raíz (texto, tarjetas, vidrio, íconos, gráficas) y vuelve a invertir lo que
+   NO debe cambiar: fotos, videos, canvas 3D y las tarjetas marcadas con data-keep-colors. El
+   fondo usa una copia ya invertida de "fondo blanco" para que, tras la inversión, se vea
+   exactamente esa textura. Los fondos de foto de cada módulo se ocultan en este modo. */
+html[data-theme="light"] {
+  filter: invert(1) hue-rotate(180deg);
+  background: #0c0c0c url("/backgrounds/tema-claro-inv.webp") center / cover;
+}
+
+html[data-theme="light"] body {
+  background: transparent;
+}
+
+html[data-theme="light"] img,
+html[data-theme="light"] video,
+html[data-theme="light"] canvas,
+html[data-theme="light"] picture,
+html[data-theme="light"] [data-keep-colors] {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+html[data-theme="light"] .vt-backdrop {
+  display: none;
+}
+
+/* Dentro de una zona data-keep-colors ya se compensó la inversión: sus fotos no se invierten otra vez. */
+html[data-theme="light"] [data-keep-colors] img,
+html[data-theme="light"] [data-keep-colors] video,
+html[data-theme="light"] [data-keep-colors] canvas {
+  filter: none;
 }

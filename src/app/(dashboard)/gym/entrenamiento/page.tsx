@@ -16,7 +16,6 @@ import { useGymStore } from "@/lib/store/gymStore";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { TrainingConfigSheet } from "@/components/gym/training-config-sheet";
 import { MuscleCurveChart } from "@/components/gym/muscle-curve-chart";
-import { useThemePref } from "@/lib/ui/theme-pref";
 import { todayDayIndex } from "@/lib/data/weekly-plan";
 import { getMuscleDistribution } from "@/lib/gym-utils";
 import { MONO_FONT } from "@/lib/ui/mono-font";
@@ -50,7 +49,6 @@ export default function EntrenamientoPage() {
   const cancelWorkout = useGymStore((s) => s.cancelWorkout);
   const streak = useGymStore((s) => s.streak);
   const allExercises = useAllExercises();
-  const [theme] = useThemePref();
 
   // Alguien totalmente nuevo (sin plan, sin rutinas propias, nunca entrenó)
   // pasa primero por el formulario inicial en vez de ver el panel vacío.
@@ -136,7 +134,7 @@ export default function EntrenamientoPage() {
 
   return (
     <div
-      className={`fixed inset-0 z-[45] overflow-y-auto no-scrollbar select-none ${theme === "light" ? "vt-theme-light" : "vt-theme-dark"}`}
+      className="vt-theme-dark fixed inset-0 z-[45] overflow-y-auto no-scrollbar select-none"
       style={{ background: "var(--t-bg)", color: "var(--t-fg)" }}
     >
       <div className="max-w-md mx-auto px-5 pb-6 flex flex-col gap-4">
@@ -213,7 +211,8 @@ export default function EntrenamientoPage() {
           onClick={handleStart}
           disabled={!canStart}
           className="relative w-full h-[150px] rounded-[24px] overflow-hidden flex flex-col items-center justify-center text-center cursor-pointer disabled:cursor-default"
-          style={{ background: "var(--t-card)", border: "1px solid var(--t-line)", color: bgExercise?.imagen ? "#fff" : "var(--t-fg)" }}
+          style={{ background: "var(--t-card)", border: "1px solid var(--t-line)", color: "#fff" }}
+          data-keep-colors
         >
           {bgExercise?.imagen && (
             <>
@@ -229,7 +228,7 @@ export default function EntrenamientoPage() {
             <p className="text-sm opacity-90">{isToday ? "Hoy toca" : `${DAY_NAMES[selectedDay]} toca`}</p>
             <h2 className="text-[30px] leading-none font-extrabold tracking-tight">{dayPlan.grupoMuscular}</h2>
             {hint && (
-              <p className="text-[9.5px] uppercase tracking-[0.14em] mt-1.5" style={{ ...MONO_FONT, color: staleSession ? "#f59e0b" : bgExercise?.imagen ? "rgba(255,255,255,0.6)" : "var(--t-fg-dim)" }}>
+              <p className="text-[9.5px] uppercase tracking-[0.14em] mt-1.5" style={{ ...MONO_FONT, color: staleSession ? "#f59e0b" : "rgba(255,255,255,0.6)" }}>
                 {hint}
               </p>
             )}

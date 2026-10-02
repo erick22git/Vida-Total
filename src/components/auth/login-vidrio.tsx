@@ -135,7 +135,9 @@ export function LoginVidrio({ children }: { children: ReactNode }) {
   }, []);
 
   return (
+    // data-keep-colors: el login queda siempre oscuro (ver "Modo blanco global" en globals.css).
     <div
+      data-keep-colors
       style={{
         position: "relative",
         width: "100vw",

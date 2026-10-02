@@ -8,6 +8,7 @@ import { LogOut, ShieldCheck } from "lucide-react";
 import { GlassModal } from "@/components/glass/glass-modal";
 import { createClient } from "@/lib/supabase/client";
 import { setCurrentUserId } from "@/lib/store/user-scope";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export interface SessionUser {
   name: string;
@@ -101,6 +102,10 @@ export function UserMenu({
           <div className="text-center">
             <div className="text-base font-semibold text-white">{user.name}</div>
             <div className="text-sm text-white/45">{user.email}</div>
+          </div>
+          <div className="w-full flex flex-col gap-1.5">
+            <span className="text-[11px] uppercase tracking-wide text-white/40 px-1">Apariencia</span>
+            <ThemeToggle />
           </div>
           {isAdmin && (
             <Link

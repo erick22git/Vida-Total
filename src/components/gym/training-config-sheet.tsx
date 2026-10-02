@@ -16,7 +16,7 @@ import { useAllExercises } from "@/components/gym/exercise-picker";
 import { MUSCLE_COLOR } from "@/lib/data/gym-meta";
 import { estimateRoutineDurationMinutes, getMuscleDistribution } from "@/lib/gym-utils";
 import { MONO_FONT } from "@/lib/ui/mono-font";
-import { useThemePref } from "@/lib/ui/theme-pref";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 const DAY_NAMES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const CARD_BG = { background: "var(--t-card)" } as const;
@@ -37,7 +37,6 @@ export function TrainingConfigSheet({ open, onClose, todayIndex }: { open: boole
   const activePlanId = useGymStore((s) => s.activePlanId);
   const activePlan = activePlanId ? plans.find((p) => p.id === activePlanId) : undefined;
   const allExercises = useAllExercises();
-  const [theme, setTheme] = useThemePref();
 
   return (
     <AnimatePresence>
@@ -67,24 +66,7 @@ export function TrainingConfigSheet({ open, onClose, todayIndex }: { open: boole
 
             <section className="flex flex-col gap-3">
               <SectionTitle>Apariencia</SectionTitle>
-              <div className="flex rounded-full p-1 gap-1" style={CARD_BG}>
-                {([
-                  { value: "dark", label: "Oscuro" },
-                  { value: "light", label: "Blanco" },
-                ] as const).map((o) => (
-                  <button
-                    key={o.value}
-                    onClick={() => setTheme(o.value)}
-                    className="flex-1 rounded-full py-2 text-xs font-semibold cursor-pointer transition-colors"
-                    style={{
-                      background: theme === o.value ? "var(--t-accent)" : "transparent",
-                      color: theme === o.value ? "var(--t-on-accent)" : "var(--t-fg-dim)",
-                    }}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
+              <ThemeToggle />
             </section>
 
             <section className="flex flex-col gap-3">
@@ -129,10 +111,11 @@ export function TrainingConfigSheet({ open, onClose, todayIndex }: { open: boole
                   return (
                     <Link key={d.day + i} href={isRest ? "#" : href} className={isRest ? "pointer-events-none shrink-0" : "shrink-0"}>
                       <div
+                        data-keep-colors
                         className="w-64 h-52 rounded-3xl overflow-hidden relative flex flex-col justify-end p-4"
                         style={{
                           ...CARD_BG,
-                          color: bgExercise?.imagen ? "#fff" : "var(--t-fg)",
+                          color: "#fff",
                           border: i === todayIndex ? "1px solid var(--t-ring)" : "1px solid var(--t-line)",
                         }}
                       >
