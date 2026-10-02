@@ -17,7 +17,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { format } from "date-fns";
-import { ChevronLeft, Pencil } from "lucide-react";
+import { ChevronLeft, Dumbbell, Pencil } from "lucide-react";
 import { useGymStore } from "@/lib/store/gymStore";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { TrainingConfigSheet } from "@/components/gym/training-config-sheet";
@@ -26,12 +26,11 @@ import { CalorieYearView } from "@/components/gym/calorie-year-view";
 import { WeekStrip } from "@/components/shared/week-strip";
 import { SettingsGlyph } from "@/components/shared/settings-glyph";
 import { todayDayIndex } from "@/lib/data/weekly-plan";
-import { getMuscleDistribution } from "@/lib/gym-utils";
+import { muscleParticipation } from "@/lib/gym/muscle-participation";
 import { trainingStreakInfo } from "@/lib/gym/training-streak";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import type { MuscleGroup, RoutineExercise } from "@/lib/types";
 
-const DAY_NAMES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const VIEW_COUNT = 3;
 const SWIPE_Y = 60;
 const RANGO_HREF = "/gym/entrenamiento/rango";
@@ -107,7 +106,7 @@ function EntrenamientoContent() {
   const dayPlan = weeklyPlan[selectedDay];
   const isRestDay = dayPlan.grupoMuscular === "Descanso";
   const routine = dayPlan.routineId ? routines.find((r) => r.id === dayPlan.routineId) : undefined;
-  const distribution = routine ? getMuscleDistribution(routine.ejercicios, allExercises) : [];
+  const distribution = routine ? muscleParticipation(routine.ejercicios, allExercises) : [];
   const bgExercise = routine
     ? routine.ejercicios.map((rex) => allExercises.find((e) => e.id === rex.exerciseId)).find((e) => e?.imagen)
     : allExercises.find((e) => e.categoria === dayPlan.grupoMuscular && e.imagen);
@@ -175,13 +174,6 @@ function EntrenamientoContent() {
   if (isTotallyNew) return null;
 
   const canStart = isToday && !isRestDay;
-  const hint = !canStart
-    ? null
-    : activeSession && !staleSession
-      ? "Toca para continuar"
-      : staleSession
-        ? "Entrenamiento sin terminar de otro día"
-        : "Toca para iniciar";
 
   return (
     <div className="vt-theme-dark app-bg fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden">
@@ -189,8 +181,8 @@ function EntrenamientoContent() {
         <Link href="/gym" aria-label="Volver" className="w-10 h-10 -ml-2 flex items-center justify-center">
           <ChevronLeft size={26} strokeWidth={2.4} />
         </Link>
-        <h1 className="text-[15px] uppercase tracking-[0.12em]" style={MONO_FONT}>
-          Entrenamiento
+        <h1 className="text-[15px] uppercase tracking-[0.12em] truncate px-2" style={MONO_FONT}>
+          {isRestDay ? "Descanso" : dayPlan.grupoMuscular}
         </h1>
         <button
           onClick={() => setConfigOpen(true)}
@@ -237,36 +229,25 @@ function EntrenamientoContent() {
             {view === 0 ? (
               <div className="w-full h-full flex flex-col">
                 <div className="flex-1 min-h-0 overflow-hidden">
-                  <div className="max-w-md mx-auto px-5 pt-1 flex flex-col gap-4">
+                  <div className="max-w-md mx-auto px-5 flex flex-col gap-3">
+                    {/* Foto del día: sin marco ni texto, con los lados difuminados hacia el fondo. Tocarla inicia
+                        o continúa el entrenamiento de hoy. */}
                     <button
                       onClick={handleStart}
                       disabled={!canStart}
-                      className="relative w-full h-[clamp(110px,20dvh,150px)] rounded-[24px] overflow-hidden flex flex-col items-center justify-center text-center cursor-pointer disabled:cursor-default"
-                      style={{ background: "var(--t-card)", border: "1px solid var(--t-line)", color: "#fff" }}
-                      data-keep-colors
+                      aria-label={isToday ? "Iniciar o continuar el entrenamiento de hoy" : undefined}
+                      className="relative -mx-5 h-[clamp(140px,28dvh,250px)] flex items-center justify-center cursor-pointer disabled:cursor-default"
+                      style={{
+                        WebkitMaskImage: "radial-gradient(ellipse 72% 70% at 50% 50%, #000 42%, transparent 100%)",
+                        maskImage: "radial-gradient(ellipse 72% 70% at 50% 50%, #000 42%, transparent 100%)",
+                      }}
                     >
-                      {bgExercise?.imagen && (
-                        <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={bgExercise.imagen} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                          <div
-                            className="absolute inset-0"
-                            style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.4) 45%, rgba(0,0,0,0.78) 100%)" }}
-                          />
-                        </>
+                      {bgExercise?.imagen ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={bgExercise.imagen} alt="" draggable={false} className="absolute inset-0 w-full h-full object-cover" />
+                      ) : (
+                        <Dumbbell size={56} strokeWidth={1.4} className="opacity-25" />
                       )}
-                      <div className="relative z-10 flex flex-col items-center gap-1 px-4">
-                        <p className="text-sm opacity-90">{isToday ? "Hoy toca" : `${DAY_NAMES[selectedDay]} toca`}</p>
-                        <h2 className="text-[30px] leading-none font-extrabold tracking-tight">{dayPlan.grupoMuscular}</h2>
-                        {hint && (
-                          <p
-                            className="text-[9.5px] uppercase tracking-[0.14em] mt-1.5"
-                            style={{ ...MONO_FONT, color: staleSession ? "#f59e0b" : "rgba(255,255,255,0.6)" }}
-                          >
-                            {hint}
-                          </p>
-                        )}
-                      </div>
                     </button>
 
                     <section className="flex flex-col gap-0.5">
@@ -287,7 +268,7 @@ function EntrenamientoContent() {
                           Sin rutina asignada. Tocá EDITAR para armarla.
                         </p>
                       ) : (
-                        <div data-no-swipe className="px-2 max-h-[120px] overflow-y-auto no-scrollbar touch-pan-y">
+                        <div data-no-swipe className="px-2 max-h-[90px] overflow-y-auto no-scrollbar touch-pan-y">
                           {routine.ejercicios.map((rex, i) => {
                             const ex = allExercises.find((e) => e.id === rex.exerciseId);
                             return (
