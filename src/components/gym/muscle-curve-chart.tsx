@@ -8,11 +8,11 @@ interface Entry {
 }
 
 const W = 340;
-const H = 168;
+const H = 112;
 const PLOT_L = 14;
 const PLOT_R = 292;
-const PLOT_T = 34;
-const PLOT_B = 148;
+const PLOT_T = 26;
+const PLOT_B = 98;
 
 /** Curva suave que pasa por los puntos (Catmull-Rom -> Bézier cúbica). */
 function smoothPath(pts: { x: number; y: number }[]): string {
@@ -58,25 +58,25 @@ export function MuscleCurveChart({ data }: { data: Entry[] }) {
   pts[pts.length - 1] = { x: PLOT_R, y: y(axisMin) };
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Distribución muscular">
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-h-[112px]" role="img" aria-label="Distribución muscular">
       {groups.map((g, i) => (
-        <text key={g.categoria} x={xs[i]} y={12} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize="9" letterSpacing="0.6" style={MONO_FONT}>
+        <text key={g.categoria} x={xs[i]} y={9} textAnchor="middle" fill="var(--t-fg-dim, rgba(255,255,255,0.85))" fontSize="8" letterSpacing="0.6" style={MONO_FONT}>
           {g.categoria.toUpperCase()}
         </text>
       ))}
       {ticks.map((t) => (
         <g key={t}>
-          <line x1={PLOT_L} x2={PLOT_R} y1={y(t)} y2={y(t)} stroke="rgba(255,255,255,0.28)" strokeWidth="1" strokeDasharray="1.5 3" />
-          <text x={W - 4} y={y(t) + 4} textAnchor="end" fill="rgba(255,255,255,0.85)" fontSize="11" style={MONO_FONT}>
+          <line x1={PLOT_L} x2={PLOT_R} y1={y(t)} y2={y(t)} stroke="var(--t-ring, rgba(255,255,255,0.28))" strokeWidth="1" strokeDasharray="1.5 3" />
+          <text x={W - 4} y={y(t) + 4} textAnchor="end" fill="var(--t-fg-dim, rgba(255,255,255,0.85))" fontSize="9" style={MONO_FONT}>
             {t}%
           </text>
         </g>
       ))}
-      <path d={smoothPath(pts)} fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={smoothPath(pts)} fill="none" stroke="var(--t-fg, #fff)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       {groups.map((g, i) => (
         <g key={g.categoria + "pt"}>
-          <circle cx={xs[i]} cy={y(g.pct)} r="3.2" fill="#fff" />
-          <text x={xs[i]} y={y(g.pct) - 8} textAnchor="middle" fill="#fff" fontSize="10" style={MONO_FONT}>
+          <circle cx={xs[i]} cy={y(g.pct)} r="2.6" fill="var(--t-fg, #fff)" />
+          <text x={xs[i]} y={y(g.pct) - 6} textAnchor="middle" fill="var(--t-fg, #fff)" fontSize="8.5" style={MONO_FONT}>
             {g.pct}%
           </text>
         </g>

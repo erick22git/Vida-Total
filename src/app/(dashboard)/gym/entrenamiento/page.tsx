@@ -16,6 +16,7 @@ import { useGymStore } from "@/lib/store/gymStore";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { TrainingConfigSheet } from "@/components/gym/training-config-sheet";
 import { MuscleCurveChart } from "@/components/gym/muscle-curve-chart";
+import { useThemePref } from "@/lib/ui/theme-pref";
 import { todayDayIndex } from "@/lib/data/weekly-plan";
 import { getMuscleDistribution } from "@/lib/gym-utils";
 import { MONO_FONT } from "@/lib/ui/mono-font";
@@ -49,6 +50,7 @@ export default function EntrenamientoPage() {
   const cancelWorkout = useGymStore((s) => s.cancelWorkout);
   const streak = useGymStore((s) => s.streak);
   const allExercises = useAllExercises();
+  const [theme] = useThemePref();
 
   // Alguien totalmente nuevo (sin plan, sin rutinas propias, nunca entrenó)
   // pasa primero por el formulario inicial en vez de ver el panel vacío.
@@ -133,44 +135,47 @@ export default function EntrenamientoPage() {
         : "Toca para iniciar";
 
   return (
-    <div className="fixed inset-0 z-[45] overflow-y-auto bg-black text-white select-none">
-      <div className="max-w-md mx-auto px-5 pb-12 flex flex-col gap-7">
-        <header className="flex items-center justify-between pt-[max(env(safe-area-inset-top),16px)]">
-          <Link href="/gym" aria-label="Volver" className="w-10 h-10 flex items-center justify-center -ml-2">
-            <ChevronLeft size={30} strokeWidth={2.4} />
+    <div
+      className={`fixed inset-0 z-[45] overflow-y-auto no-scrollbar select-none ${theme === "light" ? "vt-theme-light" : "vt-theme-dark"}`}
+      style={{ background: "var(--t-bg)", color: "var(--t-fg)" }}
+    >
+      <div className="max-w-md mx-auto px-5 pb-6 flex flex-col gap-4">
+        <header className="flex items-center justify-between pt-[max(env(safe-area-inset-top),12px)]">
+          <Link href="/gym" aria-label="Volver" className="w-9 h-9 flex items-center justify-center -ml-2">
+            <ChevronLeft size={26} strokeWidth={2.4} />
           </Link>
           <button
             onClick={() => setConfigOpen(true)}
             aria-label="Configuración e historial"
-            className="w-10 h-10 flex items-center justify-center -mr-2 cursor-pointer"
+            className="w-9 h-9 flex items-center justify-center -mr-2 cursor-pointer"
           >
-            <SlidersHorizontal size={24} strokeWidth={2.4} />
+            <SlidersHorizontal size={21} strokeWidth={2.4} />
           </button>
         </header>
 
-        <div className="flex items-start justify-between gap-1 -mt-2 relative">
+        <div className="flex items-center justify-between gap-1 relative">
           {weeklyPlan.map((d, i) => {
             const rest = d.grupoMuscular === "Descanso";
             const done = trainedDays[i];
             const selected = i === selectedDay;
             return (
-              <button key={d.day + i} onClick={() => setSelectedDay(i)} className="flex flex-col items-center gap-2 cursor-pointer">
+              <button key={d.day + i} onClick={() => setSelectedDay(i)} className="flex flex-col items-center gap-1 cursor-pointer">
                 <span
-                  className="w-11 h-11 rounded-full flex items-center justify-center"
+                  className="w-8 h-8 rounded-full flex items-center justify-center"
                   style={{
-                    background: done ? "#fff" : rest ? "rgba(255,255,255,0.3)" : "transparent",
-                    border: done || rest ? "none" : "1.5px solid rgba(255,255,255,0.28)",
-                    color: done ? "#000" : "rgba(255,255,255,0.7)",
+                    background: done ? "var(--t-accent)" : rest ? "var(--t-line)" : "transparent",
+                    border: done || rest ? "none" : "1.5px solid var(--t-ring)",
+                    color: done ? "var(--t-on-accent)" : "var(--t-fg-dim)",
                   }}
                 >
-                  {done ? <Check size={22} strokeWidth={3} /> : rest ? <Moon size={17} /> : null}
+                  {done ? <Check size={16} strokeWidth={3} /> : rest ? <Moon size={13} /> : null}
                 </span>
                 <span
-                  className="text-[13px] tracking-wide pb-0.5"
+                  className="text-[9.5px] tracking-wide pb-px"
                   style={{
                     ...MONO_FONT,
-                    color: i === todayIndex || selected ? "#fff" : "rgba(255,255,255,0.7)",
-                    borderBottom: selected ? "2px solid #fff" : "2px solid transparent",
+                    color: i === todayIndex || selected ? "var(--t-fg)" : "var(--t-fg-dim)",
+                    borderBottom: selected ? "1.5px solid var(--t-fg)" : "1.5px solid transparent",
                   }}
                 >
                   {i === todayIndex ? "HOY" : DAY_SHORT[i]}
@@ -181,21 +186,21 @@ export default function EntrenamientoPage() {
           <button
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Más opciones"
-            className="w-7 h-11 flex items-center justify-center cursor-pointer shrink-0"
+            className="w-6 h-8 flex items-center justify-center cursor-pointer shrink-0 self-start"
           >
-            <MoreVertical size={22} />
+            <MoreVertical size={18} />
           </button>
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-12 z-40 w-48 rounded-2xl py-1.5 shadow-2xl" style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <div className="absolute right-0 top-9 z-40 w-44 rounded-2xl py-1 shadow-2xl" style={{ background: "var(--t-menu)", border: "1px solid var(--t-line)", color: "var(--t-fg)" }}>
                 {[
                   { href: "/gym/entrenamiento/planificaciones", label: "Planes", icon: CalendarRange },
                   { href: "/gym/entrenamiento/rango", label: "Rango", icon: Shield },
                   { href: "/gym/entrenamiento/perfil", label: "Perfil", icon: User },
                   { href: "/gym/entrenamiento/rachas", label: `Racha · ${streak}`, icon: Flame },
                 ].map(({ href, label, icon: Icon }) => (
-                  <Link key={href} href={href} className="flex items-center gap-3 px-4 py-3 text-sm text-white/85">
+                  <Link key={href} href={href} className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
                     <Icon size={16} /> {label}
                   </Link>
                 ))}
@@ -207,8 +212,8 @@ export default function EntrenamientoPage() {
         <button
           onClick={handleStart}
           disabled={!canStart}
-          className="relative w-full h-[250px] rounded-[28px] overflow-hidden flex flex-col items-center justify-center text-center cursor-pointer disabled:cursor-default"
-          style={{ background: "#111", border: "1px solid rgba(255,255,255,0.12)" }}
+          className="relative w-full h-[150px] rounded-[24px] overflow-hidden flex flex-col items-center justify-center text-center cursor-pointer disabled:cursor-default"
+          style={{ background: "var(--t-card)", border: "1px solid var(--t-line)", color: bgExercise?.imagen ? "#fff" : "var(--t-fg)" }}
         >
           {bgExercise?.imagen && (
             <>
@@ -220,44 +225,44 @@ export default function EntrenamientoPage() {
               />
             </>
           )}
-          <div className="relative z-10 flex flex-col items-center gap-2 px-4">
-            <p className="text-xl text-white/90">{isToday ? "Hoy toca" : `${DAY_NAMES[selectedDay]} toca`}</p>
-            <h2 className="text-[44px] leading-none font-extrabold tracking-tight">{dayPlan.grupoMuscular}</h2>
+          <div className="relative z-10 flex flex-col items-center gap-1 px-4">
+            <p className="text-sm opacity-90">{isToday ? "Hoy toca" : `${DAY_NAMES[selectedDay]} toca`}</p>
+            <h2 className="text-[30px] leading-none font-extrabold tracking-tight">{dayPlan.grupoMuscular}</h2>
             {hint && (
-              <p className="text-[11px] uppercase tracking-[0.14em] mt-2" style={{ ...MONO_FONT, color: staleSession ? "#f59e0b" : "rgba(255,255,255,0.55)" }}>
+              <p className="text-[9.5px] uppercase tracking-[0.14em] mt-1.5" style={{ ...MONO_FONT, color: staleSession ? "#f59e0b" : bgExercise?.imagen ? "rgba(255,255,255,0.6)" : "var(--t-fg-dim)" }}>
                 {hint}
               </p>
             )}
           </div>
         </button>
 
-        <section className="flex flex-col gap-1">
-          <div className="flex items-center justify-between rounded-full px-4 py-2" style={{ background: "#0d0d0d" }}>
+        <section className="flex flex-col gap-0.5">
+          <div className="flex items-center justify-between rounded-full px-4 py-1.5" style={{ background: "var(--t-card)" }}>
             <span className="text-[12px] tracking-wide" style={MONO_FONT}>
               DISTRIBUCIÓN MUSCULAR
             </span>
-            <span className="text-[10px] text-white/60" style={MONO_FONT}>
+            <span className="text-[9.5px]" style={{ ...MONO_FONT, color: "var(--t-fg-dim)" }}>
               SER/REPS
             </span>
           </div>
           {isRestDay ? (
-            <p className="text-xs text-white/40 px-4 py-3">Día de descanso.</p>
+            <p className="text-xs px-4 py-2" style={{ color: "var(--t-fg-dim)" }}>Día de descanso.</p>
           ) : !routine ? (
-            <p className="text-xs text-white/40 px-4 py-3">Sin rutina asignada. Tocá EDITAR para armarla.</p>
+            <p className="text-xs px-4 py-2" style={{ color: "var(--t-fg-dim)" }}>Sin rutina asignada. Tocá EDITAR para armarla.</p>
           ) : (
-            <div className="px-2 max-h-[136px] overflow-y-auto no-scrollbar">
+            <div className="px-2 max-h-[120px] overflow-y-auto no-scrollbar">
               {routine.ejercicios.map((rex, i) => {
                 const ex = allExercises.find((e) => e.id === rex.exerciseId);
                 return (
                   <div
                     key={rex.exerciseId + i}
-                    className="flex items-center justify-between gap-3 h-[34px]"
-                    style={{ borderBottom: i < routine.ejercicios.length - 1 ? "1px solid rgba(255,255,255,0.1)" : "none" }}
+                    className="flex items-center justify-between gap-3 h-[30px]"
+                    style={{ borderBottom: i < routine.ejercicios.length - 1 ? "1px solid var(--t-line)" : "none" }}
                   >
                     <span className="text-[11px] uppercase tracking-wide truncate" style={MONO_FONT}>
                       {ex?.nombre ?? "Ejercicio"}
                     </span>
-                    <span className="text-[11px] text-white/75 shrink-0 tabular-nums">{repsLabel(rex)}</span>
+                    <span className="text-[10.5px] shrink-0 tabular-nums" style={{ color: "var(--t-fg-dim)" }}>{repsLabel(rex)}</span>
                   </div>
                 );
               })}
@@ -270,10 +275,10 @@ export default function EntrenamientoPage() {
         <div className="flex justify-center">
           <Link
             href={editHref}
-            className="flex items-center gap-3 rounded-full px-10 py-3.5 text-[15px] tracking-wide"
-            style={{ ...MONO_FONT, border: "1px solid rgba(255,255,255,0.35)", background: "#0a0a0a" }}
+            className="flex items-center gap-2 rounded-full px-6 py-2 text-[11px] tracking-wide"
+            style={{ ...MONO_FONT, border: "1px solid var(--t-ring)", background: "var(--t-card)" }}
           >
-            <Pencil size={18} /> EDITAR
+            <Pencil size={13} /> EDITAR
           </Link>
         </div>
       </div>

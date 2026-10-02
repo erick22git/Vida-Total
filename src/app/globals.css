@@ -537,3 +537,31 @@ body {
   background-size: 200% 200%;
   animation: breathing-gradient 18s ease-in-out infinite;
 }
+
+/* ---------- Tema oscuro / claro (Configuración) ----------
+   Una pantalla lo adopta con la clase .vt-theme-dark / .vt-theme-light y usando estas variables. */
+.vt-theme-dark {
+  --t-bg: #141414 url("/backgrounds/tema-oscuro.webp") center / cover no-repeat;
+  --t-fg: #ffffff;
+  --t-fg-dim: rgba(255, 255, 255, 0.6);
+  --t-fg-faint: rgba(255, 255, 255, 0.35);
+  --t-card: #0d0d0d;
+  --t-line: rgba(255, 255, 255, 0.12);
+  --t-accent: #ffffff;
+  --t-on-accent: #000000;
+  --t-ring: rgba(255, 255, 255, 0.3);
+  --t-menu: #1a1a1a;
+}
+
+.vt-theme-light {
+  --t-bg: #f1f1f1 url("/backgrounds/tema-claro.webp") center / cover no-repeat;
+  --t-fg: #111111;
+  --t-fg-dim: rgba(0, 0, 0, 0.58);
+  --t-fg-faint: rgba(0, 0, 0, 0.35);
+  --t-card: #ffffff;
+  --t-line: rgba(0, 0, 0, 0.12);
+  --t-accent: #111111;
+  --t-on-accent: #ffffff;
+  --t-ring: rgba(0, 0, 0, 0.28);
+  --t-menu: #ffffff;
+}
