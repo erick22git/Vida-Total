@@ -1,20 +1,21 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ChevronRight, Droplets, Plus, X } from "lucide-react";
+import { ChevronLeft, Plus } from "lucide-react";
 import { format } from "date-fns";
-import { GlassCard } from "@/components/glass/glass-card";
 import { WaterBottle } from "@/components/gym/water-bottle";
 import { WaterGlass3D, type WaterGlassHandle } from "@/components/gym/water-glass-3d";
-import { WeeklyWaterCard } from "@/components/gym/weekly-water-card";
+import { WeekStrip } from "@/components/shared/week-strip";
+import { MONO_FONT } from "@/lib/ui/mono-font";
 import { AddDrinkModal } from "@/components/gym/add-drink-modal";
 import { totalsByDrink } from "@/lib/gym/water-stats";
 import { waterState } from "@/lib/gym/water-state";
 import { useGymStore, useTodayWaterEntries } from "@/lib/store/gymStore";
 
 const QUICK_ADDS = [150, 250, 500];
+const SWIPE_Y = 60;
+const STATS_HREF = "/gym/agua/estadisticas";
 
 /** Mezcla los colores de las bebidas de hoy (ponderados por ml) para teñir el agua del vaso. */
 function blendColor(parts: { color: string; ml: number }[]): string {
@@ -36,39 +37,79 @@ export default function AguaPage() {
   const waterEntries = useGymStore((s) => s.waterEntries);
   const drinkOverrides = useGymStore((s) => s.drinkOverrides);
   const addWater = useGymStore((s) => s.addWater);
-  const removeWaterEntry = useGymStore((s) => s.removeWaterEntry);
   const todayEntries = useTodayWaterEntries();
   const [addDrinkOpen, setAddDrinkOpen] = useState(false);
   // Cada toque en un botón rápido llama directo a `pour()`: el vaso suelta el chorro con salpicón (sin esperar un re-render).
   const glassRef = useRef<WaterGlassHandle>(null);
   // Solo si WebGL o el modelo fallan se muestra la botella SVG (ya no es una opción que elija el usuario).
   const [glassFailed, setGlassFailed] = useState(false);
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const wheelLock = useRef(false);
 
   const todayByDrink = useMemo(() => totalsByDrink(todayEntries, drinkOverrides), [todayEntries, drinkOverrides]);
   const totalMl = todayByDrink.reduce((sum, d) => sum + d.ml, 0);
   const water = waterState(totalMl, waterGoalMl);
   const waterColor = useMemo(() => blendColor(todayByDrink.map((d) => ({ color: d.color, ml: d.ml }))), [todayByDrink]);
 
+  // Días en que se llegó a la meta de agua -> check en la franja de abajo.
+  const goalDays = useMemo(() => {
+    const byDay = new Map<string, number>();
+    for (const e of waterEntries) {
+      const k = format(new Date(e.timestamp), "yyyy-MM-dd");
+      byDay.set(k, (byDay.get(k) ?? 0) + e.ml);
+    }
+    return new Set([...byDay].filter(([, ml]) => ml >= waterGoalMl).map(([k]) => k));
+  }, [waterEntries, waterGoalMl]);
+  const todayISO = format(new Date(), "yyyy-MM-dd");
+
   return (
-    // El fondo de foto ya lo pone gym/agua/layout.tsx (compartido por todas
-    // las pantallas de Agua).
-    <div className="flex flex-col gap-6">
-      <header className="flex items-center gap-3 pt-2">
-        <Link href="/gym" className="text-white/50 hover:text-white transition-colors">
-          <ArrowLeft size={20} />
-        </Link>
-        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2">
-          <Droplets className="text-white" /> Agua
+    // Pantalla fija (sin scroll propio): deslizar hacia arriba / rueda hacia abajo lleva a Estadísticas.
+    <div className="app-bg fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden">
+      <header className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),10px)] h-[calc(3.25rem+max(env(safe-area-inset-top),10px))] shrink-0">
+        <button
+          onClick={() => router.push("/gym")}
+          aria-label="Volver a Gym"
+          className="w-10 h-10 -ml-2 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+        >
+          <ChevronLeft size={26} strokeWidth={2.4} />
+        </button>
+        <h1 className="text-[20px] uppercase tracking-[0.12em]" style={MONO_FONT}>
+          Agua
         </h1>
+        <span className="w-10 h-10" aria-hidden />
       </header>
 
-      <GlassCard accentColor="#3b82f6" glow className="flex flex-col items-center gap-6 py-8" style={{ background: "var(--glass-bg-dark)" }}>
+      <main
+        className="flex-1 min-h-0 flex flex-col items-center justify-center gap-4 px-5 touch-none"
+        onPointerDown={(e) => (start.current = { x: e.clientX, y: e.clientY })}
+        onPointerUp={(e) => {
+          const st = start.current;
+          start.current = null;
+          if (!st) return;
+          const dx = e.clientX - st.x;
+          const dy = e.clientY - st.y;
+          if (dy < -SWIPE_Y && Math.abs(dy) > Math.abs(dx) * 1.4) router.push(STATS_HREF);
+        }}
+        onPointerCancel={() => (start.current = null)}
+        onWheel={(e) => {
+          if (wheelLock.current || e.deltaY < 30) return;
+          wheelLock.current = true;
+          setTimeout(() => (wheelLock.current = false), 800);
+          router.push(STATS_HREF);
+        }}
+      >
         {!glassFailed ? (
-          <WaterGlass3D fraction={water.fraction} color={waterColor} ref={glassRef} onError={() => setGlassFailed(true)} />
+          <WaterGlass3D
+            fraction={water.fraction}
+            color={waterColor}
+            ref={glassRef}
+            onError={() => setGlassFailed(true)}
+            className="w-full max-w-sm h-[min(26rem,44dvh)]"
+          />
         ) : (
           <WaterBottle segments={todayByDrink.map((d) => ({ color: d.color, ml: d.ml }))} max={waterGoalMl} />
         )}
-        <p className="text-sm text-white/60 -mt-2">
+        <p className="text-sm text-white/60">
           {totalMl} / {waterGoalMl} ml · {Math.round(water.fraction * 100)} %
         </p>
         <div className="flex gap-3">
@@ -91,60 +132,17 @@ export default function AguaPage() {
         >
           <Plus size={16} /> Añadir una bebida
         </button>
-      </GlassCard>
+      </main>
+
+      <div className="pb-[max(env(safe-area-inset-bottom),28px)] min-h-[104px] shrink-0">
+        <WeekStrip doneKeys={goalDays} todayISO={todayISO} viewIndex={0} viewCount={2} />
+      </div>
 
       <AddDrinkModal
         open={addDrinkOpen}
         onClose={() => setAddDrinkOpen(false)}
         onAdded={() => window.setTimeout(() => glassRef.current?.pour(), 250)}
       />
-
-      <GlassCard className="flex flex-col gap-2" style={{ background: "var(--glass-bg-dark)" }}>
-        <p className="text-sm font-semibold text-white/80">Registros de hoy</p>
-        {todayEntries.length > 0 ? (
-          <div className="flex flex-col gap-1.5">
-            {todayEntries
-              .slice()
-              .reverse()
-              .map((w) => (
-                <div
-                  key={w.id}
-                  className="flex items-center justify-between text-sm bg-white/[0.04] rounded-xl glass-specular-ring px-3 py-2"
-                >
-                  <span className="text-white/80">
-                    {w.drinkEmoji ?? "💧"} {w.drinkNombre ?? "Agua"} · {w.ml} ml
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white/40 text-xs">
-                      {format(new Date(w.timestamp), "HH:mm")}
-                    </span>
-                    <button
-                      onClick={() => removeWaterEntry(w.id)}
-                      className="text-white/30 hover:text-white/70 cursor-pointer"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-          </div>
-        ) : (
-          <p className="text-sm text-white/30">Aún no registras agua hoy</p>
-        )}
-      </GlassCard>
-
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-white/80">Estadísticas semanales</p>
-          <button
-            onClick={() => router.push("/gym/agua/estadisticas")}
-            className="flex items-center gap-0.5 text-xs font-medium text-[#3b82f6] hover:text-[#60a5fa] transition-colors cursor-pointer"
-          >
-            Más <ChevronRight size={13} />
-          </button>
-        </div>
-        <WeeklyWaterCard waterEntries={waterEntries} waterGoalMl={waterGoalMl} />
-      </div>
     </div>
   );
 }

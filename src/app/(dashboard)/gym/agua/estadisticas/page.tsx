@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, X } from "lucide-react";
 import { format, isSameDay, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -23,7 +23,7 @@ import { GlassCard } from "@/components/glass/glass-card";
 import { WeeklyWaterCard } from "@/components/gym/weekly-water-card";
 import { MonthlyWaterCalendar } from "@/components/gym/monthly-water-calendar";
 import { totalMlForDay, totalsByDrink } from "@/lib/gym/water-stats";
-import { useGymStore } from "@/lib/store/gymStore";
+import { useGymStore, useTodayWaterEntries } from "@/lib/store/gymStore";
 
 const TABS = ["Resumen", "Por bebida", "Tendencias"] as const;
 type Tab = (typeof TABS)[number];
@@ -58,6 +58,8 @@ function DayRow({ date, ml, goal }: { date: Date; ml: number; goal: number }) {
 
 export default function EstadisticasAguaPage() {
   const router = useRouter();
+  const todayEntries = useTodayWaterEntries();
+  const removeWaterEntry = useGymStore((s) => s.removeWaterEntry);
   const waterEntries = useGymStore((s) => s.waterEntries);
   const waterGoalMl = useGymStore((s) => s.waterGoalMl);
   const drinkOverrides = useGymStore((s) => s.drinkOverrides);
@@ -104,6 +106,32 @@ export default function EstadisticasAguaPage() {
         </Link>
         <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Estadísticas</h1>
       </header>
+
+      <GlassCard padding="md" interactive={false} className="flex flex-col gap-2" style={{ background: "var(--glass-bg-dark)" }}>
+        <p className="text-sm font-semibold text-white/80">Registros de hoy</p>
+        {todayEntries.length > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            {todayEntries
+              .slice()
+              .reverse()
+              .map((w) => (
+                <div key={w.id} className="flex items-center justify-between text-sm bg-white/[0.04] rounded-xl glass-specular-ring px-3 py-2">
+                  <span className="text-white/80">
+                    {w.drinkEmoji ?? "💧"} {w.drinkNombre ?? "Agua"} · {w.ml} ml
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white/40 text-xs">{format(new Date(w.timestamp), "HH:mm")}</span>
+                    <button onClick={() => removeWaterEntry(w.id)} aria-label="Quitar registro" className="text-white/30 hover:text-white/70 cursor-pointer">
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        ) : (
+          <p className="text-sm text-white/30">Aún no registras agua hoy</p>
+        )}
+      </GlassCard>
 
       <div className="flex gap-2 overflow-x-auto no-scrollbar">
         {TABS.map((t) => (

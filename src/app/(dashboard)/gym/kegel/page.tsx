@@ -10,15 +10,14 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { BookOpen, Check, ChevronLeft, Clock, Dumbbell, Flower2, SlidersHorizontal } from "lucide-react";
-import { addDays, format } from "date-fns";
-import { ViewDots } from "@/components/habitos/view-dots";
+import { format } from "date-fns";
+import { WeekStrip } from "@/components/shared/week-strip";
 import { CalorieYearView } from "@/components/gym/calorie-year-view";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { KEGEL_SESSIONS, formatDuration, type KegelSessionKind } from "@/lib/gym/kegel-plan";
 import { fullyDoneDays, useKegelPlanStore } from "@/lib/store/kegelPlanStore";
 import { useGymStore } from "@/lib/store/gymStore";
 
-const WEEKDAY = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
 const VIEW_COUNT = 2;
 const SWIPE_Y = 60;
 
@@ -67,8 +66,6 @@ export default function KegelPage() {
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
-
-  const days = Array.from({ length: 7 }, (_, i) => addDays(new Date(`${todayISO}T12:00:00`), i - 6));
 
   return (
     <div
@@ -173,54 +170,8 @@ export default function KegelPage() {
                   </ol>
                 </div>
 
-                <div
-                  className="mx-3 mb-[max(env(safe-area-inset-bottom),14px)] rounded-[26px] flex items-center pl-3 pr-3 py-3 shrink-0"
-                  style={{ background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.05)" }}
-                >
-                  <div className="flex flex-1 justify-between">
-                    {days.slice(0, 6).map((d) => {
-                      const iso = format(d, "yyyy-MM-dd");
-                      const done = doneDays.has(iso);
-                      return (
-                        <div key={iso} className="flex flex-col items-center gap-2 w-[15%]">
-                          <span
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] tabular-nums"
-                            style={{
-                              ...MONO_FONT,
-                              background: done ? "#fff" : "#050505",
-                              color: done ? "#000" : "#fff",
-                              boxShadow: done
-                                ? "inset 0 1px 2px rgba(255,255,255,0.9), 0 2px 6px rgba(0,0,0,0.4)"
-                                : "inset 0 1px 2px rgba(255,255,255,0.10), 0 2px 6px rgba(0,0,0,0.5)",
-                            }}
-                          >
-                            {done ? <Check size={17} strokeWidth={3} /> : format(d, "d")}
-                          </span>
-                          <span className="text-[11px] tracking-wide text-white/85" style={MONO_FONT}>
-                            {WEEKDAY[d.getDay()]}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="w-px self-stretch bg-white/10 mx-2" />
-                  <div className="flex flex-col items-center gap-2 w-[15%]">
-                    <span
-                      className="w-8 h-8 flex items-center justify-center text-[15px] tabular-nums"
-                      style={{ ...MONO_FONT, color: doneDays.has(todayISO) ? "#fff" : "rgba(255,255,255,0.45)" }}
-                    >
-                      {doneDays.has(todayISO) ? <Check size={20} strokeWidth={3} /> : format(new Date(), "d")}
-                    </span>
-                    <span className="flex flex-col items-center gap-1">
-                      <span className="text-[11px] tracking-wide text-white/85" style={MONO_FONT}>
-                        HOY
-                      </span>
-                      <span className="h-[2px] w-6 rounded-full" style={{ background: "#f5a800" }} />
-                    </span>
-                  </div>
-                  <div className="pl-2 pb-3">
-                    <ViewDots index={view} count={VIEW_COUNT} />
-                  </div>
+                <div className="pb-[max(env(safe-area-inset-bottom),28px)] min-h-[104px] shrink-0">
+                  <WeekStrip doneKeys={doneDays} todayISO={todayISO} viewIndex={view} viewCount={VIEW_COUNT} />
                 </div>
               </div>
             ) : (

@@ -323,7 +323,7 @@ export function MealHomeScreen() {
                     />
                   </div>
 
-                  <div className="pb-[max(env(safe-area-inset-bottom),20px)]">
+                  <div className="pb-[max(env(safe-area-inset-bottom),28px)] min-h-[104px]">
                       <CalorieWeekStrip
                         loggedDayKeys={loggedDays}
                         selectedDate={selectedDate}

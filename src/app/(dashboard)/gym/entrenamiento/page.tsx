@@ -10,18 +10,18 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { addDays, isSameDay, startOfWeek } from "date-fns";
-import { Check, ChevronLeft, Flame, Moon, Pencil, Shield, SlidersHorizontal, User, CalendarRange, MoreVertical } from "lucide-react";
+import { format } from "date-fns";
+import { ChevronLeft, Flame, Pencil, Shield, SlidersHorizontal, User, CalendarRange, MoreVertical } from "lucide-react";
 import { useGymStore } from "@/lib/store/gymStore";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { TrainingConfigSheet } from "@/components/gym/training-config-sheet";
 import { MuscleCurveChart } from "@/components/gym/muscle-curve-chart";
+import { WeekStrip } from "@/components/shared/week-strip";
 import { todayDayIndex } from "@/lib/data/weekly-plan";
 import { getMuscleDistribution } from "@/lib/gym-utils";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import type { MuscleGroup, RoutineExercise } from "@/lib/types";
 
-const DAY_SHORT = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"];
 const DAY_NAMES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
 function repsLabel(rex: RoutineExercise): string {
@@ -65,15 +65,14 @@ export default function EntrenamientoPage() {
   const [configOpen, setConfigOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const todayIndex = todayDayIndex();
-  const [selectedDay, setSelectedDay] = useState(todayIndex);
+  const todayISO = format(new Date(), "yyyy-MM-dd");
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  // El plan semanal es por día de la semana (0 = lunes), así que tocar un día de la franja
+  // muestra el plan que le corresponde a ese día de la semana.
+  const selectedDay = (selectedDate.getDay() + 6) % 7;
+  const trainedKeys = new Set(sessions.filter((s) => s.completado).map((s) => format(new Date(s.date), "yyyy-MM-dd")));
 
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const trainedDays = weeklyPlan.map((_, i) => {
-    const date = addDays(weekStart, i);
-    return sessions.some((s) => s.completado && isSameDay(new Date(s.date), date));
-  });
-
-  const isToday = selectedDay === todayIndex;
+  const isToday = format(selectedDate, "yyyy-MM-dd") === todayISO;
   const dayPlan = weeklyPlan[selectedDay];
   const isRestDay = dayPlan.grupoMuscular === "Descanso";
   const routine = dayPlan.routineId ? routines.find((r) => r.id === dayPlan.routineId) : undefined;
@@ -134,79 +133,53 @@ export default function EntrenamientoPage() {
 
   return (
     <div
-      className="vt-theme-dark fixed inset-0 z-[45] overflow-y-auto no-scrollbar select-none"
+      className="vt-theme-dark fixed inset-0 z-[45] flex flex-col select-none"
       style={{ background: "var(--t-bg)", color: "var(--t-fg)" }}
     >
-      <div className="max-w-md mx-auto px-5 pb-6 flex flex-col gap-4">
-        <header className="flex items-center justify-between pt-[max(env(safe-area-inset-top),12px)]">
-          <Link href="/gym" aria-label="Volver" className="w-9 h-9 flex items-center justify-center -ml-2">
-            <ChevronLeft size={26} strokeWidth={2.4} />
-          </Link>
-          <button
-            onClick={() => setConfigOpen(true)}
-            aria-label="Configuración e historial"
-            className="w-9 h-9 flex items-center justify-center -mr-2 cursor-pointer"
-          >
-            <SlidersHorizontal size={21} strokeWidth={2.4} />
-          </button>
-        </header>
-
-        <div className="flex items-center justify-between gap-1 relative">
-          {weeklyPlan.map((d, i) => {
-            const rest = d.grupoMuscular === "Descanso";
-            const done = trainedDays[i];
-            const selected = i === selectedDay;
-            return (
-              <button key={d.day + i} onClick={() => setSelectedDay(i)} className="flex flex-col items-center gap-1 cursor-pointer">
-                <span
-                  className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{
-                    background: done ? "var(--t-accent)" : rest ? "var(--t-line)" : "transparent",
-                    border: done || rest ? "none" : "1.5px solid var(--t-ring)",
-                    color: done ? "var(--t-on-accent)" : "var(--t-fg-dim)",
-                  }}
-                >
-                  {done ? <Check size={16} strokeWidth={3} /> : rest ? <Moon size={13} /> : null}
-                </span>
-                <span
-                  className="text-[9.5px] tracking-wide pb-px"
-                  style={{
-                    ...MONO_FONT,
-                    color: i === todayIndex || selected ? "var(--t-fg)" : "var(--t-fg-dim)",
-                    borderBottom: selected ? "1.5px solid var(--t-fg)" : "1.5px solid transparent",
-                  }}
-                >
-                  {i === todayIndex ? "HOY" : DAY_SHORT[i]}
-                </span>
-              </button>
-            );
-          })}
+      <header className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),12px)] shrink-0 relative">
+        <Link href="/gym" aria-label="Volver" className="w-9 h-9 flex items-center justify-center -ml-2">
+          <ChevronLeft size={26} strokeWidth={2.4} />
+        </Link>
+        <div className="flex items-center gap-1 -mr-2">
           <button
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Más opciones"
-            className="w-6 h-8 flex items-center justify-center cursor-pointer shrink-0 self-start"
+            className="w-9 h-9 flex items-center justify-center cursor-pointer"
           >
-            <MoreVertical size={18} />
+            <MoreVertical size={20} />
           </button>
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-9 z-40 w-44 rounded-2xl py-1 shadow-2xl" style={{ background: "var(--t-menu)", border: "1px solid var(--t-line)", color: "var(--t-fg)" }}>
-                {[
-                  { href: "/gym/entrenamiento/planificaciones", label: "Planes", icon: CalendarRange },
-                  { href: "/gym/entrenamiento/rango", label: "Rango", icon: Shield },
-                  { href: "/gym/entrenamiento/perfil", label: "Perfil", icon: User },
-                  { href: "/gym/entrenamiento/rachas", label: `Racha · ${streak}`, icon: Flame },
-                ].map(({ href, label, icon: Icon }) => (
-                  <Link key={href} href={href} className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
-                    <Icon size={16} /> {label}
-                  </Link>
-                ))}
-              </div>
-            </>
-          )}
+          <button
+            onClick={() => setConfigOpen(true)}
+            aria-label="Configuración e historial"
+            className="w-9 h-9 flex items-center justify-center cursor-pointer"
+          >
+            <SlidersHorizontal size={21} strokeWidth={2.4} />
+          </button>
         </div>
+        {menuOpen && (
+          <>
+            <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+            <div
+              className="absolute right-4 top-[calc(100%-2px)] z-40 w-44 rounded-2xl py-1 shadow-2xl"
+              style={{ background: "var(--t-menu)", border: "1px solid var(--t-line)", color: "var(--t-fg)" }}
+            >
+              {[
+                { href: "/gym/entrenamiento/planificaciones", label: "Planes", icon: CalendarRange },
+                { href: "/gym/entrenamiento/rango", label: "Rango", icon: Shield },
+                { href: "/gym/entrenamiento/perfil", label: "Perfil", icon: User },
+                { href: "/gym/entrenamiento/rachas", label: `Racha · ${streak}`, icon: Flame },
+              ].map(({ href, label, icon: Icon }) => (
+                <Link key={href} href={href} className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
+                  <Icon size={16} /> {label}
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
+      </header>
 
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+      <div className="max-w-md mx-auto px-5 pb-4 pt-3 flex flex-col gap-4">
         <button
           onClick={handleStart}
           disabled={!canStart}
@@ -280,6 +253,18 @@ export default function EntrenamientoPage() {
             <Pencil size={13} /> EDITAR
           </Link>
         </div>
+      </div>
+      </div>
+
+      <div className="pb-[max(env(safe-area-inset-bottom),28px)] min-h-[104px] shrink-0 max-w-md w-full mx-auto">
+        <WeekStrip
+          doneKeys={trainedKeys}
+          todayISO={todayISO}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          viewIndex={0}
+          viewCount={0}
+        />
       </div>
 
       <TrainingConfigSheet open={configOpen} onClose={() => setConfigOpen(false)} todayIndex={todayIndex} />
