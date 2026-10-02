@@ -110,10 +110,23 @@
   box-sizing: border-box;
 }
 
+/* Único fondo de la app: la textura oscura (en modo blanco, su copia invertida; ver abajo). */
+:root {
+  --app-bg: #141414 url("/backgrounds/tema-oscuro.webp") center / cover no-repeat;
+}
+
 html,
 body {
   height: 100%;
-  background: #0a0a0f;
+}
+
+html {
+  background: var(--app-bg);
+  background-attachment: fixed;
+}
+
+.app-bg {
+  background: var(--app-bg);
 }
 
 /* La app se usa con toques repetidos (series, ruedas, carruseles): sin esto el navegador
@@ -134,7 +147,7 @@ textarea,
 }
 
 body {
-  background: linear-gradient(180deg, #0a0a0f 0%, #121218 100%);
+  background: transparent;
   color: var(--foreground);
   font-family: var(--font-sans, ui-sans-serif), system-ui, sans-serif;
   position: relative;
@@ -557,10 +570,10 @@ body {
    interfaz desde la raíz (texto, tarjetas, vidrio, íconos, gráficas) y vuelve a invertir lo que
    NO debe cambiar: fotos, videos, canvas 3D y las tarjetas marcadas con data-keep-colors. El
    fondo usa una copia ya invertida de "fondo blanco" para que, tras la inversión, se vea
-   exactamente esa textura. Los fondos de foto de cada módulo se ocultan en este modo. */
+   exactamente esa textura. */
 html[data-theme="light"] {
+  --app-bg: #0c0c0c url("/backgrounds/tema-claro-inv.webp") center / cover no-repeat;
   filter: invert(1) hue-rotate(180deg);
-  background: #0c0c0c url("/backgrounds/tema-claro-inv.webp") center / cover;
 }
 
 html[data-theme="light"] body {
@@ -575,9 +588,6 @@ html[data-theme="light"] [data-keep-colors] {
   filter: invert(1) hue-rotate(180deg);
 }
 
-html[data-theme="light"] .vt-backdrop {
-  display: none;
-}
 
 /* Dentro de una zona data-keep-colors ya se compensó la inversión: sus fotos no se invierten otra vez. */
 html[data-theme="light"] [data-keep-colors] img,

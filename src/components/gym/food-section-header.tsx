@@ -13,11 +13,8 @@ import { MONO_FONT } from "@/lib/ui/mono-font";
 
 export type FoodSection = "recetas" | "lista" | "buscar" | "escaner" | "voz";
 
-const NOISE =
-  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.07'/></svg>\")";
-
 /** Fondo oscuro con grano, pantalla completa — para las secciones que todavía no lo traían propio. */
-export const FOOD_SECTION_BG = { backgroundColor: "#1c1c1c", backgroundImage: NOISE } as const;
+export const FOOD_SECTION_BG = { background: "var(--app-bg)" } as const;
 
 const SECTIONS: { key: FoodSection; label: string; path: string }[] = [
   { key: "recetas", label: "Recetas", path: "/gym/calorias/recetas" },

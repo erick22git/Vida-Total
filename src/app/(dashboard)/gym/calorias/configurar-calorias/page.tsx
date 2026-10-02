@@ -244,7 +244,7 @@ export default function ConfigurarCaloriasPage() {
   const intensidadPresets = objetivoCalorico ? GOAL_INTENSITY_PRESETS[objetivoCalorico] : [];
 
   return (
-    <div className="fixed inset-0 z-[45] flex flex-col bg-black text-white select-none overflow-hidden">
+    <div className="fixed inset-0 z-[45] flex flex-col app-bg text-white select-none overflow-hidden">
       <header className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),14px)] shrink-0">
         <button onClick={close} aria-label="Cerrar" className="w-9 h-9 flex items-center justify-center cursor-pointer text-white/80">
           <X size={22} />

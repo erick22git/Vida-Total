@@ -327,7 +327,7 @@ function CrearAlimentoWizard() {
   }
 
   return (
-    <div className="fixed inset-0 z-[45] flex flex-col bg-black text-white select-none overflow-hidden">
+    <div className="fixed inset-0 z-[45] flex flex-col app-bg text-white select-none overflow-hidden">
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onPickPhoto} />
 
       <header className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),14px)] shrink-0">

@@ -133,7 +133,7 @@ function DetailBody({ habit }: { habit: Habit }) {
 
   return (
     <div
-      className="fixed inset-0 z-[45] overflow-y-auto text-white bg-black"
+      className="fixed inset-0 z-[45] overflow-y-auto text-white app-bg"
       onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 70)}
     >
       <div className="sticky top-0 z-10 h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] flex items-center px-5 bg-gradient-to-b from-black via-black/90 to-transparent">
@@ -412,7 +412,7 @@ function DetailScreen() {
 
   if (!habit) {
     return (
-      <div className="fixed inset-0 z-[45] bg-black text-white flex flex-col items-center justify-center gap-4">
+      <div className="fixed inset-0 z-[45] app-bg text-white flex flex-col items-center justify-center gap-4">
         <p className="text-white/60">No encontramos ese hábito.</p>
         <button onClick={() => router.push("/habitos")} className="px-5 h-11 rounded-full bg-white text-black font-semibold cursor-pointer">
           Volver a Hábitos

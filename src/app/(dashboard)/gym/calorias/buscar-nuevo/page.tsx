@@ -23,9 +23,6 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "verificados", label: "Verificados" },
 ];
 
-const NOISE =
-  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.07'/></svg>\")";
-
 export default function BuscarNuevoPage() {
   return (
     <Suspense fallback={null}>
@@ -58,7 +55,7 @@ function BuscarNuevoContent() {
 
   return (
     <div className="relative min-h-screen text-white">
-      <div className="fixed inset-0" style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }} aria-hidden />
+      <div className="fixed inset-0" style={{ background: "var(--app-bg)" }} aria-hidden />
       <div className="relative z-10 flex flex-col gap-4 pb-24 px-4 pt-2 max-w-md mx-auto">
         <FoodSectionHeader current="buscar" />
 

@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { PageBackdrop } from "@/components/layout/page-backdrop";
 
 /** No hay todavía una foto de fondo propia para Rutinas — se reutiliza la
  * de Hábitos como placeholder (mismo dominio conceptual) hasta que haya
@@ -7,7 +6,6 @@ import { PageBackdrop } from "@/components/layout/page-backdrop";
 export default function RutinasLayout({ children }: { children: ReactNode }) {
   return (
     <>
-      <PageBackdrop src="/backgrounds/habitos.webp" />
       <div className="relative">{children}</div>
     </>
   );

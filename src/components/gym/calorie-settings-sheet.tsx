@@ -80,7 +80,7 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
       {open && (
         <motion.div
           className="fixed inset-0 z-[80] text-white overflow-y-auto"
-          style={{ backgroundColor: "#1c1c1c" }}
+          style={{ background: "var(--app-bg)" }}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16 }}

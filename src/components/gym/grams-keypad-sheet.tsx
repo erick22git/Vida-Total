@@ -64,7 +64,7 @@ export function GramsKeypadSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-black text-white select-none">
+    <div className="fixed inset-0 z-[60] flex flex-col app-bg text-white select-none">
       <div className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),14px)]">
         <span />
         <button

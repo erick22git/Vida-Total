@@ -48,9 +48,6 @@ import { MONO_FONT } from "@/lib/ui/mono-font";
 
 const RECIPE_DRAFT_KEY = "vt-recipe-draft";
 
-const NOISE =
-  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.07'/></svg>\")";
-
 const INFO_VIEW_COUNT = 3;
 
 export function FoodDetailScreen({ id, mode }: { id: string; mode: "agregar" | "editar" }) {
@@ -169,7 +166,7 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
       return (
         <div
           className="fixed inset-0 z-[45] overflow-hidden text-white select-none"
-          style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }}
+          style={{ background: "var(--app-bg)" }}
         >
           <div className="relative z-10 flex flex-col gap-3 pb-24 px-4 pt-1 max-w-md mx-auto">
             <header className="flex items-center justify-between gap-2 pt-[max(env(safe-area-inset-top),10px)]">
@@ -319,7 +316,7 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
   return (
     <div
       className="fixed inset-0 z-[45] overflow-hidden text-white select-none"
-      style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }}
+      style={{ background: "var(--app-bg)" }}
     >
       <div className="relative z-10 flex flex-col gap-3 pb-24 px-4 pt-1 max-w-md mx-auto">
         <header className="flex items-center justify-between gap-2 pt-[max(env(safe-area-inset-top),10px)]">

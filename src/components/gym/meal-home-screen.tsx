@@ -48,9 +48,6 @@ const slideY = {
 };
 
 // Mismo grano de fondo que Hábitos — la referencia visual (Not Boring) es la misma para las dos pantallas.
-const NOISE =
-  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.07'/></svg>\")";
-
 export function MealHomeScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -226,7 +223,7 @@ export function MealHomeScreen() {
   return (
     <div
       className="fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden"
-      style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }}
+      style={{ background: "var(--app-bg)" }}
     >
       <header className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),10px)] h-[calc(3rem+max(env(safe-area-inset-top),10px))]">
         <button

@@ -27,9 +27,6 @@ const TYPE_OPTIONS: { id: HabitType; label: string; hint: string }[] = [
   { id: "tiempo", label: "Tiempo", hint: "20 / 30 minutos" },
 ];
 
-const NOISE =
-  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.07'/></svg>\")";
-
 /**
  * Crear un hábito como experiencia progresiva de pantalla completa (no un
  * formulario): nombre → objetivo → frecuencia → recordatorio → crear. Cada
@@ -141,7 +138,7 @@ export function NewHabitFlow({
       {open && (
         <motion.div
           className="fixed inset-0 z-[70] flex flex-col text-white overflow-hidden"
-          style={{ backgroundColor: "#1c1c1c", backgroundImage: NOISE }}
+          style={{ background: "var(--app-bg)" }}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 30 }}

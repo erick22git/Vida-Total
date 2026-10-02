@@ -76,7 +76,7 @@ export function AgendaScreen() {
   }
 
   return (
-    <div className="fixed inset-0 z-[45] text-white bg-black overflow-hidden">
+    <div className="fixed inset-0 z-[45] text-white app-bg overflow-hidden">
       <div className="relative mx-auto h-full w-full max-w-[430px] overflow-hidden flex flex-col" style={{ background: "#000" }}>
         {/* ---------- Cabecera ---------- */}
         <header className="shrink-0 pt-[max(env(safe-area-inset-top),14px)]">

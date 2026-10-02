@@ -137,7 +137,7 @@ export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
   const contracted = phase.amp > 0.5;
 
   return (
-    <div className="fixed inset-0 z-[45] flex flex-col text-white select-none overflow-y-auto bg-black">
+    <div className="fixed inset-0 z-[45] flex flex-col text-white select-none overflow-y-auto app-bg">
       <header className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),10px)] h-[calc(3.25rem+max(env(safe-area-inset-top),10px))] shrink-0">
         <button
           onClick={() => router.push("/gym/kegel")}
