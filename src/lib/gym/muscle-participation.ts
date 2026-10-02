@@ -6,8 +6,11 @@ export interface MuscleShare {
   pct: number;
 }
 
-/** Lo que aporta el músculo principal de un ejercicio cuando además tiene músculos secundarios. */
-const PRIMARY_WEIGHT = 0.65;
+/** Método de "series fraccionadas": una serie cuenta 1 para el músculo principal del ejercicio y 0.5
+ * para cada músculo secundario (series indirectas). Es el método con mejor ajuste en los
+ * metaanálisis de volumen semanal de entrenamiento de fuerza (ver conversación del 2026-10-02). */
+const DIRECT = 1;
+const INDIRECT = 0.5;
 
 /** Músculos secundarios del dataset (texto libre) -> grupo muscular de la app. `null` = no se cuenta. */
 function secondaryToGroup(raw: string): MuscleGroup | null {
@@ -44,11 +47,11 @@ function secondaryToGroup(raw: string): MuscleGroup | null {
 }
 
 /**
- * Qué músculos trabaja una rutina y cuánto, sobre 100%. Cada serie reparte su "esfuerzo" entre el
- * músculo principal del ejercicio (65%, o 100% si no tiene secundarios) y sus secundarios (el resto,
- * en partes iguales) — así un press de banca suma Pecho pero también Tríceps y Hombros, en vez de
- * contar todo para un solo grupo. Se normaliza a 100 con el método del mayor resto, ordenado de
- * mayor a menor.
+ * Qué músculos trabaja una rutina y cuánto, sobre 100%. Cuenta series fraccionadas: cada serie suma 1
+ * al músculo principal del ejercicio y 0.5 a cada secundario (un press de banca = 1 de Pecho + 0.5 de
+ * Tríceps + 0.5 de Hombros). Los totales por músculo se pasan a porcentaje sobre 100 con el método del
+ * mayor resto, de mayor a menor. Es una estimación del reparto del VOLUMEN, no una medida fisiológica
+ * exacta de cuánto trabaja cada músculo.
  */
 export function muscleParticipation(ejercicios: RoutineExercise[], allExercises: Exercise[]): MuscleShare[] {
   const points = new Map<string, number>();
@@ -57,11 +60,8 @@ export function muscleParticipation(ejercicios: RoutineExercise[], allExercises:
     if (!ex) continue;
     const secondaries = [...new Set(ex.musculosSecundarios.map(secondaryToGroup).filter((g): g is MuscleGroup => !!g && g !== ex.categoria))];
     const sets = rex.sets.length;
-    const primary = secondaries.length > 0 ? PRIMARY_WEIGHT : 1;
-    points.set(ex.categoria, (points.get(ex.categoria) ?? 0) + sets * primary);
-    for (const g of secondaries) {
-      points.set(g, (points.get(g) ?? 0) + (sets * (1 - PRIMARY_WEIGHT)) / secondaries.length);
-    }
+    points.set(ex.categoria, (points.get(ex.categoria) ?? 0) + sets * DIRECT);
+    for (const g of secondaries) points.set(g, (points.get(g) ?? 0) + sets * INDIRECT);
   }
   const total = [...points.values()].reduce((a, b) => a + b, 0);
   if (total <= 0) return [];
