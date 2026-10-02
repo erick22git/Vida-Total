@@ -35,6 +35,16 @@ const VIEW_COUNT = 3;
 const SWIPE_Y = 60;
 const RANGO_HREF = "/gym/entrenamiento/rango";
 
+// Difumina SOLO los bordes de la foto (una franja fina por lado, donde iría el marco); el centro queda
+// intacto. Dos degradados (horizontal y vertical) que se cruzan con `intersect`.
+const FEATHER = "linear-gradient(to right, transparent 0%, #000 9%, #000 91%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%)";
+const FEATHER_MASK = {
+  WebkitMaskImage: FEATHER,
+  maskImage: FEATHER,
+  WebkitMaskComposite: "source-in",
+  maskComposite: "intersect",
+} as const;
+
 const slideY = {
   enter: (dir: number) => ({ y: dir * 70, opacity: 0 }),
   center: { y: 0, opacity: 1 },
@@ -182,7 +192,7 @@ function EntrenamientoContent() {
           <ChevronLeft size={26} strokeWidth={2.4} />
         </Link>
         <h1 className="text-[15px] uppercase tracking-[0.12em] truncate px-2" style={MONO_FONT}>
-          {isRestDay ? "Descanso" : dayPlan.grupoMuscular}
+          {isRestDay ? "Descanso" : (distribution[0]?.categoria ?? dayPlan.grupoMuscular)}
         </h1>
         <button
           onClick={() => setConfigOpen(true)}
@@ -237,10 +247,7 @@ function EntrenamientoContent() {
                       disabled={!canStart}
                       aria-label={isToday ? "Iniciar o continuar el entrenamiento de hoy" : undefined}
                       className="relative -mx-5 h-[clamp(140px,28dvh,250px)] flex items-center justify-center cursor-pointer disabled:cursor-default"
-                      style={{
-                        WebkitMaskImage: "radial-gradient(ellipse 72% 70% at 50% 50%, #000 42%, transparent 100%)",
-                        maskImage: "radial-gradient(ellipse 72% 70% at 50% 50%, #000 42%, transparent 100%)",
-                      }}
+                      style={FEATHER_MASK}
                     >
                       {bgExercise?.imagen ? (
                         // eslint-disable-next-line @next/next/no-img-element
