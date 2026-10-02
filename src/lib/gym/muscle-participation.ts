@@ -8,7 +8,8 @@ export interface MuscleShare {
 
 /** Método de "series fraccionadas": una serie cuenta 1 para el músculo principal del ejercicio y 0.5
  * para cada músculo secundario (series indirectas). Es el método con mejor ajuste en los
- * metaanálisis de volumen semanal de entrenamiento de fuerza (ver conversación del 2026-10-02). */
+ * metaanálisis de Pelland et al., Sports Medicine (doi 10.1007/s40279-025-02344-w): 'fractional'
+ * (indirectas × 0.5) superó a 'total' (2×Log(BF) = 9.48) y a 'direct' (10.29) para hipertrofia. */
 const DIRECT = 1;
 const INDIRECT = 0.5;
 
