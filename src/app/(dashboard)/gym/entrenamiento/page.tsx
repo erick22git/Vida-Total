@@ -1,28 +1,46 @@
 "use client";
 
 /**
- * Inicio de Entrenamiento — rediseño "Not Boring" (fondo negro): franja de la semana con los días
- * entrenados, tarjeta de HOY con foto, lista de ejercicios con series x reps, gráfica de
- * distribución muscular y botón EDITAR. No hay botón de "Iniciar entrenamiento": el entrenamiento
- * arranca tocando la tarjeta de hoy. Planes / Rango / Perfil / Rachas viven en el menú "⋮", y
- * "Tu plan", las plantillas y el historial se mudaron al panel de configuración (sliders).
+ * Inicio de Entrenamiento — rediseño "Not Boring" con 3 vistas que se cambian deslizando en vertical
+ * (los 3 puntos junto a la fecha las indican):
+ *   0 = HOY: tarjeta del día, "Distribución muscular", gráfica y botón EDITAR (tocar la tarjeta inicia
+ *       o continúa el entrenamiento; no hay botón de iniciar)
+ *   1 = AÑO: igual que el año de Calorías, pero los DESCANSOS del plan cuentan para la racha y se
+ *       dibujan en gris; un día que tocaba entrenar y no se entrenó queda sin ícono
+ *   2 = Rango (/gym/entrenamiento/rango): al seguir deslizando hacia abajo se navega a esa pantalla,
+ *       y desde ahí deslizar hacia arriba vuelve a la vista de año (?view=1)
+ * Planes / Rango / Perfil / Racha, "Tu plan", plantillas e historial viven en el panel de
+ * configuración (ícono de sliders).
  */
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import { format } from "date-fns";
-import { ChevronLeft, Flame, Pencil, Shield, SlidersHorizontal, User, CalendarRange, MoreVertical } from "lucide-react";
+import { ChevronLeft, Pencil } from "lucide-react";
 import { useGymStore } from "@/lib/store/gymStore";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { TrainingConfigSheet } from "@/components/gym/training-config-sheet";
 import { MuscleCurveChart } from "@/components/gym/muscle-curve-chart";
+import { CalorieYearView } from "@/components/gym/calorie-year-view";
 import { WeekStrip } from "@/components/shared/week-strip";
+import { SettingsGlyph } from "@/components/shared/settings-glyph";
 import { todayDayIndex } from "@/lib/data/weekly-plan";
 import { getMuscleDistribution } from "@/lib/gym-utils";
+import { trainingStreakInfo } from "@/lib/gym/training-streak";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import type { MuscleGroup, RoutineExercise } from "@/lib/types";
 
 const DAY_NAMES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+const VIEW_COUNT = 3;
+const SWIPE_Y = 60;
+const RANGO_HREF = "/gym/entrenamiento/rango";
+
+const slideY = {
+  enter: (dir: number) => ({ y: dir * 70, opacity: 0 }),
+  center: { y: 0, opacity: 1 },
+  exit: (dir: number) => ({ y: dir * -70, opacity: 0 }),
+};
 
 function repsLabel(rex: RoutineExercise): string {
   const reps = rex.sets.map((s) => s.reps).filter((r) => r > 0);
@@ -34,7 +52,16 @@ function repsLabel(rex: RoutineExercise): string {
 }
 
 export default function EntrenamientoPage() {
+  return (
+    <Suspense fallback={null}>
+      <EntrenamientoContent />
+    </Suspense>
+  );
+}
+
+function EntrenamientoContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const weeklyPlan = useGymStore((s) => s.weeklyPlan);
   const sessions = useGymStore((s) => s.sessions);
   const routines = useGymStore((s) => s.routines);
@@ -47,7 +74,6 @@ export default function EntrenamientoPage() {
   const startWorkout = useGymStore((s) => s.startWorkout);
   const startWorkoutFromRoutine = useGymStore((s) => s.startWorkoutFromRoutine);
   const cancelWorkout = useGymStore((s) => s.cancelWorkout);
-  const streak = useGymStore((s) => s.streak);
   const allExercises = useAllExercises();
 
   // Alguien totalmente nuevo (sin plan, sin rutinas propias, nunca entrenó)
@@ -63,7 +89,11 @@ export default function EntrenamientoPage() {
   const staleSession = !!activeSession && !sessionIsFromToday;
 
   const [configOpen, setConfigOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [view, setView] = useState(searchParams.get("view") === "1" ? 1 : 0);
+  const [dir, setDir] = useState(1);
+  const start = useRef<{ x: number; y: number; ignore: boolean } | null>(null);
+  const wheelLock = useRef(false);
+
   const todayIndex = todayDayIndex();
   const todayISO = format(new Date(), "yyyy-MM-dd");
   const [selectedDate, setSelectedDate] = useState(() => new Date());
@@ -71,6 +101,7 @@ export default function EntrenamientoPage() {
   // muestra el plan que le corresponde a ese día de la semana.
   const selectedDay = (selectedDate.getDay() + 6) % 7;
   const trainedKeys = new Set(sessions.filter((s) => s.completado).map((s) => format(new Date(s.date), "yyyy-MM-dd")));
+  const { restKeys, streak } = trainingStreakInfo(trainedKeys, weeklyPlan, todayISO);
 
   const isToday = format(selectedDate, "yyyy-MM-dd") === todayISO;
   const dayPlan = weeklyPlan[selectedDay];
@@ -86,6 +117,27 @@ export default function EntrenamientoPage() {
     : routine
       ? `/gym/entrenamiento/rutinas/${routine.id}`
       : "/gym/entrenamiento/rutinas/nueva";
+
+  // Vista 0 (hoy) y 1 (año) están en esta pantalla; seguir hacia abajo (vista 2) navega a Rango.
+  function goView(next: number) {
+    if (next < 0 || next === view) return;
+    if (next >= VIEW_COUNT - 1) {
+      router.push(RANGO_HREF);
+      return;
+    }
+    setDir(next > view ? 1 : -1);
+    setView(next);
+  }
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "ArrowDown") goView(view + 1);
+      if (e.key === "ArrowUp") goView(view - 1);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
 
   function startTodaysPlan() {
     const todayPlan = weeklyPlan[todayIndex];
@@ -132,140 +184,169 @@ export default function EntrenamientoPage() {
         : "Toca para iniciar";
 
   return (
-    <div
-      className="vt-theme-dark fixed inset-0 z-[45] flex flex-col select-none"
-      style={{ background: "var(--t-bg)", color: "var(--t-fg)" }}
-    >
-      <header className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),12px)] shrink-0 relative">
-        <Link href="/gym" aria-label="Volver" className="w-9 h-9 flex items-center justify-center -ml-2">
+    <div className="vt-theme-dark app-bg fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden">
+      <header className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),10px)] h-[calc(3.25rem+max(env(safe-area-inset-top),10px))] shrink-0">
+        <Link href="/gym" aria-label="Volver" className="w-10 h-10 -ml-2 flex items-center justify-center">
           <ChevronLeft size={26} strokeWidth={2.4} />
         </Link>
-        <div className="flex items-center gap-1 -mr-2">
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label="Más opciones"
-            className="w-9 h-9 flex items-center justify-center cursor-pointer"
-          >
-            <MoreVertical size={20} />
-          </button>
-          <button
-            onClick={() => setConfigOpen(true)}
-            aria-label="Configuración e historial"
-            className="w-9 h-9 flex items-center justify-center cursor-pointer"
-          >
-            <SlidersHorizontal size={21} strokeWidth={2.4} />
-          </button>
-        </div>
-        {menuOpen && (
-          <>
-            <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-            <div
-              className="absolute right-4 top-[calc(100%-2px)] z-40 w-44 rounded-2xl py-1 shadow-2xl"
-              style={{ background: "var(--t-menu)", border: "1px solid var(--t-line)", color: "var(--t-fg)" }}
-            >
-              {[
-                { href: "/gym/entrenamiento/planificaciones", label: "Planes", icon: CalendarRange },
-                { href: "/gym/entrenamiento/rango", label: "Rango", icon: Shield },
-                { href: "/gym/entrenamiento/perfil", label: "Perfil", icon: User },
-                { href: "/gym/entrenamiento/rachas", label: `Racha · ${streak}`, icon: Flame },
-              ].map(({ href, label, icon: Icon }) => (
-                <Link key={href} href={href} className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
-                  <Icon size={16} /> {label}
-                </Link>
-              ))}
-            </div>
-          </>
-        )}
+        <h1 className="text-[15px] uppercase tracking-[0.12em]" style={MONO_FONT}>
+          Entrenamiento
+        </h1>
+        <button
+          onClick={() => setConfigOpen(true)}
+          aria-label="Configuración e historial"
+          className="w-10 h-10 -mr-2 flex items-center justify-center cursor-pointer"
+        >
+          <SettingsGlyph />
+        </button>
       </header>
 
-      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
-      <div className="max-w-md mx-auto px-5 pb-4 pt-3 flex flex-col gap-4">
-        <button
-          onClick={handleStart}
-          disabled={!canStart}
-          className="relative w-full h-[150px] rounded-[24px] overflow-hidden flex flex-col items-center justify-center text-center cursor-pointer disabled:cursor-default"
-          style={{ background: "var(--t-card)", border: "1px solid var(--t-line)", color: "#fff" }}
-          data-keep-colors
-        >
-          {bgExercise?.imagen && (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={bgExercise.imagen} alt="" className="absolute inset-0 w-full h-full object-cover" />
-              <div
-                className="absolute inset-0"
-                style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.4) 45%, rgba(0,0,0,0.78) 100%)" }}
-              />
-            </>
-          )}
-          <div className="relative z-10 flex flex-col items-center gap-1 px-4">
-            <p className="text-sm opacity-90">{isToday ? "Hoy toca" : `${DAY_NAMES[selectedDay]} toca`}</p>
-            <h2 className="text-[30px] leading-none font-extrabold tracking-tight">{dayPlan.grupoMuscular}</h2>
-            {hint && (
-              <p className="text-[9.5px] uppercase tracking-[0.14em] mt-1.5" style={{ ...MONO_FONT, color: staleSession ? "#f59e0b" : "rgba(255,255,255,0.6)" }}>
-                {hint}
-              </p>
-            )}
-          </div>
-        </button>
-
-        <section className="flex flex-col gap-0.5">
-          <div className="flex items-center justify-between rounded-full px-4 py-1.5" style={{ background: "var(--t-card)" }}>
-            <span className="text-[12px] tracking-wide" style={MONO_FONT}>
-              DISTRIBUCIÓN MUSCULAR
-            </span>
-            <span className="text-[9.5px]" style={{ ...MONO_FONT, color: "var(--t-fg-dim)" }}>
-              SER/REPS
-            </span>
-          </div>
-          {isRestDay ? (
-            <p className="text-xs px-4 py-2" style={{ color: "var(--t-fg-dim)" }}>Día de descanso.</p>
-          ) : !routine ? (
-            <p className="text-xs px-4 py-2" style={{ color: "var(--t-fg-dim)" }}>Sin rutina asignada. Tocá EDITAR para armarla.</p>
-          ) : (
-            <div className="px-2 max-h-[120px] overflow-y-auto no-scrollbar">
-              {routine.ejercicios.map((rex, i) => {
-                const ex = allExercises.find((e) => e.id === rex.exerciseId);
-                return (
-                  <div
-                    key={rex.exerciseId + i}
-                    className="flex items-center justify-between gap-3 h-[30px]"
-                    style={{ borderBottom: i < routine.ejercicios.length - 1 ? "1px solid var(--t-line)" : "none" }}
-                  >
-                    <span className="text-[11px] uppercase tracking-wide truncate" style={MONO_FONT}>
-                      {ex?.nombre ?? "Ejercicio"}
-                    </span>
-                    <span className="text-[10.5px] shrink-0 tabular-nums" style={{ color: "var(--t-fg-dim)" }}>{repsLabel(rex)}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        {distribution.length > 0 && <MuscleCurveChart data={distribution} />}
-
-        <div className="flex justify-center">
-          <Link
-            href={editHref}
-            className="flex items-center gap-2 rounded-full px-6 py-2 text-[11px] tracking-wide"
-            style={{ ...MONO_FONT, border: "1px solid var(--t-ring)", background: "var(--t-card)" }}
+      <main
+        className="flex-1 min-h-0 relative touch-none"
+        onPointerDown={(e) => {
+          start.current = { x: e.clientX, y: e.clientY, ignore: !!(e.target as HTMLElement).closest("[data-no-swipe]") };
+        }}
+        onPointerUp={(e) => {
+          const st = start.current;
+          start.current = null;
+          if (!st || st.ignore) return;
+          const dx = e.clientX - st.x;
+          const dy = e.clientY - st.y;
+          if (Math.abs(dy) > SWIPE_Y && Math.abs(dy) > Math.abs(dx) * 1.4) goView(view + (dy < 0 ? 1 : -1));
+        }}
+        onPointerCancel={() => (start.current = null)}
+        onWheel={(e) => {
+          if ((e.target as HTMLElement).closest("[data-no-swipe]")) return;
+          if (wheelLock.current || Math.abs(e.deltaY) < 30) return;
+          wheelLock.current = true;
+          setTimeout(() => (wheelLock.current = false), 500);
+          goView(view + (e.deltaY > 0 ? 1 : -1));
+        }}
+      >
+        <AnimatePresence mode="popLayout" initial={false} custom={dir}>
+          <motion.div
+            key={view}
+            custom={dir}
+            variants={slideY}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0"
           >
-            <Pencil size={13} /> EDITAR
-          </Link>
-        </div>
-      </div>
-      </div>
+            {view === 0 ? (
+              <div className="w-full h-full flex flex-col">
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <div className="max-w-md mx-auto px-5 pt-1 flex flex-col gap-4">
+                    <button
+                      onClick={handleStart}
+                      disabled={!canStart}
+                      className="relative w-full h-[clamp(110px,20dvh,150px)] rounded-[24px] overflow-hidden flex flex-col items-center justify-center text-center cursor-pointer disabled:cursor-default"
+                      style={{ background: "var(--t-card)", border: "1px solid var(--t-line)", color: "#fff" }}
+                      data-keep-colors
+                    >
+                      {bgExercise?.imagen && (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={bgExercise.imagen} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                          <div
+                            className="absolute inset-0"
+                            style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.4) 45%, rgba(0,0,0,0.78) 100%)" }}
+                          />
+                        </>
+                      )}
+                      <div className="relative z-10 flex flex-col items-center gap-1 px-4">
+                        <p className="text-sm opacity-90">{isToday ? "Hoy toca" : `${DAY_NAMES[selectedDay]} toca`}</p>
+                        <h2 className="text-[30px] leading-none font-extrabold tracking-tight">{dayPlan.grupoMuscular}</h2>
+                        {hint && (
+                          <p
+                            className="text-[9.5px] uppercase tracking-[0.14em] mt-1.5"
+                            style={{ ...MONO_FONT, color: staleSession ? "#f59e0b" : "rgba(255,255,255,0.6)" }}
+                          >
+                            {hint}
+                          </p>
+                        )}
+                      </div>
+                    </button>
 
-      <div className="pb-[max(env(safe-area-inset-bottom),28px)] min-h-[104px] shrink-0 max-w-md w-full mx-auto">
-        <WeekStrip
-          doneKeys={trainedKeys}
-          todayISO={todayISO}
-          selectedDate={selectedDate}
-          onSelectDate={setSelectedDate}
-          viewIndex={0}
-          viewCount={0}
-        />
-      </div>
+                    <section className="flex flex-col gap-0.5">
+                      <div className="flex items-center justify-between rounded-full px-4 py-1.5" style={{ background: "var(--t-card)" }}>
+                        <span className="text-[12px] tracking-wide" style={MONO_FONT}>
+                          DISTRIBUCIÓN MUSCULAR
+                        </span>
+                        <span className="text-[9.5px]" style={{ ...MONO_FONT, color: "var(--t-fg-dim)" }}>
+                          SER/REPS
+                        </span>
+                      </div>
+                      {isRestDay ? (
+                        <p className="text-xs px-4 py-2" style={{ color: "var(--t-fg-dim)" }}>
+                          Día de descanso.
+                        </p>
+                      ) : !routine ? (
+                        <p className="text-xs px-4 py-2" style={{ color: "var(--t-fg-dim)" }}>
+                          Sin rutina asignada. Tocá EDITAR para armarla.
+                        </p>
+                      ) : (
+                        <div data-no-swipe className="px-2 max-h-[120px] overflow-y-auto no-scrollbar touch-pan-y">
+                          {routine.ejercicios.map((rex, i) => {
+                            const ex = allExercises.find((e) => e.id === rex.exerciseId);
+                            return (
+                              <div
+                                key={rex.exerciseId + i}
+                                className="flex items-center justify-between gap-3 h-[30px]"
+                                style={{ borderBottom: i < routine.ejercicios.length - 1 ? "1px solid var(--t-line)" : "none" }}
+                              >
+                                <span className="text-[11px] uppercase tracking-wide truncate" style={MONO_FONT}>
+                                  {ex?.nombre ?? "Ejercicio"}
+                                </span>
+                                <span className="text-[10.5px] shrink-0 tabular-nums" style={{ color: "var(--t-fg-dim)" }}>
+                                  {repsLabel(rex)}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </section>
+
+                    {distribution.length > 0 && <MuscleCurveChart data={distribution} />}
+
+                    <div className="flex justify-center">
+                      <Link
+                        href={editHref}
+                        className="flex items-center gap-2 rounded-full px-6 py-2 text-[11px] tracking-wide"
+                        style={{ ...MONO_FONT, border: "1px solid var(--t-ring)", background: "var(--t-card)" }}
+                      >
+                        <Pencil size={13} /> EDITAR
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pb-[max(env(safe-area-inset-bottom),28px)] min-h-[104px] shrink-0 max-w-md w-full mx-auto">
+                  <WeekStrip
+                    doneKeys={trainedKeys}
+                    todayISO={todayISO}
+                    selectedDate={selectedDate}
+                    onSelectDate={setSelectedDate}
+                    viewIndex={0}
+                    viewCount={VIEW_COUNT}
+                  />
+                </div>
+              </div>
+            ) : (
+              <CalorieYearView
+                loggedDayKeys={trainedKeys}
+                restDayKeys={restKeys}
+                todayISO={todayISO}
+                streakCurrent={streak}
+                viewIndex={1}
+                viewCount={VIEW_COUNT}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </main>
 
       <TrainingConfigSheet open={configOpen} onClose={() => setConfigOpen(false)} todayIndex={todayIndex} />
     </div>

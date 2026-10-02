@@ -20,12 +20,13 @@ import { RealisticFlame } from "@/components/shared/realistic-flame";
 const MONO = { fontFamily: "var(--font-geist-mono), monospace" } as const;
 const MONTH_LETTERS = ["E", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
 
-type StreakColor = "dorado" | "rojo" | "verde";
+type StreakColor = "dorado" | "rojo" | "verde" | "gris";
 
 const CONE_COLORS: Record<StreakColor, { color: string; colorDark: string }> = {
   dorado: { color: "#f5b301", colorDark: "#b97f00" },
   rojo: { color: "#f87171", colorDark: "#b91c1c" },
   verde: { color: "#4ade80", colorDark: "#16803c" },
+  gris: { color: "#9a9a9a", colorDark: "#5c5c5c" },
 };
 
 function pad(n: number) {
@@ -77,6 +78,7 @@ export function CalorieYearView({
   viewCount = 3,
   allGold = false,
   showStreak = true,
+  restDayKeys,
 }: {
   loggedDayKeys: Set<string>;
   todayISO: string;
@@ -86,9 +88,11 @@ export function CalorieYearView({
   /** Kegel: todos los días cumplidos en dorado (sin rojo/verde por largo de racha) y sin el fuego de abajo. */
   allGold?: boolean;
   showStreak?: boolean;
+  /** Entrenamiento: días de descanso del plan. Cuentan como parte de la racha (no la cortan) y se dibujan en GRIS. */
+  restDayKeys?: Set<string>;
 }) {
   const year = Number(todayISO.slice(0, 4));
-  const dayColors = streakColorsByDay(loggedDayKeys);
+  const dayColors = streakColorsByDay(restDayKeys ? new Set([...loggedDayKeys, ...restDayKeys]) : loggedDayKeys);
 
   const cells: React.ReactNode[] = [];
   for (let m = 0; m < 12; m++) {
@@ -100,7 +104,11 @@ export function CalorieYearView({
         continue;
       }
       const iso = `${year}-${pad(m + 1)}-${pad(d)}`;
-      const streakColor = loggedDayKeys.has(iso) && allGold ? "dorado" : dayColors.get(iso);
+      const streakColor: StreakColor | undefined = restDayKeys?.has(iso) && !loggedDayKeys.has(iso)
+        ? "gris"
+        : loggedDayKeys.has(iso) && allGold
+          ? "dorado"
+          : dayColors.get(iso);
       const isToday = iso === todayISO;
       cells.push(
         <div key={key} className="flex items-center justify-center min-h-0">

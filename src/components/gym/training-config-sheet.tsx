@@ -10,7 +10,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Dumbbell, ListPlus, Plus } from "lucide-react";
+import { CalendarRange, ChevronLeft, ChevronRight, Dumbbell, Flame, ListPlus, Plus, Shield, User } from "lucide-react";
 import { useGymStore } from "@/lib/store/gymStore";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { MUSCLE_COLOR } from "@/lib/data/gym-meta";
@@ -63,6 +63,22 @@ export function TrainingConfigSheet({ open, onClose, todayIndex }: { open: boole
                 Configuración e historial
               </h1>
             </header>
+
+            <section className="grid grid-cols-4 gap-2">
+              {[
+                { href: "/gym/entrenamiento/planificaciones", label: "Planes", icon: CalendarRange },
+                { href: "/gym/entrenamiento/rango", label: "Rango", icon: Shield },
+                { href: "/gym/entrenamiento/perfil", label: "Perfil", icon: User },
+                { href: "/gym/entrenamiento/rachas", label: "Racha", icon: Flame },
+              ].map(({ href, label, icon: Icon }) => (
+                <Link key={href} href={href}>
+                  <div className="rounded-2xl py-3 flex flex-col items-center gap-1.5" style={CARD_BG}>
+                    <Icon size={18} />
+                    <span className="text-[11px] text-[color:var(--t-fg-dim)]">{label}</span>
+                  </div>
+                </Link>
+              ))}
+            </section>
 
             <section className="flex flex-col gap-3">
               <SectionTitle>Apariencia</SectionTitle>

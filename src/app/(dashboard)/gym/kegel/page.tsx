@@ -9,7 +9,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, Check, ChevronLeft, Clock, Dumbbell, Flower2, SlidersHorizontal } from "lucide-react";
+import { BookOpen, Check, ChevronLeft, Clock, Dumbbell, Flower2 } from "lucide-react";
+import { SettingsGlyph } from "@/components/shared/settings-glyph";
 import { format } from "date-fns";
 import { WeekStrip } from "@/components/shared/week-strip";
 import { CalorieYearView } from "@/components/gym/calorie-year-view";
@@ -88,7 +89,7 @@ export default function KegelPage() {
           </h1>
         )}
         <span className="w-10 h-10 -mr-2 flex items-center justify-center" aria-hidden>
-          <SlidersHorizontal size={22} strokeWidth={2.2} />
+          <SettingsGlyph />
         </span>
       </header>
 

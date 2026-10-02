@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ViewDots } from "@/components/habitos/view-dots";
 import { ArrowLeft, Shield, ChevronDown, ChevronRight, Dumbbell, ListChecks } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassModal } from "@/components/glass/glass-modal";
@@ -85,12 +87,48 @@ export default function BodyMapPage() {
     return { total: exs.length, classified: classified.length, standing: getRankStanding(Math.round(avgSp)) };
   }
 
+  // Última de las 3 vistas de Entrenamiento (hoy / año / rango): deslizar hacia arriba estando arriba
+  // del todo vuelve a la vista de año.
+  const router = useRouter();
+  useEffect(() => {
+    const back = () => router.push("/gym/entrenamiento?view=1");
+    let startY: number | null = null;
+    let lock = false;
+    const onWheel = (e: WheelEvent) => {
+      if (lock || e.deltaY > -30 || window.scrollY > 0) return;
+      lock = true;
+      back();
+    };
+    const onTouchStart = (e: TouchEvent) => {
+      startY = e.touches[0]?.clientY ?? null;
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      const endY = e.changedTouches[0]?.clientY;
+      if (startY !== null && endY !== undefined && endY - startY > 90 && window.scrollY <= 0 && !lock) {
+        lock = true;
+        back();
+      }
+      startY = null;
+    };
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [router]);
+
   function suggestedExercises(categories: MuscleGroup[]): Exercise[] {
     return allExercises.filter((e) => categories.includes(e.categoria)).slice(0, 6);
   }
 
   return (
     <div className="flex flex-col gap-6 pb-8">
+      <div className="fixed right-4 bottom-[max(env(safe-area-inset-bottom),28px)] z-30 pointer-events-none">
+        <ViewDots index={2} count={3} />
+      </div>
       <header className="flex items-center gap-3 pt-2">
         <Link href="/gym/entrenamiento" className="text-white/50 hover:text-white transition-colors">
           <ArrowLeft size={20} />

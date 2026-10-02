@@ -58,7 +58,7 @@ export function MuscleCurveChart({ data }: { data: Entry[] }) {
   pts[pts.length - 1] = { x: PLOT_R, y: y(axisMin) };
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-h-[112px]" role="img" aria-label="Distribución muscular">
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-h-[clamp(70px,14dvh,112px)]" role="img" aria-label="Distribución muscular">
       {groups.map((g, i) => (
         <text key={g.categoria} x={xs[i]} y={9} textAnchor="middle" fill="var(--t-fg-dim, rgba(255,255,255,0.85))" fontSize="8" letterSpacing="0.6" style={MONO_FONT}>
           {g.categoria.toUpperCase()}

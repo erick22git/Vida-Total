@@ -20,7 +20,8 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
+import { SettingsGlyph } from "@/components/shared/settings-glyph";
 import { AnimatePresence, motion } from "framer-motion";
 import { isToday, startOfDay } from "date-fns";
 import { MealHoldOrb } from "@/components/gym/meal-hold-orb";
@@ -258,7 +259,7 @@ export function MealHomeScreen() {
           aria-label="Ajustes de calorías"
           className="w-10 h-10 flex items-center justify-center cursor-pointer shrink-0"
         >
-          <SlidersHorizontal size={20} strokeWidth={2.2} className="text-white/70" />
+          <SettingsGlyph />
         </button>
       </header>
 

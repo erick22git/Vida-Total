@@ -8,7 +8,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ChevronLeft, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
+import { SettingsGlyph } from "@/components/shared/settings-glyph";
 import { format } from "date-fns";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import type { KegelSessionDef } from "@/lib/gym/kegel-plan";
@@ -148,7 +149,7 @@ export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
         </button>
         <h1 className="text-[22px] font-bold tracking-tight">Kegel</h1>
         <span className="w-10 h-10 -mr-2 flex items-center justify-center" aria-hidden>
-          <SlidersHorizontal size={22} strokeWidth={2.2} />
+          <SettingsGlyph />
         </span>
       </header>
 

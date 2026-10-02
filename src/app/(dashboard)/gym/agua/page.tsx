@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { WaterBottle } from "@/components/gym/water-bottle";
 import { WaterGlass3D, type WaterGlassHandle } from "@/components/gym/water-glass-3d";
 import { WeekStrip } from "@/components/shared/week-strip";
+import { SettingsGlyph } from "@/components/shared/settings-glyph";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { AddDrinkModal } from "@/components/gym/add-drink-modal";
 import { totalsByDrink } from "@/lib/gym/water-stats";
@@ -76,7 +77,9 @@ export default function AguaPage() {
         <h1 className="text-[20px] uppercase tracking-[0.12em]" style={MONO_FONT}>
           Agua
         </h1>
-        <span className="w-10 h-10" aria-hidden />
+        <span className="w-10 h-10 -mr-2 flex items-center justify-center" aria-hidden>
+          <SettingsGlyph />
+        </span>
       </header>
 
       <main
