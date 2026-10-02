@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { ArrowLeft, Moon, Dumbbell, Plus, X } from "lucide-react";
+import { ArrowLeft, Moon, Dumbbell, Plus, X, Copy, ClipboardPaste } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassInput } from "@/components/glass/glass-input";
@@ -26,6 +26,23 @@ const DAYS = [
   { key: "D", label: "Domingo" },
 ];
 
+// Mismo portapapeles que el editor de planes ([planId]): se puede copiar un día allá y pegarlo acá.
+const DAY_CLIPBOARD_KEY = "vt-day-clipboard";
+
+interface DayClipboard {
+  grupoMuscular: string;
+  ejercicios: RoutineExercise[] | null;
+}
+
+function readDayClipboard(): DayClipboard | null {
+  try {
+    const raw = sessionStorage.getItem(DAY_CLIPBOARD_KEY);
+    return raw ? (JSON.parse(raw) as DayClipboard) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function ManualPlanCreatorPage() {
   const router = useRouter();
   const createPlan = useGymStore((s) => s.createPlan);
@@ -40,6 +57,8 @@ export default function ManualPlanCreatorPage() {
   // infiriendo automáticamente de los ejercicios elegidos, como antes.
   const [dayMuscleOverride, setDayMuscleOverride] = useState<(MuscleGroup | null)[]>(DAYS.map(() => null));
   const [editingDay, setEditingDay] = useState<number | null>(null);
+  const [dayClipboard, setDayClipboard] = useState<DayClipboard | null>(readDayClipboard);
+  const [toast, setToast] = useState<string | null>(null);
   const [nombre, setNombre] = useState("Mi Plan Personalizado");
   const [categoria, setCategoria] = useState(PLAN_LIBRARY_CATEGORIES[0]);
   const [nuevaCategoria, setNuevaCategoria] = useState(false);
@@ -67,6 +86,35 @@ export default function ManualPlanCreatorPage() {
   function clearDay(i: number) {
     setDayDrafts((d) => d.map((day, idx) => (idx === i ? [] : day)));
     setDayMuscleOverride((d) => d.map((g, idx) => (idx === i ? null : g)));
+  }
+
+  function flashToast(msg: string) {
+    setToast(msg);
+    window.setTimeout(() => setToast(null), 1800);
+  }
+
+  function copyDayDraft(i: number) {
+    const draft = dayDrafts[i];
+    if (draft.length === 0) return;
+    const clip: DayClipboard = {
+      grupoMuscular: dayMuscleOverride[i] ?? dominantMuscleGroup(draft, allExercises) ?? "Cardio",
+      ejercicios: JSON.parse(JSON.stringify(draft)) as RoutineExercise[],
+    };
+    try {
+      sessionStorage.setItem(DAY_CLIPBOARD_KEY, JSON.stringify(clip));
+    } catch {
+      /* sin sessionStorage: queda solo en memoria de esta pantalla */
+    }
+    setDayClipboard(clip);
+    flashToast(`${DAYS[i].label} copiado`);
+  }
+
+  function pasteDayDraft(i: number) {
+    if (!dayClipboard?.ejercicios || dayClipboard.ejercicios.length === 0) return;
+    // Se clona siempre: la rutina pegada es independiente de la original.
+    const cloned = JSON.parse(JSON.stringify(dayClipboard.ejercicios)) as RoutineExercise[];
+    setDayDrafts((d) => d.map((day, idx) => (idx === i ? cloned : day)));
+    flashToast(`Pegado en ${DAYS[i].label}`);
   }
 
   function handleCreate() {
@@ -97,8 +145,14 @@ export default function ManualPlanCreatorPage() {
   if (editingDay !== null) {
     const label = DAYS[editingDay].label;
     const draft = dayDrafts[editingDay];
+    const canPaste = !!dayClipboard?.ejercicios && dayClipboard.ejercicios.length > 0;
     return (
       <div className="flex flex-col gap-5 pb-8">
+        {toast && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-full px-4 py-2 text-xs font-medium text-white bg-black/80 border border-white/15">
+            {toast}
+          </div>
+        )}
         <header className="flex items-center justify-between gap-3 pt-2">
           <div className="flex items-center gap-3 min-w-0">
             <button onClick={() => setEditingDay(null)} className="text-white/50 hover:text-white transition-colors cursor-pointer shrink-0">
@@ -110,6 +164,15 @@ export default function ManualPlanCreatorPage() {
             Listo
           </GlassButton>
         </header>
+
+        {draft.length > 0 && (
+          <button
+            onClick={() => copyDayDraft(editingDay)}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-white/[0.06] hover:bg-white/[0.12] transition-colors py-2.5 text-sm text-white/80 cursor-pointer -mt-2"
+          >
+            <Copy size={15} /> Copiar este día
+          </button>
+        )}
 
         {draft.length > 0 && (
           <div className="flex flex-col gap-1.5 -mt-2">
@@ -146,7 +209,17 @@ export default function ManualPlanCreatorPage() {
 
         {draft.length === 0 ? (
           <>
-            <p className="text-sm text-white/50 -mt-3">Selecciona los ejercicios para {label}.</p>
+            {canPaste && (
+              <button
+                onClick={() => pasteDayDraft(editingDay)}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] transition-colors py-3 text-sm font-semibold text-white cursor-pointer"
+              >
+                <ClipboardPaste size={16} /> Pegar rutina copiada
+              </button>
+            )}
+            <p className="text-sm text-white/50 -mt-3">
+              {canPaste ? "O selecciona" : "Selecciona"} los ejercicios para {label}.
+            </p>
             <ExercisePicker
               multiple
               confirmButtonClassName="z-30"

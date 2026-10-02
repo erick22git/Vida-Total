@@ -246,6 +246,18 @@ export default function PlanDetailPage({
 
         {draft.length === 0 ? (
           <>
+            {dayClipboard?.ejercicios && dayClipboard.ejercicios.length > 0 && (
+              <button
+                onClick={() => {
+                  const cloned = JSON.parse(JSON.stringify(dayClipboard.ejercicios)) as RoutineExercise[];
+                  changeDraft(cloned);
+                  flashToast(`Pegado en ${label}`);
+                }}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] transition-colors py-3 text-sm font-semibold text-white cursor-pointer"
+              >
+                <ClipboardPaste size={16} /> Pegar rutina copiada
+              </button>
+            )}
             <p className="text-sm text-white/50 -mt-3">Selecciona los ejercicios para {label}.</p>
             <ExercisePicker
               multiple
