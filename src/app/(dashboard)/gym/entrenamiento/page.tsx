@@ -1,35 +1,37 @@
 "use client";
 
+/**
+ * Inicio de Entrenamiento — rediseño "Not Boring" (fondo negro): franja de la semana con los días
+ * entrenados, tarjeta de HOY con foto, lista de ejercicios con series x reps, gráfica de
+ * distribución muscular y botón EDITAR. No hay botón de "Iniciar entrenamiento": el entrenamiento
+ * arranca tocando la tarjeta de hoy. Planes / Rango / Perfil / Rachas viven en el menú "⋮", y
+ * "Tu plan", las plantillas y el historial se mudaron al panel de configuración (sliders).
+ */
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-  ArrowLeft,
-  Dumbbell,
-  Play,
-  History,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  ListPlus,
-  Plus,
-  Shield,
-  User,
-  CalendarRange,
-  Flame,
-} from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { GlassCard } from "@/components/glass/glass-card";
-import { GlassButton } from "@/components/glass/glass-button";
+import { addDays, isSameDay, startOfWeek } from "date-fns";
+import { Check, ChevronLeft, Flame, Moon, Pencil, Shield, SlidersHorizontal, User, CalendarRange, MoreVertical } from "lucide-react";
 import { useGymStore } from "@/lib/store/gymStore";
 import { useAllExercises } from "@/components/gym/exercise-picker";
+import { TrainingConfigSheet } from "@/components/gym/training-config-sheet";
+import { MuscleCurveChart } from "@/components/gym/muscle-curve-chart";
 import { todayDayIndex } from "@/lib/data/weekly-plan";
-import { MUSCLE_COLOR } from "@/lib/data/gym-meta";
-import { getMuscleDistribution, estimateRoutineDurationMinutes } from "@/lib/gym-utils";
-import type { MuscleGroup } from "@/lib/types";
+import { getMuscleDistribution } from "@/lib/gym-utils";
+import { MONO_FONT } from "@/lib/ui/mono-font";
+import type { MuscleGroup, RoutineExercise } from "@/lib/types";
 
+const DAY_SHORT = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"];
 const DAY_NAMES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+
+function repsLabel(rex: RoutineExercise): string {
+  const reps = rex.sets.map((s) => s.reps).filter((r) => r > 0);
+  const n = rex.sets.length;
+  if (reps.length === 0) return `${n} ${n === 1 ? "serie" : "series"}`;
+  const min = Math.min(...reps);
+  const max = Math.max(...reps);
+  return `${n} ${n === 1 ? "serie" : "series"} x ${min === max ? min : `${min}-${max}`} reps`;
+}
 
 export default function EntrenamientoPage() {
   const router = useRouter();
@@ -42,46 +44,55 @@ export default function EntrenamientoPage() {
   const activePlanId = useGymStore((s) => s.activePlanId);
   const activePlan = activePlanId ? plans.find((p) => p.id === activePlanId) : undefined;
   const onboardingCompleted = useGymStore((s) => s.onboardingCompleted);
-
-  // Alguien totalmente nuevo (sin plan, sin rutinas propias, nunca entrenó)
-  // pasa primero por el formulario inicial en vez de ver el panel vacío.
-  // No molesta a nadie que ya tenga datos, aunque nunca haya "completado"
-  // el onboarding — cualquiera de esas tres condiciones ya alcanza.
-  const isTotallyNew = !onboardingCompleted && plans.length === 0 && routines.length === 0 && sessions.length === 0;
-  useEffect(() => {
-    if (isTotallyNew) router.replace("/gym/entrenamiento/onboarding");
-  }, [isTotallyNew, router]);
   const startWorkout = useGymStore((s) => s.startWorkout);
   const startWorkoutFromRoutine = useGymStore((s) => s.startWorkoutFromRoutine);
   const cancelWorkout = useGymStore((s) => s.cancelWorkout);
   const streak = useGymStore((s) => s.streak);
   const allExercises = useAllExercises();
 
-  // Bug: `activeSession` no expiraba nunca. Si quedaba un entrenamiento sin
-  // terminar de OTRO día, esta pantalla seguía ofreciendo "Continuar
-  // entrenamiento" con los ejercicios de ese día viejo en vez de mostrar el
-  // plan de hoy — daba la sensación de que "no aparecía" el plan actual.
+  // Alguien totalmente nuevo (sin plan, sin rutinas propias, nunca entrenó)
+  // pasa primero por el formulario inicial en vez de ver el panel vacío.
+  const isTotallyNew = !onboardingCompleted && plans.length === 0 && routines.length === 0 && sessions.length === 0;
+  useEffect(() => {
+    if (isTotallyNew) router.replace("/gym/entrenamiento/onboarding");
+  }, [isTotallyNew, router]);
+
+  // `activeSession` no expiraba nunca: un entrenamiento sin terminar de OTRO día seguía ofreciendo
+  // "continuar" con ejercicios viejos en vez del plan de hoy.
   const sessionIsFromToday = !sessionStartedAt || new Date(sessionStartedAt).toDateString() === new Date().toDateString();
   const staleSession = !!activeSession && !sessionIsFromToday;
 
-  const [templatesOpen, setTemplatesOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
-
+  const [configOpen, setConfigOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const todayIndex = todayDayIndex();
-  const todayPlan = weeklyPlan[todayIndex];
-  const isRestDay = todayPlan.grupoMuscular === "Descanso";
+  const [selectedDay, setSelectedDay] = useState(todayIndex);
 
-  const todayRoutine = todayPlan.routineId ? routines.find((r) => r.id === todayPlan.routineId) : undefined;
-  const todayBgExercise = todayRoutine
-    ? todayRoutine.ejercicios
-        .map((rex) => allExercises.find((e) => e.id === rex.exerciseId))
-        .find((e) => e?.imagen)
-    : allExercises.find((e) => e.categoria === todayPlan.grupoMuscular && e.imagen);
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const trainedDays = weeklyPlan.map((_, i) => {
+    const date = addDays(weekStart, i);
+    return sessions.some((s) => s.completado && isSameDay(new Date(s.date), date));
+  });
+
+  const isToday = selectedDay === todayIndex;
+  const dayPlan = weeklyPlan[selectedDay];
+  const isRestDay = dayPlan.grupoMuscular === "Descanso";
+  const routine = dayPlan.routineId ? routines.find((r) => r.id === dayPlan.routineId) : undefined;
+  const distribution = routine ? getMuscleDistribution(routine.ejercicios, allExercises) : [];
+  const bgExercise = routine
+    ? routine.ejercicios.map((rex) => allExercises.find((e) => e.id === rex.exerciseId)).find((e) => e?.imagen)
+    : allExercises.find((e) => e.categoria === dayPlan.grupoMuscular && e.imagen);
+
+  const editHref = activePlan
+    ? `/gym/entrenamiento/planificaciones/${activePlan.id}?day=${selectedDay}`
+    : routine
+      ? `/gym/entrenamiento/rutinas/${routine.id}`
+      : "/gym/entrenamiento/rutinas/nueva";
 
   function startTodaysPlan() {
-    const routine = todayPlan.routineId ? routines.find((r) => r.id === todayPlan.routineId) : undefined;
-    if (routine) {
-      startWorkoutFromRoutine(routine);
+    const todayPlan = weeklyPlan[todayIndex];
+    const todaysRoutine = todayPlan.routineId ? routines.find((r) => r.id === todayPlan.routineId) : undefined;
+    if (todaysRoutine) {
+      startWorkoutFromRoutine(todaysRoutine);
     } else {
       const grupo = todayPlan.grupoMuscular as MuscleGroup;
       const pool = allExercises.filter((e) => e.categoria === grupo).slice(0, 5);
@@ -91,7 +102,7 @@ export default function EntrenamientoPage() {
   }
 
   function handleStart() {
-    if (isRestDay) return;
+    if (!isToday || isRestDay) return;
     if (staleSession) {
       const seguir = confirm(
         "Tienes un entrenamiento sin terminar de otro día. Aceptar = continuar ese entrenamiento. Cancelar = descartarlo y empezar el plan de hoy.",
@@ -105,337 +116,169 @@ export default function EntrenamientoPage() {
       router.push("/gym/entrenamiento/activo");
       return;
     }
-    if (!activeSession) {
-      startTodaysPlan();
-    }
+    if (!activeSession) startTodaysPlan();
     router.push("/gym/entrenamiento/activo");
   }
 
-  // El useEffect de arriba ya redirige — esto solo evita un parpadeo del
-  // panel vacío mientras la redirección ocurre.
+  // El useEffect de arriba ya redirige — esto solo evita un parpadeo del panel vacío.
   if (isTotallyNew) return null;
 
+  const canStart = isToday && !isRestDay;
+  const hint = !canStart
+    ? null
+    : activeSession && !staleSession
+      ? "Toca para continuar"
+      : staleSession
+        ? "Entrenamiento sin terminar de otro día"
+        : "Toca para iniciar";
+
   return (
-    // El fondo de foto ya lo pone gym/entrenamiento/layout.tsx (compartido
-    // por todas las pantallas de Entrenamiento).
-    <div className="flex flex-col gap-6">
-      <header className="flex items-center justify-between gap-3 pt-2">
-        <div className="flex items-center gap-3 min-w-0">
-          <Link href="/gym" className="text-white/50 hover:text-white transition-colors shrink-0">
-            <ArrowLeft size={20} />
+    <div className="fixed inset-0 z-[45] overflow-y-auto bg-black text-white select-none">
+      <div className="max-w-md mx-auto px-5 pb-12 flex flex-col gap-7">
+        <header className="flex items-center justify-between pt-[max(env(safe-area-inset-top),16px)]">
+          <Link href="/gym" aria-label="Volver" className="w-10 h-10 flex items-center justify-center -ml-2">
+            <ChevronLeft size={30} strokeWidth={2.4} />
           </Link>
-          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2 truncate">
-            <Dumbbell className="text-white" /> Entrenamiento
-          </h1>
-        </div>
-        <Link
-          href="/gym/entrenamiento/rachas"
-          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 shrink-0 cursor-pointer"
-          style={{ background: "var(--gym)22", border: "1px solid var(--gym)55" }}
-        >
-          <Flame size={16} style={{ color: "var(--gym)" }} fill="var(--gym)" fillOpacity={0.3} />
-          <span className="text-sm font-bold text-white tabular-nums">{streak}</span>
-        </Link>
-      </header>
-
-      <div className="grid grid-cols-3 gap-3">
-        <QuickLink href="/gym/entrenamiento/planificaciones" icon={CalendarRange} label="Planes" />
-        <QuickLink href="/gym/entrenamiento/rango" icon={Shield} label="Rango" />
-        <QuickLink href="/gym/entrenamiento/perfil" icon={User} label="Perfil" />
-      </div>
-
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-        {weeklyPlan.map((d, i) => (
-          <GlassCard
-            key={d.day}
-            padding="none"
-            interactive={false}
-            accentColor={i === todayIndex ? "rgba(255,255,255,0.9)" : undefined}
-            glow={i === todayIndex}
-            className="shrink-0 w-[52px] flex flex-col items-center justify-center text-center gap-0.5 py-2 px-1"
-            style={{ minHeight: 44, background: "var(--glass-bg-dark)" }}
+          <button
+            onClick={() => setConfigOpen(true)}
+            aria-label="Configuración e historial"
+            className="w-10 h-10 flex items-center justify-center -mr-2 cursor-pointer"
           >
-            <span
-              className="text-[11px] font-semibold text-center"
-              style={{ color: i === todayIndex ? "white" : "rgba(255,255,255,0.85)" }}
-            >
-              {d.day}
-            </span>
-            <span className="text-[9px] text-white/70 text-center leading-tight line-clamp-1">
-              {d.grupoMuscular}
-            </span>
-          </GlassCard>
-        ))}
-      </div>
+            <SlidersHorizontal size={24} strokeWidth={2.4} />
+          </button>
+        </header>
 
-      <GlassCard
-        accentColor="rgba(255,255,255,0.9)"
-        glow
-        padding="none"
-        className="relative flex flex-col gap-4 items-center text-center py-8 overflow-hidden"
-        style={{
-          background: !todayBgExercise?.imagen
-            ? "linear-gradient(160deg, var(--gym)33, rgba(255,255,255,0.12))"
-            : undefined,
-        }}
-      >
-        {todayBgExercise?.imagen && (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={todayBgExercise.imagen}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.45) 40%, rgba(0,0,0,0.85) 100%)",
-              }}
-            />
-          </>
-        )}
-        <div className="relative z-10 flex flex-col gap-4 items-center px-4">
-          <p className="text-sm text-white/60">Hoy toca</p>
-          <h2 className="text-3xl font-bold text-white">{todayPlan.grupoMuscular}</h2>
-          {activeSession && !staleSession && (
-            <p className="text-xs text-white/50">Tienes un entrenamiento en curso</p>
-          )}
-          {staleSession && (
-            <p className="text-xs" style={{ color: "#f59e0b" }}>
-              Tienes un entrenamiento sin terminar de otro día
-            </p>
-          )}
-          <GlassButton
-            accentColor="rgba(255,255,255,0.85)"
-            className="!text-black"
-            size="lg"
-            onClick={handleStart}
-            disabled={isRestDay}
-          >
-            <Play size={18} />
-            {activeSession && !staleSession ? "Continuar entrenamiento" : "Iniciar entrenamiento"}
-          </GlassButton>
-        </div>
-      </GlassCard>
-
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="text-lg font-semibold truncate">{activePlan ? activePlan.nombre : "Tu Plan"}</h3>
-            {!activePlan && <p className="text-xs text-white/45">Todavía no elegiste una planificación</p>}
-          </div>
-          {activePlan ? (
-            <div className="flex items-center gap-2 shrink-0">
-              <Link
-                href="/gym/entrenamiento/planificaciones/manual"
-                className="rounded-full px-3 py-1.5 text-xs font-semibold text-white/70 hover:text-white flex items-center gap-1 bg-white/[0.06]"
-              >
-                <Plus size={13} /> Nuevo plan
-              </Link>
-              <Link
-                href={`/gym/entrenamiento/planificaciones/${activePlan.id}`}
-                className="rounded-full px-3 py-1.5 text-xs font-semibold text-white glass-specular-ring flex items-center gap-1"
-                style={{ background: "rgba(255,255,255,0.1)" }}
-              >
-                Ver plan <ChevronRight size={13} />
-              </Link>
-            </div>
-          ) : (
-            <Link href="/gym/entrenamiento/planificaciones" className="shrink-0 text-xs font-medium text-white/50 hover:text-white flex items-center gap-1">
-              Más planes <ChevronRight size={13} />
-            </Link>
-          )}
-        </div>
-        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+        <div className="flex items-start justify-between gap-1 -mt-2 relative">
           {weeklyPlan.map((d, i) => {
-            const routine = d.routineId ? routines.find((r) => r.id === d.routineId) : undefined;
-            const isRest = d.grupoMuscular === "Descanso";
-            const distribution = routine ? getMuscleDistribution(routine.ejercicios, allExercises) : [];
-            const durationMins = routine ? estimateRoutineDurationMinutes(routine.ejercicios) : 0;
-            const bgExercise = routine
-              ? routine.ejercicios
-                  .map((rex) => allExercises.find((e) => e.id === rex.exerciseId))
-                  .find((e) => e?.imagen)
-              : undefined;
-            // Con un plan activo, el acceso rápido por día abre ESE día
-            // dentro del plan (misma pantalla que "Ver plan" arriba, ya
-            // enfocada en el día correspondiente) en vez de una rutina
-            // suelta desconectada del plan.
-            const href = activePlan
-              ? `/gym/entrenamiento/planificaciones/${activePlan.id}?day=${i}`
-              : routine
-                ? `/gym/entrenamiento/rutinas/${routine.id}`
-                : "/gym/entrenamiento/rutinas/nueva";
-
+            const rest = d.grupoMuscular === "Descanso";
+            const done = trainedDays[i];
+            const selected = i === selectedDay;
             return (
-              <Link key={d.day + i} href={isRest ? "#" : href} className={isRest ? "pointer-events-none" : "shrink-0"}>
-                <GlassCard
-                  padding="none"
-                  accentColor={i === todayIndex ? "rgba(255,255,255,0.9)" : undefined}
-                  glow={i === todayIndex}
-                  className="shrink-0 w-64 h-56 overflow-hidden relative flex flex-col justify-end p-4 cursor-pointer"
+              <button key={d.day + i} onClick={() => setSelectedDay(i)} className="flex flex-col items-center gap-2 cursor-pointer">
+                <span
+                  className="w-11 h-11 rounded-full flex items-center justify-center"
                   style={{
-                    background: isRest
-                      ? "var(--glass-bg-dark)"
-                      : `linear-gradient(160deg, var(--gym)33, rgba(255,255,255,0.12))`,
+                    background: done ? "#fff" : rest ? "rgba(255,255,255,0.3)" : "transparent",
+                    border: done || rest ? "none" : "1.5px solid rgba(255,255,255,0.28)",
+                    color: done ? "#000" : "rgba(255,255,255,0.7)",
                   }}
                 >
-                  {bgExercise?.imagen && (
-                    <>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={bgExercise.imagen}
-                        alt=""
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          background:
-                            "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 40%, rgba(0,0,0,0.85) 100%)",
-                        }}
-                      />
-                    </>
-                  )}
-
-                  <span className="absolute top-3 left-4 text-[11px] font-semibold text-white/70 z-10">
-                    {DAY_NAMES[i]}
-                  </span>
-
-                  <div className="relative z-10 flex flex-col gap-1">
-                    <p className="text-lg font-extrabold uppercase tracking-tight text-white leading-tight line-clamp-2">
-                      {routine?.nombre ?? d.grupoMuscular}
-                    </p>
-                    {!isRest && (
-                      <p className="text-[11px] text-white/60">
-                        {routine ? `${durationMins} min` : "Sin rutina asignada"}
-                      </p>
-                    )}
-
-                    {distribution.length > 0 && (
-                      <div className="flex gap-1.5 overflow-x-auto no-scrollbar mt-1.5 -mx-0.5 px-0.5">
-                        {distribution.map((m) => {
-                          const color = MUSCLE_COLOR[m.categoria] ?? "var(--gym)";
-                          return (
-                            <span
-                              key={m.categoria}
-                              className="flex items-center gap-1 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium whitespace-nowrap"
-                              style={{ background: `${color}33`, border: `1px solid ${color}66`, color: "#fff" }}
-                            >
-                              <Dumbbell size={9} style={{ color }} /> {m.categoria} {m.pct}%
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {routine && (
-                      <p className="text-[11px] text-white/50 mt-1">
-                        {routine.ejercicios.length} ejercicios
-                      </p>
-                    )}
-
-                    {!isRest && (
-                      <div className="flex justify-center mt-2">
-                        <span
-                          className="rounded-full px-4 py-1.5 text-[11px] font-semibold text-white cursor-pointer"
-                          style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(6px)" }}
-                        >
-                          Ver
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </GlassCard>
-              </Link>
+                  {done ? <Check size={22} strokeWidth={3} /> : rest ? <Moon size={17} /> : null}
+                </span>
+                <span
+                  className="text-[13px] tracking-wide pb-0.5"
+                  style={{
+                    ...MONO_FONT,
+                    color: i === todayIndex || selected ? "#fff" : "rgba(255,255,255,0.7)",
+                    borderBottom: selected ? "2px solid #fff" : "2px solid transparent",
+                  }}
+                >
+                  {i === todayIndex ? "HOY" : DAY_SHORT[i]}
+                </span>
+              </button>
             );
           })}
-        </div>
-      </div>
-
-      <GlassCard padding="md" className="flex flex-col gap-3" style={{ background: "var(--glass-bg-dark)" }}>
-        <button
-          className="flex items-center justify-between cursor-pointer"
-          onClick={() => setTemplatesOpen((v) => !v)}
-        >
-          <h3 className="text-sm font-semibold text-white">Tus plantillas</h3>
-          {templatesOpen ? <ChevronUp size={16} className="text-white/50" /> : <ChevronDown size={16} className="text-white/50" />}
-        </button>
-        {templatesOpen && (
-          <>
-            <Link
-              href="/gym/entrenamiento/rutinas/nueva"
-              className="flex items-center gap-1 self-end text-xs font-medium text-white/50 hover:text-white -mt-1"
-            >
-              <ListPlus size={14} /> Nueva
-            </Link>
-            {routines.length === 0 ? (
-              <p className="text-sm text-white/30">Aún no tienes rutinas guardadas.</p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {routines.map((r) => (
-                  <Link key={r.id} href={`/gym/entrenamiento/rutinas/${r.id}`}>
-                    <GlassCard padding="sm" className="flex items-center justify-between" style={{ background: "var(--glass-bg-dark)" }}>
-                      <div>
-                        <p className="text-sm font-medium text-white">{r.nombre}</p>
-                        <p className="text-xs text-white/40">{r.ejercicios.length} ejercicios</p>
-                      </div>
-                      <ChevronRight size={16} className="text-white/30" />
-                    </GlassCard>
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Más opciones"
+            className="w-7 h-11 flex items-center justify-center cursor-pointer shrink-0"
+          >
+            <MoreVertical size={22} />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-12 z-40 w-48 rounded-2xl py-1.5 shadow-2xl" style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.1)" }}>
+                {[
+                  { href: "/gym/entrenamiento/planificaciones", label: "Planes", icon: CalendarRange },
+                  { href: "/gym/entrenamiento/rango", label: "Rango", icon: Shield },
+                  { href: "/gym/entrenamiento/perfil", label: "Perfil", icon: User },
+                  { href: "/gym/entrenamiento/rachas", label: `Racha · ${streak}`, icon: Flame },
+                ].map(({ href, label, icon: Icon }) => (
+                  <Link key={href} href={href} className="flex items-center gap-3 px-4 py-3 text-sm text-white/85">
+                    <Icon size={16} /> {label}
                   </Link>
                 ))}
               </div>
-            )}
-          </>
-        )}
-      </GlassCard>
+            </>
+          )}
+        </div>
 
-      <GlassCard padding="md" className="flex flex-col gap-3" style={{ background: "var(--glass-bg-dark)" }}>
         <button
-          className="flex items-center justify-between cursor-pointer"
-          onClick={() => setHistoryOpen((v) => !v)}
+          onClick={handleStart}
+          disabled={!canStart}
+          className="relative w-full h-[250px] rounded-[28px] overflow-hidden flex flex-col items-center justify-center text-center cursor-pointer disabled:cursor-default"
+          style={{ background: "#111", border: "1px solid rgba(255,255,255,0.12)" }}
         >
-          <div className="flex items-center gap-2 text-white/70">
-            <History size={16} />
-            <p className="text-sm font-semibold text-white">Historial reciente</p>
+          {bgExercise?.imagen && (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={bgExercise.imagen} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              <div
+                className="absolute inset-0"
+                style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.4) 45%, rgba(0,0,0,0.78) 100%)" }}
+              />
+            </>
+          )}
+          <div className="relative z-10 flex flex-col items-center gap-2 px-4">
+            <p className="text-xl text-white/90">{isToday ? "Hoy toca" : `${DAY_NAMES[selectedDay]} toca`}</p>
+            <h2 className="text-[44px] leading-none font-extrabold tracking-tight">{dayPlan.grupoMuscular}</h2>
+            {hint && (
+              <p className="text-[11px] uppercase tracking-[0.14em] mt-2" style={{ ...MONO_FONT, color: staleSession ? "#f59e0b" : "rgba(255,255,255,0.55)" }}>
+                {hint}
+              </p>
+            )}
           </div>
-          {historyOpen ? <ChevronUp size={16} className="text-white/50" /> : <ChevronDown size={16} className="text-white/50" />}
         </button>
-        {historyOpen && (
-          sessions.length === 0 ? (
-            <p className="text-sm text-white/30">Aún no hay entrenamientos registrados.</p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {sessions.slice(0, 8).map((s) => (
-                <GlassCard key={s.id} padding="sm" interactive={false} className="flex items-center justify-between" style={{ background: "var(--glass-bg-dark)" }}>
-                  <div>
-                    <p className="text-sm font-medium text-white">{s.nombre ?? s.grupoMuscular}</p>
-                    <p className="text-xs text-white/40">
-                      {format(new Date(s.date), "EEEE d MMM, HH:mm", { locale: es })}
-                    </p>
-                  </div>
-                  <span className="text-xs text-white/40">
-                    {s.ejercicios.length} ejercicios
-                  </span>
-                </GlassCard>
-              ))}
-            </div>
-          )
-        )}
-      </GlassCard>
-    </div>
-  );
-}
 
-function QuickLink({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) {
-  return (
-    <Link href={href}>
-      <GlassCard padding="sm" className="flex flex-col items-center gap-1.5 py-3.5" style={{ background: "var(--glass-bg-dark)" }}>
-        <Icon size={18} className="text-white" />
-        <span className="text-xs font-medium text-white/70">{label}</span>
-      </GlassCard>
-    </Link>
+        <section className="flex flex-col gap-1">
+          <div className="flex items-center justify-between rounded-full px-5 py-3.5" style={{ background: "#0d0d0d" }}>
+            <span className="text-[17px] tracking-wide" style={MONO_FONT}>
+              DISTRIBUCIÓN MUSCULAR
+            </span>
+            <span className="text-sm text-white/65" style={MONO_FONT}>
+              SER/REPS
+            </span>
+          </div>
+          {isRestDay ? (
+            <p className="text-sm text-white/40 px-5 py-4">Día de descanso.</p>
+          ) : !routine ? (
+            <p className="text-sm text-white/40 px-5 py-4">Sin rutina asignada. Tocá EDITAR para armarla.</p>
+          ) : (
+            <div className="px-3">
+              {routine.ejercicios.map((rex, i) => {
+                const ex = allExercises.find((e) => e.id === rex.exerciseId);
+                return (
+                  <div
+                    key={rex.exerciseId + i}
+                    className="flex items-center justify-between gap-3 py-3.5"
+                    style={{ borderBottom: i < routine.ejercicios.length - 1 ? "1px solid rgba(255,255,255,0.14)" : "none" }}
+                  >
+                    <span className="text-[16px] uppercase tracking-wide truncate" style={MONO_FONT}>
+                      {ex?.nombre ?? "Ejercicio"}
+                    </span>
+                    <span className="text-[15px] text-white/90 shrink-0 tabular-nums">{repsLabel(rex)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {distribution.length > 0 && <MuscleCurveChart data={distribution} />}
+
+        <div className="flex justify-center">
+          <Link
+            href={editHref}
+            className="flex items-center gap-3 rounded-full px-10 py-3.5 text-[15px] tracking-wide"
+            style={{ ...MONO_FONT, border: "1px solid rgba(255,255,255,0.35)", background: "#0a0a0a" }}
+          >
+            <Pencil size={18} /> EDITAR
+          </Link>
+        </div>
+      </div>
+
+      <TrainingConfigSheet open={configOpen} onClose={() => setConfigOpen(false)} todayIndex={todayIndex} />
+    </div>
   );
 }
