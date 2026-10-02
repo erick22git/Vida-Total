@@ -232,32 +232,32 @@ export default function EntrenamientoPage() {
         </button>
 
         <section className="flex flex-col gap-1">
-          <div className="flex items-center justify-between rounded-full px-5 py-3.5" style={{ background: "#0d0d0d" }}>
-            <span className="text-[17px] tracking-wide" style={MONO_FONT}>
+          <div className="flex items-center justify-between rounded-full px-4 py-2" style={{ background: "#0d0d0d" }}>
+            <span className="text-[12px] tracking-wide" style={MONO_FONT}>
               DISTRIBUCIÓN MUSCULAR
             </span>
-            <span className="text-sm text-white/65" style={MONO_FONT}>
+            <span className="text-[10px] text-white/60" style={MONO_FONT}>
               SER/REPS
             </span>
           </div>
           {isRestDay ? (
-            <p className="text-sm text-white/40 px-5 py-4">Día de descanso.</p>
+            <p className="text-xs text-white/40 px-4 py-3">Día de descanso.</p>
           ) : !routine ? (
-            <p className="text-sm text-white/40 px-5 py-4">Sin rutina asignada. Tocá EDITAR para armarla.</p>
+            <p className="text-xs text-white/40 px-4 py-3">Sin rutina asignada. Tocá EDITAR para armarla.</p>
           ) : (
-            <div className="px-3">
+            <div className="px-2 max-h-[136px] overflow-y-auto no-scrollbar">
               {routine.ejercicios.map((rex, i) => {
                 const ex = allExercises.find((e) => e.id === rex.exerciseId);
                 return (
                   <div
                     key={rex.exerciseId + i}
-                    className="flex items-center justify-between gap-3 py-3.5"
-                    style={{ borderBottom: i < routine.ejercicios.length - 1 ? "1px solid rgba(255,255,255,0.14)" : "none" }}
+                    className="flex items-center justify-between gap-3 h-[34px]"
+                    style={{ borderBottom: i < routine.ejercicios.length - 1 ? "1px solid rgba(255,255,255,0.1)" : "none" }}
                   >
-                    <span className="text-[16px] uppercase tracking-wide truncate" style={MONO_FONT}>
+                    <span className="text-[11px] uppercase tracking-wide truncate" style={MONO_FONT}>
                       {ex?.nombre ?? "Ejercicio"}
                     </span>
-                    <span className="text-[15px] text-white/90 shrink-0 tabular-nums">{repsLabel(rex)}</span>
+                    <span className="text-[11px] text-white/75 shrink-0 tabular-nums">{repsLabel(rex)}</span>
                   </div>
                 );
               })}
