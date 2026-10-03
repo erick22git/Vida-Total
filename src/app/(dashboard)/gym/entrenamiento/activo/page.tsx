@@ -244,8 +244,8 @@ export default function ActiveWorkoutPage() {
             set={set}
             soloReps={soloReps}
             previa={previaLabelFor(lastLog?.sets[i], soloReps)}
-            pesoRef={lastLog?.sets[i]?.peso || (i > 0 ? currentLog.sets[i - 1].peso : 0) || undefined}
-            repsRef={lastLog?.sets[i]?.reps || (i > 0 ? currentLog.sets[i - 1].reps : 0) || undefined}
+            pesoRef={(i > 0 ? currentLog.sets[i - 1].peso : 0) || lastLog?.sets[i]?.peso || undefined}
+            repsRef={(i > 0 ? currentLog.sets[i - 1].reps : 0) || lastLog?.sets[i]?.reps || undefined}
             restSeconds={restSeconds}
             onChange={(patch) => handleSetChange(set.id, patch)}
           />
