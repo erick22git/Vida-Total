@@ -11,6 +11,21 @@ export function effectiveWeight(set: WorkoutSet): number {
   return set.peso;
 }
 
+/** Ejercicios nuevos de rutina con 3 series de 10. Si `agrupar` es true, todos comparten un mismo
+ * `grupo` (bloque/superserie): se hacen serie por serie, uno tras otro, y se descansa al terminar la ronda. */
+export function newRoutineExercises(ids: string[], agrupar = false): RoutineExercise[] {
+  const grupo = agrupar && ids.length >= 2 ? crypto.randomUUID() : undefined;
+  return ids.map<RoutineExercise>((exerciseId) => ({
+    exerciseId,
+    sets: [
+      { peso: 0, reps: 10, tipo: "normal" },
+      { peso: 0, reps: 10, tipo: "normal" },
+      { peso: 0, reps: 10, tipo: "normal" },
+    ],
+    ...(grupo ? { grupo } : {}),
+  }));
+}
+
 /** Repeticiones de referencia que se muestran (atenuadas) en cada bajada de un dropset. */
 export const DROP_REPS_REF = 10;
 

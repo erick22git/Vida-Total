@@ -84,9 +84,11 @@ export default function ActiveWorkoutPage() {
   // "Previa": con cuánto peso x reps hiciste cada serie la última vez que
   // entrenaste este ejercicio (sessions viene ordenado del más reciente al
   // más viejo, así que el primer match ya es el último entrenamiento).
-  const lastLog = sessions.find((sess) => sess.ejercicios.some((e) => e.exerciseId === currentLog.exerciseId))?.ejercicios.find(
-    (e) => e.exerciseId === currentLog.exerciseId,
-  );
+  const lastLogOf = (exerciseId: string) =>
+    sessions.find((sess) => sess.ejercicios.some((e) => e.exerciseId === exerciseId))?.ejercicios.find(
+      (e) => e.exerciseId === exerciseId,
+    );
+  const lastLog = lastLogOf(currentLog.exerciseId);
 
   const totalSetsAll = activeSession.ejercicios.reduce((sum, e) => sum + e.sets.length, 0);
   const doneSetsAll = activeSession.ejercicios.reduce(
@@ -109,36 +111,55 @@ export default function ActiveWorkoutPage() {
   const visibleSetCount = firstUncheckedIndex === -1 ? currentLog.sets.length : firstUncheckedIndex + 1;
   const visibleSets = currentLog.sets.slice(0, visibleSetCount);
 
-  function handleSetChange(setId: string, patch: Parameters<typeof updateSet>[2]) {
+  // Bloque agrupado: una "serie" del bloque es una ronda, con una serie de cada ejercicio (en orden).
+  const blockMembers = currentLog.grupo
+    ? ejercicios.map((ex, i) => ({ ex, i })).filter(({ ex }) => ex.grupo === currentLog.grupo)
+    : [];
+  const isBlock = blockMembers.length > 1;
+  const pendingRounds = blockMembers.map(({ ex }) => ex.sets.findIndex((s) => !s.completado)).filter((r) => r >= 0);
+  const roundIdx = pendingRounds.length > 0 ? Math.min(...pendingRounds) : -1;
+  const maxRounds = Math.max(0, ...blockMembers.map(({ ex }) => ex.sets.length));
+  const visibleRounds = roundIdx === -1 ? maxRounds : roundIdx + 1;
+
+  function handleSetChange(logIndex: number, setId: string, patch: Parameters<typeof updateSet>[2]) {
+    const log = ejercicios[logIndex];
     if (!patch.completado) {
-      updateSet(currentLog.exerciseId, setId, patch);
+      updateSet(log.exerciseId, setId, patch);
       return;
     }
-    completeSet(currentLog.exerciseId, setId, patch);
+    completeSet(log.exerciseId, setId, patch);
 
-    const setIndex = currentLog.sets.findIndex((s) => s.id === setId);
+    const setIndex = log.sets.findIndex((s) => s.id === setId);
     // Superserie (Bloque agrupar): ejercicios con el mismo `grupo` se hacen
     // serie por serie, uno tras otro, sin descanso hasta terminar la ronda.
     // Sin `grupo`, el "grupo" es solo este ejercicio (mismo comportamiento
     // de siempre).
-    const groupMembers = currentLog.grupo
-      ? ejercicios.map((ex, i) => ({ ex, i })).filter(({ ex }) => ex.grupo === currentLog.grupo)
-      : [{ ex: currentLog, i: activeExerciseIndex }];
+    const groupMembers = log.grupo
+      ? ejercicios.map((ex, i) => ({ ex, i })).filter(({ ex }) => ex.grupo === log.grupo)
+      : [{ ex: log, i: logIndex }];
 
-    const nextPartner = groupMembers.find(
-      ({ ex, i }) => i !== activeExerciseIndex && ex.sets[setIndex] && !ex.sets[setIndex].completado,
+    // Primero el que sigue en el orden del bloque; si no hay, cualquiera que falte de esta ronda.
+    const pendingPartners = groupMembers.filter(
+      ({ ex, i }) => i !== logIndex && ex.sets[setIndex] && !ex.sets[setIndex].completado,
     );
+    const nextPartner = pendingPartners.find(({ i }) => i > logIndex) ?? pendingPartners[0];
     if (nextPartner) {
+      // Al tocarle al siguiente ejercicio del bloque cambia la foto del hero.
       setTimeout(() => setActiveExerciseIndex(nextPartner.i), 300);
       return;
     }
 
     // Ronda de la superserie completa (o ejercicio suelto): recién acá
     // corresponde descansar.
-    startRest(currentLog.exerciseId, restSeconds);
+    startRest(log.exerciseId, log.restSeconds ?? 90);
     const groupFullyDone = groupMembers.every(({ ex, i }) =>
-      ex.sets.every((s, si) => (i === activeExerciseIndex && si === setIndex ? true : s.completado)),
+      ex.sets.every((s, si) => (i === logIndex && si === setIndex ? true : s.completado)),
     );
+    if (!groupFullyDone && groupMembers.length > 1) {
+      // Ronda lista, quedan más: la foto vuelve al primer ejercicio del bloque para la ronda que viene.
+      const first = groupMembers[0].i;
+      setTimeout(() => setActiveExerciseIndex(first), 300);
+    }
     if (groupFullyDone) {
       const lastGroupIndex = Math.max(...groupMembers.map(({ i }) => i));
       if (lastGroupIndex < total - 1) {
@@ -236,7 +257,55 @@ export default function ActiveWorkoutPage() {
           <span className="w-9 text-center">Desc.</span>
           <span className="w-9" />
         </div>
-        {visibleSets.map((set, i) => (
+        {isBlock &&
+          Array.from({ length: visibleRounds }, (_, r) => (
+            <div key={r} className="flex flex-col gap-1.5">
+              {blockMembers.map(({ ex, i: logIdx }) => {
+                const set = ex.sets[r];
+                if (!set) return null;
+                const exData = allExercises.find((e) => e.id === ex.exerciseId);
+                const memberLast = lastLogOf(ex.exerciseId);
+                const memberSoloReps = ex.sets[0]?.soloReps;
+                const normalNo = ex.sets.slice(0, r + 1).filter((s) => (s.tipo ?? "normal") === "normal").length;
+                return (
+                  <div key={ex.exerciseId} className="flex flex-col gap-1">
+                    <button
+                      onClick={() => setActiveExerciseIndex(logIdx)}
+                      className="flex items-center gap-2 px-1 text-left cursor-pointer"
+                    >
+                      <span
+                        className="text-sm font-semibold truncate"
+                        style={{ color: logIdx === activeExerciseIndex ? "white" : "rgba(255,255,255,0.55)" }}
+                      >
+                        {exData?.nombre ?? "Ejercicio"}
+                      </span>
+                    </button>
+                    <SessionSetRow
+                      index={r}
+                      normalNumber={(set.tipo ?? "normal") === "normal" ? normalNo : undefined}
+                      set={set}
+                      soloReps={memberSoloReps}
+                      previa={previaLabelFor(memberLast?.sets[r], memberSoloReps)}
+                      pesoRef={(r > 0 ? ex.sets[r - 1].peso : 0) || memberLast?.sets[r]?.peso || undefined}
+                      repsRef={(r > 0 ? ex.sets[r - 1].reps : 0) || memberLast?.sets[r]?.reps || undefined}
+                      restSeconds={ex.restSeconds ?? 90}
+                      onChange={(patch) => handleSetChange(logIdx, set.id, patch)}
+                    />
+                    <div className="h-px bg-white/10 mx-1 mt-0.5" />
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        {isBlock && roundIdx === -1 && (
+          <button
+            onClick={() => blockMembers.forEach(({ ex }) => addSetToExercise(ex.exerciseId))}
+            className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 py-2.5 text-sm text-white/50 hover:text-white/80 hover:border-white/30 transition-colors cursor-pointer"
+          >
+            <Plus size={15} /> Añadir ronda
+          </button>
+        )}
+        {!isBlock && visibleSets.map((set, i) => (
           <SessionSetRow
             key={set.id}
             index={i}
@@ -247,10 +316,10 @@ export default function ActiveWorkoutPage() {
             pesoRef={(i > 0 ? currentLog.sets[i - 1].peso : 0) || lastLog?.sets[i]?.peso || undefined}
             repsRef={(i > 0 ? currentLog.sets[i - 1].reps : 0) || lastLog?.sets[i]?.reps || undefined}
             restSeconds={restSeconds}
-            onChange={(patch) => handleSetChange(set.id, patch)}
+            onChange={(patch) => handleSetChange(activeExerciseIndex, set.id, patch)}
           />
         ))}
-        {visibleSetCount === currentLog.sets.length && (
+        {!isBlock && visibleSetCount === currentLog.sets.length && (
           <button
             onClick={() => addSetToExercise(currentLog.exerciseId)}
             className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 py-2.5 text-sm text-white/50 hover:text-white/80 hover:border-white/30 transition-colors cursor-pointer"
@@ -280,6 +349,10 @@ export default function ActiveWorkoutPage() {
           multiple
           onConfirmSelection={(exs) => {
             addExercisesToSession(exs.map((e) => e.id));
+            setAddPickerOpen(false);
+          }}
+          onConfirmGroup={(exs) => {
+            addExercisesToSession(exs.map((e) => e.id), true);
             setAddPickerOpen(false);
           }}
         />

@@ -8,6 +8,7 @@ import { GlassModal } from "@/components/glass/glass-modal";
 import { ExercisePicker } from "@/components/gym/exercise-picker";
 import { ExerciseSessionBuilder } from "@/components/gym/exercise-session-builder";
 import { useGymStore } from "@/lib/store/gymStore";
+import { newRoutineExercises } from "@/lib/gym-utils";
 import type { RoutineExercise } from "@/lib/types";
 
 export default function EditRoutinePage({
@@ -70,16 +71,11 @@ export default function EditRoutinePage({
         <ExercisePicker
           multiple
           onConfirmSelection={(exs) => {
-            setDraft(
-              exs.map((e) => ({
-                exerciseId: e.id,
-                sets: [
-                  { peso: 0, reps: 10, tipo: "normal" },
-                  { peso: 0, reps: 10, tipo: "normal" },
-                  { peso: 0, reps: 10, tipo: "normal" },
-                ],
-              })),
-            );
+            setDraft(newRoutineExercises(exs.map((e) => e.id)));
+            setEmptyPickerOpen(false);
+          }}
+          onConfirmGroup={(exs) => {
+            setDraft(newRoutineExercises(exs.map((e) => e.id), true));
             setEmptyPickerOpen(false);
           }}
         />

@@ -8,7 +8,7 @@ import { GlassButton } from "@/components/glass/glass-button";
 import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
 import { ExerciseSessionBuilder } from "@/components/gym/exercise-session-builder";
 import { useGymStore } from "@/lib/store/gymStore";
-import { dominantMuscleGroup } from "@/lib/gym-utils";
+import { dominantMuscleGroup, newRoutineExercises } from "@/lib/gym-utils";
 import { MUSCLE_GROUPS } from "@/lib/data/gym-meta";
 import { cn } from "@/lib/utils";
 import type { RoutineExercise, MuscleGroup, WeeklyPlanDay } from "@/lib/types";
@@ -262,18 +262,8 @@ export default function PlanDetailPage({
             <ExercisePicker
               multiple
               confirmButtonClassName="z-30"
-              onConfirmSelection={(exs) =>
-                changeDraft(
-                  exs.map<RoutineExercise>((e) => ({
-                    exerciseId: e.id,
-                    sets: [
-                      { peso: 0, reps: 10, tipo: "normal" },
-                      { peso: 0, reps: 10, tipo: "normal" },
-                      { peso: 0, reps: 10, tipo: "normal" },
-                    ],
-                  })),
-                )
-              }
+              onConfirmSelection={(exs) => changeDraft(newRoutineExercises(exs.map((e) => e.id)))}
+              onConfirmGroup={(exs) => changeDraft(newRoutineExercises(exs.map((e) => e.id), true))}
             />
           </>
         ) : (

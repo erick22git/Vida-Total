@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, SlidersHorizontal, Plus, Info, Check } from "lucide-react";
+import { Search, SlidersHorizontal, Plus, Info, Check, Link2 } from "lucide-react";
 import { GlassInput } from "@/components/glass/glass-input";
 import { ExerciseCard } from "@/components/gym/exercise-card";
 import { FilterModal } from "@/components/gym/filter-modal";
@@ -22,6 +22,7 @@ export function useAllExercises(): Exercise[] {
 export function ExercisePicker({
   onSelect,
   onConfirmSelection,
+  onConfirmGroup,
   multiple = false,
   activeExerciseId,
   onInfo,
@@ -31,6 +32,9 @@ export function ExercisePicker({
   onSelect?: (exercise: Exercise) => void;
   /** multi-select mode: fired when the user taps "Agregar N ejercicio(s)" */
   onConfirmSelection?: (exercises: Exercise[]) => void;
+  /** multi-select mode: si se pasa, aparece el botón "Agrupar" (con 2+ elegidos) y se dispara con los
+   * ejercicios en el orden en que se tocaron — ese es el orden del bloque. */
+  onConfirmGroup?: (exercises: Exercise[]) => void;
   multiple?: boolean;
   activeExerciseId?: string;
   onInfo?: (exercise: Exercise) => void;
@@ -72,6 +76,11 @@ export function ExercisePicker({
     } else {
       onSelect?.(ex);
     }
+  }
+
+  // En el orden en que se tocaron (no en el de la lista).
+  function chosenInOrder(): Exercise[] {
+    return selected.map((id) => allExercises.find((e) => e.id === id)).filter((e): e is Exercise => !!e);
   }
 
   function toggle(list: string[], setList: (v: string[]) => void, value: string | null) {
@@ -160,8 +169,7 @@ export function ExercisePicker({
           parpadeaba. */}
           <button
             onClick={() => {
-              const chosen = allExercises.filter((e) => selected.includes(e.id));
-              onConfirmSelection?.(chosen);
+              onConfirmSelection?.(chosenInOrder());
               setSelected([]);
             }}
             disabled={selected.length === 0}
@@ -176,6 +184,18 @@ export function ExercisePicker({
           >
             Agregar {selected.length} ejercicio{selected.length !== 1 ? "s" : ""}
           </button>
+          {onConfirmGroup && (
+            <button
+              onClick={() => {
+                onConfirmGroup(chosenInOrder());
+                setSelected([]);
+              }}
+              disabled={selected.length < 2}
+              className="mt-2 w-full flex items-center justify-center gap-2 rounded-2xl py-3 text-base font-medium text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 bg-white/[0.08] hover:bg-white/[0.14] transition-colors"
+            >
+              <Link2 size={16} /> Agrupar{selected.length >= 2 ? ` (${selected.length})` : ""}
+            </button>
+          )}
         </div>
       )}
 

@@ -249,7 +249,7 @@ export interface GymState {
   /** Agrega ejercicios nuevos a la sesión en vivo (botón "+" del carrusel) —
    * quedan marcados `agregadoEnSesion: true` porque no venían en la rutina
    * original con la que se inició el entrenamiento. */
-  addExercisesToSession: (exerciseIds: string[]) => void;
+  addExercisesToSession: (exerciseIds: string[], agrupar?: boolean) => void;
   /** Saca un ejercicio completo de la sesión en vivo (botón de eliminar). */
   removeExerciseFromSession: (exerciseId: string) => void;
   addSetToExercise: (exerciseId: string) => void;
@@ -798,15 +798,17 @@ export const useGymStore = create<GymState>()(
             activeExerciseIndex: newIndex >= 0 ? newIndex : state.activeExerciseIndex,
           };
         }),
-      addExercisesToSession: (exerciseIds) =>
+      addExercisesToSession: (exerciseIds, agrupar = false) =>
         set((state) => {
           if (!state.activeSession) return state;
           const already = new Set(state.activeSession.ejercicios.map((e) => e.exerciseId));
-          const nuevos = exerciseIds
-            .filter((id) => !already.has(id))
+          const idsNuevos = exerciseIds.filter((id) => !already.has(id));
+          const grupo = agrupar && idsNuevos.length >= 2 ? uid() : undefined;
+          const nuevos = idsNuevos
             .map<WorkoutExerciseLog>((id) => ({
               exerciseId: id,
               agregadoEnSesion: true,
+              ...(grupo ? { grupo } : {}),
               sets: [
                 { id: uid(), peso: 0, reps: 10, completado: false, fallo: false, tipo: "normal" as const },
                 { id: uid(), peso: 0, reps: 10, completado: false, fallo: false, tipo: "normal" as const },

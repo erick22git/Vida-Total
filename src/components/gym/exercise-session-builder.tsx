@@ -15,6 +15,9 @@ import {
   Link2,
   Link2Off,
   Check,
+  ListOrdered,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassModal } from "@/components/glass/glass-modal";
@@ -25,6 +28,7 @@ import { RestDurationModal, formatRestDuration } from "@/components/gym/rest-dur
 import { PillActionButton } from "@/components/gym/pill-action-button";
 import { RestBar } from "@/components/gym/rest-bar";
 import { ReorderableExerciseCircle } from "@/components/gym/session-exercise-carousel";
+import { newRoutineExercises } from "@/lib/gym-utils";
 import type { RoutineExercise } from "@/lib/types";
 
 /**
@@ -54,6 +58,11 @@ export function ExerciseSessionBuilder({
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [groupSelection, setGroupSelection] = useState<string[]>([]);
+  const [ladderOpen, setLadderOpen] = useState(false);
+  const [ladderTarget, setLadderTarget] = useState<string>("");
+  const [ladderStart, setLadderStart] = useState("1");
+  const [ladderStep, setLadderStep] = useState("1");
+  const [ladderMax, setLadderMax] = useState("8");
 
   // Planning-only rest preview: this screen has no live session, so the
   // "descanso" bar shown after checking a set is a local, informative
@@ -72,19 +81,14 @@ export function ExerciseSessionBuilder({
     setPlanRestEndsAt(null);
   }
 
-  function addExercises(ids: string[]) {
-    const newOnes = ids
-      .filter((id) => !draft.some((de) => de.exerciseId === id))
-      .map<RoutineExercise>((id) => ({
-        exerciseId: id,
-        sets: [
-          { peso: 0, reps: 10, tipo: "normal" },
-          { peso: 0, reps: 10, tipo: "normal" },
-          { peso: 0, reps: 10, tipo: "normal" },
-        ],
-      }));
+  function addExercises(ids: string[], agrupar = false) {
+    const newOnes = newRoutineExercises(
+      ids.filter((id) => !draft.some((de) => de.exerciseId === id)),
+      agrupar,
+    );
     onDraftChange([...draft, ...newOnes]);
-    if (!activeId && newOnes[0]) setActiveId(newOnes[0].exerciseId);
+    // Si se agrupó, se salta al primero del bloque para verlo de una.
+    if (newOnes[0] && (agrupar || !activeId)) setActiveId(newOnes[0].exerciseId);
   }
 
   function replaceActive(newId: string) {
@@ -147,6 +151,46 @@ export function ExerciseSessionBuilder({
     const remaining = draft.filter((ex) => ex.grupo === grupoId && ex.exerciseId !== active.exerciseId);
     const idsToClear = new Set([active.exerciseId, ...(remaining.length === 1 ? [remaining[0].exerciseId] : [])]);
     onDraftChange(draft.map((ex) => (idsToClear.has(ex.exerciseId) ? { ...ex, grupo: undefined } : ex)));
+  }
+
+  // Bloque agrupado: una "serie" del bloque es una RONDA = una serie de cada ejercicio. Todos los
+  // miembros tienen siempre la misma cantidad de series (rondas).
+  const blockMembers = active?.grupo ? draft.filter((ex) => ex.grupo === active.grupo) : [];
+  const rounds = blockMembers[0]?.sets.length ?? 0;
+
+  function resizeSets(sets: RoutineExercise["sets"], n: number): RoutineExercise["sets"] {
+    if (n <= sets.length) return sets.slice(0, n);
+    const last = sets[sets.length - 1] ?? { peso: 0, reps: 10, tipo: "normal" as const };
+    return [...sets, ...Array.from({ length: n - sets.length }, () => ({ ...last }))];
+  }
+
+  function setBlockRounds(n: number) {
+    if (!active?.grupo) return;
+    const clamped = Math.max(1, Math.min(30, n));
+    onDraftChange(draft.map((ex) => (ex.grupo === active.grupo ? { ...ex, sets: resizeSets(ex.sets, clamped) } : ex)));
+  }
+
+  function openLadder() {
+    setLadderTarget(active?.exerciseId ?? "");
+    setLadderOpen(true);
+  }
+
+  // Escalera: las reps de un ejercicio del bloque suben ronda a ronda, p. ej. sentadillas 1, 2, ..., 8
+  // mientras las zancadas se quedan en 2. Las rondas salen de inicio/sube/tope y se aplican a todo el bloque.
+  function applyLadder() {
+    const start = Math.max(1, parseInt(ladderStart, 10) || 1);
+    const step = Math.max(1, parseInt(ladderStep, 10) || 1);
+    const max = Math.max(start, parseInt(ladderMax, 10) || start);
+    const n = Math.min(30, Math.floor((max - start) / step) + 1);
+    onDraftChange(
+      draft.map((ex) => {
+        if (!active?.grupo || ex.grupo !== active.grupo) return ex;
+        const sets = resizeSets(ex.sets, n);
+        if (ex.exerciseId !== ladderTarget) return { ...ex, sets };
+        return { ...ex, sets: sets.map((s, k) => ({ ...s, reps: start + step * k })) };
+      }),
+    );
+    setLadderOpen(false);
   }
 
   function handleSetChecked() {
@@ -235,6 +279,64 @@ export function ExerciseSessionBuilder({
             />
           )}
 
+          {blockMembers.length > 1 && (
+            <div className="flex flex-col gap-2.5 rounded-2xl p-3.5 bg-white/[0.04] border border-white/10">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-white/80">
+                  <Link2 size={13} style={{ color: "var(--gym-2)" }} /> Bloque agrupado
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-white/45">Rondas</span>
+                  <button
+                    onClick={() => setBlockRounds(rounds - 1)}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/[0.07] text-white/70 cursor-pointer"
+                    aria-label="Menos rondas"
+                  >
+                    <Minus size={13} />
+                  </button>
+                  <span className="w-5 text-center text-sm font-semibold tabular-nums">{rounds}</span>
+                  <button
+                    onClick={() => setBlockRounds(rounds + 1)}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/[0.07] text-white/70 cursor-pointer"
+                    aria-label="Más rondas"
+                  >
+                    <Plus size={13} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                {blockMembers.map((ex, k) => {
+                  const exData = allExercises.find((e) => e.id === ex.exerciseId);
+                  const isActive = ex.exerciseId === active?.exerciseId;
+                  return (
+                    <button
+                      key={ex.exerciseId}
+                      onClick={() => selectExercise(ex.exerciseId)}
+                      className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-left cursor-pointer transition-colors"
+                      style={{ background: isActive ? "rgba(255,255,255,0.1)" : "transparent" }}
+                    >
+                      <span className="text-[11px] text-white/40 w-4">{k + 1}.</span>
+                      <span className="flex-1 text-sm text-white/85 truncate">{exData?.nombre ?? "?"}</span>
+                      <span className="text-[10px] text-white/40 tabular-nums">
+                        {ex.soloReps ? "solo reps · " : ""}
+                        {ex.sets.map((s) => s.reps).join("-")}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                onClick={openLadder}
+                className="flex items-center justify-center gap-2 rounded-xl py-2 text-xs font-semibold text-white/80 bg-white/[0.07] hover:bg-white/[0.12] transition-colors cursor-pointer"
+              >
+                <ListOrdered size={14} /> Escalera de reps
+              </button>
+              <p className="text-[11px] text-white/35">
+                Una serie del bloque = una ronda (una serie de cada ejercicio, en este orden). El descanso va al terminar la ronda.
+              </p>
+            </div>
+          )}
+
           <div className="flex items-center justify-between gap-2 relative">
             {groupPartners.length > 0 ? (
               <p className="text-xs text-white/50 flex items-center gap-1.5">
@@ -304,7 +406,55 @@ export function ExerciseSessionBuilder({
             addExercises(exs.map((e) => e.id));
             setAddPickerOpen(false);
           }}
+          onConfirmGroup={(exs) => {
+            addExercises(exs.map((e) => e.id), true);
+            setAddPickerOpen(false);
+          }}
         />
+      </GlassModal>
+
+      <GlassModal open={ladderOpen} onClose={() => setLadderOpen(false)} title="Escalera de reps">
+        <div className="flex flex-col gap-4">
+          <p className="text-xs text-white/50">
+            Las reps del ejercicio elegido suben ronda a ronda. Ej.: inicio 1, sube 1, tope 8 da 8 rondas con 1, 2, 3 ... 8
+            reps. Los demás ejercicios del bloque conservan sus reps y se ajustan a la misma cantidad de rondas.
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {blockMembers.map((ex) => {
+              const exData = allExercises.find((e) => e.id === ex.exerciseId);
+              const isSel = ladderTarget === ex.exerciseId;
+              return (
+                <button
+                  key={ex.exerciseId}
+                  onClick={() => setLadderTarget(ex.exerciseId)}
+                  className="flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left cursor-pointer"
+                  style={{ background: isSel ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.05)" }}
+                >
+                  <span className="flex-1 text-sm font-medium text-white/85 truncate">{exData?.nombre ?? "?"}</span>
+                  {isSel && <Check size={16} />}
+                </button>
+              );
+            })}
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: "Inicio", v: ladderStart, set: setLadderStart },
+              { label: "Sube", v: ladderStep, set: setLadderStep },
+              { label: "Tope", v: ladderMax, set: setLadderMax },
+            ].map((f) => (
+              <label key={f.label} className="flex flex-col gap-1">
+                <span className="text-[11px] text-white/50">{f.label}</span>
+                <GlassInput type="number" inputMode="numeric" value={f.v} onChange={(e) => f.set(e.target.value)} />
+              </label>
+            ))}
+          </div>
+          <button
+            onClick={applyLadder}
+            className="w-full rounded-2xl py-3.5 text-base font-medium text-white cursor-pointer bg-white/[0.1] hover:bg-white/[0.16] transition-colors"
+          >
+            Aplicar escalera
+          </button>
+        </div>
       </GlassModal>
 
       <GlassModal open={replacePickerOpen} onClose={() => setReplacePickerOpen(false)} title="Reemplazar ejercicio">

@@ -9,6 +9,7 @@ import { GlassInput } from "@/components/glass/glass-input";
 import { ExercisePicker } from "@/components/gym/exercise-picker";
 import { ExerciseSessionBuilder } from "@/components/gym/exercise-session-builder";
 import { useGymStore } from "@/lib/store/gymStore";
+import { newRoutineExercises } from "@/lib/gym-utils";
 import type { RoutineExercise } from "@/lib/types";
 
 export default function NewRoutinePage() {
@@ -20,20 +21,8 @@ export default function NewRoutinePage() {
   const [nameModalOpen, setNameModalOpen] = useState(false);
   const [routineName, setRoutineName] = useState(`Nueva rutina #${routinesCount + 1}`);
 
-  function addExercises(ids: string[]) {
-    setDraft((d) => [
-      ...d,
-      ...ids
-        .filter((id) => !d.some((de) => de.exerciseId === id))
-        .map<RoutineExercise>((id) => ({
-          exerciseId: id,
-          sets: [
-            { peso: 0, reps: 10, tipo: "normal" },
-            { peso: 0, reps: 10, tipo: "normal" },
-            { peso: 0, reps: 10, tipo: "normal" },
-          ],
-        })),
-    ]);
+  function addExercises(ids: string[], agrupar = false) {
+    setDraft((d) => [...d, ...newRoutineExercises(ids.filter((id) => !d.some((de) => de.exerciseId === id)), agrupar)]);
   }
 
   function handleSave() {
@@ -56,6 +45,7 @@ export default function NewRoutinePage() {
           multiple
           confirmButtonClassName="z-30"
           onConfirmSelection={(exs) => addExercises(exs.map((e) => e.id))}
+          onConfirmGroup={(exs) => addExercises(exs.map((e) => e.id), true)}
         />
       </div>
     );
