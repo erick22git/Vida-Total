@@ -18,6 +18,9 @@ import {
   ListOrdered,
   Minus,
   Plus,
+  ChevronUp,
+  ChevronDown,
+  X,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassModal } from "@/components/glass/glass-modal";
@@ -170,6 +173,33 @@ export function ExerciseSessionBuilder({
     onDraftChange(draft.map((ex) => (ex.grupo === active.grupo ? { ...ex, sets: resizeSets(ex.sets, clamped) } : ex)));
   }
 
+  // Mover un ejercicio dentro del bloque = intercambiar su lugar con el vecino del bloque en la rutina.
+  function moveMember(exerciseId: string, dir: -1 | 1) {
+    const pos = blockMembers.findIndex((m) => m.exerciseId === exerciseId);
+    const other = blockMembers[pos + dir];
+    if (pos < 0 || !other) return;
+    const next = [...draft];
+    const i = next.findIndex((e) => e.exerciseId === exerciseId);
+    const j = next.findIndex((e) => e.exerciseId === other.exerciseId);
+    [next[i], next[j]] = [next[j], next[i]];
+    onDraftChange(next);
+  }
+
+  // Saca un ejercicio del bloque; si queda uno solo, ya no hay nada que agrupar y se deshace todo.
+  function removeFromBlock(exerciseId: string) {
+    if (!active?.grupo) return;
+    const grupoId = active.grupo;
+    const remaining = blockMembers.filter((m) => m.exerciseId !== exerciseId);
+    const clear = new Set([exerciseId, ...(remaining.length <= 1 ? remaining.map((m) => m.exerciseId) : [])]);
+    onDraftChange(draft.map((ex) => (ex.grupo === grupoId && clear.has(ex.exerciseId) ? { ...ex, grupo: undefined } : ex)));
+  }
+
+  function ungroupAll() {
+    if (!active?.grupo) return;
+    const grupoId = active.grupo;
+    onDraftChange(draft.map((ex) => (ex.grupo === grupoId ? { ...ex, grupo: undefined } : ex)));
+  }
+
   function openLadder() {
     setLadderTarget(active?.exerciseId ?? "");
     setLadderOpen(true);
@@ -280,72 +310,110 @@ export function ExerciseSessionBuilder({
           )}
 
           {blockMembers.length > 1 && (
-            <div className="flex flex-col gap-2.5 rounded-2xl p-3.5 bg-white/[0.04] border border-white/10">
+            <div className="flex flex-col gap-3 rounded-2xl p-3.5 bg-white/[0.04] border border-white/10">
               <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-white/80">
-                  <Link2 size={13} style={{ color: "var(--gym-2)" }} /> Bloque agrupado
+                <span className="flex items-center gap-1.5 text-sm font-semibold text-white">
+                  <Link2 size={14} style={{ color: "var(--gym-2)" }} /> Superserie
                 </span>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-white/45">Rondas</span>
+                <button
+                  onClick={ungroupAll}
+                  className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-red-300 bg-red-500/10 cursor-pointer"
+                >
+                  <Link2Off size={12} /> Desagrupar
+                </button>
+              </div>
+              <p className="text-xs text-white/55 leading-relaxed">
+                Haces <b className="text-white/80">1 serie de cada ejercicio, en este orden</b>, sin descansar entre ellos.
+                Al terminar la vuelta descansas. Cada vuelta es una <b className="text-white/80">ronda</b>.
+              </p>
+
+              <div className="flex flex-col gap-1.5">
+                {blockMembers.map((ex, k) => {
+                  const exData = allExercises.find((e) => e.id === ex.exerciseId);
+                  const isActive = ex.exerciseId === active?.exerciseId;
+                  return (
+                    <div
+                      key={ex.exerciseId}
+                      className="flex items-center gap-1.5 rounded-xl pl-1.5 pr-1 py-1.5"
+                      style={{
+                        background: isActive ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.04)",
+                        border: isActive ? "1px solid rgba(255,255,255,0.25)" : "1px solid transparent",
+                      }}
+                    >
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold bg-white text-black shrink-0">
+                        {k + 1}
+                      </span>
+                      <button
+                        onClick={() => selectExercise(ex.exerciseId)}
+                        className="flex-1 min-w-0 text-left cursor-pointer"
+                      >
+                        <span className="block text-sm text-white/90 truncate">{exData?.nombre ?? "?"}</span>
+                        <span className="block text-[10px] text-white/40 tabular-nums truncate">
+                          {ex.soloReps ? "sin peso · " : ""}
+                          reps: {ex.sets.map((s) => s.reps).join(" - ")}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => moveMember(ex.exerciseId, -1)}
+                        disabled={k === 0}
+                        aria-label="Subir"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/[0.07] text-white/70 disabled:opacity-25 cursor-pointer disabled:cursor-default"
+                      >
+                        <ChevronUp size={15} />
+                      </button>
+                      <button
+                        onClick={() => moveMember(ex.exerciseId, 1)}
+                        disabled={k === blockMembers.length - 1}
+                        aria-label="Bajar"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/[0.07] text-white/70 disabled:opacity-25 cursor-pointer disabled:cursor-default"
+                      >
+                        <ChevronDown size={15} />
+                      </button>
+                      <button
+                        onClick={() => removeFromBlock(ex.exerciseId)}
+                        aria-label="Quitar del grupo"
+                        title="Quitar del grupo"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-white/45 hover:text-white cursor-pointer"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] px-3 py-2">
+                <span className="text-xs text-white/70">Rondas (vueltas)</span>
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => setBlockRounds(rounds - 1)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/[0.07] text-white/70 cursor-pointer"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/[0.08] text-white/80 cursor-pointer"
                     aria-label="Menos rondas"
                   >
                     <Minus size={13} />
                   </button>
-                  <span className="w-5 text-center text-sm font-semibold tabular-nums">{rounds}</span>
+                  <span className="w-6 text-center text-base font-semibold tabular-nums">{rounds}</span>
                   <button
                     onClick={() => setBlockRounds(rounds + 1)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/[0.07] text-white/70 cursor-pointer"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/[0.08] text-white/80 cursor-pointer"
                     aria-label="Más rondas"
                   >
                     <Plus size={13} />
                   </button>
                 </div>
               </div>
-              <div className="flex flex-col gap-1">
-                {blockMembers.map((ex, k) => {
-                  const exData = allExercises.find((e) => e.id === ex.exerciseId);
-                  const isActive = ex.exerciseId === active?.exerciseId;
-                  return (
-                    <button
-                      key={ex.exerciseId}
-                      onClick={() => selectExercise(ex.exerciseId)}
-                      className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-left cursor-pointer transition-colors"
-                      style={{ background: isActive ? "rgba(255,255,255,0.1)" : "transparent" }}
-                    >
-                      <span className="text-[11px] text-white/40 w-4">{k + 1}.</span>
-                      <span className="flex-1 text-sm text-white/85 truncate">{exData?.nombre ?? "?"}</span>
-                      <span className="text-[10px] text-white/40 tabular-nums">
-                        {ex.soloReps ? "solo reps · " : ""}
-                        {ex.sets.map((s) => s.reps).join("-")}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+
               <button
                 onClick={openLadder}
                 className="flex items-center justify-center gap-2 rounded-xl py-2 text-xs font-semibold text-white/80 bg-white/[0.07] hover:bg-white/[0.12] transition-colors cursor-pointer"
               >
-                <ListOrdered size={14} /> Escalera de reps
+                <ListOrdered size={14} /> Escalera de reps (que suban cada ronda)
               </button>
-              <p className="text-[11px] text-white/35">
-                Una serie del bloque = una ronda (una serie de cada ejercicio, en este orden). El descanso va al terminar la ronda.
-              </p>
             </div>
           )}
 
           <div className="flex items-center justify-between gap-2 relative">
-            {groupPartners.length > 0 ? (
-              <p className="text-xs text-white/50 flex items-center gap-1.5">
-                <Link2 size={13} style={{ color: "var(--gym-2)" }} />
-                Agrupado con: {groupPartners.map((ex) => allExercises.find((e) => e.id === ex.exerciseId)?.nombre ?? "?").join(", ")}
-              </p>
-            ) : (
-              <span />
-            )}
+            <span />
             <button
               onClick={() => setMoreMenuOpen((o) => !o)}
               className="flex items-center justify-center w-8 h-8 rounded-xl text-white/50 hover:text-white cursor-pointer shrink-0"

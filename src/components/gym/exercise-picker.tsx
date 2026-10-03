@@ -151,22 +151,33 @@ export function ExercisePicker({
             No se encontraron ejercicios.
           </p>
         )}
+        <button
+          onClick={() => setCreateOpen(true)}
+          className="col-span-full flex items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 py-3 text-sm font-medium text-white/60 hover:text-white/85 hover:border-white/30 transition-colors cursor-pointer"
+        >
+          <Plus size={15} /> Crear Ejercicio
+        </button>
       </div>
 
-      <button
-        onClick={() => setCreateOpen(true)}
-        className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 py-3 text-sm font-medium text-white/60 hover:text-white/85 hover:border-white/30 transition-colors cursor-pointer"
-      >
-        <Plus size={15} /> Crear Ejercicio
-      </button>
-
       {multiple && (
-        <div className={cn("sticky bottom-0 pt-1", confirmButtonClassName)}>
-          {/* Transparente siempre — filtro negro suave mientras no elegiste
-          ningún ejercicio (deshabilitado), cambia una sola vez a un brillo
-          blanco suave apenas seleccionás el primero. Sin flash repetido:
-          antes destellaba en cada toque y terminaba pareciendo que
-          parpadeaba. */}
+        <div
+          className={cn(
+            "sticky bottom-0 flex flex-col gap-2 rounded-3xl p-2 bg-black/55 backdrop-blur-xl border border-white/10",
+            confirmButtonClassName,
+          )}
+        >
+          {onConfirmGroup && (
+            <button
+              onClick={() => {
+                onConfirmGroup(chosenInOrder());
+                setSelected([]);
+              }}
+              disabled={selected.length < 2}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl py-3 text-base font-medium text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 bg-white/[0.1] hover:bg-white/[0.16] transition-colors"
+            >
+              <Link2 size={16} /> Agrupar{selected.length >= 2 ? ` (${selected.length})` : " (elige 2 o más)"}
+            </button>
+          )}
           <button
             onClick={() => {
               onConfirmSelection?.(chosenInOrder());
@@ -184,18 +195,6 @@ export function ExercisePicker({
           >
             Agregar {selected.length} ejercicio{selected.length !== 1 ? "s" : ""}
           </button>
-          {onConfirmGroup && (
-            <button
-              onClick={() => {
-                onConfirmGroup(chosenInOrder());
-                setSelected([]);
-              }}
-              disabled={selected.length < 2}
-              className="mt-2 w-full flex items-center justify-center gap-2 rounded-2xl py-3 text-base font-medium text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 bg-white/[0.08] hover:bg-white/[0.14] transition-colors"
-            >
-              <Link2 size={16} /> Agrupar{selected.length >= 2 ? ` (${selected.length})` : ""}
-            </button>
-          )}
         </div>
       )}
 
