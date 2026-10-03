@@ -364,6 +364,10 @@ export interface WorkoutSet {
   fallo: boolean;
   tipo?: SetType;
   soloReps?: boolean;
+  /** Valores que el usuario escribió A PROPÓSITO, aunque sean 0: "peso", "reps", "dp0" (peso de la bajada 0),
+   * "dr0" (reps de la bajada 0)... Sin esto un 0 se confunde con "todavía sin anotar" y se muestra/registra
+   * la referencia atenuada en su lugar. */
+  fijados?: string[];
   /** Bloque 15: para `tipo === "descendente"` (dropset), el peso baja varias
    * veces sin descanso dentro de la MISMA serie — acá se guarda el peso de
    * cada bajada en orden (ej. [80, 60, 40]). `peso` sigue reflejando el

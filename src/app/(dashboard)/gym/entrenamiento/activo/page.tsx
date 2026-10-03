@@ -12,6 +12,7 @@ import {
   Clock,
   Sparkles,
   Trash2,
+  Hash,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
@@ -28,6 +29,7 @@ import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picke
 import { SetTypeModal } from "@/components/gym/set-type-modal";
 import { useGymStore } from "@/lib/store/gymStore";
 import { initialDropsetPatch, previaLabelFor } from "@/lib/gym-utils";
+import { unlockAudio } from "@/lib/sound/sound-engine";
 
 export default function ActiveWorkoutPage() {
   const router = useRouter();
@@ -39,6 +41,7 @@ export default function ActiveWorkoutPage() {
   const setActiveExerciseIndex = useGymStore((s) => s.setActiveExerciseIndex);
   const reorderActiveExercises = useGymStore((s) => s.reorderActiveExercises);
   const addSetToExercise = useGymStore((s) => s.addSetToExercise);
+  const setExerciseSoloReps = useGymStore((s) => s.setExerciseSoloReps);
   const updateSet = useGymStore((s) => s.updateSet);
   const completeSet = useGymStore((s) => s.completeSet);
   const replaceExercise = useGymStore((s) => s.replaceExercise);
@@ -127,6 +130,8 @@ export default function ActiveWorkoutPage() {
       updateSet(log.exerciseId, setId, patch);
       return;
     }
+    // El tilde es un gesto del usuario: habilita el audio para el aviso de fin de descanso.
+    unlockAudio();
     completeSet(log.exerciseId, setId, patch);
 
     const setIndex = log.sets.findIndex((s) => s.id === setId);
@@ -235,6 +240,12 @@ export default function ActiveWorkoutPage() {
           title="Drop set"
           onClick={() => firstUncheckedSet && setDropsetTypeOpen(true)}
           className={!firstUncheckedSet ? "opacity-40 pointer-events-none" : ""}
+        />
+        <PillActionButton
+          icon={Hash}
+          title={soloReps ? "Sin peso" : "Con peso"}
+          active={!!soloReps}
+          onClick={() => setExerciseSoloReps(currentLog.exerciseId, !soloReps)}
         />
         <PillActionButton icon={Repeat} title="Reemplazar" onClick={() => setPickerOpen(true)} />
         <PillActionButton icon={StickyNote} title="Notas" onClick={() => setNotesOpen(true)} active={!!currentLog.nota} />

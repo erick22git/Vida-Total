@@ -21,6 +21,8 @@ interface OpenFoodFactsProduct {
   image_front_url?: string;
 }
 
+const MAX_PHOTO_SIDE = 1024;
+
 type AnalyzeErrorKind = "no_api_key" | "rate_limit" | "network" | "timeout" | "unknown";
 
 const ANALYZE_TIMEOUT_MS = 15000;
@@ -60,6 +62,7 @@ function EscanerContent() {
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<AnalyzeErrorKind | null>(null);
+  const [rateInfo, setRateInfo] = useState<{ scope: "minute" | "day" | "unknown"; retryAfterSec?: number } | null>(null);
 
   const addCustomFood = useGymStore((s) => s.addCustomFood);
 
@@ -236,12 +239,15 @@ function EscanerContent() {
       const data = (await res.json().catch(() => ({}))) as {
         items?: AnalyzedFoodItem[];
         error?: string;
+        scope?: "minute" | "day" | "unknown";
+        retryAfterSec?: number;
       };
 
       if (!res.ok || !data.items) {
         if (data.error === "no_api_key") {
           setAnalyzeError("no_api_key");
         } else if (data.error === "rate_limit" || res.status === 429) {
+          setRateInfo({ scope: data.scope ?? "unknown", retryAfterSec: data.retryAfterSec });
           setAnalyzeError("rate_limit");
         } else {
           setAnalyzeError("unknown");
@@ -278,12 +284,15 @@ function EscanerContent() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Se reduce antes de enviar: una foto de cámara a resolución completa pesa varios MB y gasta mucho del
+    // límite de tokens por minuto de la IA sin mejorar el reconocimiento de un plato de comida.
+    const scale = Math.min(1, MAX_PHOTO_SIDE / Math.max(video.videoWidth, video.videoHeight));
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
     persistPhotoForFallback(dataUrl);
     stopCamera();
     setCapturedPhoto(dataUrl);
@@ -490,7 +499,9 @@ function EscanerContent() {
         onClose={() => setAnalyzeError(null)}
         title={
           analyzeError === "rate_limit"
-            ? "Límite de análisis alcanzado"
+            ? rateInfo?.scope === "day"
+              ? "Cupo diario de la IA agotado"
+              : "Espera un momento"
             : analyzeError === "no_api_key"
               ? "Reconocimiento IA no disponible"
               : analyzeError === "network"
@@ -503,7 +514,11 @@ function EscanerContent() {
         <div className="flex flex-col gap-4">
           <p className="text-sm text-white/70">
             {analyzeError === "rate_limit" &&
-              "Se alcanzó el límite de análisis por hoy. Intenta mañana o agrega el alimento manualmente."}
+              (rateInfo?.scope === "day"
+                ? "Se usó el cupo diario de análisis de la IA. Intenta mañana o agrega el alimento manualmente."
+                : `La IA recibió demasiadas fotos en poco tiempo (límite por minuto, no diario). Espera ${
+                    rateInfo?.retryAfterSec ? `unos ${rateInfo.retryAfterSec} segundos` : "un minuto"
+                  } y vuelve a intentar, o agrega el alimento manualmente.`)}
             {analyzeError === "no_api_key" &&
               "El reconocimiento por IA no está configurado todavía. Puedes completar los datos del alimento manualmente con la foto que tomaste."}
             {analyzeError === "network" &&
@@ -515,7 +530,10 @@ function EscanerContent() {
           </p>
 
           <div className="flex flex-col gap-2">
-            {(analyzeError === "network" || analyzeError === "timeout" || analyzeError === "unknown") && (
+            {(analyzeError === "network" ||
+              analyzeError === "timeout" ||
+              analyzeError === "unknown" ||
+              (analyzeError === "rate_limit" && rateInfo?.scope !== "day")) && (
               <GlassButton
                 size="md"
                 className="w-full flex items-center justify-center gap-1.5"

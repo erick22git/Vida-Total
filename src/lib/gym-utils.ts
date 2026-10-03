@@ -35,6 +35,17 @@ export function refDropWeight(prev: number): number {
   return prev > 0 ? Math.max(0, Math.floor((prev * 0.8) / 2.5) * 2.5) : 0;
 }
 
+/** ¿El usuario escribió este valor a propósito (aunque sea 0)? Ver `WorkoutSet.fijados`. */
+export function isFixed(set: Pick<WorkoutSet, "fijados">, key: string): boolean {
+  return !!set.fijados?.includes(key);
+}
+
+/** Devuelve `fijados` con `key` agregada (fixed = true) o quitada (fixed = false). */
+export function withFixed(set: Pick<WorkoutSet, "fijados">, key: string, fixed: boolean): string[] {
+  const rest = (set.fijados ?? []).filter((k) => k !== key);
+  return fixed ? [...rest, key] : rest;
+}
+
 /** Bajadas de un dropset SIN la serie principal (que usa `peso`/`reps`). `pesosDescendentes[0]` es
  * el peso de la principal; el resto son las bajadas. `reps: 0` = todavía sin anotar. */
 export function dropsOf(set: WorkoutSet): { peso: number; reps: number }[] {

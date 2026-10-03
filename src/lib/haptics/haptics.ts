@@ -13,6 +13,8 @@ export const HAPTIC_PATTERNS = {
   /** Al cruzar un milestone de racha — un poco más largo/marcado, pero
    * sigue siendo corto (nunca más de ~300ms en total). */
   milestone: [30, 50, 30, 50, 60],
+  /** Fin del descanso entre series: vibración de ALARMA, constante ~3 s (4 pulsos largos con pausas mínimas). */
+  restEnd: [600, 150, 600, 150, 600, 150, 600],
 } as const;
 
 export function vibrate(pattern: readonly number[]): void {

@@ -11,6 +11,8 @@ import { NextResponse } from "next/server";
 //
 // Response (success): { items: AnalyzedFoodItem[] }
 // Response (error): { error: "no_api_key" | "invalid_image" | "rate_limit" | "parse_failed" | "unknown" }
+// `rate_limit` also carries { scope: "minute" | "day" | "unknown", retryAfterSec?: number } so the UI can tell
+// "too many photos in a row" (wait a few seconds) from "daily quota used up".
 //
 // The previous Gemini Vision implementation is archived in ./gemini-legacy.ts
 // (same contract) in case Google fixes the "AQ." key bug and we want it back
@@ -37,6 +39,22 @@ const DEFAULT_MODEL = "qwen/qwen3.8-27b";
 // Must stay below ANALYZE_TIMEOUT_MS (15s) in escaner/page.tsx so the server
 // answers with a clean error before the client aborts.
 const GROQ_TIMEOUT_MS = 13000;
+
+// Tope de tokens de la respuesta. Groq reserva (input + max_tokens) contra el límite de tokens por minuto
+// (8000 en este plan), así que sin tope cada foto "pesa" mucho más de lo que realmente usa.
+const MAX_COMPLETION_TOKENS = 1200;
+
+/** Averigua qué límite de Groq se pegó a partir del mensaje del 429 y del header `retry-after`. */
+function describeRateLimit(detail: string, retryAfterHeader: string | null) {
+  const text = detail.toLowerCase();
+  const scope: "minute" | "day" | "unknown" =
+    /per day|\(tpd\)|\(rpd\)/.test(text) ? "day" : /per minute|\(tpm\)|\(rpm\)/.test(text) ? "minute" : "unknown";
+  const fromHeader = retryAfterHeader ? Number(retryAfterHeader) : NaN;
+  const fromText = /try again in (?:(\d+)m)?\s*([\d.]+)s/.exec(text);
+  const fromBody = fromText ? Number(fromText[1] ?? 0) * 60 + Number(fromText[2]) : NaN;
+  const wait = Number.isFinite(fromHeader) ? fromHeader : fromBody;
+  return { scope, retryAfterSec: Number.isFinite(wait) ? Math.ceil(wait) : undefined };
+}
 
 const PROMPT = `Eres un experto en nutrición. Analiza la imagen y encuentra TODOS los alimentos visibles en el plato o la escena.
 
@@ -132,6 +150,9 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model,
         temperature: 0.2,
+        max_tokens: MAX_COMPLETION_TOKENS,
+        // Sin "razonamiento": solo gasta tokens (y tiempo) en un JSON que no lo necesita.
+        reasoning_effort: "none",
         response_format: { type: "json_object" },
         messages: [
           {
@@ -157,7 +178,10 @@ export async function POST(request: Request) {
       }
       // 429 (rate/quota) and 498 (flex tier capacity) → try again later.
       if (res.status === 429 || res.status === 498) {
-        return NextResponse.json({ error: "rate_limit" }, { status: 429 });
+        return NextResponse.json(
+          { error: "rate_limit", ...describeRateLimit(detail, res.headers.get("retry-after")) },
+          { status: 429 },
+        );
       }
       // 413 (payload too large) or 400/422 (unreadable image) → bad image.
       if (res.status === 413 || res.status === 400 || res.status === 422) {

@@ -25,7 +25,9 @@ export function NumericKeypad({
   step: number;
   banner: string;
   accentColor?: string;
-  onNext: (value: number) => void;
+  /** `explicit` es false si se confirmó sin escribir nada (= "usar la referencia"); true si se escribió algo,
+   * incluido un 0 (= "quiero exactamente 0"). */
+  onNext: (value: number, explicit: boolean) => void;
 }) {
   const [text, setText] = useState(String(initialValue || ""));
   const [prevOpen, setPrevOpen] = useState(open);
@@ -54,7 +56,7 @@ export function NumericKeypad({
 
   function submit() {
     const value = parseFloat(text || "0") || 0;
-    onNext(value);
+    onNext(value, text.trim() !== "");
     onClose();
   }
 

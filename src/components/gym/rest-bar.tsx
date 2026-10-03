@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Moon, ChevronsRight } from "lucide-react";
 import { useGymStore } from "@/lib/store/gymStore";
+import { vibrate, HAPTIC_PATTERNS } from "@/lib/haptics/haptics";
+import { playSound } from "@/lib/sound/sound-engine";
 
 /**
  * Countdown bar shown below the set table after a set is checked off.
@@ -53,7 +55,9 @@ export function RestBar({
       if (rem <= 0) {
         if (!vibrated) {
           vibrated = true;
-          navigator.vibrate?.(3000);
+          // Vibración constante tipo alarma (~3 s) + un solo aviso sonoro de notificación.
+          vibrate(HAPTIC_PATTERNS.restEnd);
+          playSound("rest-end");
         }
         clearRestRef.current();
       }

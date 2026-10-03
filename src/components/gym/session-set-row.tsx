@@ -6,7 +6,7 @@ import type { WorkoutSet } from "@/lib/types";
 import { SET_TYPE_META } from "@/components/gym/set-type";
 import { SetTypeModal } from "@/components/gym/set-type-modal";
 import { NumericKeypad } from "@/components/gym/numeric-keypad";
-import { dropsOf, initialDropsetPatch, DROP_REPS_REF, refDropWeight } from "@/lib/gym-utils";
+import { dropsOf, initialDropsetPatch, DROP_REPS_REF, refDropWeight, isFixed, withFixed } from "@/lib/gym-utils";
 
 function formatSeconds(sec: number): string {
   const mm = Math.floor(sec / 60);
@@ -21,8 +21,10 @@ const VALUE_CELL = "rounded-lg bg-white/[0.05] glass-specular-ring text-white te
 
 /** Valor con "referencia": si todavía no hay un número propio se muestra atenuado lo que se va a
  * registrar al tildar; apenas se toca, el teclado abre vacío y reemplaza la referencia. */
-function ValueText({ value, reference }: { value: number; reference?: number }) {
+function ValueText({ value, reference, fixed }: { value: number; reference?: number; fixed?: boolean }) {
   if (value) return <>{value}</>;
+  // Un 0 escrito a propósito es un 0 real: no se muestra (ni se registra) la referencia.
+  if (fixed) return <>0</>;
   if (reference) return <span className="text-white/35">{reference}</span>;
   return <>0</>;
 }
@@ -68,22 +70,30 @@ export function SessionSetRow({
       ? set.descansoTomado >= restSeconds
       : undefined;
 
-  const pesoEf = set.peso || pesoRef || 0;
-  const repsEf = set.reps || repsRef || 0;
-  const drops = isDropset ? dropsOf(set) : [];
+  const pesoFixed = isFixed(set, "peso");
+  const repsFixed = isFixed(set, "reps");
+  const pesoEf = set.peso || (pesoFixed ? 0 : pesoRef || 0);
+  const repsEf = set.reps || (repsFixed ? 0 : repsRef || 0);
+  const drops = isDropset
+    ? dropsOf(set).map((d, k) => ({ ...d, pesoFixed: isFixed(set, `dp${k}`), repsFixed: isFixed(set, `dr${k}`) }))
+    : [];
 
   // Pesos de referencia de cada bajada: cada una parte de la anterior (o del peso principal).
   const dropWeightRefs: number[] = [];
   drops.reduce((prev, d) => {
     const ref = refDropWeight(prev);
     dropWeightRefs.push(ref);
-    return d.peso || ref;
+    return d.peso || (d.pesoFixed ? 0 : ref);
   }, pesoEf);
 
-  function writeDrops(next: { peso: number; reps: number }[], mainPeso = set.peso) {
+  type DropDraft = { peso: number; reps: number; pesoFixed: boolean; repsFixed: boolean };
+  function writeDrops(next: DropDraft[], mainPeso = set.peso) {
+    const base = (set.fijados ?? []).filter((k) => !/^d[pr]\d+$/.test(k));
+    const flags = next.flatMap((d, k) => [...(d.pesoFixed ? [`dp${k}`] : []), ...(d.repsFixed ? [`dr${k}`] : [])]);
     onChange({
       pesosDescendentes: [mainPeso, ...next.map((d) => d.peso)],
       repsDescendentes: next.map((d) => d.reps),
+      fijados: [...base, ...flags],
     });
   }
 
@@ -95,7 +105,10 @@ export function SessionSetRow({
     // Al tildar se registra lo que se ve: lo escrito, o la referencia atenuada si no se tocó.
     const patch: Partial<WorkoutSet> = { completado: true, peso: soloReps ? set.peso : pesoEf, reps: repsEf };
     if (isDropset) {
-      const committed = drops.map((d, k) => ({ peso: d.peso || dropWeightRefs[k] || 0, reps: d.reps || DROP_REPS_REF }));
+      const committed = drops.map((d, k) => ({
+        peso: d.peso || (d.pesoFixed ? 0 : dropWeightRefs[k] || 0),
+        reps: d.reps || (d.repsFixed ? 0 : DROP_REPS_REF),
+      }));
       patch.pesosDescendentes = [patch.peso ?? 0, ...committed.map((d) => d.peso)];
       patch.repsDescendentes = committed.map((d) => d.reps);
     }
@@ -123,14 +136,14 @@ export function SessionSetRow({
 
         {!soloReps ? (
           <button onClick={() => setKgKeypadOpen(true)} className={`${VALUE_CELL} py-1.5 text-sm font-semibold`}>
-            <ValueText value={set.peso} reference={pesoRef} />
+            <ValueText value={set.peso} reference={pesoRef} fixed={pesoFixed} />
           </button>
         ) : (
           <span className="text-center text-xs text-white/25">—</span>
         )}
 
         <button onClick={() => setRepsKeypadOpen(true)} className={`${VALUE_CELL} py-1.5 text-sm font-semibold`}>
-          <ValueText value={set.reps} reference={repsRef} />
+          <ValueText value={set.reps} reference={repsRef} fixed={repsFixed} />
         </button>
 
         {/* Registra si el descanso tomado antes de esta serie cumplió, no cumplió, o superó el
@@ -168,17 +181,23 @@ export function SessionSetRow({
               position={k + 1}
               peso={d.peso}
               reps={d.reps}
+              pesoFixed={d.pesoFixed}
+              repsFixed={d.repsFixed}
               pesoRef={dropWeightRefs[k]}
               soloReps={soloReps}
               completado={set.completado}
-              onPeso={(v) => writeDrops(drops.map((x, i) => (i === k ? { ...x, peso: v } : x)))}
-              onReps={(v) => writeDrops(drops.map((x, i) => (i === k ? { ...x, reps: v } : x)))}
+              onPeso={(v, explicit) =>
+                writeDrops(drops.map((x, i) => (i === k ? { ...x, peso: v, pesoFixed: explicit } : x)))
+              }
+              onReps={(v, explicit) =>
+                writeDrops(drops.map((x, i) => (i === k ? { ...x, reps: v, repsFixed: explicit } : x)))
+              }
               onRemove={() => writeDrops(drops.filter((_, i) => i !== k))}
             />
           ))}
           {!set.completado && (
             <button
-              onClick={() => writeDrops([...drops, { peso: 0, reps: 0 }])}
+              onClick={() => writeDrops([...drops, { peso: 0, reps: 0, pesoFixed: false, repsFixed: false }])}
               className="ml-10 self-start flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold cursor-pointer"
               style={{ color: PURPLE, background: `${PURPLE}14` }}
             >
@@ -201,13 +220,13 @@ export function SessionSetRow({
         initialValue={set.peso}
         step={2.5}
         accentColor="var(--gym)"
-        banner="Registra el peso total incluyendo la barra."
-        onNext={(v) =>
-          onChange(
-            isDropset && set.pesosDescendentes
-              ? { peso: v, pesosDescendentes: [v, ...set.pesosDescendentes.slice(1)] }
-              : { peso: v },
-          )
+        banner="Registra el peso total incluyendo la barra. Escribe 0 si fue sin peso."
+        onNext={(v, explicit) =>
+          onChange({
+            peso: v,
+            fijados: withFixed(set, "peso", explicit),
+            ...(isDropset && set.pesosDescendentes ? { pesosDescendentes: [v, ...set.pesosDescendentes.slice(1)] } : {}),
+          })
         }
       />
       <NumericKeypad
@@ -218,7 +237,7 @@ export function SessionSetRow({
         step={1}
         accentColor="var(--gym-2)"
         banner="Registra el total de repeticiones hechas."
-        onNext={(v) => onChange({ reps: v })}
+        onNext={(v, explicit) => onChange({ reps: v, fijados: withFixed(set, "reps", explicit) })}
       />
     </div>
   );
@@ -230,6 +249,8 @@ function DropRow({
   position,
   peso,
   reps,
+  pesoFixed,
+  repsFixed,
   pesoRef,
   soloReps,
   completado,
@@ -240,11 +261,13 @@ function DropRow({
   position: number;
   peso: number;
   reps: number;
+  pesoFixed: boolean;
+  repsFixed: boolean;
   pesoRef: number;
   soloReps?: boolean;
   completado: boolean;
-  onPeso: (v: number) => void;
-  onReps: (v: number) => void;
+  onPeso: (v: number, explicit: boolean) => void;
+  onReps: (v: number, explicit: boolean) => void;
   onRemove: () => void;
 }) {
   const [kgOpen, setKgOpen] = useState(false);
@@ -260,13 +283,13 @@ function DropRow({
       <span className="w-12" />
       {!soloReps ? (
         <button onClick={() => setKgOpen(true)} className={`${VALUE_CELL} py-1 text-xs font-semibold`}>
-          <ValueText value={peso} reference={pesoRef} />
+          <ValueText value={peso} reference={pesoRef} fixed={pesoFixed} />
         </button>
       ) : (
         <span className="text-center text-xs text-white/25">—</span>
       )}
       <button onClick={() => setRepsOpen(true)} className={`${VALUE_CELL} py-1 text-xs font-semibold`}>
-        <ValueText value={reps} reference={DROP_REPS_REF} />
+        <ValueText value={reps} reference={DROP_REPS_REF} fixed={repsFixed} />
       </button>
       <span className="w-9" />
       {completado ? (
@@ -284,7 +307,7 @@ function DropRow({
         initialValue={peso}
         step={2.5}
         accentColor="var(--gym)"
-        banner="Peso de esta bajada. Si no escribís nada, se usa el de referencia."
+        banner="Peso de esta bajada. Si no escribís nada, se usa el de referencia; escribí 0 si fue sin peso."
         onNext={onPeso}
       />
       <NumericKeypad
@@ -294,7 +317,7 @@ function DropRow({
         initialValue={reps}
         step={1}
         accentColor="var(--gym-2)"
-        banner={`Repeticiones de esta bajada. Si no escribís nada, se usan ${DROP_REPS_REF}.`}
+        banner={`Repeticiones de esta bajada. Si no escribís nada, se usan ${DROP_REPS_REF}; escribí 0 si no hiciste ninguna.`}
         onNext={onReps}
       />
     </div>

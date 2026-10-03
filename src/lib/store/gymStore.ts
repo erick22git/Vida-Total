@@ -253,6 +253,7 @@ export interface GymState {
   /** Saca un ejercicio completo de la sesión en vivo (botón de eliminar). */
   removeExerciseFromSession: (exerciseId: string) => void;
   addSetToExercise: (exerciseId: string) => void;
+  setExerciseSoloReps: (exerciseId: string, soloReps: boolean) => void;
   updateSet: (exerciseId: string, setId: string, patch: Partial<WorkoutSet>) => void;
   /** Igual que `updateSet` pero para el caso de marcar una serie como
    * completada: calcula `completadoAt` y, si había una serie anterior ya
@@ -836,6 +837,18 @@ export const useGymStore = create<GymState>()(
           return {
             activeSession: { ...state.activeSession, ejercicios: next },
             activeExerciseIndex: Math.min(newIndex, Math.max(0, next.length - 1)),
+          };
+        }),
+      setExerciseSoloReps: (exerciseId, soloReps) =>
+        set((state) => {
+          if (!state.activeSession) return state;
+          return {
+            activeSession: {
+              ...state.activeSession,
+              ejercicios: state.activeSession.ejercicios.map((ex) =>
+                ex.exerciseId === exerciseId ? { ...ex, sets: ex.sets.map((s) => ({ ...s, soloReps })) } : ex,
+              ),
+            },
           };
         }),
       addSetToExercise: (exerciseId) =>

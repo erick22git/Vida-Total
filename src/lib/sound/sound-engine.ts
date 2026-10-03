@@ -12,7 +12,7 @@ import { usePreferencesStore } from "@/lib/store/preferencesStore";
  * gesto (`pointerdown`) — ver `useHabitFeedback`. Si el audio está bloqueado
  * o el usuario lo desactivó, todo es silencioso y nunca lanza.
  */
-export type SoundName = "press" | "complete" | "milestone" | "level-up" | "navigation" | "error";
+export type SoundName = "press" | "complete" | "milestone" | "level-up" | "navigation" | "error" | "rest-end";
 
 let ctx: AudioContext | null = null;
 
@@ -82,6 +82,11 @@ const RECIPES: Record<SoundName, (c: AudioContext, t: number) => void> = {
   },
   "level-up": (c, t) => {
     [523.25, 659.25, 783.99, 1046.5, 1568].forEach((f, i) => tone(c, { freq: f, at: t + i * 0.08, dur: 0.4, gain: 0.05 }));
+  },
+  // Aviso de fin de descanso: un "ding-dong" de notificación, UNA sola vez (lo constante es la vibración).
+  "rest-end": (c, t) => {
+    tone(c, { freq: 988, at: t, dur: 0.35, gain: 0.12 });
+    tone(c, { freq: 740, at: t + 0.22, dur: 0.5, gain: 0.12 });
   },
   navigation: (c, t) => tone(c, { freq: 520, glideTo: 640, at: t, dur: 0.06, gain: 0.035 }),
   error: (c, t) => tone(c, { freq: 200, glideTo: 140, at: t, dur: 0.16, gain: 0.05, type: "triangle" }),
