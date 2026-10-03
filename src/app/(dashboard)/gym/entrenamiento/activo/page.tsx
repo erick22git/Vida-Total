@@ -42,6 +42,7 @@ export default function ActiveWorkoutPage() {
   const reorderActiveExercises = useGymStore((s) => s.reorderActiveExercises);
   const addSetToExercise = useGymStore((s) => s.addSetToExercise);
   const setExerciseSoloReps = useGymStore((s) => s.setExerciseSoloReps);
+  const removeSet = useGymStore((s) => s.removeSet);
   const updateSet = useGymStore((s) => s.updateSet);
   const completeSet = useGymStore((s) => s.completeSet);
   const replaceExercise = useGymStore((s) => s.replaceExercise);
@@ -78,7 +79,9 @@ export default function ActiveWorkoutPage() {
   const total = ejercicios.length;
   const currentLog = ejercicios[activeExerciseIndex];
   const exercise = allExercises.find((e) => e.id === currentLog.exerciseId);
-  const completedSets = currentLog.sets.filter((s) => s.completado).length;
+  // Las series de calentamiento no cuentan como series de trabajo (ni en "x/y" ni en el avance).
+  const workingSets = currentLog.sets.filter((s) => s.tipo !== "calentamiento");
+  const completedSets = workingSets.filter((s) => s.completado).length;
   const groupPartners = currentLog.grupo
     ? activeSession.ejercicios.filter((ex) => ex.grupo === currentLog.grupo && ex.exerciseId !== currentLog.exerciseId)
     : [];
@@ -93,9 +96,12 @@ export default function ActiveWorkoutPage() {
     );
   const lastLog = lastLogOf(currentLog.exerciseId);
 
-  const totalSetsAll = activeSession.ejercicios.reduce((sum, e) => sum + e.sets.length, 0);
+  const totalSetsAll = activeSession.ejercicios.reduce(
+    (sum, e) => sum + e.sets.filter((s) => s.tipo !== "calentamiento").length,
+    0,
+  );
   const doneSetsAll = activeSession.ejercicios.reduce(
-    (sum, e) => sum + e.sets.filter((s) => s.completado).length,
+    (sum, e) => sum + e.sets.filter((s) => s.tipo !== "calentamiento" && s.completado).length,
     0,
   );
   const overallPct = totalSetsAll > 0 ? Math.round((doneSetsAll / totalSetsAll) * 100) : 0;
@@ -222,7 +228,7 @@ export default function ActiveWorkoutPage() {
           <div>
             <h2 className="text-xl font-semibold text-white">{exercise.nombre}</h2>
             <p className="text-xs text-white/45 mt-0.5">
-              {completedSets}/{currentLog.sets.length} series completadas
+              {completedSets}/{workingSets.length} series completadas
               {currentLog.agregadoEnSesion && " · agregado en esta sesión"}
             </p>
             {groupPartners.length > 0 && (
@@ -301,6 +307,7 @@ export default function ActiveWorkoutPage() {
                       repsRef={(r > 0 ? ex.sets[r - 1].reps : 0) || memberLast?.sets[r]?.reps || undefined}
                       restSeconds={ex.restSeconds ?? 90}
                       onChange={(patch) => handleSetChange(logIdx, set.id, patch)}
+                      onDelete={ex.sets.length > 1 ? () => removeSet(ex.exerciseId, set.id) : undefined}
                     />
                     <div className="h-px bg-white/10 mx-1 mt-0.5" />
                   </div>
@@ -328,6 +335,7 @@ export default function ActiveWorkoutPage() {
             repsRef={(i > 0 ? currentLog.sets[i - 1].reps : 0) || lastLog?.sets[i]?.reps || undefined}
             restSeconds={restSeconds}
             onChange={(patch) => handleSetChange(activeExerciseIndex, set.id, patch)}
+            onDelete={currentLog.sets.length > 1 ? () => removeSet(currentLog.exerciseId, set.id) : undefined}
           />
         ))}
         {!isBlock && visibleSetCount === currentLog.sets.length && (

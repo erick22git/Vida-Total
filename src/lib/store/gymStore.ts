@@ -884,16 +884,39 @@ export const useGymStore = create<GymState>()(
           return {
             activeSession: {
               ...state.activeSession,
-              ejercicios: state.activeSession.ejercicios.map((ex) =>
-                ex.exerciseId === exerciseId
-                  ? {
-                      ...ex,
-                      sets: ex.sets.map((s) =>
-                        s.id === setId ? { ...s, ...patch } : s,
-                      ),
+              ejercicios: state.activeSession.ejercicios.map((ex) => {
+                if (ex.exerciseId !== exerciseId) return ex;
+                const prev = ex.sets.find((s) => s.id === setId);
+                let sets = ex.sets.map((s) => (s.id === setId ? { ...s, ...patch } : s));
+                // Las series de calentamiento NO cuentan como serie de trabajo: al marcar una como
+                // calentamiento se agrega una serie normal extra para que sigan las que planeaste;
+                // al desmarcarla se quita ese extra si todavía no se usó.
+                if (prev && patch.tipo !== undefined) {
+                  const wasWarm = prev.tipo === "calentamiento";
+                  const isWarm = patch.tipo === "calentamiento";
+                  if (isWarm && !wasWarm) {
+                    const ref = [...sets].reverse().find((s) => s.tipo !== "calentamiento" && s.id !== setId) ?? prev;
+                    sets = [
+                      ...sets,
+                      {
+                        id: uid(),
+                        peso: ref.peso,
+                        reps: ref.reps,
+                        completado: false,
+                        fallo: false,
+                        tipo: "normal" as const,
+                        ...(ref.soloReps ? { soloReps: true } : {}),
+                      },
+                    ];
+                  } else if (!isWarm && wasWarm) {
+                    const last = sets[sets.length - 1];
+                    if (last && last.id !== setId && !last.completado && (last.tipo ?? "normal") === "normal" && sets.length > 1) {
+                      sets = sets.slice(0, -1);
                     }
-                  : ex,
-              ),
+                  }
+                }
+                return { ...ex, sets };
+              }),
             },
           };
         }),

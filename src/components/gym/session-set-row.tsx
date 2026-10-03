@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Plus, X } from "lucide-react";
+import { motion, useMotionValue, useTransform } from "framer-motion";
+import { Check, Plus, Trash2, X } from "lucide-react";
 import type { WorkoutSet } from "@/lib/types";
 import { SET_TYPE_META } from "@/components/gym/set-type";
 import { SetTypeModal } from "@/components/gym/set-type-modal";
@@ -39,6 +40,7 @@ export function SessionSetRow({
   restSeconds,
   pesoRef,
   repsRef,
+  onDelete,
 }: {
   index: number;
   /** Número de serie a mostrar cuando `tipo === "normal"` — cuenta solo las
@@ -59,7 +61,11 @@ export function SessionSetRow({
   pesoRef?: number;
   /** Repeticiones de referencia, igual que `pesoRef`. */
   repsRef?: number;
+  /** Si se pasa, deslizar la serie hacia un lado la elimina. */
+  onDelete?: () => void;
 }) {
+  const dragX = useMotionValue(0);
+  const deleteOpacity = useTransform(dragX, (x) => Math.min(1, Math.abs(x) / 80));
   const [typeModalOpen, setTypeModalOpen] = useState(false);
   const [kgKeypadOpen, setKgKeypadOpen] = useState(false);
   const [repsKeypadOpen, setRepsKeypadOpen] = useState(false);
@@ -117,12 +123,31 @@ export function SessionSetRow({
 
   return (
     <div className="flex flex-col gap-1">
-      <div
-        className="grid grid-cols-[auto_auto_1fr_1fr_auto_auto] gap-2 items-center rounded-2xl px-2.5 py-2.5 transition-colors"
+      <div className="relative">
+        {onDelete && (
+          <motion.div
+            aria-hidden
+            className="absolute inset-0 rounded-2xl flex items-center justify-between px-5 text-white"
+            style={{ background: "#dc2626", opacity: deleteOpacity }}
+          >
+            <Trash2 size={18} />
+            <Trash2 size={18} />
+          </motion.div>
+        )}
+      <motion.div
+        drag={onDelete ? "x" : false}
+        dragDirectionLock
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.6}
         style={{
+          x: dragX,
           background: set.completado ? "#3b82f61f" : "rgba(255,255,255,0.04)",
           border: `1px solid ${set.completado ? "#3b82f666" : "rgba(255,255,255,0.08)"}`,
         }}
+        onDragEnd={(_, info) => {
+          if (onDelete && (Math.abs(info.offset.x) > 110 || Math.abs(info.velocity.x) > 900)) onDelete();
+        }}
+        className="relative grid grid-cols-[auto_auto_1fr_1fr_auto_auto] gap-2 items-center rounded-2xl px-2.5 py-2.5 transition-colors"
       >
         <button
           onClick={() => setTypeModalOpen(true)}
@@ -171,6 +196,7 @@ export function SessionSetRow({
         >
           <Check size={16} className={set.completado ? "text-white" : "text-white/30"} />
         </button>
+      </motion.div>
       </div>
 
       {isDropset && (
