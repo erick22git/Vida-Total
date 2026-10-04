@@ -11,6 +11,7 @@ import {
   percentileToValue,
   rankExercise,
   rankFromPercentile,
+  rankFromValue,
   rankFromScore,
   standardForExercise,
   valueToPercentile,
@@ -122,6 +123,11 @@ near("dominadas 13 reps (hombre 80) = P50", pull.rank.percentile, 50, 0.5);
 eq("dominadas es de repeticiones", pull.kind, "reps");
 const capped = rankExercise("press-banca-barra", [session("press-banca-barra", [{ peso: 60, reps: 20 }])], male80)!;
 eq("20 reps se marca como estimación topada", capped.performance.capped, true);
+
+// 6b) La calculadora usa el mismo cálculo que el historial
+const calc = rankFromValue(standardForExercise("press-banca-barra")!, estimate1RM(100, 5).value, male80);
+eq("calculadora == historial (banca 100x5)", calc.rank.label, bench.rank.label);
+eq("calculadora: siguiente nivel igual", calc.next?.label, bench.next?.label);
 
 // 7) Agregación: músculo = promedio de sus 3 mejores; grupo = músculos con datos; sin datos = null
 const exercises = [

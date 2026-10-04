@@ -298,21 +298,26 @@ export interface BodyInfo {
   pesoKg: number;
 }
 
-export function rankExercise(exerciseId: string, sessions: WorkoutSession[], body: BodyInfo): ExerciseRank | null {
-  const res = standardForExercise(exerciseId);
-  if (!res) return null;
-  const perf = bestPerformance(exerciseId, sessions, res.standard.kind);
-  if (!perf || !(perf.value > 0)) return null;
+/** Rango de un valor ya calculado (1RM en kg o repeticiones) contra el estándar resuelto de un ejercicio. */
+export function rankFromValue(res: ResolvedStandard, value: number, body: BodyInfo): { rank: RankResult; next: ExerciseRank["next"] } {
   const anchors = anchorsFor(res.standard, body.sexo, body.pesoKg);
-  const pct = valueToPercentile(perf.value / res.factor, anchors);
-  const rank = rankFromPercentile(pct);
+  const rank = rankFromPercentile(valueToPercentile(value / res.factor, anchors));
   let next: ExerciseRank["next"] = null;
   if (rank.step < MAX_STEP) {
     const nextStep = rank.step + 1;
     const needed = percentileToValue(stepStartPercentile(nextStep), anchors) * res.factor;
     const nextRank = makeRank(nextStep, nextStep, stepStartPercentile(nextStep));
-    next = { label: nextRank.label, value: needed, missing: Math.max(0, needed - perf.value) };
+    next = { label: nextRank.label, value: needed, missing: Math.max(0, needed - value) };
   }
+  return { rank, next };
+}
+
+export function rankExercise(exerciseId: string, sessions: WorkoutSession[], body: BodyInfo): ExerciseRank | null {
+  const res = standardForExercise(exerciseId);
+  if (!res) return null;
+  const perf = bestPerformance(exerciseId, sessions, res.standard.kind);
+  if (!perf || !(perf.value > 0)) return null;
+  const { rank, next } = rankFromValue(res, perf.value, body);
   return { exerciseId, rank, estimated: res.estimated, performance: perf, kind: res.standard.kind, next };
 }
 

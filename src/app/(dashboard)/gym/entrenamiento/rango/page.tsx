@@ -12,7 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, RotateCw, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, RotateCw, SlidersHorizontal } from "lucide-react";
 import { GlassModal } from "@/components/glass/glass-modal";
 import { RankBody3D, type RankBodyHandle } from "@/components/gym/rank-body-3d";
 import { MuscleGroupIcon } from "@/components/gym/muscle-group-icon";
@@ -130,7 +130,9 @@ export default function RangoPage() {
           </Link>
         </div>
         <div className="flex items-center justify-between h-9">
-          <span className="w-10" aria-hidden />
+          <Link href="/gym/entrenamiento/rango/calculadora" aria-label="Calculadora de rango" className="w-10 h-9 -ml-1 flex items-center justify-start cursor-pointer">
+            <Plus size={28} strokeWidth={2.4} />
+          </Link>
           <h1 className="text-[18px] uppercase tracking-[0.16em]" style={MONO_FONT}>
             Rango
           </h1>
