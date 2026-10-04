@@ -80,6 +80,18 @@ export function TrainingConfigSheet({ open, onClose, todayIndex }: { open: boole
               ))}
             </section>
 
+            <Link href="/gym/entrenamiento/configurar-perfil">
+              <div className="rounded-2xl px-4 py-3.5 flex items-center justify-between" style={CARD_BG}>
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold">Perfil de entrenamiento</span>
+                  <span className="text-[11px] text-[color:var(--t-fg-dim)]">
+                    Sexo, peso, experiencia, objetivo y equipo — lo usa tu rango
+                  </span>
+                </div>
+                <ChevronRight size={16} className="text-[color:var(--t-fg-dim)]" />
+              </div>
+            </Link>
+
             <section className="flex flex-col gap-3">
               <SectionTitle>Apariencia</SectionTitle>
               <ThemeToggle />

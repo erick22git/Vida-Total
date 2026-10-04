@@ -97,6 +97,9 @@ function timestampForDate(date: Date): number {
 
 export type NivelActividad = "sedentario" | "ligero" | "moderado" | "intenso" | "muy_intenso";
 export type ObjetivoCalorico = "perder" | "mantener" | "ganar";
+export type Experiencia = "menos_6m" | "6m_2a" | "2_5a" | "mas_5a";
+export type EquipoDisponible = "gimnasio" | "mancuernas" | "peso_corporal";
+export type IntensidadEntrenamiento = "ligera" | "moderada" | "alta";
 
 export interface GymProfile {
   pesoKg?: number;
@@ -118,6 +121,13 @@ export interface GymProfile {
   medidaCinturaCm?: number;
   /** Solo se usa en mujeres — la fórmula Navy para hombres no la necesita. */
   medidaCaderaCm?: number;
+  // ---- Perfil de entrenamiento (Configuración > Perfil de entrenamiento). Sexo, edad, peso, altura,
+  // nivelActividad, lesiones y objetivo ya vivían arriba y se COMPARTEN: no hay copias. ----
+  experiencia?: Experiencia;
+  diasPorSemana?: number;
+  minutosPorSesion?: number;
+  equipo?: EquipoDisponible;
+  intensidadEntrenamiento?: IntensidadEntrenamiento;
 }
 
 export interface GymState {
