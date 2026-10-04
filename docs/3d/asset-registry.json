@@ -1629,6 +1629,45 @@
       "glb": {
         "meshopt": "public/models/gauge_battery_001_meshopt.glb"
       }
+    },
+    {
+      "id": "rango_cuerpo_m_001",
+      "name": "Cuerpo masculino para la pantalla de Rango (14 regiones musculares)",
+      "module": "gym",
+      "category": "body-regions",
+      "background": "transparent",
+      "source": "UNVERIFIED",
+      "license": "UNVERIFIED",
+      "author": null,
+      "publishable": false,
+      "licenseNote": "El archivo BlenRig4_01_NickZ.blend no declara autor ni licencia (el nombre sugiere el personaje de ejemplo de BlenRig 4, de Juan Pablo Bouza, que se distribuye con su propia licencia: NO verificada). El dueño mencionó modelos de BlenderKit (adult male body base mesh / skinny female) pero en la carpeta rangos solo está este .blend. Algunos assets de BlenderKit son de pago (candado): verificar licencia y plan ANTES de publicar. Sigue UNVERIFIED y publishable:false.",
+      "originalFile": "biblioteca de assets/rangos/BlenRig4_01_NickZ.blend",
+      "originalSha256": "c4295c369d512bac7882692c83e1e410a68d163f826d09a5a1ebeae39796b4f4",
+      "workingFile": "biblioteca de assets/_trabajo/rango_cuerpo_m.blend",
+      "format": "blend → glb (meshopt)",
+      "build": "tools/3d/blender/70_rango_cuerpo.py (blender -b --python)",
+      "runtime": "src/lib/3d/rank-body.ts + src/components/gym/rank-body-3d.tsx",
+      "inspection": {
+        "objects": "49 objetos: cuerpo H_M_A_nickZ (5 092 vértices, 10 172 tris, Multires apagado en la vista), 2 armaduras (622 y 68 huesos), jaulas MeshDeform, formas de control cs_*",
+        "licenseEvidence": "ninguna dentro del archivo"
+      },
+      "adaptations": [
+        "Solo se usa el cuerpo (cabeza, manos y pies incluidos); armaduras, jaulas y controles se descartan",
+        "Se toma el cuerpo ya deformado (pose actual) y se le da 1 nivel de subdivisión para que los bordes entre regiones salgan finos",
+        "14 regiones (Pecho, Espalda, Hombros, Biceps, Triceps, Antebrazo, Abdomen, Gluteos, Cuadriceps, Femoral, Aductores, Abductores, Pantorrilla, Neutro): el archivo no trae músculos separados ni grupos de vértices del torso, así que se reparten por geometría (hueso más cercano, posición a lo largo del hueso y orientación de la superficie)",
+        "Una pieza (nodo reg_<Región>) y un material (region_<Región>) por región; normales suaves del cuerpo entero para que no se vean costuras",
+        "Sin esqueleto, sin animación, sin luces ni cámaras"
+      ],
+      "polyCount": {
+        "glbUniqueTris": 40688,
+        "uniqueVerts": 21407,
+        "drawCalls": 14
+      },
+      "glb": {
+        "file": "public/models/rango_cuerpo_m_001_meshopt.glb",
+        "bytes": 253912
+      },
+      "futureAssets": "Avatar femenino pendiente (la pantalla elige el modelo según gymProfile.sexo; hoy usa el masculino para ambos y lo avisa)"
     }
   ],
   "replacementPlan": "Sustituir los cinco assets sin licencia por assets propios, CC0, con licencia comercial o creados para Vida Total. Cambiar colores/materiales no los vuelve propios ni publicables.",
