@@ -30,11 +30,14 @@ import { SetTypeModal } from "@/components/gym/set-type-modal";
 import { useGymStore } from "@/lib/store/gymStore";
 import { initialDropsetPatch, previaLabelFor } from "@/lib/gym-utils";
 import { unlockAudio } from "@/lib/sound/sound-engine";
+import { RankIcon } from "@/components/gym/rank-icon";
+import { useRankProfile } from "@/lib/gym/use-rank";
 
 export default function ActiveWorkoutPage() {
   const router = useRouter();
   const allExercises = useAllExercises();
   const activeSession = useGymStore((s) => s.activeSession);
+  const { profile: rankProfile } = useRankProfile();
   const sessions = useGymStore((s) => s.sessions);
   const activeExerciseIndex = useGymStore((s) => s.activeExerciseIndex);
   const sessionStartedAt = useGymStore((s) => s.sessionStartedAt);
@@ -226,7 +229,17 @@ export default function ActiveWorkoutPage() {
             )}
           </button>
           <div>
-            <h2 className="text-xl font-semibold text-white">{exercise.nombre}</h2>
+            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+              {exercise.nombre}
+              {/* Tu rango en este ejercicio (sin rango = sin ícono) */}
+              {rankProfile?.byExercise[exercise.id] && (
+                <RankIcon
+                  tierKey={rankProfile.byExercise[exercise.id].rank.tier.key}
+                  level={rankProfile.byExercise[exercise.id].rank.level}
+                  size={26}
+                />
+              )}
+            </h2>
             <p className="text-xs text-white/45 mt-0.5">
               {completedSets}/{workingSets.length} series completadas
               {currentLog.agregadoEnSesion && " · agregado en esta sesión"}

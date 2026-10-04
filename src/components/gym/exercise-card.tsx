@@ -5,6 +5,7 @@ import { GlassCard } from "@/components/glass/glass-card";
 import { GlassBadge } from "@/components/glass/glass-badge";
 import type { Exercise } from "@/lib/types";
 import { useExerciseRank } from "@/lib/gym/use-rank";
+import { RankIcon } from "@/components/gym/rank-icon";
 
 export function ExerciseCard({
   exercise,
@@ -32,7 +33,7 @@ export function ExerciseCard({
       glow={active}
       className="flex flex-col gap-2 cursor-pointer h-full"
     >
-      <div className="flex items-center justify-center w-full aspect-[4/3] rounded-2xl bg-white/[0.05] glass-specular-ring overflow-hidden">
+      <div className="relative flex items-center justify-center w-full aspect-[4/3] rounded-2xl bg-white/[0.05] glass-specular-ring overflow-hidden">
         {exercise.imagen ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -43,14 +44,17 @@ export function ExerciseCard({
         ) : (
           <Dumbbell size={28} className="text-white/25" />
         )}
+        {/* Tu rango en este ejercicio: solo el ícono (sin rango = sin ícono) */}
+        {exerciseRank && (
+          <div className="absolute right-1.5 top-1.5 drop-shadow-[0_2px_6px_rgba(0,0,0,0.65)]">
+            <RankIcon tierKey={exerciseRank.rank.tier.key} level={exerciseRank.rank.level} size={30} />
+          </div>
+        )}
       </div>
       <p className="text-sm font-semibold text-white leading-tight">{exercise.nombre}</p>
       <p className="text-xs text-white/45">{exercise.musculoPrimario}</p>
       <div className="flex items-center gap-1.5 flex-wrap">
         <GlassBadge color="var(--gym)">{exercise.categoria}</GlassBadge>
-        {exerciseRank && (
-          <GlassBadge color={exerciseRank.rank.tier.color}>{exerciseRank.rank.label}</GlassBadge>
-        )}
       </div>
     </GlassCard>
   );
