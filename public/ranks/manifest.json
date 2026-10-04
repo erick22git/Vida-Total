@@ -1,0 +1,99 @@
+{
+  "generatedAt": "2026-10-04T21:09:35.578Z",
+  "sizes": [
+    128,
+    384
+  ],
+  "icons": {
+    "cobre-1": {
+      "source": "limpiado",
+      "from": "COBRE I.png",
+      "aspect": 1.36,
+      "side": 1114
+    },
+    "cobre-2": {
+      "source": "limpiado",
+      "from": "COBRE II.png",
+      "aspect": 1.428,
+      "side": 1114
+    },
+    "cobre-3": {
+      "source": "alfa",
+      "from": "COBRE III.png",
+      "aspect": 1.396,
+      "side": 1033
+    },
+    "hierro-1": {
+      "source": "limpiado",
+      "from": "HIERRO I.png",
+      "aspect": 0.866,
+      "side": 954
+    },
+    "hierro-2": {
+      "source": "alfa",
+      "from": "HIERRO II.png",
+      "aspect": 1.464,
+      "side": 1113
+    },
+    "hierro-3": {
+      "source": "limpiado",
+      "from": "HIERRO III.png",
+      "aspect": 1.421,
+      "side": 1118
+    },
+    "oro-1": {
+      "source": "alfa",
+      "from": "ORO I.png",
+      "aspect": 0.935,
+      "side": 957
+    },
+    "oro-2": {
+      "source": "alfa",
+      "from": "ORO II.png",
+      "aspect": 1.361,
+      "side": 1124
+    },
+    "oro-3": {
+      "source": "limpiado",
+      "from": "ORO III.png",
+      "aspect": 1.233,
+      "side": 1154
+    },
+    "plata-1": {
+      "source": "alfa",
+      "from": "PLATA I.png",
+      "aspect": 0.985,
+      "side": 847
+    },
+    "plata-3": {
+      "source": "alfa",
+      "from": "PLATA III.png",
+      "aspect": 1.19,
+      "side": 1144
+    }
+  },
+  "rejected": [
+    {
+      "file": "PLATA II.png",
+      "id": "plata-2",
+      "reason": "silueta asimétrica (4.8 %): el fondo se comió parte del ícono"
+    }
+  ],
+  "unknownFiles": [],
+  "missing": [
+    "plata-2",
+    "platino-1",
+    "platino-2",
+    "platino-3",
+    "esmeralda-1",
+    "esmeralda-2",
+    "esmeralda-3",
+    "diamante-1",
+    "diamante-2",
+    "diamante-3",
+    "campeon-1",
+    "campeon-2",
+    "campeon-3",
+    "simetrico-0"
+  ]
+}

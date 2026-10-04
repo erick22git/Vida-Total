@@ -2,25 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Shield, Medal, Gem, Trophy, Crown, ChevronLeft, ToggleLeft, ToggleRight, ArrowUp, AlertTriangle } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ChevronLeft, ToggleLeft, ToggleRight, ArrowUp, AlertTriangle } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
+import { RankIcon } from "@/components/gym/rank-icon";
 import { RANK_TIER_DEFS, type RankTierDef } from "@/lib/gym/rank-config";
 import { REPS_CAP, standardForExercise, weightForOneRepMax } from "@/lib/gym/rank-engine";
 import { useRankProfile } from "@/lib/gym/use-rank";
 import { useGymStore } from "@/lib/store/gymStore";
-
-const TIER_ICONS: Record<string, LucideIcon> = {
-  hierro: Shield,
-  cobre: Medal,
-  plata: Medal,
-  oro: Medal,
-  platino: Medal,
-  esmeralda: Medal,
-  diamante: Gem,
-  campeon: Trophy,
-  simetrico: Crown,
-};
 
 const fmt = (n: number) => (Math.round(n * 10) / 10).toString();
 
@@ -44,7 +32,7 @@ export function ExerciseRankTab({ exerciseId }: { exerciseId: string }) {
         </button>
         <div className="flex flex-col gap-2">
           {[...RANK_TIER_DEFS].reverse().map((t) => (
-            <PyramidRow key={t.key} tier={t} isCurrent={t.key === tier?.key} />
+            <PyramidRow key={t.key} tier={t} isCurrent={t.key === tier?.key} level={result?.rank.level ?? null} />
           ))}
         </div>
       </div>
@@ -90,18 +78,14 @@ export function ExerciseRankTab({ exerciseId }: { exerciseId: string }) {
     );
   }
 
-  const Icon = TIER_ICONS[tier.key] ?? Medal;
   const perf = result.performance;
   const isReps = result.kind === "reps";
 
   return (
     <div className="flex flex-col gap-5">
       <GlassCard accentColor={tier.color} glow className="flex flex-col items-center gap-3 py-8 text-center">
-        <div
-          className="flex items-center justify-center w-24 h-24 rounded-full"
-          style={{ background: `${tier.color}22`, boxShadow: `0 0 40px ${tier.color}55` }}
-        >
-          <Icon size={48} style={{ color: tier.color }} />
+        <div className="flex items-center justify-center" style={{ filter: `drop-shadow(0 0 22px ${tier.color}66)` }}>
+          <RankIcon tierKey={tier.key} level={result.rank.level} size={112} />
         </div>
         <h2 className="text-3xl font-extrabold tracking-wide uppercase" style={{ color: tier.color, textShadow: `0 0 24px ${tier.color}66` }}>
           {result.rank.label}
@@ -166,8 +150,7 @@ function Detail({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PyramidRow({ tier, isCurrent }: { tier: RankTierDef; isCurrent: boolean }) {
-  const Icon = TIER_ICONS[tier.key] ?? Medal;
+function PyramidRow({ tier, isCurrent, level }: { tier: RankTierDef; isCurrent: boolean; level: 1 | 2 | 3 | null }) {
   return (
     <div
       className="flex items-center gap-3 rounded-2xl px-3.5 py-2.5"
@@ -176,8 +159,8 @@ function PyramidRow({ tier, isCurrent }: { tier: RankTierDef; isCurrent: boolean
         border: `1px solid ${isCurrent ? tier.color : "rgba(255,255,255,0.08)"}`,
       }}
     >
-      <div className="flex items-center justify-center w-9 h-9 rounded-full shrink-0" style={{ background: `${tier.color}26` }}>
-        <Icon size={18} style={{ color: tier.color }} />
+      <div className="flex items-center justify-center w-11 h-9 shrink-0">
+        <RankIcon tierKey={tier.key} level={isCurrent ? level : tier.levels ? 1 : null} size={34} />
       </div>
       <div className="flex-1">
         <p className="text-sm font-semibold text-white">{tier.name}</p>
