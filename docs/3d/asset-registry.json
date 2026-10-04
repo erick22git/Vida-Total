@@ -1653,19 +1653,20 @@
       },
       "adaptations": [
         "Solo se usa el cuerpo (cabeza, manos y pies incluidos); armaduras, jaulas y controles se descartan",
-        "Se toma el cuerpo ya deformado (pose actual) y se le da 1 nivel de subdivisión para que los bordes entre regiones salgan finos",
+        "Se toma el cuerpo ya deformado (pose actual) y se le da 1 nivel de subdivisión",
         "14 regiones (Pecho, Espalda, Hombros, Biceps, Triceps, Antebrazo, Abdomen, Gluteos, Cuadriceps, Femoral, Aductores, Abductores, Pantorrilla, Neutro): el archivo no trae músculos separados ni grupos de vértices del torso, así que se reparten por geometría (hueso más cercano, posición a lo largo del hueso y orientación de la superficie)",
-        "Una pieza (nodo reg_<Región>) y un material (region_<Región>) por región; normales suaves del cuerpo entero para que no se vean costuras",
+        "UNA malla con 14 pesos de región por vértice (atributos _REGA.._REGD), suavizados sobre la malla; el visor toma el argmax suavizado por píxel, así el borde entre músculos es una curva lisa",
+        "La malla es lisa (sin músculos esculpidos): no se esculpió nada; las regiones se leen con color por rango, luz de borde (Fresnel) y entorno de estudio",
         "Sin esqueleto, sin animación, sin luces ni cámaras"
       ],
       "polyCount": {
         "glbUniqueTris": 40688,
-        "uniqueVerts": 21407,
-        "drawCalls": 14
+        "uniqueVerts": 20350,
+        "drawCalls": 1
       },
       "glb": {
         "file": "public/models/rango_cuerpo_m_001_meshopt.glb",
-        "bytes": 253912
+        "bytes": 581392
       },
       "futureAssets": "Avatar femenino pendiente (la pantalla elige el modelo según gymProfile.sexo; hoy usa el masculino para ambos y lo avisa)"
     }

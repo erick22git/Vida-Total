@@ -56,3 +56,20 @@ export const RANK_GROUPS: RankGroupDef[] = [
   { key: "abdomen", label: "Abdomen", categories: ["Abdomen"] },
   { key: "hombros", label: "Hombros y cuello", categories: ["Hombros"] },
 ];
+
+/** Nombre para mostrar de cada músculo (categoría del dataset / región del cuerpo 3D). */
+export const MUSCLE_LABEL: Record<string, string> = {
+  Pecho: "Pecho",
+  Espalda: "Espalda",
+  Hombros: "Hombros y cuello",
+  Biceps: "Bíceps",
+  Triceps: "Tríceps",
+  Antebrazo: "Antebrazo",
+  Abdomen: "Abdomen",
+  Gluteos: "Glúteos",
+  Cuadriceps: "Cuádriceps",
+  Femoral: "Femoral",
+  Aductores: "Aductores",
+  Abductores: "Abductores",
+  Pantorrilla: "Pantorrilla",
+};

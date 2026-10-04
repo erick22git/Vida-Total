@@ -28,6 +28,7 @@ GLB_TMP = EXPORT_DIR + "rango_cuerpo_m_001_meshopt.glb"
 GLB_OUT = ROOT + "public/models/rango_cuerpo_m_001_meshopt.glb"
 PREVIEW = EXPORT_DIR + "rango_cuerpo_m_regiones"
 os.makedirs(EXPORT_DIR, exist_ok=True)
+SMOOTH_PASSES = 6  # pasadas de suavizado de los pesos de región
 SUBDIV = 1  # niveles de subdivisión del cuerpo (1 = ~40 000 triángulos)
 
 REGIONS = ["Pecho", "Espalda", "Hombros", "Biceps", "Triceps", "Antebrazo", "Abdomen", "Gluteos", "Cuadriceps",
@@ -113,7 +114,7 @@ def classify(i):
     z = p.z
     front = n.y < -0.2 or (abs(n.y) <= 0.2 and p.y < Y_AXIS)
 
-    if base == "head" or z > 1.62:
+    if base == "head" or z > 1.575:
         return "Neutro"
     if base == "neck":
         return "Hombros"
@@ -160,38 +161,30 @@ def classify(i):
 
 reg_of_vert = [classify(i) for i in range(len(verts))]
 
-# ---------------------------------------------------------------- 3) regiones por polígono + limpieza de manchas
-poly_reg = []
+# ---------------------------------------------------------------- 3) pesos de región SUAVIZADOS por vértice
+# Cada vértice tiene un peso por región (1 en la suya). Se suavizan sobre la malla y el visor los "afila" por píxel
+# (argmax suave): así el borde entre regiones es una curva lisa que NO depende de cómo estén cortados los polígonos.
+import numpy as np
+N = len(REGIONS)
+ridx = {r: i for i, r in enumerate(REGIONS)}
+nverts = len(verts)
+W = np.zeros((nverts, N), dtype=np.float64)
+for i, r in enumerate(reg_of_vert):
+    W[i, ridx[r]] = 1.0
+ea, eb = [], []
 for pv in polys:
-    cnt = {}
-    for vi in pv:
-        cnt[reg_of_vert[vi]] = cnt.get(reg_of_vert[vi], 0) + 1
-    poly_reg.append(max(cnt.items(), key=lambda kv: kv[1])[0])
-edge_polys = {}
-for pi, pv in enumerate(polys):
     for k in range(len(pv)):
-        e = tuple(sorted((pv[k], pv[(k + 1) % len(pv)])))
-        edge_polys.setdefault(e, []).append(pi)
-neigh = [set() for _ in polys]
-for e, ps in edge_polys.items():
-    for a in ps:
-        for b in ps:
-            if a != b:
-                neigh[a].add(b)
-for _ in range(3):
-    nxt = list(poly_reg)
-    for pi in range(len(polys)):
-        cnt = {}
-        for q in neigh[pi]:
-            cnt[poly_reg[q]] = cnt.get(poly_reg[q], 0) + 1
-        if cnt:
-            r, c = max(cnt.items(), key=lambda kv: kv[1])
-            if c > len(neigh[pi]) / 2 and r != poly_reg[pi]:
-                nxt[pi] = r
-    poly_reg = nxt
+        ea.append(pv[k]); eb.append(pv[(k + 1) % len(pv)])
+ea, eb = np.array(ea), np.array(eb)
+deg = np.bincount(np.concatenate([ea, eb]), minlength=nverts).astype(np.float64)
+for _ in range(SMOOTH_PASSES):
+    acc = np.zeros_like(W)
+    np.add.at(acc, ea, W[eb])
+    np.add.at(acc, eb, W[ea])
+    W = 0.5 * W + 0.5 * acc / np.maximum(deg, 1)[:, None]
+poly_dom = [REGIONS[int(np.argmax(sum(W[vi] for vi in pv)))] for pv in polys]  # solo para estadísticas
 
-# ---------------------------------------------------------------- 4) escena nueva: una pieza por región
-src_blend_size = os.path.getsize(SRC)
+# ---------------------------------------------------------------- 4) escena nueva: UNA malla con los pesos como atributos
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
 col = bpy.data.collections.new("BODY")
@@ -202,52 +195,51 @@ minz = min(v[2] for v in verts)
 cy = sum(v[1] for v in verts) / len(verts)
 verts = [(v[0], v[1] - cy, v[2] - minz) for v in verts]
 
-tris_by_region = {}
-for reg in REGIONS:
-    idx = [pi for pi, r in enumerate(poly_reg) if r == reg]
-    if not idx:
-        continue
-    used = {}
-    nv, nvn, nf = [], [], []
-    for pi in idx:
-        face = []
-        for vi in polys[pi]:
-            if vi not in used:
-                used[vi] = len(nv)
-                nv.append(verts[vi])
-                nvn.append(vnormals[vi])
-            face.append(used[vi])
-        nf.append(tuple(face))
-    me = bpy.data.meshes.new("reg_" + reg)
-    me.from_pydata(nv, [], nf)
-    me.update()
-    for p in me.polygons:
-        p.use_smooth = True
-    try:
-        me.normals_split_custom_set_from_vertices([Vector(n) for n in nvn])
-    except Exception as e:  # versiones sin la función: normales automáticas
-        print("##WARN normales personalizadas:", e)
-    mat = bpy.data.materials.new("region_" + reg)
-    mat.use_nodes = True
-    bsdf = mat.node_tree.nodes["Principled BSDF"]
-    bsdf.inputs["Base Color"].default_value = (0.62, 0.62, 0.64, 1.0)  # neutro: el visor lo tiñe con el rango
-    bsdf.inputs["Roughness"].default_value = 0.55
-    mat.diffuse_color = PREVIEW_COLORS[reg] + (1.0,)  # solo para el render de control
-    me.materials.append(mat)
-    ob = bpy.data.objects.new("reg_" + reg, me)
-    col.objects.link(ob)
-    ob["vt_region"] = reg
-    t = sum(max(0, len(f) - 2) for f in nf)
-    tris_by_region[reg] = t
+me = bpy.data.meshes.new("cuerpo")
+me.from_pydata(verts, [], polys)
+me.update()
+for p in me.polygons:
+    p.use_smooth = True
+try:
+    me.normals_split_custom_set_from_vertices([Vector(n) for n in vnormals])
+except Exception as e:
+    print("##WARN normales personalizadas:", e)
+# 14 pesos en 4 atributos de 4 canales (A: Pecho..Triceps, B: Antebrazo..Gluteos, C: Cuadriceps..Abductores, D: Pantorrilla, Neutro)
+Wp = np.zeros((nverts, 16))
+Wp[:, :N] = W
+for j, nm in enumerate(["_REGA", "_REGB", "_REGC", "_REGD"]):
+    ca = me.color_attributes.new(nm, "FLOAT_COLOR", "POINT")
+    ca.data.foreach_set("color", Wp[:, j * 4:(j + 1) * 4].astype(np.float32).ravel())
+mat = bpy.data.materials.new("cuerpo")
+mat.use_nodes = True
+bsdf = mat.node_tree.nodes["Principled BSDF"]
+bsdf.inputs["Base Color"].default_value = (0.62, 0.62, 0.64, 1.0)  # neutro: el visor lo tiñe por región con el color del rango
+bsdf.inputs["Roughness"].default_value = 0.6
+me.materials.append(mat)
+ob = bpy.data.objects.new("cuerpo", me)
+col.objects.link(ob)
+ob["vt_regions"] = json.dumps(REGIONS)
+ob["vt_note"] = "Pesos por región en _REGA.._REGD (canales en el orden de vt_regions); el visor toma el argmax suavizado por píxel."
 
-total_tris = sum(tris_by_region.values())
+tris_by_region = {}
+for r, pv in zip(poly_dom, polys):
+    tris_by_region[r] = tris_by_region.get(r, 0) + max(0, len(pv) - 2)
+total_tris = sum(max(0, len(pv) - 2) for pv in polys)
 print("##REGIONES", json.dumps(tris_by_region, ensure_ascii=True))
-print("##TRIS_TOTAL", total_tris)
+print("##TRIS_TOTAL", total_tris, "VERTS", nverts)
 
 # ---------------------------------------------------------------- 5) render de control (colores por región)
+# Colores de control: argmax suave de los pesos (igual que hace el visor por píxel) pintado como color de vértice.
+pal = np.array([PREVIEW_COLORS[r] for r in REGIONS])
+sm = np.exp((W - W.max(axis=1, keepdims=True)) * 36.0)
+sm /= sm.sum(axis=1, keepdims=True)
+prev_rgb = sm @ pal
+prev = me.color_attributes.new("preview", "FLOAT_COLOR", "POINT")
+prev.data.foreach_set("color", np.hstack([prev_rgb, np.ones((nverts, 1))]).astype(np.float32).ravel())
+me.color_attributes.active_color = prev
 scene.render.engine = "BLENDER_WORKBENCH"
 scene.display.shading.light = "STUDIO"
-scene.display.shading.color_type = "MATERIAL"
+scene.display.shading.color_type = "VERTEX"
 scene.render.resolution_x, scene.render.resolution_y = 700, 1000
 world = bpy.data.worlds.new("w")
 world.color = (0.05, 0.05, 0.05)
@@ -266,6 +258,7 @@ for nm, loc, rot in [("frente", (0, -10, zmid), (math.radians(90), 0, 0)),
     scene.render.filepath = PREVIEW + "_" + nm + ".png"
     bpy.ops.render.render(write_still=True)
 scene.collection.objects.unlink(cam)
+me.color_attributes.remove(prev)  # el control no se exporta
 
 # ---------------------------------------------------------------- 6) guardar la COPIA y exportar el GLB
 bpy.ops.wm.save_as_mainfile(filepath=WORK)
@@ -279,6 +272,7 @@ r = bpy.ops.export_scene.gltf(
     filepath=GLB_TMP, export_format="GLB", collection="BODY", export_apply=False, export_yup=True, export_extras=True,
     export_lights=False, export_cameras=False, export_materials="EXPORT", export_animations=False, export_skins=False,
     export_morph=False, export_normals=True, export_meshopt_compression_enable=True, use_visible=True,
+    export_vertex_color="NONE", export_all_vertex_colors=False, export_attributes=True,
 )
 print("##EXPORT", list(r), round(time.time() - t0, 1), "s", round(os.path.getsize(GLB_TMP) / 1024, 1), "KB")
 shutil.copyfile(GLB_TMP, GLB_OUT)
