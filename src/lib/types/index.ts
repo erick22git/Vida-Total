@@ -418,7 +418,6 @@ export interface WorkoutSession {
   routineId?: string;
 }
 
-export type Rank = "Bronce" | "Plata" | "Oro" | "Platino" | "Sin rango";
 
 export interface WeeklyPlanDay {
   day: string; // "L" | "M" | "X" | "J" | "V" | "S" | "D"

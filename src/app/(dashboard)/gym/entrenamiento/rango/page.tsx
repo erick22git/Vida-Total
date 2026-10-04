@@ -10,7 +10,10 @@ import { GlassModal } from "@/components/glass/glass-modal";
 import { BodySilhouetteFront, BodySilhouetteBack, type BodyZone } from "@/components/gym/body-silhouette";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { useGymStore } from "@/lib/store/gymStore";
-import { getExerciseSP, getExerciseVolume, getRankStanding, RANK_TIERS } from "@/lib/gym-utils";
+import { getExerciseVolume } from "@/lib/gym-utils";
+import { RANK_TIER_DEFS } from "@/lib/gym/rank-config";
+import { rankFromScore } from "@/lib/gym/rank-engine";
+import { useRankProfile } from "@/lib/gym/use-rank";
 import type { Exercise, MuscleGroup } from "@/lib/types";
 
 const CATEGORY_TO_ZONES: Partial<Record<MuscleGroup, BodyZone[]>> = {
@@ -73,18 +76,21 @@ export default function BodyMapPage() {
     return zones;
   }, [volumeByCategory, maxVolume]);
 
-  const unclassifiedCount = allExercises.filter((e) => getExerciseSP(e.id, sessions) === 0).length;
+  const { profile } = useRankProfile();
+  const unclassifiedCount = allExercises.filter((e) => !profile?.byExercise[e.id]).length;
 
-  const overallSp = allExercises.reduce((sum, e) => sum + getExerciseSP(e.id, sessions), 0) / Math.max(1, allExercises.length);
-  const overallStanding = getRankStanding(Math.round(overallSp));
+  // Rango general / por grupo con el motor nuevo (sin datos = hierro gris; esta pantalla se rehace en la fase 5).
+  const overallStanding = (() => {
+    const r = profile?.general.rank ?? rankFromScore(0);
+    return { tier: r.tier, tierIndex: r.tierIndex };
+  })();
 
   function groupStanding(categories: MuscleGroup[]) {
     const exs = allExercises.filter((e) => categories.includes(e.categoria));
-    const classified = exs.filter((e) => getExerciseSP(e.id, sessions) > 0);
-    const avgSp = classified.length
-      ? classified.reduce((sum, e) => sum + getExerciseSP(e.id, sessions), 0) / classified.length
-      : 0;
-    return { total: exs.length, classified: classified.length, standing: getRankStanding(Math.round(avgSp)) };
+    const classified = exs.filter((e) => profile?.byExercise[e.id]);
+    const scores = categories.map((c) => profile?.byMuscle[c]?.rank?.score).filter((x): x is number => x !== undefined);
+    const r = rankFromScore(scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0);
+    return { total: exs.length, classified: classified.length, standing: { tier: r.tier } };
   }
 
   // Última de las 3 vistas de Entrenamiento (hoy / año / rango): deslizar hacia arriba estando arriba
@@ -141,13 +147,13 @@ export default function BodyMapPage() {
       <GlassCard accentColor={overallStanding.tier.color} glow className="flex flex-col gap-3">
         <p className="text-xs text-white/45">Rango predecido</p>
         <h2 className="text-2xl font-extrabold" style={{ color: overallStanding.tier.color }}>
-          {overallStanding.tier.name} {overallStanding.tierIndex > 0 ? "I" : ""}
+          {profile?.general.rank?.label ?? "SIN RANGO"}
         </h2>
         {overallStanding.tier.topPct && (
           <p className="text-sm text-white/55">¿Eres parte del top {overallStanding.tier.topPct}%?</p>
         )}
         <div className="flex items-center gap-1.5 mt-1">
-          {RANK_TIERS.map((t, i) => (
+          {RANK_TIER_DEFS.map((t, i) => (
             <div
               key={t.key}
               className="h-1.5 flex-1 rounded-full"

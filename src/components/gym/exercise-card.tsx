@@ -4,8 +4,7 @@ import { Dumbbell } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassBadge } from "@/components/glass/glass-badge";
 import type { Exercise } from "@/lib/types";
-import { getExerciseSP, getRankStanding } from "@/lib/gym-utils";
-import { useGymStore } from "@/lib/store/gymStore";
+import { useExerciseRank } from "@/lib/gym/use-rank";
 
 export function ExerciseCard({
   exercise,
@@ -23,10 +22,7 @@ export function ExerciseCard({
    * "ejercicio actual". */
   activeColor?: string;
 }) {
-  const sessions = useGymStore((s) => s.sessions);
-  const sp = getExerciseSP(exercise.id, sessions);
-  const standing = getRankStanding(sp);
-  const hasRank = sp > 0;
+  const exerciseRank = useExerciseRank(exercise.id);
 
   return (
     <GlassCard
@@ -52,8 +48,8 @@ export function ExerciseCard({
       <p className="text-xs text-white/45">{exercise.musculoPrimario}</p>
       <div className="flex items-center gap-1.5 flex-wrap">
         <GlassBadge color="var(--gym)">{exercise.categoria}</GlassBadge>
-        {hasRank && (
-          <GlassBadge color={standing.tier.color}>{standing.tier.name}</GlassBadge>
+        {exerciseRank && (
+          <GlassBadge color={exerciseRank.rank.tier.color}>{exerciseRank.rank.label}</GlassBadge>
         )}
       </div>
     </GlassCard>
