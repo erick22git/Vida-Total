@@ -10,8 +10,8 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { SettingsGlyph } from "@/components/shared/settings-glyph";
-import { format } from "date-fns";
 import { MONO_FONT } from "@/lib/ui/mono-font";
+import { localDayKey } from "@/lib/gym/kegel-dates";
 import type { KegelSessionDef } from "@/lib/gym/kegel-plan";
 import { useKegelPlanStore } from "@/lib/store/kegelPlanStore";
 import { useGymStore } from "@/lib/store/gymStore";
@@ -95,11 +95,10 @@ export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
 
   useEffect(() => {
     if (!finished) return;
-    const today = format(new Date(), "yyyy-MM-dd");
-    const alreadyToday = (useKegelPlanStore.getState().completed[today] ?? []).length > 0;
+    const today = localDayKey();
     markCompleted(today, def.id);
-    // El resumen de racha/nivel de Gym cuenta una vez por día (la primera sesión cumplida).
-    if (!alreadyToday) completeKegelSession();
+    // completeKegelSession tiene idempotencia interna: ignora si ya contó hoy.
+    completeKegelSession();
     emitProgressEvent("kegel.completed", `kegel:${today}:${def.id}`, { sessionId: def.id, durationSeconds: def.durationSec });
     const id = setTimeout(() => router.replace("/gym/kegel"), 600);
     return () => clearTimeout(id);

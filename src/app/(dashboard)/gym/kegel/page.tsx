@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { BookOpen, Check, ChevronLeft, Clock, Dumbbell, Flower2 } from "lucide-react";
 import { SettingsGlyph } from "@/components/shared/settings-glyph";
-import { format } from "date-fns";
+import { localDayKey } from "@/lib/gym/kegel-dates";
 import { WeekStrip } from "@/components/shared/week-strip";
 import { CalorieYearView } from "@/components/gym/calorie-year-view";
 import { MONO_FONT } from "@/lib/ui/mono-font";
@@ -48,7 +48,7 @@ export default function KegelPage() {
   const start = useRef<{ x: number; y: number } | null>(null);
   const wheelLock = useRef(false);
 
-  const todayISO = format(new Date(), "yyyy-MM-dd");
+  const todayISO = localDayKey();
   const doneToday = completed[todayISO] ?? [];
   const doneDays = fullyDoneDays(completed);
 

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { userScopedLocalStorage } from "./scoped-storage";
 import { isSameDay, differenceInCalendarDays } from "date-fns";
+import { localDayKey, daysDiff, toLocalDayKey } from "@/lib/gym/kegel-dates";
 import type {
   Exercise,
   Food,
@@ -1254,14 +1255,16 @@ export const useGymStore = create<GymState>()(
       kegelTotalSessions: 0,
       completeKegelSession: () =>
         set((state) => {
-          const today = new Date();
+          const todayKey = localDayKey();
+          const lastKey = toLocalDayKey(state.kegelLastSessionDate);
+          // Idempotencia interna: ya contamos hoy
+          if (lastKey === todayKey) return state;
           let streak = state.kegelStreak;
-          if (state.kegelLastSessionDate) {
-            const last = new Date(state.kegelLastSessionDate);
-            const diff = differenceInCalendarDays(today, last);
+          if (lastKey) {
+            const diff = daysDiff(lastKey, todayKey);
             if (diff === 1) streak += 1;
             else if (diff > 1) streak = 1;
-            // diff === 0 -> already did a session today, keep streak
+            // diff < 0 → reloj hacia atrás, no romper la racha
           } else {
             streak = 1;
           }
@@ -1269,7 +1272,7 @@ export const useGymStore = create<GymState>()(
           const level = Math.min(10, 1 + Math.floor(totalSessions / 5));
           return {
             kegelStreak: streak,
-            kegelLastSessionDate: today.toISOString(),
+            kegelLastSessionDate: todayKey,
             kegelTotalSessions: totalSessions,
             kegelLevel: level,
           };
@@ -1296,9 +1299,14 @@ export const useGymStore = create<GymState>()(
     {
       name: "vida-total-gym-store",
       storage: createJSONStorage(() => userScopedLocalStorage("vida-total-gym-store")),
-      version: 5,
+      version: 6,
       migrate: (persisted, version) => {
         const state = persisted as GymState;
+        if (version < 6) {
+          // Normaliza kegelLastSessionDate al formato dayKey local (YYYY-MM-DD).
+          // Antes se guardaba como toISOString() con hora UTC.
+          state.kegelLastSessionDate = toLocalDayKey(state.kegelLastSessionDate) ?? null;
+        }
         if (version < 5) {
           state.dashboardPrefs = {
             showOtherNutrients: true,

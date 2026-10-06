@@ -250,7 +250,11 @@ export async function upsertGymWorkoutState(userId: string, s: GymWorkoutStatePa
     last_workout_completed_date: isoStringToDateOnly(s.lastWorkoutCompletedDate),
     kegel_level: s.kegelLevel,
     kegel_streak: s.kegelStreak,
-    kegel_last_session_date: isoStringToDateOnly(s.kegelLastSessionDate),
+    // kegelLastSessionDate ya viene como dayKey "YYYY-MM-DD" desde gymStore v6.
+    // Si ya es dayKey lo pasamos directo; si es ISO (datos migrados) lo convertimos.
+    kegel_last_session_date: /^\d{4}-\d{2}-\d{2}$/.test(s.kegelLastSessionDate ?? "")
+      ? s.kegelLastSessionDate
+      : isoStringToDateOnly(s.kegelLastSessionDate),
     kegel_total_sessions: s.kegelTotalSessions,
     plan_history: s.planHistory,
   };
@@ -272,7 +276,8 @@ async function fetchGymWorkoutState(userId: string): Promise<Partial<GymWorkoutS
     lastWorkoutCompletedDate: dateOnlyToIsoString(row.last_workout_completed_date),
     kegelLevel: row.kegel_level,
     kegelStreak: row.kegel_streak,
-    kegelLastSessionDate: dateOnlyToIsoString(row.kegel_last_session_date),
+    // Devolver como dayKey directamente — gymStore v6 ya lo espera en este formato.
+    kegelLastSessionDate: row.kegel_last_session_date ?? null,
     kegelTotalSessions: row.kegel_total_sessions,
     planHistory: row.plan_history ?? [],
   };
