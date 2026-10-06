@@ -1275,3 +1275,60 @@ export async function hydrateGymStoreFromSupabase(userId: string): Promise<GymHy
     workoutState,
   };
 }
+
+// ============================================================================
+// kegel_session_log — sync de kegelPlanStore.completed
+// Requiere migración 0006_kegel_session_log.sql (NO aplicada aún).
+// ============================================================================
+
+interface KegelSessionLogRow {
+  user_id: string;
+  day_key: string;   // 'YYYY-MM-DD'
+  session_id: string;
+  partial: boolean;
+}
+
+/**
+ * Inserta las sesiones completadas hoy que aún no están en Supabase.
+ * Merge-safe: ON CONFLICT DO NOTHING — idempotente.
+ */
+export async function upsertKegelSessionLog(
+  userId: string,
+  completed: Record<string, string[]>,
+): Promise<void> {
+  const rows: KegelSessionLogRow[] = [];
+  for (const [dayKey, sessionIds] of Object.entries(completed)) {
+    for (const sessionId of sessionIds) {
+      rows.push({ user_id: userId, day_key: dayKey, session_id: sessionId, partial: false });
+    }
+  }
+  if (rows.length === 0) return;
+  await safeWrite("upsert kegel_session_log", () =>
+    createClient()
+      .from("kegel_session_log")
+      .upsert(rows, { onConflict: "user_id,day_key,session_id", ignoreDuplicates: true }),
+  );
+}
+
+/**
+ * Descarga el historial de sesiones Kegel del usuario y reconstruye
+ * el mapa completed: Record<dayKey, sessionId[]>.
+ */
+export async function fetchKegelSessionLog(
+  userId: string,
+): Promise<Record<string, string[]>> {
+  const rows = await safeFetchList<{ day_key: string; session_id: string }>("kegel_session_log", () =>
+    createClient()
+      .from("kegel_session_log")
+      .select("day_key,session_id")
+      .eq("user_id", userId)
+      .eq("partial", false),
+  );
+  const result: Record<string, string[]> = {};
+  for (const row of rows) {
+    const key = row.day_key;
+    if (!result[key]) result[key] = [];
+    if (!result[key].includes(row.session_id)) result[key].push(row.session_id);
+  }
+  return result;
+}
