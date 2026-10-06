@@ -12,7 +12,10 @@ import { usePreferencesStore } from "@/lib/store/preferencesStore";
  * gesto (`pointerdown`) — ver `useHabitFeedback`. Si el audio está bloqueado
  * o el usuario lo desactivó, todo es silencioso y nunca lanza.
  */
-export type SoundName = "press" | "complete" | "milestone" | "level-up" | "navigation" | "error" | "rest-end";
+export type SoundName =
+  | "press" | "complete" | "milestone" | "level-up" | "navigation" | "error" | "rest-end"
+  // Kegel: ascendente al apretar, corto a cuenta atrás, descendente al soltar, cierre al terminar
+  | "kegel-squeeze" | "kegel-relax" | "kegel-countdown" | "kegel-done";
 
 let ctx: AudioContext | null = null;
 
@@ -90,6 +93,18 @@ const RECIPES: Record<SoundName, (c: AudioContext, t: number) => void> = {
   },
   navigation: (c, t) => tone(c, { freq: 520, glideTo: 640, at: t, dur: 0.06, gain: 0.035 }),
   error: (c, t) => tone(c, { freq: 200, glideTo: 140, at: t, dur: 0.16, gain: 0.05, type: "triangle" }),
+  // Kegel — tono ascendente al contraer
+  "kegel-squeeze": (c, t) => tone(c, { freq: 440, glideTo: 660, at: t, dur: 0.18, gain: 0.06 }),
+  // Kegel — tono descendente al soltar
+  "kegel-relax": (c, t) => tone(c, { freq: 550, glideTo: 330, at: t, dur: 0.22, gain: 0.05 }),
+  // Kegel — tic suave de cuenta atrás
+  "kegel-countdown": (c, t) => tone(c, { freq: 880, at: t, dur: 0.06, gain: 0.04 }),
+  // Kegel — acorde de cierre (tercera mayor)
+  "kegel-done": (c, t) => {
+    tone(c, { freq: 523.25, at: t, dur: 0.35, gain: 0.06 });
+    tone(c, { freq: 659.25, at: t + 0.12, dur: 0.35, gain: 0.055 });
+    tone(c, { freq: 783.99, at: t + 0.24, dur: 0.4, gain: 0.05 });
+  },
 };
 
 export function playSound(name: SoundName): void {

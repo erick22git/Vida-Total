@@ -1,45 +1,39 @@
 "use client";
 
 /**
- * Pantalla de una sesión de Kegel (referencia del usuario): cuenta regresiva grande, anillo de segmentos con el dibujo
- * anatómico, indicador de fase (CONTRAE / SUELTA…), onda de los próximos ciclos, barra de avance y vibración.
- * Arranca sola al entrar; tocar el círculo pausa/reanuda. Al llegar a 0 la sesión queda cumplida y se vuelve al plan.
+ * Pantalla de sesión Kegel — rediseño con motor de estados puro.
+ *
+ * DISEÑO:
+ *  - Ícono ARRIBA (arriba-derecha): interruptor de señales (sonido + vibración).
+ *  - Barra ABAJO: progreso real de la sesión (serie x/y · rep x/y · tiempo restante).
+ *  - Anillo + dibujo siguen la fase actual.
+ *  - Tocar el anillo pausa / reanuda.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ChevronLeft } from "lucide-react";
-import { SettingsGlyph } from "@/components/shared/settings-glyph";
+import { ChevronLeft, Volume2, VolumeX } from "lucide-react";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { localDayKey } from "@/lib/gym/kegel-dates";
 import type { KegelSessionDef } from "@/lib/gym/kegel-plan";
 import { useKegelPlanStore } from "@/lib/store/kegelPlanStore";
 import { useGymStore } from "@/lib/store/gymStore";
 import { emitProgressEvent } from "@/lib/progress/event-bus";
+import { useKegelEngine, useWakeLock, PHASE_LABEL, PHASE_AMP } from "@/lib/gym/kegel-engine";
+import { playSound, unlockAudio } from "@/lib/sound/sound-engine";
+import { vibrate, HAPTIC_PATTERNS } from "@/lib/haptics/haptics";
+import { isHapticSupported } from "@/lib/haptics/haptic";
 
 const SEGMENTS = 60;
 const WAVE_W = 300;
 const WAVE_H = 110;
-const CYCLES_SHOWN = 3;
 
-/** Nivel (0–1) de la onda en el instante `t` (s): suaviza entre los centros de cada fase. */
-function levelAt(def: KegelSessionDef, t: number): number {
-  const cycle = def.phases.reduce((a, p) => a + p.seconds, 0);
-  const centers: { c: number; amp: number }[] = [];
-  for (let k = -2; k <= CYCLES_SHOWN + 2; k++) {
-    let acc = 0;
-    for (const p of def.phases) {
-      centers.push({ c: k * cycle + acc + p.seconds / 2, amp: p.amp });
-      acc += p.seconds;
-    }
-  }
-  let i = 0;
-  while (i < centers.length - 2 && centers[i + 1].c <= t) i++;
-  const a = centers[i];
-  const b = centers[i + 1];
-  const f = Math.min(1, Math.max(0, (t - a.c) / (b.c - a.c)));
-  const e = (1 - Math.cos(Math.PI * f)) / 2;
-  return a.amp + (b.amp - a.amp) * e;
+/** Nivel (0–1) de la onda en el instante `t` dado ciclo squeeze/relax. */
+function waveAt(squeezeS: number, relaxS: number, t: number): number {
+  const cycle = squeezeS + relaxS;
+  const tMod = ((t % cycle) + cycle) % cycle;
+  const f = tMod < squeezeS ? tMod / squeezeS : 1 - (tMod - squeezeS) / relaxS;
+  return 0.15 + 0.85 * f;
 }
 
 export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
@@ -47,123 +41,154 @@ export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
   const markCompleted = useKegelPlanStore((s) => s.markCompleted);
   const completeKegelSession = useGymStore((s) => s.completeKegelSession);
 
-  const [elapsed, setElapsed] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const [vibration, setVibration] = useState(true);
+  const engine = useKegelEngine(def);
+  const { state, totalDuration, progress } = engine;
 
-  const finished = elapsed >= def.durationSec;
-  const remaining = Math.max(0, Math.ceil(def.durationSec - elapsed));
+  const [signalsOn, setSignalsOn] = useState(true);
+  const [audioWarning, setAudioWarning] = useState(false);
 
-  const cycle = useMemo(() => def.phases.reduce((a, p) => a + p.seconds, 0), [def]);
-  const windowSec = cycle * CYCLES_SHOWN;
-  // La onda arranca en el centro de la última fase (un valle en CONTRAE/SUELTA), como en la referencia.
-  const lastPhase = def.phases[def.phases.length - 1];
-  const s0 = -lastPhase.seconds / 2;
+  const prevPhase = useRef(state.phase);
+  const completedRef = useRef(false);
 
-  let phaseIdx = 0;
-  {
-    const t = elapsed % cycle;
-    let acc = 0;
-    for (let i = 0; i < def.phases.length; i++) {
-      if (t < acc + def.phases[i].seconds) {
-        phaseIdx = i;
-        break;
-      }
-      acc += def.phases[i].seconds;
+  // Wake Lock mientras la sesión está activa
+  const wakeLock = useWakeLock(state.phase !== "idle" && state.phase !== "done" && !state.paused);
+
+  // Desbloquear audio en primer gesto
+  function handleFirstGesture() {
+    try {
+      unlockAudio();
+    } catch {
+      setAudioWarning(true);
     }
   }
-  const phase = def.phases[phaseIdx];
 
+  // Señales al cambiar de fase
   useEffect(() => {
-    if (paused || finished) return;
-    let last = performance.now();
-    const id = setInterval(() => {
-      const now = performance.now();
-      const dt = (now - last) / 1000;
-      last = now;
-      setElapsed((e) => Math.min(def.durationSec, e + dt));
-    }, 100);
-    return () => clearInterval(id);
-  }, [paused, finished, def]);
+    if (prevPhase.current === state.phase) return;
+    prevPhase.current = state.phase;
+    if (!signalsOn) return;
 
-  useEffect(() => {
-    if (!vibration || paused || finished || elapsed === 0) return;
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(phase.amp > 0.5 ? 60 : 25);
-    // Solo al cambiar de fase.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phaseIdx]);
+    switch (state.phase) {
+      case "prepare":
+        playSound("kegel-countdown");
+        break;
+      case "squeeze":
+        playSound("kegel-squeeze");
+        vibrate(HAPTIC_PATTERNS.kegelSqueeze);
+        break;
+      case "relax":
+        playSound("kegel-relax");
+        vibrate(HAPTIC_PATTERNS.kegelRelax);
+        break;
+      case "rest":
+        vibrate(HAPTIC_PATTERNS.kegelRelax);
+        break;
+      case "done":
+        playSound("kegel-done");
+        vibrate(HAPTIC_PATTERNS.kegelDone);
+        break;
+    }
+  }, [state.phase, signalsOn]);
 
+  // Completar sesión
   useEffect(() => {
-    if (!finished) return;
+    if (state.phase !== "done" || completedRef.current || state.partial) return;
+    completedRef.current = true;
     const today = localDayKey();
     markCompleted(today, def.id);
-    // completeKegelSession tiene idempotencia interna: ignora si ya contó hoy.
     completeKegelSession();
-    emitProgressEvent("kegel.completed", `kegel:${today}:${def.id}`, { sessionId: def.id, durationSeconds: def.durationSec });
-    const id = setTimeout(() => router.replace("/gym/kegel"), 600);
+    emitProgressEvent("kegel.completed", `kegel:${today}:${def.id}`, {
+      sessionId: def.id,
+      durationSeconds: def.durationSec,
+    });
+    const id = setTimeout(() => router.replace("/gym/kegel"), 800);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finished]);
+  }, [state.phase]);
 
-  // ---- onda ----
+  // Datos del ejercicio actual
+  const ex = def.exercises[state.exerciseIndex] ?? def.exercises[0];
+  const totalSets = ex?.sets ?? 1;
+  const totalReps = ex?.reps ?? 1;
+  const squeezeS = ex?.squeezeSeconds ?? 1;
+  const relaxS = ex?.relaxSeconds ?? 1;
+
+  // Tiempo restante en la fase actual
+  const phaseRemaining = Math.max(0, Math.ceil(state.phaseDuration - state.phaseElapsed));
+  // Tiempo total restante de la sesión
+  const sessionRemaining = Math.max(0, Math.ceil(totalDuration * (1 - progress)));
+  const contracted = PHASE_AMP[state.phase] > 0.5;
+
+  // Onda de fondo (ciclo squeeze/relax del ejercicio actual)
   const wavePath = useMemo(() => {
+    const n = 120;
+    const windowSec = (squeezeS + relaxS) * 3;
     const pts: string[] = [];
-    const n = 160;
     for (let i = 0; i <= n; i++) {
-      const t = s0 + (i / n) * windowSec;
-      const y = WAVE_H - 6 - levelAt(def, t) * (WAVE_H - 24);
+      const t = (i / n) * windowSec;
+      const y = WAVE_H - 6 - waveAt(squeezeS, relaxS, t) * (WAVE_H - 24);
       pts.push(`${i === 0 ? "M" : "L"}${((i / n) * WAVE_W).toFixed(1)} ${y.toFixed(1)}`);
     }
     return pts.join(" ");
-  }, [def, s0, windowSec]);
+  }, [squeezeS, relaxS]);
 
-  const labels = useMemo(() => {
-    const out: { x: number; text: string; high: boolean }[] = [];
-    for (let k = 0; k < CYCLES_SHOWN + 1; k++) {
-      let acc = 0;
-      for (const p of def.phases) {
-        const c = k * cycle + acc + p.seconds / 2;
-        const x = ((c - s0) / windowSec) * WAVE_W;
-        if (x > 8 && x < WAVE_W - 8) out.push({ x, text: p.label, high: p.amp > 0.5 });
-        acc += p.seconds;
-      }
-    }
-    return out;
-  }, [def, cycle, s0, windowSec]);
-
-  const cursorX = (((elapsed - s0) % windowSec) / windowSec) * WAVE_W;
-  const cursorY = WAVE_H - 6 - levelAt(def, s0 + (cursorX / WAVE_W) * windowSec) * (WAVE_H - 24);
-  const progress = Math.min(1, elapsed / def.durationSec);
-  const contracted = phase.amp > 0.5;
+  const phaseLabel = state.paused ? "PAUSA" : (PHASE_LABEL[state.phase] ?? state.phase.toUpperCase());
+  const hapticAvailable = isHapticSupported();
 
   return (
-    <div className="fixed inset-0 z-[45] flex flex-col text-white select-none overflow-y-auto app-bg">
+    <div
+      className="fixed inset-0 z-[45] flex flex-col text-white select-none overflow-y-auto app-bg"
+      onPointerDown={handleFirstGesture}
+    >
       <header className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),10px)] h-[calc(3.25rem+max(env(safe-area-inset-top),10px))] shrink-0">
         <button
-          onClick={() => router.push("/gym/kegel")}
+          onClick={() => {
+            if (state.phase !== "done") {
+              engine.exit();
+            }
+            router.push("/gym/kegel");
+          }}
           aria-label="Volver"
           className="w-10 h-10 -ml-2 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
         >
           <ChevronLeft size={26} strokeWidth={2.4} />
         </button>
-        <h1 className="text-[22px] font-bold tracking-tight">Kegel</h1>
-        <span className="w-10 h-10 -mr-2 flex items-center justify-center" aria-hidden>
-          <SettingsGlyph />
-        </span>
+        <h1 className="text-[22px] font-bold tracking-tight">{def.title}</h1>
+        {/* Ícono de señales: interruptor sonido + vibración */}
+        <button
+          onClick={() => setSignalsOn((v) => !v)}
+          aria-label={signalsOn ? "Silenciar señales" : "Activar señales"}
+          aria-pressed={signalsOn}
+          className="w-10 h-10 -mr-2 flex items-center justify-center cursor-pointer active:scale-90 transition-transform"
+          title={!hapticAvailable ? "Vibración no disponible en este dispositivo" : undefined}
+        >
+          {signalsOn
+            ? <Volume2 size={22} strokeWidth={2.2} />
+            : <VolumeX size={22} strokeWidth={2.2} className="opacity-50" />}
+        </button>
       </header>
 
+      {audioWarning && (
+        <p className="text-center text-[13px] px-5 pb-1" style={{ color: "#aab4c8" }}>
+          Toca la pantalla para activar el sonido
+        </p>
+      )}
+
       <div className="flex-1 flex flex-col items-center justify-between px-5 pb-[max(env(safe-area-inset-bottom),18px)] max-w-md w-full mx-auto">
+        {/* Tiempo restante en la fase */}
         <div className="flex flex-col items-center gap-1 pt-1">
           <span className="text-[17px] tracking-wide" style={MONO_FONT}>
-            HOY
+            {phaseLabel}
           </span>
-          <span className="text-[68px] font-bold leading-none tracking-tight tabular-nums">{remaining} sec</span>
+          <span className="text-[68px] font-bold leading-none tracking-tight tabular-nums">
+            {phaseRemaining} sec
+          </span>
         </div>
 
-        {/* Anillo + dibujo */}
+        {/* Anillo + dibujo anatómico */}
         <button
-          onClick={() => setPaused((p) => !p)}
-          aria-label={paused ? "Reanudar" : "Pausar"}
+          onClick={() => state.paused ? engine.resume() : engine.pause()}
+          aria-label={state.paused ? "Reanudar" : "Pausar"}
           className="relative w-[min(66vw,270px)] aspect-square rounded-full cursor-pointer my-3"
           style={{ border: "1.5px solid rgba(255,255,255,0.55)" }}
         >
@@ -178,7 +203,7 @@ export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
                     transform: `rotate(${(i * 360) / SEGMENTS}deg)`,
                     transformOrigin: "50% 385%",
                     background: gone ? "rgba(255,255,255,0.28)" : "#fff",
-                    opacity: paused ? 0.7 : 1,
+                    opacity: state.paused ? 0.7 : 1,
                   }}
                 />
               );
@@ -197,7 +222,7 @@ export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
               <path d="M96 42 L 96 56" />
               <motion.g
                 animate={{ y: contracted ? -7 : 2 }}
-                transition={{ duration: paused ? 0 : phase.seconds, ease: "easeInOut" }}
+                transition={{ duration: state.paused ? 0 : (contracted ? squeezeS : relaxS), ease: "easeInOut" }}
               >
                 <path d="M46 72 Q 68 88 92 68" stroke="#ef4444" strokeWidth="3" />
               </motion.g>
@@ -205,113 +230,46 @@ export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
           </div>
         </button>
 
-        <div className="flex flex-col items-center gap-3 w-full">
-          <span
-            className="px-7 py-2 rounded-full bg-white text-black text-[17px] font-bold tracking-wider"
-            style={MONO_FONT}
-          >
-            {paused ? "PAUSA" : phase.label}
-          </span>
-
-          <div className="w-full flex flex-col gap-2 text-[15px] tracking-wide mt-1" style={MONO_FONT}>
-            <div className="flex items-center gap-3">
-              <span className="whitespace-nowrap">CONTRAE Y SOSTÉN</span>
-              <span className="flex-1 h-px bg-white/70" />
-              <svg viewBox="0 0 40 16" className="w-9 h-4" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round">
-                <path d="M3 3 Q 20 22 37 3" />
-              </svg>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="whitespace-nowrap">CONTRAE Y RELAJA</span>
-              <span className="flex-1 h-px bg-white/70" />
-              <svg viewBox="0 0 40 16" className="w-9 h-4" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12 L 9 4 L 15 12 L 21 4 L 27 12 L 33 4 L 37 8" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
+        {/* Etiqueta de fase */}
         <span
-          className="px-6 py-1.5 rounded-full bg-white text-black text-[15px] font-bold tracking-wider mt-4"
+          className="px-7 py-2 rounded-full bg-white text-black text-[17px] font-bold tracking-wider"
           style={MONO_FONT}
         >
-          {phase.label}
+          {phaseLabel}
         </span>
 
-        {/* Onda */}
+        {/* Onda de ciclo */}
         <div className="relative w-full mt-3" style={{ maxWidth: 360 }}>
           <svg viewBox={`-2 -22 ${WAVE_W + 40} ${WAVE_H + 46}`} className="w-full overflow-visible">
             <line x1="0" y1="-14" x2="0" y2={WAVE_H - 2} stroke="#fff" strokeWidth="1" />
             <line x1="0" y1={WAVE_H - 2} x2={WAVE_W} y2={WAVE_H - 2} stroke="#fff" strokeWidth="1" />
             <line x1={WAVE_W} y1="-14" x2={WAVE_W} y2={WAVE_H - 2} stroke="#fff" strokeWidth="1" />
-            {labels
-              .filter((l) => !l.high)
-              .map((l, i) => (
-                <line key={i} x1={l.x} y1="-14" x2={l.x} y2={WAVE_H - 2} stroke="rgba(255,255,255,0.55)" strokeWidth="1" strokeDasharray="4 4" />
-              ))}
             <path d={wavePath} stroke="#fff" strokeWidth="2.2" fill="none" strokeLinejoin="round" />
-            <circle cx={cursorX} cy={cursorY} r="4.5" fill="#fff" />
-            {labels.map((l, i) => (
-              <text
-                key={i}
-                x={l.x}
-                y={l.high ? -6 : WAVE_H + 14}
-                textAnchor="middle"
-                fontSize="10.5"
-                fill="#fff"
-                style={MONO_FONT}
-              >
-                {l.text}
-              </text>
-            ))}
-            {[
-              { v: "10", y: -6 },
-              { v: "5", y: WAVE_H / 2 - 2 },
-              { v: "2", y: WAVE_H - 20 },
-              { v: "0", y: WAVE_H - 2 },
-            ].map((t) => (
-              <text key={t.v} x={WAVE_W + 10} y={t.y + 4} fontSize="10.5" fill="#fff" style={MONO_FONT}>
-                {t.v}
-              </text>
-            ))}
           </svg>
         </div>
 
-        {/* Barra de avance */}
-        <div className="relative w-full h-[18px] mt-4" aria-hidden>
-          <div className="absolute left-2 right-2 top-1/2 -translate-y-1/2 h-[8px] rounded-full" style={{ background: "#3a3a3d" }} />
-          {[1, 2, 3, 4, 5, 6].map((i) => (
+        {/* BARRA DE PROGRESO REAL — serie · rep · tiempo restante sesión */}
+        <div className="w-full mt-4" aria-label="Progreso de la sesión">
+          <div className="flex justify-between text-[13px] mb-2" style={{ ...MONO_FONT, color: "#aab4c8" }}>
+            <span>SERIE {state.setIndex + 1}/{totalSets}</span>
+            <span>REP {state.repIndex + 1}/{totalReps}</span>
+            <span>{Math.floor(sessionRemaining / 60)}:{String(sessionRemaining % 60).padStart(2, "0")} restante</span>
+          </div>
+          <div className="relative w-full h-[18px]" aria-hidden>
+            <div className="absolute left-2 right-2 top-1/2 -translate-y-1/2 h-[8px] rounded-full" style={{ background: "#3a3a3d" }} />
             <span
-              key={i}
-              className="absolute top-1/2 w-[3px] h-[3px] -mt-[1.5px] rounded-full bg-white/80"
-              style={{ left: `calc(8px + (100% - 16px) * ${i / 7})` }}
+              className="absolute top-1/2 w-[20px] h-[20px] -mt-[10px] rounded-full bg-white"
+              style={{ left: `calc((100% - 20px) * ${progress})`, boxShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
             />
-          ))}
-          <span
-            className="absolute top-1/2 w-[20px] h-[20px] -mt-[10px] rounded-full bg-white"
-            style={{ left: `calc((100% - 20px) * ${progress})`, boxShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
-          />
+          </div>
         </div>
 
-        {/* Vibración */}
-        <div className="flex items-center gap-3 mt-4 pb-1">
-          <button
-            onClick={() => setVibration((v) => !v)}
-            role="switch"
-            aria-checked={vibration}
-            aria-label="Vibración"
-            className="relative w-[78px] h-[42px] rounded-full cursor-pointer transition-colors"
-            style={{ background: vibration ? "#3a3a3d" : "#232325" }}
-          >
-            <span
-              className="absolute top-[5px] w-[32px] h-[32px] rounded-full bg-white transition-all"
-              style={{ left: vibration ? 41 : 5, boxShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
-            />
-          </button>
-          <span className="text-[16px] tracking-wide" style={MONO_FONT}>
-            VIBRACIÓN
-          </span>
-        </div>
+        {/* Info si Wake Lock no está disponible */}
+        {!wakeLock.supported && (
+          <p className="text-[12px] mt-2 opacity-40" style={MONO_FONT}>
+            Mantén la pantalla activa manualmente
+          </p>
+        )}
       </div>
     </div>
   );

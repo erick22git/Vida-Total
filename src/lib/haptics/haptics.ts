@@ -15,6 +15,14 @@ export const HAPTIC_PATTERNS = {
   milestone: [30, 50, 30, 50, 60],
   /** Fin del descanso entre series: vibración de ALARMA, constante ~3 s (4 pulsos largos con pausas mínimas). */
   restEnd: [600, 150, 600, 150, 600, 150, 600],
+  /** Kegel: señal de apretar. */
+  kegelSqueeze: [40, 20, 40],
+  /** Kegel: señal de soltar / relajar. */
+  kegelRelax: [20],
+  /** Kegel: inicio de cuenta atrás. */
+  kegelPrepare: [15],
+  /** Kegel: sesión completada. */
+  kegelDone: [30, 40, 30, 40, 60],
 } as const;
 
 export function vibrate(pattern: readonly number[]): void {
