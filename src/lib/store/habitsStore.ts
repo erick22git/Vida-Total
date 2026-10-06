@@ -704,6 +704,62 @@ function mergeById<T extends { id: string }>(remote: T[], local: T[]): { merged:
   return { merged: [...remote, ...localOnly], localOnly };
 }
 
+/** Une dos arrays de strings sin duplicados, ordenados. */
+function mergeDates(a: readonly string[], b: readonly string[]): string[] {
+  return [...new Set([...a, ...b])].sort();
+}
+
+/**
+ * Mezcla dos versiones de una HabitRoutine (remota y local) preservando
+ * los días marcados en AMBAS. Gana el remoto en metadatos (nombre, hora de
+ * cada paso) pero los `completedDates` se unen — nunca se pierden días ya
+ * marcados en ningún dispositivo.
+ */
+function mergeRoutine(remote: HabitRoutine, local: HabitRoutine): HabitRoutine {
+  const remoteStepsById = new Map(remote.items.map((s) => [s.id, s] as const));
+  const localStepsById = new Map(local.items.map((s) => [s.id, s] as const));
+  const allStepIds = [...new Set([...remote.items.map((s) => s.id), ...local.items.map((s) => s.id)])];
+  const items = allStepIds.map((id) => {
+    const r = remoteStepsById.get(id);
+    const l = localStepsById.get(id);
+    if (!r) return l!;
+    if (!l) return r;
+    return { ...r, completedDates: mergeDates(r.completedDates, l.completedDates) };
+  });
+  return {
+    ...remote,
+    completedDates: mergeDates(remote.completedDates, local.completedDates),
+    streak: Math.max(remote.streak, local.streak),
+    milestonesUnlocked: [...new Set([...remote.milestonesUnlocked, ...local.milestonesUnlocked])],
+    items,
+  };
+}
+
+/**
+ * Mezcla rutinas remoto+local con merge PROFUNDO de completedDates.
+ * A diferencia de mergeById (que para rutinas compartidas usa solo el
+ * remoto y pierde los días marcados localmente), esta función une los
+ * completedDates de ambas versiones para cada rutina que exista en los dos.
+ */
+function mergeRoutines(
+  remote: HabitRoutine[],
+  local: HabitRoutine[],
+): { merged: HabitRoutine[]; localOnly: HabitRoutine[] } {
+  const localById = new Map(local.map((r) => [r.id, r] as const));
+  const remoteById = new Map(remote.map((r) => [r.id, r] as const));
+  const remoteIds = new Set(remote.map((r) => r.id));
+  const localOnly = local.filter((l) => !remoteIds.has(l.id));
+  const allIds = [...new Set([...remote.map((r) => r.id), ...local.map((r) => r.id)])];
+  const merged = allIds.map((id) => {
+    const r = remoteById.get(id);
+    const l = localById.get(id);
+    if (!r) return l!;
+    if (!l) return r;
+    return mergeRoutine(r, l);
+  });
+  return { merged, localOnly };
+}
+
 /**
  * Mezcla las 3 columnas fijas de kanban_columns por `column_id` (no por
  * `id` genérico — esta tabla no tiene una columna `id`, ver
@@ -786,7 +842,10 @@ export async function hydrateHabitsStore(userId: string): Promise<void> {
           c.id === "por-hacer" ? { ...c, taskIds: [...c.taskIds, ...orphanTaskIds] } : c,
         );
 
-  const routines = mergeById(remote.routines, local.routines);
+  // Rutinas: merge PROFUNDO — preserva completedDates de ambas versiones.
+  // mergeById simple tomaría solo el remoto y perdería días ya marcados en este
+  // dispositivo que aún no se habían subido al servidor.
+  const routines = mergeRoutines(remote.routines, local.routines);
 
   const patch: Partial<HabitsState> = {
     routines: routines.merged,
@@ -803,7 +862,19 @@ export async function hydrateHabitsStore(userId: string): Promise<void> {
   // Backfill: sube a Supabase lo que era solo local.
   for (const task of tasks.localOnly) syncInsertTask(task, userId);
   for (const habit of habits.localOnly) syncInsertHabit(habit, userId);
+  // Rutinas: subir tanto las solo-locales como las merged que tenían días
+  // locales no sincronizados (el merge puede haber sumado completedDates que
+  // el servidor no tenía todavía).
   for (const routine of routines.localOnly) syncUpsertRoutine(routine, userId);
+  {
+    const remoteById = new Map(remote.routines.map((r) => [r.id, r] as const));
+    for (const r of routines.merged) {
+      const orig = remoteById.get(r.id);
+      if (orig && (orig.completedDates.length !== r.completedDates.length || orig.streak !== r.streak)) {
+        syncUpsertRoutine(r, userId);
+      }
+    }
+  }
   // Valores por día que solo existían en este dispositivo (creados antes de la
   // migración): se suben a habit_completions.
   for (const h of habits.merged) {
