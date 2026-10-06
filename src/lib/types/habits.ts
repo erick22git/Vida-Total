@@ -83,6 +83,11 @@ export interface RoutineStep {
    * hábito (misma `completedDates`) — nunca se duplica el dato acá. */
   habitId?: string;
   durationMin?: number;
+  /** Días de la semana en que este paso aplica dentro de la rutina activa.
+   * Usa la convención de Date.getDay(): 0=dom, 1=lun, …, 6=sáb.
+   * Sin el campo = el paso aplica todos los días en que la rutina esté activa. */
+  diasSemana?: number[];
+  categoryId?: string;
   /** Solo se usa cuando `habitId` es `undefined` — un paso sin hábito
    * vinculado (p.ej. "despertar") lleva su propio registro de qué días se
    * cumplió, con la misma forma que `Habit.completedDates`. */
@@ -99,6 +104,12 @@ export interface HabitRoutine {
   completedDates: string[];
   streak: number;
   milestonesUnlocked: number[];
+  /** Días de la semana en que esta rutina está activa.
+   * Usa la convención de Date.getDay(): 0=dom, 1=lun, …, 6=sáb.
+   * Sin el campo = activa todos los días. Retrocompatible. */
+  diasSemana?: number[];
+  /** Fecha de fin opcional ("YYYY-MM-DD"). Sin valor = sin fin definido. */
+  endsAt?: string;
 }
 
 export interface TimeBlock {

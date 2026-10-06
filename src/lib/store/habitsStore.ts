@@ -724,7 +724,12 @@ function mergeRoutine(remote: HabitRoutine, local: HabitRoutine): HabitRoutine {
     const l = localStepsById.get(id);
     if (!r) return l!;
     if (!l) return r;
-    return { ...r, completedDates: mergeDates(r.completedDates, l.completedDates) };
+    return {
+      ...r,
+      completedDates: mergeDates(r.completedDates, l.completedDates),
+      // diasSemana en el paso: el remoto gana si existe, si no conserva el local
+      diasSemana: r.diasSemana ?? l.diasSemana,
+    };
   });
   return {
     ...remote,
@@ -732,6 +737,8 @@ function mergeRoutine(remote: HabitRoutine, local: HabitRoutine): HabitRoutine {
     streak: Math.max(remote.streak, local.streak),
     milestonesUnlocked: [...new Set([...remote.milestonesUnlocked, ...local.milestonesUnlocked])],
     items,
+    diasSemana: remote.diasSemana ?? local.diasSemana,
+    endsAt: remote.endsAt ?? local.endsAt,
   };
 }
 

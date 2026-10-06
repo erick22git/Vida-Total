@@ -354,6 +354,9 @@ interface HabitRoutineRow {
   streak: number;
   milestones_unlocked: number[];
   created_at?: string;
+  // columnas agregadas en migración 0007 (pueden ser undefined si la migración no fue aplicada)
+  dias_semana?: number[] | null;
+  ends_at?: string | null;
 }
 
 function routineToRow(r: HabitRoutine, userId: string): HabitRoutineRow {
@@ -366,6 +369,8 @@ function routineToRow(r: HabitRoutine, userId: string): HabitRoutineRow {
     streak: r.streak,
     milestones_unlocked: r.milestonesUnlocked,
     created_at: new Date(r.createdAt).toISOString(),
+    dias_semana: r.diasSemana ?? null,
+    ends_at: r.endsAt ?? null,
   };
 }
 
@@ -378,6 +383,8 @@ function rowToRoutine(row: HabitRoutineRow): HabitRoutine {
     streak: row.streak ?? 0,
     milestonesUnlocked: row.milestones_unlocked ?? [],
     createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+    diasSemana: row.dias_semana ?? undefined,
+    endsAt: row.ends_at ?? undefined,
   };
 }
 
