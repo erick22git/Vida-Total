@@ -16,6 +16,7 @@ import type {
   TimeBlock,
 } from "@/lib/types/habits";
 import { isStepDoneOn } from "@/lib/routine-utils";
+import { SEED_RUTINAS } from "@/lib/data/seed-mi-rutina";
 import { getCurrentUserId } from "./user-scope";
 import {
   syncInsertTask,
@@ -161,6 +162,9 @@ interface HabitsState {
   addRoutine: (nombre: string, items: Array<Omit<RoutineStep, "id" | "completedDates">>) => HabitRoutine;
   updateRoutineItems: (id: string, items: Array<Omit<RoutineStep, "completedDates"> & { completedDates?: string[] }>) => void;
   deleteRoutine: (id: string) => void;
+  /** Importa las rutinas reales del seed (idempotente: no duplica, no pisa
+   * completedDates ni cambios que el usuario ya haya hecho). */
+  importMiRutina: () => void;
   /** Marca/desmarca un paso para HOY. Si el paso está vinculado a un
    * hábito, delega en `toggleHabitToday` (misma fuente de verdad, sin
    * duplicar dato) y además evalúa si con esto la rutina completa quedó
@@ -482,6 +486,38 @@ export const useHabitsStore = create<HabitsState>()(
       },
       deleteRoutine: (id) => {
         set((state) => ({ routines: state.routines.filter((r) => r.id !== id) }));
+      },
+      importMiRutina: () => {
+        set((state) => {
+          const existingById = new Map(state.routines.map((r) => [r.id, r]));
+          const next = [...state.routines];
+          for (const seed of SEED_RUTINAS) {
+            const existing = existingById.get(seed.id);
+            if (!existing) {
+              next.push({ ...seed, createdAt: Date.now() });
+            } else {
+              // ya existe: actualiza metadatos (nombre, diasSemana, endsAt, pasos)
+              // pero preserva completedDates y items[].completedDates del usuario
+              const existingStepsById = new Map(existing.items.map((s) => [s.id, s]));
+              const mergedItems = seed.items.map((seedStep) => {
+                const ex = existingStepsById.get(seedStep.id);
+                return ex
+                  ? { ...seedStep, completedDates: ex.completedDates }
+                  : { ...seedStep };
+              });
+              const idx = next.indexOf(existing);
+              next[idx] = {
+                ...seed,
+                createdAt: existing.createdAt,
+                completedDates: existing.completedDates,
+                streak: existing.streak,
+                milestonesUnlocked: existing.milestonesUnlocked,
+                items: mergedItems,
+              };
+            }
+          }
+          return { routines: next };
+        });
       },
       toggleRoutineStep: (routineId, stepId) => {
         const state = get();

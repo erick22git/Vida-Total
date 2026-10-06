@@ -3,10 +3,11 @@
 import { useRef, useState, type ReactNode } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { AlertTriangle, CalendarDays, ListTodo, Loader2, Lock, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, CalendarDays, Check, ListTodo, Loader2, Lock, Trash2, Upload } from "lucide-react";
 import { parseICS } from "@/lib/agenda/ics";
 import { CALENDAR_COLORS, CALENDAR_PROVIDERS } from "@/lib/agenda/providers";
 import { useAgendaStore } from "@/lib/agenda/store";
+import { useHabitsStore } from "@/lib/store/habitsStore";
 import type { AgendaCalendar } from "@/lib/agenda/types";
 import { PaletteManager } from "./palette";
 import { CARD, CHIP } from "./sheet";
@@ -27,6 +28,17 @@ function Card({ title, children, icon }: { title: string; children: ReactNode; i
 
 /** Ajustes de la Agenda: calendarios y recordatorios importados, paleta de colores, rueda de hora y alertas. */
 export function SettingsView() {
+  const importMiRutina = useHabitsStore((s) => s.importMiRutina);
+  const routines = useHabitsStore((s) => s.routines);
+  const [imported, setImported] = useState(false);
+
+  function handleImportRutina() {
+    importMiRutina();
+    setImported(true);
+  }
+
+  const alreadyImported = routines.some((r) => r.id === "seed-semana-lun-vie");
+
   const calendars = useAgendaStore((s) => s.calendars);
   const sync = useAgendaStore((s) => s.sync);
   const setSync = useAgendaStore((s) => s.setSync);
@@ -94,6 +106,25 @@ export function SettingsView() {
         <p className="text-[13px] font-semibold mt-3 px-1" style={{ color: "rgba(255,255,255,0.45)" }}>
           Los recordatorios sin fecha entran a la Bandeja; los que tienen fecha y hora aparecen en la línea de tiempo con una campana.
         </p>
+      </Card>
+
+      <Card title="Mis Rutinas" icon={<Upload size={22} />}>
+        <p className="text-[13px] font-semibold mb-3" style={{ color: "rgba(255,255,255,0.55)" }}>
+          Importa tus rutinas reales (comidas, gym, clases, sábado) al store sincronizado. Puedes ejecutarlo varias veces sin duplicar datos ni perder días marcados.
+        </p>
+        <button
+          onClick={handleImportRutina}
+          disabled={imported}
+          className="w-full h-12 rounded-2xl flex items-center justify-center gap-2.5 text-[16px] font-extrabold cursor-pointer disabled:opacity-60 transition-opacity"
+          style={{ background: imported ? "#2a2a2e" : "#fff", color: imported ? "rgba(255,255,255,0.7)" : "#111" }}
+        >
+          {imported ? <><Check size={18} strokeWidth={3} /> Importado</> : "Importar mi rutina"}
+        </button>
+        {alreadyImported && !imported && (
+          <p className="text-[12px] font-semibold mt-2 px-1" style={{ color: "rgba(255,255,255,0.4)" }}>
+            Las rutinas ya están en el dispositivo. Al importar de nuevo se actualizan sin borrar tus datos.
+          </p>
+        )}
       </Card>
 
       <Card title="Paleta de colores">
