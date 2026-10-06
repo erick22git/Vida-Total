@@ -12,6 +12,8 @@ import { inboxTasks, useAgendaStore } from "@/lib/agenda/store";
 import { isInProgress, nowMinutes, toISODate } from "@/lib/agenda/time";
 import { useNow } from "@/lib/agenda/use-now";
 import type { AgendaTask } from "@/lib/agenda/types";
+import { useHabitsStore } from "@/lib/store/habitsStore";
+import { stepsForDate } from "@/lib/routine-utils";
 import { ConfirmSheet, CopyTasksSheet } from "./agenda-sheets";
 import { DatePickerSheet, MenuRow } from "./pickers";
 import { DayTimeline } from "./day-timeline";
@@ -56,6 +58,9 @@ export function AgendaScreen() {
   const [replan, setReplan] = useState<null | { scope: string | null }>(null);
   const [scheduleId, setScheduleId] = useState<string | null>(null);
   const swipe = useRef<number | null>(null);
+
+  const routines = useHabitsStore((s) => s.routines);
+  const routineStepsForDay = useMemo(() => stepsForDate(routines, date), [routines, date]);
 
   const dayTasks = useMemo(() => occurrencesOn(tasks, date), [tasks, date]);
   // Tareas pasadas sin completar (Replan). Se recalcula cuando cambian las tareas o el reloj.
@@ -142,6 +147,7 @@ export function AgendaScreen() {
             onSelect={setSelectedId}
             onOpen={(id) => setEditor({ mode: "edit", id, date })}
             bottomPad={PEEK_H + NAV_H + 30}
+            routineSteps={routineStepsForDay}
           />
         )}
         {tab === "inbox" && (

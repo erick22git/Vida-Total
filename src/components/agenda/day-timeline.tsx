@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { hourParts, layoutDay, nowMinutes, taskProgress, toISODate } from "@/lib/agenda/time";
 import type { AgendaTask } from "@/lib/agenda/types";
+import type { RoutineStepForDay } from "@/lib/routine-utils";
 import { TaskNode } from "./task-node";
 
 const NODE_W = 37;
@@ -16,10 +17,12 @@ export function Notch({ size = 28 }: { size?: number }) {
 /**
  * Línea de tiempo vertical del día. Las horas con tareas se expanden y las vacías se comprimen; cada tarea es un
  * círculo/cápsula sobre una línea central, más alta cuanto más dura. La hora actual va llenando el bloque.
+ * `routineSteps` (opcional): pasos de HabitRoutine activos ese día — se muestran a la derecha como etiquetas
+ * de solo lectura sin alterar el layout de las AgendaTasks.
  */
 export function DayTimeline({
-  date, tasks, now, selectedId, onSelect, onOpen, bottomPad,
-}: { date: string; tasks: AgendaTask[]; now: Date; selectedId: string | null; onSelect: (id: string) => void; onOpen: (id: string) => void; bottomPad: number }) {
+  date, tasks, now, selectedId, onSelect, onOpen, bottomPad, routineSteps = [],
+}: { date: string; tasks: AgendaTask[]; now: Date; selectedId: string | null; onSelect: (id: string) => void; onOpen: (id: string) => void; bottomPad: number; routineSteps?: RoutineStepForDay[] }) {
   const layout = useMemo(() => layoutDay(tasks), [tasks]);
   const scroller = useRef<HTMLDivElement>(null);
   const isToday = date === toISODate(now);
@@ -86,6 +89,28 @@ export function DayTimeline({
             {tasks.filter((t) => t.allDay).length} todo el día
           </p>
         )}
+
+        {/* Pasos de rutinas — etiquetas de solo lectura a la derecha del eje */}
+        {routineSteps.map((step) => {
+          const [h, m] = step.hora.split(":").map(Number);
+          const startMin = h * 60 + m;
+          const top = layout.yFor(startMin);
+          return (
+            <div
+              key={step.id}
+              aria-label={`Rutina: ${step.hora} ${step.label}`}
+              className="absolute flex flex-col pointer-events-none select-none"
+              style={{ left: "68%", right: 6, top: top - 1 }}
+            >
+              <span className="text-[10px] font-bold tabular-nums leading-none" style={{ color: "rgba(255,255,255,0.35)" }}>
+                {step.hora}
+              </span>
+              <span className="text-[11px] font-semibold leading-tight truncate" style={{ color: "rgba(255,255,255,0.45)" }}>
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
