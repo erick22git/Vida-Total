@@ -1,16 +1,17 @@
 "use client";
 
 /**
- * Kegel — rediseño estilo Not Boring (Hábitos). Dos vistas que se cambian deslizando en vertical:
- *   0 = "El Plan Personal de Hoy" (5 sesiones en línea de tiempo + franja de los últimos 7 días)
+ * Kegel — tres vistas deslizables en vertical:
+ *   0 = "El Plan Personal de Hoy" (5 sesiones + franja 7 días)
  *   1 = año (conos dorados por cada día cumplido)
- * Tocar una sesión abre `/gym/kegel/sesion/[id]`; al terminar su tiempo vuelve acá y queda marcada.
+ *   2 = progreso (racha, récord, nivel, cuadrícula semanas)
  */
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { BookOpen, Check, ChevronLeft, Clock, Dumbbell, Flower2 } from "lucide-react";
 import { KegelSettingsSheet } from "@/components/gym/kegel-settings-sheet";
+import { KegelProgressView } from "@/components/gym/kegel-progress-view";
 import { localDayKey } from "@/lib/gym/kegel-dates";
 import { WeekStrip } from "@/components/shared/week-strip";
 import { CalorieYearView } from "@/components/gym/calorie-year-view";
@@ -19,7 +20,7 @@ import { KEGEL_SESSIONS, formatDuration, type KegelSessionKind } from "@/lib/gym
 import { fullyDoneDays, useKegelPlanStore } from "@/lib/store/kegelPlanStore";
 import { useGymStore } from "@/lib/store/gymStore";
 
-const VIEW_COUNT = 2;
+const VIEW_COUNT = 3;
 const SWIPE_Y = 60;
 
 const slideY = {
@@ -175,7 +176,7 @@ export default function KegelPage() {
                   <WeekStrip doneKeys={doneDays} todayISO={todayISO} viewIndex={view} viewCount={VIEW_COUNT} />
                 </div>
               </div>
-            ) : (
+            ) : view === 1 ? (
               <CalorieYearView
                 loggedDayKeys={doneDays}
                 todayISO={todayISO}
@@ -185,6 +186,8 @@ export default function KegelPage() {
                 allGold
                 showStreak={false}
               />
+            ) : (
+              <KegelProgressView viewIndex={view} viewCount={VIEW_COUNT} />
             )}
           </motion.div>
         </AnimatePresence>
