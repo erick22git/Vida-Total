@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, Check, ChevronLeft, Clock, Dumbbell, Flower2 } from "lucide-react";
+import { BookOpen, Check, ChevronLeft, Clock, Dumbbell, Flower2, Info } from "lucide-react";
 import { KegelSettingsSheet } from "@/components/gym/kegel-settings-sheet";
 import { KegelProgressView } from "@/components/gym/kegel-progress-view";
 import { localDayKey } from "@/lib/gym/kegel-dates";

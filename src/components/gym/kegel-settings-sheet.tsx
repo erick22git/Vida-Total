@@ -13,7 +13,8 @@
  */
 import { useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { SlidersHorizontal, X, RotateCcw } from "lucide-react";
+import { SlidersHorizontal, X, RotateCcw, Info } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { usePreferencesStore } from "@/lib/store/preferencesStore";
 import { useKegelSettingsStore } from "@/lib/store/kegelSettingsStore";
@@ -109,6 +110,7 @@ function Stepper({
 export function KegelSettingsSheet() {
   const [open, setOpen] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const soundEnabled = usePreferencesStore((s) => s.soundEnabled);
   const setSoundEnabled = usePreferencesStore((s) => s.setSoundEnabled);
@@ -246,6 +248,18 @@ export function KegelSettingsSheet() {
                 >
                   <RotateCcw size={18} strokeWidth={2.4} />
                   <span className="text-[15px]">Resetear progreso del plan</span>
+                </button>
+
+                {/* Sección: Info */}
+                <p className="text-[11px] uppercase tracking-widest mb-1 pt-5" style={{ ...MONO_FONT, color: "#888" }}>
+                  Información
+                </p>
+                <button
+                  onClick={() => { setOpen(false); router.push("/gym/kegel/info"); }}
+                  className="flex items-center gap-3 w-full py-3 border-b border-white/10 active:opacity-70"
+                >
+                  <Info size={18} strokeWidth={2.4} />
+                  <span className="text-[15px]">Cómo hacerlo · Cuándo parar</span>
                 </button>
 
                 {/* Pie */}
