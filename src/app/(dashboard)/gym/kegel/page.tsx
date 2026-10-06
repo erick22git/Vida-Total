@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { BookOpen, Check, ChevronLeft, Clock, Dumbbell, Flower2 } from "lucide-react";
-import { SettingsGlyph } from "@/components/shared/settings-glyph";
+import { KegelSettingsSheet } from "@/components/gym/kegel-settings-sheet";
 import { localDayKey } from "@/lib/gym/kegel-dates";
 import { WeekStrip } from "@/components/shared/week-strip";
 import { CalorieYearView } from "@/components/gym/calorie-year-view";
@@ -88,8 +88,8 @@ export default function KegelPage() {
             Kegel
           </h1>
         )}
-        <span className="w-10 h-10 -mr-2 flex items-center justify-center" aria-hidden>
-          <SettingsGlyph />
+        <span className="w-10 h-10 -mr-2 flex items-center justify-center">
+          <KegelSettingsSheet />
         </span>
       </header>
 

@@ -9,6 +9,8 @@ interface KegelPlanState {
   completed: Record<string, string[]>;
   /** @param dayKey clave local "yyyy-MM-dd" — usar `localDayKey()` del módulo kegel-dates, nunca toISOString(). */
   markCompleted: (dayKey: string, sessionId: string) => void;
+  /** Borra todos los días completados (reset del plan). */
+  resetCompleted: () => void;
 }
 
 export const useKegelPlanStore = create<KegelPlanState>()(
@@ -21,6 +23,7 @@ export const useKegelPlanStore = create<KegelPlanState>()(
           if (prev.includes(sessionId)) return s;
           return { completed: { ...s.completed, [dateISO]: [...prev, sessionId] } };
         }),
+      resetCompleted: () => set({ completed: {} }),
     }),
     {
       name: "vida-total-kegel-plan",
