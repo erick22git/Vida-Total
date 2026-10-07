@@ -31,7 +31,10 @@ export async function POST(req: Request) {
   if (!db) return NextResponse.json({ ok: true });
   // Deduplicación: el primer insert gana; un reintento de Telegram choca con la clave primaria y se ignora.
   const { error } = await db.from("telegram_updates").insert({ update_id: inb.updateId });
-  if (error) return NextResponse.json({ ok: true, dup: true });
+  // 23505 = clave duplicada = Telegram reintentó un update que ya se recibió. Cualquier otro error (p. ej. la tabla aún no existe)
+  // se registra y se sigue: sin deduplicación, pero el mensaje no se pierde.
+  if (error?.code === "23505") return NextResponse.json({ ok: true, dup: true });
+  if (error) console.error("[telegram] no se pudo registrar el update_id (¿falta aplicar la migración 0014?):", error.message);
 
   after(async () => {
     try {
