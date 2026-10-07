@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, ShieldCheck } from "lucide-react";
+import { Bot, LogOut, ShieldCheck } from "lucide-react";
 import { GlassModal } from "@/components/glass/glass-modal";
 import { createClient } from "@/lib/supabase/client";
 import { setCurrentUserId } from "@/lib/store/user-scope";
@@ -107,6 +107,14 @@ export function UserMenu({
             <span className="text-[11px] uppercase tracking-wide text-white/40 px-1">Apariencia</span>
             <ThemeToggle />
           </div>
+          <Link
+            href="/configuracion/agente"
+            onClick={() => setOpen(false)}
+            className="w-full rounded-2xl px-5 py-3 inline-flex items-center justify-center gap-2 text-sm font-medium text-white bg-white/[0.06] glass-specular-ring hover:bg-white/[0.1] transition-colors cursor-pointer"
+          >
+            <Bot size={16} />
+            Agente y permisos
+          </Link>
           {isAdmin && (
             <Link
               href="/admin"
