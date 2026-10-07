@@ -63,7 +63,7 @@ export default function RangoPage() {
     const out: Record<string, RegionStyle> = {};
     for (const m of ALL_MUSCLES) {
       const rank = profile?.byMuscle[m]?.rank ?? null;
-      out[m] = { color: rank ? rank.tier.color : null, dim: focusRegions ? !focusRegions.includes(m) : false };
+      out[m] = { color: rank ? rank.tier.color : null, tier: rank ? rank.tier.key : null, dim: focusRegions ? !focusRegions.includes(m) : false };
     }
     return out;
   }, [profile, focusRegions]);

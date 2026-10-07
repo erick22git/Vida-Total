@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { NO_RANK_MATERIAL, RANK_MATERIALS, RANK_TIER_DEFS, type RankMaterial } from "@/lib/gym/rank-config";
 
 /**
  * Cuerpo 3D de la pantalla de Rango. El GLB (`rango_cuerpo_m_001`) es UNA malla con 14 pesos de región por vértice (atributos
@@ -18,43 +19,82 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 export interface RegionStyle {
   /** Color del rango (CSS). null = sin rango (gris neutro). */
   color: string | null;
+  /** Clave del rango (`RANK_TIER_DEFS[i].key`) para elegir su material; si falta se deduce de `color`. */
+  tier?: string | null;
   /** true = fuera del grupo en foco: se oscurece. */
   dim?: boolean;
 }
 
 /** Orden de los canales de peso en el GLB. DEBE coincidir con REGIONS de tools/3d/blender/70_rango_cuerpo.py. */
 export const REGION_KEYS = [
-  "Pecho",
-  "Espalda",
-  "Hombros",
-  "Biceps",
-  "Triceps",
-  "Antebrazo",
-  "Abdomen",
-  "Gluteos",
-  "Cuadriceps",
-  "Femoral",
-  "Aductores",
-  "Abductores",
-  "Pantorrilla",
-  "Neutro",
+  "Pecho",      // _REGA.x  (slot 0)
+  "Espalda",    // _REGA.y  (slot 1)
+  "Hombros",    // _REGA.z  (slot 2)
+  "Biceps",     // _REGA.w  (slot 3)
+  "Triceps",    // _REGB.x  (slot 4)
+  "Antebrazo",  // _REGB.y  (slot 5)
+  "Abdomen",    // _REGB.z  (slot 6)
+  "Gluteos",    // _REGB.w  (slot 7)
+  "Cuadriceps", // _REGC.x  (slot 8)
+  "Femoral",    // _REGC.y  (slot 9)
+  "Aductores",  // _REGC.z  (slot 10)
+  "Abductores", // _REGC.w  (slot 11)
+  "Pantorrilla",// _REGD.x  (slot 12)
+  "Cuello",     // _REGD.y  (slot 13)
+  "Neutro",     // _REGD.z  (slot 14)
 ] as const;
 const N = REGION_KEYS.length;
 const NEUTRO = REGION_KEYS.indexOf("Neutro");
 const WEIGHT_ATTRS = ["_REGA", "_REGB", "_REGC", "_REGD"] as const;
 
-const NEUTRAL_REGION = "#6b7280"; // músculo sin rango
-const SKIN_REGION = "#51545d"; // cabeza, manos, pies
-const DIM_REGION = "#2a2c33";
+const SKIN_MATERIAL: RankMaterial = { base: "#51545d", light: "#5a5d66", shade: "#444750", shine: 0, rough: 1, tint: "#51545d" }; // cabeza, manos, pies
+const DIM_MATERIAL: RankMaterial = { base: "#2a2c33", light: "#2d2f37", shade: "#25272d", shine: 0, rough: 1, tint: "#2a2c33" };
+const SKIN_REGION = SKIN_MATERIAL.base;
 /** Cuánto se "afila" el borde entre regiones (más alto = borde más fino). */
 const EDGE_SHARPNESS = 34;
+
+/** Material de una región en 4 vec4 (para el shader): A = luz.rgb + brillo · B = sombra.rgb + aspereza · C = tinte.rgb + iridiscencia · D = luz interior. */
+interface MaterialVecs {
+  a: THREE.Vector4;
+  b: THREE.Vector4;
+  c: THREE.Vector4;
+  d: THREE.Vector4;
+}
+const newVecs = (): MaterialVecs => ({ a: new THREE.Vector4(), b: new THREE.Vector4(), c: new THREE.Vector4(), d: new THREE.Vector4() });
+const tmpColor = new THREE.Color();
+function fillVecs(v: MaterialVecs, m: RankMaterial) {
+  tmpColor.set(m.light);
+  v.a.set(tmpColor.r, tmpColor.g, tmpColor.b, m.shine);
+  tmpColor.set(m.shade);
+  v.b.set(tmpColor.r, tmpColor.g, tmpColor.b, m.rough);
+  tmpColor.set(m.tint);
+  v.c.set(tmpColor.r, tmpColor.g, tmpColor.b, m.irid ?? 0);
+  v.d.set(m.inner ?? 0, 0, 0, 0);
+}
+const dist2 = (a: THREE.Vector4, b: THREE.Vector4) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2 + (a.w - b.w) ** 2;
+function vecsClose(a: MaterialVecs, b: MaterialVecs) {
+  return dist2(a.a, b.a) + dist2(a.b, b.b) + dist2(a.c, b.c) + dist2(a.d, b.d) < 1e-6;
+}
 
 interface RegionState {
   color: THREE.Color;
   target: THREE.Color;
+  mat: MaterialVecs;
+  matTarget: MaterialVecs;
   glow: number;
   glowTarget: number;
   box: THREE.Box3;
+}
+
+/** Material del rango de un estilo: por `tier`, o por coincidencia de color con un rango, o "sin rango". */
+function materialFor(st: RegionStyle): RankMaterial {
+  const byTier = st.tier ? RANK_MATERIALS[st.tier] : undefined;
+  if (byTier) return byTier;
+  if (st.color) {
+    const t = RANK_TIER_DEFS.find((d) => d.color.toLowerCase() === st.color!.toLowerCase());
+    if (t && RANK_MATERIALS[t.key]) return RANK_MATERIALS[t.key];
+  }
+  return NO_RANK_MATERIAL;
 }
 
 export class RankBodyRenderer {
@@ -63,15 +103,27 @@ export class RankBodyRenderer {
   private camera = new THREE.PerspectiveCamera(26, 1, 0.1, 30);
   private root = new THREE.Group();
   private mesh: THREE.Mesh | null = null;
-  private regions: RegionState[] = REGION_KEYS.map(() => ({
+  private regions: RegionState[] = REGION_KEYS.map(() => {
+    const mat = newVecs();
+    const matTarget = newVecs();
+    fillVecs(mat, SKIN_MATERIAL);
+    fillVecs(matTarget, SKIN_MATERIAL);
+    return { mat, matTarget };
+  }).map(({ mat, matTarget }) => ({
     color: new THREE.Color(SKIN_REGION),
     target: new THREE.Color(SKIN_REGION),
+    mat,
+    matTarget,
     glow: 0,
     glowTarget: 0,
     box: new THREE.Box3(),
   }));
   private uniforms = {
     uCol: { value: this.regions.map((r) => r.color) },
+    uPalA: { value: this.regions.map((r) => r.mat.a) },
+    uPalB: { value: this.regions.map((r) => r.mat.b) },
+    uPalC: { value: this.regions.map((r) => r.mat.c) },
+    uPalD: { value: this.regions.map((r) => r.mat.d) },
     uGlow: { value: this.regions.map(() => 0) },
     uPulse: { value: 0 },
   };
@@ -155,23 +207,28 @@ export class RankBodyRenderer {
     const u = this.uniforms;
     mat.onBeforeCompile = (shader) => {
       shader.uniforms.uCol = u.uCol;
+      shader.uniforms.uPalA = u.uPalA;
+      shader.uniforms.uPalB = u.uPalB;
+      shader.uniforms.uPalC = u.uPalC;
+      shader.uniforms.uPalD = u.uPalD;
       shader.uniforms.uGlow = u.uGlow;
       shader.uniforms.uPulse = u.uPulse;
       shader.vertexShader = shader.vertexShader
         .replace(
           "#include <common>",
           `#include <common>
-           attribute vec4 regA; attribute vec4 regB; attribute vec4 regC; attribute vec4 regD;
-           varying vec4 vRegA; varying vec4 vRegB; varying vec4 vRegC; varying vec4 vRegD;`,
+           attribute vec4 regA; attribute vec4 regB; attribute vec4 regC; attribute vec4 regD; attribute vec4 rimA;
+           varying vec4 vRegA; varying vec4 vRegB; varying vec4 vRegC; varying vec4 vRegD; varying vec4 vRim;`,
         )
-        .replace("#include <begin_vertex>", "#include <begin_vertex>\nvRegA = regA; vRegB = regB; vRegC = regC; vRegD = regD;");
+        .replace("#include <begin_vertex>", "#include <begin_vertex>\nvRegA = regA; vRegB = regB; vRegC = regC; vRegD = regD; vRim = rimA;");
       shader.fragmentShader = shader.fragmentShader
         .replace(
           "#include <common>",
           `#include <common>
            uniform vec3 uCol[${N}]; uniform float uGlow[${N}]; uniform float uPulse;
-           varying vec4 vRegA; varying vec4 vRegB; varying vec4 vRegC; varying vec4 vRegD;
-           vec3 vtRegionColor; float vtRegionGlow;`,
+           uniform vec4 uPalA[${N}]; uniform vec4 uPalB[${N}]; uniform vec4 uPalC[${N}]; uniform vec4 uPalD[${N}];
+           varying vec4 vRegA; varying vec4 vRegB; varying vec4 vRegC; varying vec4 vRegD; varying vec4 vRim;
+           vec3 vtRegionColor; float vtRegionGlow; vec3 vtSpec; vec3 vtInner;`,
         )
         .replace(
           "#include <color_fragment>",
@@ -181,31 +238,54 @@ export class RankBodyRenderer {
              w[0]=vRegA.x; w[1]=vRegA.y; w[2]=vRegA.z; w[3]=vRegA.w;
              w[4]=vRegB.x; w[5]=vRegB.y; w[6]=vRegB.z; w[7]=vRegB.w;
              w[8]=vRegC.x; w[9]=vRegC.y; w[10]=vRegC.z; w[11]=vRegC.w;
-             w[12]=vRegD.x; w[13]=vRegD.y; w[14]=0.0; w[15]=0.0;
+             w[12]=vRegD.x; w[13]=vRegD.y; w[14]=vRegD.z; w[15]=0.0;
              float mx = 0.0;
              for (int i = 0; i < ${N}; i++) mx = max(mx, w[i]);
              float sum = 0.0; vec3 col = vec3(0.0); float glow = 0.0;
+             vec4 pa = vec4(0.0); vec4 pb = vec4(0.0); vec4 pc = vec4(0.0); vec4 pd = vec4(0.0);
              for (int i = 0; i < ${N}; i++) {
                float e = exp((w[i] - mx) * ${EDGE_SHARPNESS.toFixed(1)});
                sum += e; col += uCol[i] * e; glow += uGlow[i] * e;
+               pa += uPalA[i] * e; pb += uPalB[i] * e; pc += uPalC[i] * e; pd += uPalD[i] * e;
              }
-             vtRegionColor = col / sum; vtRegionGlow = glow / sum;
-             diffuseColor.rgb = vtRegionColor;
+             float inv = 1.0 / sum;
+             col *= inv; glow *= inv; pa *= inv; pb *= inv; pc *= inv; pd *= inv;
+             vtRegionColor = col; vtRegionGlow = glow;
+
+             // Material: tono (sombra -> base -> luz) por orientación, centro del músculo (vRim.y) y sombra horneada (vRim.z),
+             // más un falso reflejo de entorno (gradiente por reflejo + softbox de estudio) y fresnel. Sin texturas.
+             vec3 nN = normalize(vNormal); vec3 vV = normalize(vViewPosition);
+             float ndv = clamp(dot(nN, vV), 0.0, 1.0);
+             float fres = pow(1.0 - ndv, 3.0);
+             vec3 rR = reflect(-vV, nN);
+             float shine = pa.w; float rough = pb.w; float irid = pc.w;
+             float tone = clamp(0.36 + 0.20 * nN.y + 0.20 * vRim.y + (vRim.z - 0.93) * 0.9, 0.0, 1.0);
+             vec3 alb = tone < 0.5 ? mix(pb.rgb, col, tone * 2.0) : mix(col, pa.rgb, (tone - 0.5) * 1.5);
+             float box = smoothstep(0.62 - rough * 0.30, 0.97, dot(rR, normalize(vec3(-0.35, 0.75, 0.55))));
+             float sky = smoothstep(-0.5, 0.9, rR.y);
+             vec3 spec = pc.rgb * shine * (box * 0.55 + sky * 0.10 + fres * 0.20);
+             vec3 ir = 0.5 + 0.5 * cos(6.2831853 * (vec3(0.0, 0.33, 0.67) + fres * 1.2 + rR.x * 0.22));
+             spec += ir * irid * (0.20 + 0.80 * fres) * shine;
+             vtSpec = spec;
+             vtInner = col * pd.x * (0.30 + 0.70 * vRim.y);
+             // _RIM (horneado en Blender): x = borde oscuro difuminado x sombra suave, y = centro del músculo.
+             diffuseColor.rgb = alb * (0.78 * vRim.x);
            }`,
         )
         .replace(
           "#include <emissivemap_fragment>",
           `#include <emissivemap_fragment>
-           totalEmissiveRadiance += vtRegionColor * vtRegionGlow * (0.38 + uPulse);`,
+           totalEmissiveRadiance += vtRegionColor * vRim.x * vtRegionGlow * (0.38 + uPulse) + vtInner * vRim.x;`,
         )
         .replace(
           "#include <opaque_fragment>",
           `float vtF = pow(1.0 - abs(dot(normalize(vNormal), normalize(vViewPosition))), 2.4);
-           outgoingLight += mix(vtRegionColor, vec3(1.0), 0.45) * vtF * 0.55;
+           outgoingLight += mix(vtRegionColor, vec3(1.0), 0.45) * vtF * 0.40 * vRim.x;
+           outgoingLight += vtSpec * vRim.x;
            #include <opaque_fragment>`,
         );
     };
-    mat.customProgramCacheKey = () => "vt-rank-body-v2";
+    mat.customProgramCacheKey = () => "vt-rank-body-v5";
     return mat;
   }
 
@@ -230,6 +310,18 @@ export class RankBodyRenderer {
       geo.deleteAttribute(orig.toLowerCase());
       geo.deleteAttribute(orig);
     });
+    // _RIM: multiplicador de borde/sombra (x) y brillo (y). Un GLB sin él (versiones viejas) queda sin borde: (1,0,1,1).
+    const rim = geo.getAttribute("_rim") ?? geo.getAttribute("_RIM");
+    if (rim) {
+      geo.setAttribute("rimA", rim);
+      geo.deleteAttribute("_rim");
+      geo.deleteAttribute("_RIM");
+    } else {
+      const n = geo.getAttribute("position").count;
+      const flat = new Float32Array(n * 4);
+      for (let i = 0; i < n; i++) flat.set([1, 0, 1, 1], i * 4);
+      geo.setAttribute("rimA", new THREE.BufferAttribute(flat, 4));
+    }
     (mesh.material as THREE.Material).dispose?.();
     mesh.material = this.makeMaterial();
     this.mesh = mesh;
@@ -270,12 +362,9 @@ export class RankBodyRenderer {
   setRegionStyles(styles: Record<string, RegionStyle | undefined>) {
     REGION_KEYS.forEach((name, i) => {
       const st = styles[name];
-      let hex: string;
-      if (name === "Neutro") hex = SKIN_REGION;
-      else if (!st) hex = NEUTRAL_REGION;
-      else if (st.dim) hex = DIM_REGION;
-      else hex = st.color ?? NEUTRAL_REGION;
-      this.regions[i].target.set(hex);
+      const m = name === "Neutro" ? SKIN_MATERIAL : !st ? NO_RANK_MATERIAL : st.dim ? DIM_MATERIAL : materialFor(st);
+      this.regions[i].target.set(m.base);
+      fillVecs(this.regions[i].matTarget, m);
     });
     this.invalidate();
   }
@@ -388,6 +477,13 @@ export class RankBodyRenderer {
         cur.lerp(r.target, this.opts.reduceMotion ? 1 : 0.18);
         moving = true;
       } else cur.copy(r.target);
+      if (!vecsClose(r.mat, r.matTarget)) {
+        const f = this.opts.reduceMotion ? 1 : 0.18;
+        r.mat.a.lerp(r.matTarget.a, f); r.mat.b.lerp(r.matTarget.b, f); r.mat.c.lerp(r.matTarget.c, f); r.mat.d.lerp(r.matTarget.d, f);
+        moving = true;
+      } else {
+        r.mat.a.copy(r.matTarget.a); r.mat.b.copy(r.matTarget.b); r.mat.c.copy(r.matTarget.c); r.mat.d.copy(r.matTarget.d);
+      }
       if (Math.abs(r.glow - r.glowTarget) > 0.01) {
         r.glow += (r.glowTarget - r.glow) * 0.2;
         moving = true;
