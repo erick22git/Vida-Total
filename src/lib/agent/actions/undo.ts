@@ -20,6 +20,9 @@ export function applyUndo(spec: UndoSpec): boolean {
     case "remove_food":
       gym.removeLoggedFood(spec.id);
       return true;
+    case "remove_foods":
+      spec.ids.forEach((id) => gym.removeLoggedFood(id));
+      return true;
     case "remove_task":
       habits.removeTask(spec.id);
       return true;

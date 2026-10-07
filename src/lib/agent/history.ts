@@ -9,6 +9,7 @@ import type { Channel } from "./types";
 export type UndoSpec =
   | { kind: "remove_water"; id: string }
   | { kind: "remove_food"; id: string }
+  | { kind: "remove_foods"; ids: string[] }
   | { kind: "remove_task"; id: string }
   | { kind: "restore_task"; id: string; patch: Record<string, unknown> }
   | { kind: "remove_note"; id: string }

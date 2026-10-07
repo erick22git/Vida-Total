@@ -1,10 +1,11 @@
 /** Registro único de herramientas del agente (metadatos). Cada fase agrega su lista aquí. */
 import type { ToolMeta } from "./meta";
 import { NOTE_TOOLS } from "./notes";
+import { NUTRITION_TOOLS } from "./nutrition";
 import { SYSTEM_TOOLS } from "./system";
 import { TASK_TOOLS } from "./tasks";
 
-const ALL: ToolMeta[] = [...SYSTEM_TOOLS, ...TASK_TOOLS, ...NOTE_TOOLS];
+const ALL: ToolMeta[] = [...SYSTEM_TOOLS, ...TASK_TOOLS, ...NOTE_TOOLS, ...NUTRITION_TOOLS];
 
 export const TOOLS: Record<string, ToolMeta> = Object.fromEntries(ALL.map((t) => [t.name, t]));
 

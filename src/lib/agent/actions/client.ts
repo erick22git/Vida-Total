@@ -8,7 +8,7 @@ import { useHabitsStore } from "@/lib/store/habitsStore";
 import type { UndoSpec } from "../history";
 import type { Args } from "../tools/meta";
 import { addSubtaskTo, buildNoteBlocks, buildTask, describeTaskChange, listNotes, listTasks, noteUpdatePatch, taskUpdatePatch } from "./pure";
-import { NUTRITION_EXECUTORS } from "./nutrition-client";
+import { NUTRITION_EXECUTORS, NUTRITION_PREVIEWS } from "./nutrition-client";
 
 export interface ExecResult {
   ok: boolean;
@@ -107,6 +107,7 @@ const EXECUTORS: Record<string, Executor> = {
 
 /** Vista previa "antes → después" para las tarjetas de permiso (lee el estado real, no cambia nada). */
 const PREVIEWS: Record<string, Previewer> = {
+  ...NUTRITION_PREVIEWS,
   task_update: (a) => {
     const t = findTask(a.id);
     return t ? describeTaskChange(t, taskUpdatePatch(t, a).patch) : null;
