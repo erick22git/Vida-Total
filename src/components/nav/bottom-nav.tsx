@@ -6,8 +6,14 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPoi
 import { BOTTOM_NAV_MODULES } from "@/lib/constants";
 import { ICON_MAP } from "./icon-map";
 import { useGlassMenu } from "@/glass-engine/use-glass-menu";
+import { MascotIcon } from "@/components/agente/mascot-dock";
+import { useMascotUi } from "@/lib/store/mascotUiStore";
 
 type ModuleDefItem = (typeof BOTTOM_NAV_MODULES)[number];
+
+// Ícono de la mascota: va en el menú expandido, pero NO navega: despliega el panel de la mascota desde arriba.
+const MASCOT_ITEM = { id: "mascota", label: "Mascota", href: "#mascota", icon: "Home", color: "--gym" } as unknown as ModuleDefItem;
+const NAV_ITEMS: ModuleDefItem[] = [...BOTTOM_NAV_MODULES, MASCOT_ITEM];
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -279,10 +285,28 @@ export function BottomNav() {
       {stage === "expanded" ? (
         <GlassMenuRow
           key="expanded"
-          modules={BOTTOM_NAV_MODULES}
+          modules={NAV_ITEMS}
           activeIndex={activeIndex}
           containerClassName="glass-menu w-full flex items-center justify-between px-1.5 pointer-events-auto"
           renderItem={(mod, index, active) => {
+            if ((mod.id as string) === "mascota") {
+              return (
+                <button
+                  key={mod.id}
+                  type="button"
+                  aria-label="Abrir la mascota y el asistente"
+                  onClick={() => {
+                    handleItemTap();
+                    useMascotUi.getState().openDock("home");
+                  }}
+                  className="menu-item relative z-10 flex flex-1 flex-col items-center justify-center gap-0.5 py-1.5 rounded-2xl cursor-pointer"
+                >
+                  <div className="menu-item-content flex flex-col items-center gap-0.5">
+                    <MascotIcon size={28} />
+                  </div>
+                </button>
+              );
+            }
             const Icon = ICON_MAP[mod.icon];
             return (
               <Link

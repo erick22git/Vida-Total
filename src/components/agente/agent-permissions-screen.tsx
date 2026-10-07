@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Lock, Power, ShieldAlert, Undo2, Zap } from "lucide-react";
-import { GlassCard } from "@/components/glass/glass-card";
-import { GlassModal } from "@/components/glass/glass-modal";
 import { AutoTotalBadge, useAutoTotalActive } from "@/components/agente/auto-total-badge";
 import { TelegramLinkCard } from "@/components/agente/telegram-link-card";
+import { BORDER, Toggle } from "@/components/agente/ui";
+import { CARD, SURFACE } from "@/components/agenda/sheet";
 import { NEVER_AUTO } from "@/lib/agent/never-auto";
 import { exposedTools } from "@/lib/agent/tools/registry";
 import { undoRecord } from "@/lib/agent/actions/undo";
@@ -30,31 +30,16 @@ const DURATIONS: Array<{ v: AutoTotalDuration; label: string }> = [
   { v: "until_off", label: "Hasta que lo apague" },
 ];
 
-function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
-  return (
-    <button
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      onClick={() => onChange(!on)}
-      className="w-12 h-7 rounded-full relative cursor-pointer shrink-0"
-      style={{ background: on ? "#34d399" : "#3a3a3d" }}
-    >
-      <span className="absolute top-1 w-5 h-5 rounded-full transition-all bg-white" style={{ left: on ? "calc(100% - 1.5rem)" : "0.25rem" }} />
-    </button>
-  );
-}
-
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
       <div className="px-1">
-        <h2 className="text-sm font-semibold text-white">{title}</h2>
+        <h2 className="text-[17px] font-extrabold text-white">{title}</h2>
         {hint && <p className="text-xs text-white/45">{hint}</p>}
       </div>
-      <GlassCard accentColor="var(--gym)" className="flex flex-col gap-3" interactive={false}>
+      <div className="rounded-[28px] p-4 flex flex-col gap-3" style={{ background: SURFACE, border: BORDER }}>
         {children}
-      </GlassCard>
+      </div>
     </section>
   );
 }
@@ -369,8 +354,11 @@ export function AgentPermissionsScreen() {
         ))}
       </Section>
 
-      <GlassModal open={autoOpen} onClose={() => setAutoOpen(false)} title="Activar Auto total">
-        <div className="flex flex-col gap-3 py-1">
+      {autoOpen && (
+        <div className="fixed inset-0 z-[95] flex items-end justify-center p-2" style={{ background: "rgba(0,0,0,0.65)" }} onClick={() => setAutoOpen(false)}>
+          <div role="dialog" aria-label="Activar Auto total" className="w-full max-w-md rounded-[32px] p-5 max-h-[88dvh] overflow-y-auto" style={{ background: CARD }} onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[20px] font-extrabold mb-3">Activar Auto total</h3>
+            <div className="flex flex-col gap-3 py-1">
           <div className="rounded-2xl bg-red-500/10 border border-red-400/30 p-3 text-sm text-red-100">
             <p className="font-semibold mb-1">Advertencia</p>
             El agente podrá crear, editar y registrar cosas sin preguntarte (tareas, notas, agua, comidas). No se salta la lista «nunca
@@ -388,11 +376,13 @@ export function AgentPermissionsScreen() {
             Para confirmar escribe: <b className="text-white">{CONFIRM_PHRASE}</b>
             <input value={phrase} onChange={(e) => setPhrase(e.target.value)} autoCapitalize="characters" className="mt-1 w-full rounded-xl bg-white/[0.07] px-3 py-2.5 text-sm text-white outline-none" />
           </label>
-          <button disabled={phrase.trim().toUpperCase() !== CONFIRM_PHRASE} onClick={startAuto} className="rounded-xl bg-red-500 text-white py-3 text-sm font-semibold disabled:opacity-30 cursor-pointer">
+          <button disabled={phrase.trim().toUpperCase() !== CONFIRM_PHRASE} onClick={startAuto} className="rounded-xl bg-red-500 text-white py-3 text-sm font-extrabold disabled:opacity-30 cursor-pointer">
             Activar Auto total
           </button>
         </div>
-      </GlassModal>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

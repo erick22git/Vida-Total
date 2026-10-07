@@ -24,7 +24,7 @@ export function PermissionPrompt({
   onAnswer: (a: PermissionAnswer) => void;
 }) {
   return (
-    <div className="rounded-2xl bg-white/[0.05] glass-specular-ring p-3.5 flex flex-col gap-2.5" role="group" aria-label={`Permiso: ${label}`}>
+    <div className="rounded-2xl bg-[#1c1c1e] border border-white/[0.08] p-3.5 flex flex-col gap-2.5" role="group" aria-label={`Permiso: ${label}`}>
       <div className="flex items-start gap-2.5">
         <ShieldQuestion size={18} className="text-amber-300 shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1">
@@ -43,15 +43,15 @@ export function PermissionPrompt({
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        <button onClick={() => onAnswer("allow_once")} className="rounded-xl px-3 py-2 text-xs font-medium bg-emerald-500/90 text-black cursor-pointer min-h-[38px]">
+        <button onClick={() => onAnswer("allow_once")} className="rounded-full px-4 py-2 text-xs font-bold bg-[#f4f4f5] text-black font-extrabold cursor-pointer min-h-[38px]">
           Permitir esta vez
         </button>
         {decision.canAlways && (
-          <button onClick={() => onAnswer("allow_always")} className="rounded-xl px-3 py-2 text-xs font-medium bg-white/10 text-white cursor-pointer min-h-[38px]">
+          <button onClick={() => onAnswer("allow_always")} className="rounded-full px-4 py-2 text-xs font-bold bg-[#3b3b3f] text-white cursor-pointer min-h-[38px]">
             Permitir siempre esta herramienta
           </button>
         )}
-        <button onClick={() => onAnswer("deny")} className="rounded-xl px-3 py-2 text-xs font-medium bg-red-500/15 text-red-200 cursor-pointer min-h-[38px]">
+        <button onClick={() => onAnswer("deny")} className="rounded-full px-4 py-2 text-xs font-bold bg-red-500/15 text-red-200 cursor-pointer min-h-[38px]">
           Denegar
         </button>
       </div>

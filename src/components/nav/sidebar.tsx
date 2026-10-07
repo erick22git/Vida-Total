@@ -7,6 +7,8 @@ import { Sparkles } from "lucide-react";
 import { MODULES } from "@/lib/constants";
 import { ICON_MAP } from "./icon-map";
 import { UserMenu, type SessionUser } from "./user-menu";
+import { MascotIcon } from "@/components/agente/mascot-dock";
+import { useMascotUi } from "@/lib/store/mascotUiStore";
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -58,6 +60,16 @@ export function Sidebar({ user, isAdmin = false }: { user: SessionUser; isAdmin?
             );
           })}
         </nav>
+
+        <button
+          type="button"
+          onClick={() => useMascotUi.getState().openDock("home")}
+          className="mt-3 flex items-center gap-3 px-3 py-2.5 rounded-2xl cursor-pointer text-left hover:bg-white/[0.06] transition-colors"
+          aria-label="Abrir la mascota y el asistente"
+        >
+          <MascotIcon size={30} />
+          <span className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.75)" }}>Mascota</span>
+        </button>
 
         <div className="mt-auto pt-2 border-t border-white/10">
           <UserMenu user={user} isAdmin={isAdmin} />

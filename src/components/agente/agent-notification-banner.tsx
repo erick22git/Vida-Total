@@ -77,7 +77,7 @@ export function AgentNotificationBanner({ userId }: { userId: string }) {
   return (
     <div className="fixed left-0 right-0 top-[max(env(safe-area-inset-top),8px)] z-[65] px-3 flex flex-col gap-2 pointer-events-none">
       {rows.map((r) => (
-        <div key={r.id} className="pointer-events-auto mx-auto w-full max-w-md rounded-2xl glass-panel shadow-2xl p-3 flex flex-col gap-2" role="status">
+        <div key={r.id} className="pointer-events-auto mx-auto w-full max-w-md rounded-[24px] bg-[#1c1c1e] border border-white/[0.1] shadow-2xl p-3 flex flex-col gap-2" role="status">
           <div className="flex items-start gap-2">
             <Bell size={16} className="text-amber-300 mt-0.5 shrink-0" />
             <div className="min-w-0 flex-1">
@@ -91,7 +91,7 @@ export function AgentNotificationBanner({ userId }: { userId: string }) {
           {(r.payload.buttons?.length ?? 0) > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {r.payload.buttons!.map((b) => (
-                <button key={b} onClick={() => void act(r, b)} className="rounded-xl bg-white/12 px-3 py-2 text-xs cursor-pointer min-h-[38px]">
+                <button key={b} onClick={() => void act(r, b)} className="rounded-full bg-[#3b3b3f] px-4 py-2 text-xs font-bold cursor-pointer min-h-[38px]">
                   {buttonLabel[b]}
                 </button>
               ))}

@@ -64,7 +64,7 @@ export function TelegramLinkCard() {
   };
 
   return (
-    <div className="rounded-2xl bg-white/[0.04] p-3 flex flex-col gap-2.5">
+    <div className="rounded-[24px] bg-[#1c1c1e] border border-white/[0.08] p-4 flex flex-col gap-2.5">
       <div className="flex items-center gap-2">
         <Send size={15} className="text-sky-300" />
         <p className="text-sm font-medium">Telegram</p>
@@ -74,7 +74,7 @@ export function TelegramLinkCard() {
       </div>
       {status && !status.configured && <p className="text-xs text-amber-200/80">El bot aún no está configurado en el servidor (TELEGRAM_BOT_TOKEN). Mira docs/telegram.md.</p>}
       {status?.linked ? (
-        <button onClick={unlink} disabled={busy} className="rounded-xl bg-red-500/15 text-red-200 text-sm py-2.5 cursor-pointer disabled:opacity-40">
+        <button onClick={unlink} disabled={busy} className="rounded-full bg-red-500/15 text-red-200 text-sm font-bold py-2.5 cursor-pointer disabled:opacity-40">
           Desvincular Telegram
         </button>
       ) : showCode ? (
@@ -82,14 +82,14 @@ export function TelegramLinkCard() {
           <p className="text-xs text-white/60">Tu código (vale 10 minutos y sirve una sola vez):</p>
           <p className="text-2xl font-mono tracking-[0.3em] text-center py-1 select-all">{showCode.code}</p>
           {showCode.botUsername && (
-            <a href={`https://t.me/${showCode.botUsername}?start=${showCode.code}`} target="_blank" rel="noreferrer" className="rounded-xl bg-sky-500 text-black text-sm font-medium py-2.5 text-center">
+            <a href={`https://t.me/${showCode.botUsername}?start=${showCode.code}`} target="_blank" rel="noreferrer" className="rounded-full bg-[#f4f4f5] text-black text-sm font-extrabold py-2.5 text-center">
               Abrir @{showCode.botUsername} en Telegram
             </a>
           )}
           <p className="text-[11px] text-white/45">O escríbele al bot: <b>/start {showCode.code}</b></p>
         </div>
       ) : (
-        <button onClick={link} disabled={busy || (status ? !status.configured : true)} className="rounded-xl bg-sky-500/90 text-black text-sm font-medium py-2.5 cursor-pointer disabled:opacity-40">
+        <button onClick={link} disabled={busy || (status ? !status.configured : true)} className="rounded-full bg-[#f4f4f5] text-black text-sm font-extrabold py-2.5 cursor-pointer disabled:opacity-40">
           Vincular Telegram
         </button>
       )}

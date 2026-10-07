@@ -38,12 +38,12 @@ function EditForm({ step, onSave, onCancel }: { step: PlanStep; onSave: (args: R
       ))}
       <div className="flex gap-1.5">
         <button
-          className="rounded-lg bg-emerald-500/90 text-black text-xs font-medium px-3 py-2 cursor-pointer"
+          className="rounded-full bg-[#f4f4f5] text-black text-xs font-extrabold px-4 py-2 cursor-pointer"
           onClick={() => onSave({ ...step.args, ...Object.fromEntries(editable.map(([k, orig]) => [k, typeof orig === "number" ? Number(vals[k]) : vals[k]])) })}
         >
           Guardar
         </button>
-        <button className="rounded-lg bg-white/10 text-xs px-3 py-2 cursor-pointer" onClick={onCancel}>Cancelar</button>
+        <button className="rounded-full bg-[#3b3b3f] text-xs font-bold px-4 py-2 cursor-pointer" onClick={onCancel}>Cancelar</button>
       </div>
     </div>
   );
@@ -74,7 +74,7 @@ export function PlanReview({ plan: initial, onDone }: { plan: Plan; onDone: (pla
   const askCount = plan.steps.filter((s) => s.decision.action === "ask" && s.status === "pending").length;
 
   return (
-    <div className="rounded-2xl bg-white/[0.05] glass-specular-ring p-3.5 flex flex-col gap-3" role="group" aria-label="Plan del agente">
+    <div className="rounded-2xl bg-[#1c1c1e] border border-white/[0.08] p-3.5 flex flex-col gap-3" role="group" aria-label="Plan del agente">
       <div className="flex items-center gap-2">
         <ListChecks size={16} className="text-emerald-300" />
         <p className="text-sm font-semibold">Plan ({plan.steps.length} {plan.steps.length === 1 ? "paso" : "pasos"})</p>
@@ -82,7 +82,7 @@ export function PlanReview({ plan: initial, onDone }: { plan: Plan; onDone: (pla
 
       <ol className="flex flex-col gap-2">
         {plan.steps.map((s, i) => (
-          <li key={s.id} className={cn("rounded-xl bg-white/[0.04] p-2.5", (s.status === "skipped" || s.status === "denied") && "opacity-55")}>
+          <li key={s.id} className={cn("rounded-[18px] bg-[#2b2b2e] p-2.5", (s.status === "skipped" || s.status === "denied") && "opacity-55")}>
             <div className="flex items-start gap-2">
               <span className="text-xs text-white/40 w-4 shrink-0 mt-0.5">{i + 1}.</span>
               <div className="min-w-0 flex-1">
@@ -112,10 +112,10 @@ export function PlanReview({ plan: initial, onDone }: { plan: Plan; onDone: (pla
               </div>
               {s.status !== "denied" && s.status !== "skipped" && editing !== s.id && (
                 <div className="flex flex-col gap-1 shrink-0">
-                  <button aria-label="Editar paso" className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center cursor-pointer" onClick={() => setEditing(s.id)}>
+                  <button aria-label="Editar paso" className="w-9 h-9 rounded-lg bg-[#3b3b3f] flex items-center justify-center cursor-pointer" onClick={() => setEditing(s.id)}>
                     <Pencil size={14} />
                   </button>
-                  <button aria-label="Saltar paso" className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center cursor-pointer" onClick={() => setPlan((p) => skipStep(p, s.id))}>
+                  <button aria-label="Saltar paso" className="w-9 h-9 rounded-lg bg-[#3b3b3f] flex items-center justify-center cursor-pointer" onClick={() => setPlan((p) => skipStep(p, s.id))}>
                     <SkipForward size={14} />
                   </button>
                 </div>
@@ -140,17 +140,17 @@ export function PlanReview({ plan: initial, onDone }: { plan: Plan; onDone: (pla
         <div className="flex flex-wrap gap-1.5">
           <button
             disabled={isPlanFinished(plan)}
-            className="rounded-xl px-3 py-2.5 text-xs font-semibold bg-emerald-500/90 text-black cursor-pointer min-h-[40px] disabled:opacity-40"
+            className="rounded-full px-4 py-2.5 text-xs font-extrabold bg-[#f4f4f5] text-black cursor-pointer min-h-[40px] disabled:opacity-40"
             onClick={() => finish(approveAll(plan))}
           >
             Aprobar todo
           </button>
           {askCount > 0 && (
-            <button className="rounded-xl px-3 py-2.5 text-xs bg-white/10 cursor-pointer min-h-[40px]" onClick={() => setPlan(setStepMode(plan))}>
+            <button className="rounded-full px-4 py-2.5 text-xs font-bold bg-[#3b3b3f] cursor-pointer min-h-[40px]" onClick={() => setPlan(setStepMode(plan))}>
               Paso a paso
             </button>
           )}
-          <button className="rounded-xl px-3 py-2.5 text-xs bg-red-500/15 text-red-200 cursor-pointer min-h-[40px]" onClick={() => onDone({ ...plan, steps: plan.steps.map((s) => (s.status === "denied" ? s : { ...s, status: "skipped" as const })) })}>
+          <button className="rounded-full px-4 py-2.5 text-xs font-bold bg-red-500/15 text-red-200 cursor-pointer min-h-[40px]" onClick={() => onDone({ ...plan, steps: plan.steps.map((s) => (s.status === "denied" ? s : { ...s, status: "skipped" as const })) })}>
             Cancelar
           </button>
         </div>
