@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bot } from "lucide-react";
 import { AgentChat } from "@/components/agente/agent-chat";
 import { AutoTotalBadge } from "@/components/agente/auto-total-badge";
+import { hydrateAgentStore, useAgentStore } from "@/lib/store/agentStore";
+import { getCurrentUserId } from "@/lib/store/user-scope";
 
 /**
  * Botón del agente (hasta que exista la mascota) + insignia PERMANENTE de "Auto total": la insignia vive aquí, en el
@@ -12,6 +14,22 @@ import { AutoTotalBadge } from "@/components/agente/auto-total-badge";
  */
 export function AgentFab() {
   const [open, setOpen] = useState(false);
+  // El servidor necesita saber qué día/hora es para ti: la app le deja tu zona horaria en la configuración. Primero se trae
+  // la configuración remota (merge), para que un dispositivo nuevo no pise con los valores por defecto la que ya existe.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const uid = getCurrentUserId();
+      if (uid) await hydrateAgentStore(uid).catch(() => {});
+      if (cancelled) return;
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const st = useAgentStore.getState();
+      if (tz && tz !== st.config.timezone) st.setConfig((c) => ({ ...c, timezone: tz }));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   return (
     <>
       <div className="fixed top-[max(env(safe-area-inset-top),8px)] left-1/2 -translate-x-1/2 z-[70]">

@@ -11,6 +11,7 @@ import { ImpersonationBanner } from "@/components/nav/impersonation-banner";
 import { ProfileProvider } from "@/components/providers/profile-provider";
 import { HabitSourceBridge } from "@/components/habitos/habit-source-bridge";
 import { AgentFab } from "@/components/agente/agent-fab";
+import { AgentInboxApplier } from "@/components/agente/agent-inbox-applier";
 import { createClient } from "@/lib/supabase/server";
 import { getAccountNotice, type Profile } from "@/lib/types/profile";
 
@@ -101,6 +102,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         </main>
         <BottomNav />
         <AgentFab />
+        <AgentInboxApplier userId={user.id} />
       </div>
     </ProfileProvider>
   );

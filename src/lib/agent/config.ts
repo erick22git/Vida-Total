@@ -36,6 +36,7 @@ export function defaultAgentConfig(): AgentConfig {
     writesPerHour: 30,
     writesPerDay: 150,
     quietHours: { enabled: true, from: "22:30", to: "07:00" },
+    timezone: "UTC",
     channels: {
       app: { enabled: true, readOnly: false, maxMode: "auto_safe" },
       // Telegram, más estricto: todo pregunta salvo lo que permitas para ese canal.
@@ -52,6 +53,15 @@ const clampInt = (v: unknown, min: number, max: number, fallback: number) => {
 };
 const isHHmm = (v: unknown): v is string => typeof v === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
 const bool = (v: unknown, fallback: boolean) => (typeof v === "boolean" ? v : fallback);
+export function isValidTimeZone(tz: unknown): tz is string {
+  if (typeof tz !== "string" || tz.length === 0 || tz.length > 64) return false;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
 const isMode = (v: unknown): v is AgentMode => v === "ask_always" || v === "auto_safe";
 const isLevel = (v: unknown): v is ToolLevel => v === "ask" || v === "allow" || v === "block";
 
@@ -115,6 +125,7 @@ export function sanitizeConfig(raw: unknown): AgentConfig {
       from: isHHmm(qh.from) ? qh.from : d.quietHours.from,
       to: isHHmm(qh.to) ? qh.to : d.quietHours.to,
     },
+    timezone: isValidTimeZone(raw.timezone) ? raw.timezone : d.timezone,
     channels,
     levels,
   };

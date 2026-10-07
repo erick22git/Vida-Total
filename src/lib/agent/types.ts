@@ -90,6 +90,8 @@ export interface AgentConfig {
   writesPerHour: number;
   writesPerDay: number;
   quietHours: QuietHours;
+  /** Zona horaria IANA del usuario (la fija la app). El servidor la usa para saber qué día y qué hora es para el usuario. */
+  timezone: string;
   channels: Record<Channel, ChannelPolicy>;
   /** Nivel por herramienta y canal. Lo que falte = "ask". */
   levels: Record<Channel, Record<string, ToolLevel>>;

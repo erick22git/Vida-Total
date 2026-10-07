@@ -6,6 +6,7 @@ import { ChevronLeft, Lock, Power, ShieldAlert, Undo2, Zap } from "lucide-react"
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassModal } from "@/components/glass/glass-modal";
 import { AutoTotalBadge, useAutoTotalActive } from "@/components/agente/auto-total-badge";
+import { TelegramLinkCard } from "@/components/agente/telegram-link-card";
 import { NEVER_AUTO } from "@/lib/agent/never-auto";
 import { exposedTools } from "@/lib/agent/tools/registry";
 import { undoRecord } from "@/lib/agent/actions/undo";
@@ -264,6 +265,7 @@ export function AgentPermissionsScreen() {
       </Section>
 
       <Section title="Canales" hint="Telegram es más estricto por defecto.">
+        <TelegramLinkCard />
         <div className="flex items-center justify-between gap-3">
           <span className="text-sm">Agente en la app</span>
           <Toggle on={config.channels.app.enabled} onChange={(v) => setConfig((c) => ({ ...c, channels: { ...c.channels, app: { ...c.channels.app, enabled: v } } }))} label="Canal app" />
