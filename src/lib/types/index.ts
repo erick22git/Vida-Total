@@ -340,6 +340,9 @@ export interface Recipe {
   favorito?: boolean;
   fuente?: "manual" | "foto" | "enlace" | "ia";
   enlace?: string;
+  /** Igual que `Food.verificado`: solo una revisión MANUAL la pone en true (nunca un script). Ausente = false.
+   * TODO: restringir la acción "Verificar" al rol admin cuando exista el sistema de roles. */
+  verificado?: boolean;
   createdAt: number;
 }
 
