@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Home, MessageSquare, Plus, Settings2, Volume2, VolumeX } from "lucide-react";
+import { ChevronUp, Home, MessageSquare, Plus, Settings2, Volume2, VolumeX } from "lucide-react";
 import { DockChat } from "@/components/agente/dock-chat";
 import { DockHome } from "@/components/agente/dock-home";
 import { DockSettings } from "@/components/agente/dock-settings";
@@ -34,7 +34,9 @@ const TABS: Array<{ id: DockTab; label: string; Icon: typeof Home }> = [
  * Inicio (mascota + opciones rápidas) · Chat · «+» conversación nueva · Ajustes · sonido.
  */
 export function MascotDock() {
-  const { open, tab } = useMascotUi();
+  const { open, tab, expanded } = useMascotUi();
+  const expand = useMascotUi((s) => s.expand);
+  const collapse = useMascotUi((s) => s.collapse);
   const setTab = useMascotUi((s) => s.setTab);
   const close = useMascotUi((s) => s.closeDock);
   const clearChat = useAgentChatStore((s) => s.clear);
@@ -86,7 +88,20 @@ export function MascotDock() {
                 </div>
               </div>
 
-              {tab === "home" && <DockHome mood={mood} status={status} />}
+              {!expanded && tab === "home" && (
+                <button type="button" onClick={expand} aria-label="Desplegar el panel completo" className="w-full flex flex-col items-center gap-1 pt-1 pb-2.5 cursor-pointer">
+                  <Mascot mood={mood} size={118} />
+                  <span className="text-[11px] font-bold text-white/40">{status} · toca para desplegar</span>
+                </button>
+              )}
+              {expanded && tab === "home" && (
+                <>
+                  <DockHome mood={mood} status={status} />
+                  <button type="button" onClick={collapse} aria-label="Plegar el panel" className="mx-auto mb-0.5 flex h-6 w-16 items-center justify-center text-white/40 cursor-pointer">
+                    <ChevronUp size={18} />
+                  </button>
+                </>
+              )}
               {tab === "chat" && <DockChat />}
               {tab === "settings" && <DockSettings />}
               <div className="mx-auto mb-2 mt-0.5 h-1 w-10 rounded-full" style={{ background: SURFACE }} aria-hidden />
