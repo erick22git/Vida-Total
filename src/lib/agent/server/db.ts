@@ -9,8 +9,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sanitizeConfig } from "@/lib/agent/config";
 import type { ActionRecord, UndoSpec } from "@/lib/agent/history";
 import type { AgentConfig } from "@/lib/agent/types";
-import type { Food, LoggedFood, MealType, Recipe, WaterEntry } from "@/lib/types";
-import type { NotionBlock, NotionPage, Subtask, Task } from "@/lib/types/habits";
+import type { Food, LoggedFood, MealType, Recipe, Routine, WaterEntry, WeeklyPlanDay } from "@/lib/types";
+import type { NotionBlock, NotionPage, Subtask, Task, TimeBlock } from "@/lib/types/habits";
 
 export type Admin = NonNullable<ReturnType<typeof createAdminClient>>;
 export const admin = (): Admin | null => createAdminClient();
@@ -131,6 +131,27 @@ export async function fetchWaterBetween(db: Admin, userId: string, fromIso: stri
   const { data, error } = await db.from("water_entries").select("id,ml,logged_at").eq("user_id", userId).gte("logged_at", fromIso).lt("logged_at", toIso).limit(300);
   if (error) warn("fetchWaterBetween", error.message);
   return ((data ?? []) as Array<{ id: string; ml: number; logged_at: string }>).map((r) => ({ id: r.id, ml: Number(r.ml), timestamp: new Date(r.logged_at).getTime() }));
+}
+
+export async function fetchWeeklyPlan(db: Admin, userId: string): Promise<WeeklyPlanDay[]> {
+  const { data } = await db.from("gym_workout_state").select("weekly_plan").eq("user_id", userId).maybeSingle();
+  return (data?.weekly_plan as WeeklyPlanDay[] | null) ?? [];
+}
+
+export async function fetchGymRoutines(db: Admin, userId: string): Promise<Routine[]> {
+  const { data } = await db.from("routines").select("id,nombre,ejercicios,times_completed,created_at").eq("user_id", userId).limit(100);
+  return ((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+    id: String(r.id),
+    nombre: String(r.nombre),
+    ejercicios: (r.ejercicios as Routine["ejercicios"]) ?? [],
+    timesCompleted: Number(r.times_completed ?? 0),
+    createdAt: new Date(String(r.created_at ?? Date.now())).getTime(),
+  }));
+}
+
+export async function fetchTimeBlocks(db: Admin, userId: string): Promise<TimeBlock[]> {
+  const { data } = await db.from("time_blocks").select("id,task_id,start_hour,end_hour,color,icon,title").eq("user_id", userId).limit(100);
+  return ((data ?? []) as Array<Record<string, unknown>>).map((b) => ({ id: String(b.id), taskId: (b.task_id as string | null) ?? undefined, startHour: Number(b.start_hour), endHour: Number(b.end_hour), color: String(b.color ?? ""), icon: String(b.icon ?? ""), title: String(b.title) }));
 }
 
 export async function fetchGoals(db: Admin, userId: string) {

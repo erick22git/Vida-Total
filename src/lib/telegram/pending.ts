@@ -25,6 +25,8 @@ export interface PendingPlan {
   mode: "all" | "step";
   /** true = la orden salió de contenido no confiable (archivo, reenviado, nota leída). */
   untrusted: boolean;
+  /** Agente que propuso el plan: al ejecutar se vuelve a exigir que la herramienta sea suya. */
+  agent?: string;
 }
 
 export function describeArgs(args: Args): string {

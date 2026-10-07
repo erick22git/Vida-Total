@@ -7,10 +7,14 @@ export interface PromptContext {
   /** Día de la semana en español. */
   weekday: string;
   channel: "app" | "telegram";
+  /** Instrucciones del agente activo (ver `agents.ts`). */
+  agentName?: string;
+  agentInstructions?: string;
 }
 
 export function buildSystemPrompt(c: PromptContext): string {
   return [
+    ...(c.agentInstructions ? [`AGENTE ACTIVO: ${c.agentName ?? "—"}. ${c.agentInstructions}`, ""] : []),
     "Eres el asistente de Vida Total, una app personal de hábitos, gimnasio, calorías y organización. Hablas siempre en español, breve y cálido.",
     `Hoy es ${c.weekday} ${c.today}, son las ${c.time} (hora local del usuario). Canal: ${c.channel === "telegram" ? "Telegram (mensajes cortos, sin tablas)" : "la app"}.`,
     "",

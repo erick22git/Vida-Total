@@ -1,15 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronUp, Home, MessageSquare, Plus, Settings2, Volume2, VolumeX } from "lucide-react";
+import { ChevronUp, Droplets, FileText, Home, ListChecks, MessageSquare, MessageSquarePlus, Plus, Settings2, Utensils, Volume2, VolumeX } from "lucide-react";
+import { AgentPicker } from "@/components/agente/agent-picker";
 import { DockChat } from "@/components/agente/dock-chat";
+import { DockHistory } from "@/components/agente/dock-history";
 import { DockHome } from "@/components/agente/dock-home";
 import { DockSettings } from "@/components/agente/dock-settings";
 import { useAutoTotalActive } from "@/components/agente/auto-total-badge";
 import { Mascot, type MascotMood } from "@/components/agente/mascot";
-import { CHIP, SURFACE } from "@/components/agente/ui";
+import { BORDER, CARD, CHIP, SURFACE } from "@/components/agente/ui";
 import { useAgentChatStore } from "@/lib/store/agentChatStore";
 import { useAgentStore } from "@/lib/store/agentStore";
+import { useActiveAgent } from "@/lib/store/agentSend";
+import { useGymStore } from "@/lib/store/gymStore";
 import { useMascotUi, type DockTab } from "@/lib/store/mascotUiStore";
 import { usePreferencesStore } from "@/lib/store/preferencesStore";
 
@@ -31,18 +36,54 @@ const TABS: Array<{ id: DockTab; label: string; Icon: typeof Home }> = [
 
 /**
  * Panel de la mascota: se despliega DESDE ARRIBA al tocar su ícono en el menú. Diseño negro de la Agenda (nada de vidrio):
- * Inicio (mascota + opciones rápidas) · Chat · «+» conversación nueva · Ajustes · sonido.
+ * Inicio (mascota + opciones rápidas) · Chat (con Historial) · «+» creación rápida / conversación nueva · Ajustes · sonido.
  */
 export function MascotDock() {
   const { open, tab, expanded } = useMascotUi();
-  const expand = useMascotUi((s) => s.expand);
-  const collapse = useMascotUi((s) => s.collapse);
   const setTab = useMascotUi((s) => s.setTab);
   const close = useMascotUi((s) => s.closeDock);
+  const expand = useMascotUi((s) => s.expand);
+  const collapse = useMascotUi((s) => s.collapse);
+  const openDock = useMascotUi((s) => s.openDock);
+  const setLastAgent = useMascotUi((s) => s.setLastAgent);
   const clearChat = useAgentChatStore((s) => s.clear);
   const sound = usePreferencesStore((s) => s.soundEnabled);
   const setSound = usePreferencesStore((s) => s.setSoundEnabled);
   const { mood, status } = useMascotMood();
+  const agent = useActiveAgent();
+  const [plusOpen, setPlusOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const flash = (m: string) => {
+    setToast(m);
+    setTimeout(() => setToast(null), 2000);
+  };
+
+  // «+»: creación rápida. Cada opción es un toque tuyo (no una orden del agente): el agua se aplica directo; el resto deja el texto listo en el chat.
+  const plusItems: Array<{ label: string; Icon: typeof Plus; run: () => void }> = [
+    {
+      label: "Conversación nueva",
+      Icon: MessageSquarePlus,
+      run: () => {
+        clearChat();
+        setLastAgent(null);
+        openDock("chat");
+      },
+    },
+    { label: "Nueva tarea", Icon: ListChecks, run: () => openDock("chat", "Crea una tarea: ") },
+    { label: "Nueva nota", Icon: FileText, run: () => openDock("chat", "Anota en una nota: ") },
+    { label: "Registrar comida", Icon: Utensils, run: () => openDock("chat", "Comí ") },
+    {
+      label: "+250 ml de agua",
+      Icon: Droplets,
+      run: () => {
+        useGymStore.getState().addWater(250);
+        flash("✓ +250 ml de agua");
+      },
+    },
+  ];
+
+  const chatActive = tab === "chat" || tab === "history";
 
   return (
     <AnimatePresence>
@@ -59,27 +100,43 @@ export function MascotDock() {
             exit={{ y: "-110%" }}
             transition={{ type: "spring", damping: 32, stiffness: 340 }}
           >
-            <div className="rounded-[28px] overflow-hidden" style={{ background: "#0b0b0c", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "0 18px 60px rgba(0,0,0,0.75)" }}>
+            <div className="relative rounded-[28px]" style={{ background: "#0b0b0c", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "0 18px 60px rgba(0,0,0,0.75)" }}>
               <div className="flex items-center justify-between px-2.5 pt-2.5">
                 <div className="flex items-center gap-1" role="tablist" aria-label="Secciones">
-                  {TABS.map(({ id, label, Icon }) => (
-                    <button key={id} role="tab" aria-selected={tab === id} aria-label={label} onClick={() => setTab(id)} className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer" style={{ background: tab === id ? CHIP : "transparent", color: tab === id ? "#fff" : "rgba(255,255,255,0.55)" }}>
-                      <Icon size={19} />
-                    </button>
-                  ))}
-                  <button
-                    aria-label="Conversación nueva"
-                    onClick={() => {
-                      clearChat();
-                      setTab("chat");
-                    }}
-                    className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer text-white/55"
-                  >
+                  {TABS.map(({ id, label, Icon }) => {
+                    const on = id === "chat" ? chatActive : tab === id;
+                    return (
+                      <button
+                        key={id}
+                        role="tab"
+                        aria-selected={on}
+                        aria-label={label}
+                        onClick={() => {
+                          setPlusOpen(false);
+                          setTab(id);
+                        }}
+                        className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
+                        style={{ background: on ? CHIP : "transparent", color: on ? "#fff" : "rgba(255,255,255,0.55)" }}
+                      >
+                        <Icon size={19} />
+                      </button>
+                    );
+                  })}
+                  <button aria-label="Crear algo rápido" aria-expanded={plusOpen} onClick={() => setPlusOpen((v) => !v)} className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer" style={{ background: plusOpen ? CHIP : "transparent", color: plusOpen ? "#fff" : "rgba(255,255,255,0.55)" }}>
                     <Plus size={20} />
                   </button>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button aria-label="Ajustes" aria-pressed={tab === "settings"} onClick={() => setTab("settings")} className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer" style={{ background: tab === "settings" ? CHIP : "transparent", color: tab === "settings" ? "#fff" : "rgba(255,255,255,0.55)" }}>
+                  <button
+                    aria-label="Ajustes"
+                    aria-pressed={tab === "settings"}
+                    onClick={() => {
+                      setPlusOpen(false);
+                      setTab("settings");
+                    }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
+                    style={{ background: tab === "settings" ? CHIP : "transparent", color: tab === "settings" ? "#fff" : "rgba(255,255,255,0.55)" }}
+                  >
                     <Settings2 size={19} />
                   </button>
                   <button aria-label={sound ? "Silenciar" : "Activar sonido"} aria-pressed={sound} onClick={() => setSound(!sound)} className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer text-white/55">
@@ -88,21 +145,51 @@ export function MascotDock() {
                 </div>
               </div>
 
+              {plusOpen && (
+                <div role="menu" aria-label="Crear" className="absolute left-3 top-[58px] z-20 w-[min(260px,88%)] rounded-[22px] p-1.5" style={{ background: CARD, border: BORDER, boxShadow: "0 14px 44px rgba(0,0,0,0.75)" }}>
+                  {plusItems.map(({ label, Icon, run }) => (
+                    <button
+                      key={label}
+                      role="menuitem"
+                      onClick={() => {
+                        setPlusOpen(false);
+                        run();
+                      }}
+                      className="w-full flex items-center gap-2.5 rounded-[16px] px-3 min-h-[44px] text-left text-[14px] font-bold cursor-pointer"
+                    >
+                      <Icon size={17} className="text-white/60 shrink-0" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {toast && (
+                <p className="mx-3 mt-1.5 text-center text-[12px] font-bold rounded-full py-1.5" style={{ background: CHIP }} role="status">
+                  {toast}
+                </p>
+              )}
+
+              {expanded && tab !== "home" && tab !== "history" && <AgentPicker />}
+
               {!expanded && tab === "home" && (
                 <button type="button" onClick={expand} aria-label="Desplegar el panel completo" className="w-full flex flex-col items-center gap-1 pt-1 pb-2.5 cursor-pointer">
-                  <Mascot mood={mood} size={118} />
-                  <span className="text-[11px] font-bold text-white/40">{status} · toca para desplegar</span>
+                  <Mascot mood={mood} size={118} costume={agent.costume} accent={agent.accent} />
+                  <span className="text-[11px] font-bold text-white/40">
+                    {agent.label} · {status} · toca para desplegar
+                  </span>
                 </button>
               )}
               {expanded && tab === "home" && (
                 <>
-                  <DockHome mood={mood} status={status} />
+                  <AgentPicker />
+                  <DockHome mood={mood} status={status} costume={agent.costume} accent={agent.accent} />
                   <button type="button" onClick={collapse} aria-label="Plegar el panel" className="mx-auto mb-0.5 flex h-6 w-16 items-center justify-center text-white/40 cursor-pointer">
                     <ChevronUp size={18} />
                   </button>
                 </>
               )}
               {tab === "chat" && <DockChat />}
+              {tab === "history" && <DockHistory onOpenChat={() => setTab("chat")} />}
               {tab === "settings" && <DockSettings />}
               <div className="mx-auto mb-2 mt-0.5 h-1 w-10 rounded-full" style={{ background: SURFACE }} aria-hidden />
             </div>
@@ -116,5 +203,6 @@ export function MascotDock() {
 /** La mascota asomada en el ícono del menú (versión chica). */
 export function MascotIcon({ size = 26 }: { size?: number }) {
   const { mood } = useMascotMood();
-  return <Mascot mood={mood} size={size} still />;
+  const agent = useActiveAgent();
+  return <Mascot mood={mood} size={size} still costume={agent.costume} accent={agent.accent} />;
 }

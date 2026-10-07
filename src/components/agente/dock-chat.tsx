@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, History } from "lucide-react";
+import { AGENTS } from "@/lib/agent/agents";
 import { Mascot } from "@/components/agente/mascot";
 import { PlanReview } from "@/components/agente/plan-review";
 import { CARD, CHIP, LIGHT, SURFACE, BORDER } from "@/components/agente/ui";
-import { resolvePlan, sendChat, useAgentChatStore } from "@/lib/store/agentChatStore";
+import { resolvePlan, useAgentChatStore } from "@/lib/store/agentChatStore";
+import { sendFromUi, useActiveAgent } from "@/lib/store/agentSend";
 import { useAgentStore } from "@/lib/store/agentStore";
 import { useMascotUi } from "@/lib/store/mascotUiStore";
 
@@ -18,6 +20,8 @@ export function DockChat() {
   const clearPrefill = useMascotUi((s) => s.clearPrefill);
   const off = useAgentStore((s) => s.config.killSwitch || !s.config.channels.app.enabled);
   const [draft, setDraft] = useState(prefill);
+  const setTab = useMascotUi((s) => s.setTab);
+  const agent = useActiveAgent();
   const scroller = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
 
@@ -40,15 +44,20 @@ export function DockChat() {
     const t = draft.trim();
     if (!t || busy) return;
     setDraft("");
-    void sendChat(t);
+    void sendFromUi(t);
   };
 
   return (
     <div className="flex flex-col h-[min(62dvh,500px)]">
+      <div className="flex justify-end px-3 pt-1">
+        <button onClick={() => setTab("history")} aria-label="Historial" className="flex items-center gap-1.5 rounded-full px-3 min-h-[30px] text-[12px] font-extrabold text-white/60 cursor-pointer" style={{ background: SURFACE, border: BORDER }}>
+          <History size={13} /> Historial
+        </button>
+      </div>
       <div ref={scroller} className="flex-1 overflow-y-auto px-3 pt-2 pb-2 flex flex-col gap-2.5">
         {entries.length === 0 && !review && (
           <div className="flex items-start gap-2.5 pt-1">
-            <div className="w-9 shrink-0 pt-1"><Mascot size={36} still /></div>
+            <div className="w-9 shrink-0 pt-1"><Mascot size={36} still costume={agent.costume} accent={agent.accent} /></div>
             <p className="text-[14px] leading-snug text-white/85">
               ¡Hola! Soy tu asistente. Puedo crear tareas y notas, registrar agua y comidas, y decirte cómo vas hoy. ¿Qué necesitas?
             </p>
@@ -62,7 +71,7 @@ export function DockChat() {
             </div>
           ) : e.kind === "assistant" ? (
             <div key={e.id} className="flex items-start gap-2.5">
-              <div className="w-9 shrink-0 pt-0.5">{entries[i - 1]?.kind !== "assistant" ? <Mascot size={36} still /> : null}</div>
+              <div className="w-9 shrink-0 pt-0.5">{entries[i - 1]?.kind !== "assistant" ? <Mascot size={36} still costume={e.agent ? AGENTS[e.agent].costume : "none"} accent={e.agent ? AGENTS[e.agent].accent : undefined} /> : null}</div>
               <p className="text-[14px] leading-snug text-white/90 whitespace-pre-wrap break-words min-w-0">{e.text}</p>
             </div>
           ) : (

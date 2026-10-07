@@ -2,13 +2,19 @@
 
 import { create } from "zustand";
 
-export type DockTab = "home" | "chat" | "settings";
+import type { AgentId } from "@/lib/agent/agents";
+
+export type DockTab = "home" | "chat" | "history" | "settings";
 
 interface MascotUi {
   open: boolean;
   /** false = barra compacta (solo la mascota, como al asomarse); true = panel completo. */
   expanded: boolean;
   tab: DockTab;
+  /** "auto" = sigue al módulo de la pantalla; o un agente fijado a mano. */
+  pinned: AgentId | "auto";
+  /** Último agente que atendió (lo informa el chat). */
+  lastAgent: AgentId | null;
   /** Texto que se deja escrito en el chat al abrirlo desde una opción rápida. */
   prefill: string;
   openDock: (tab?: DockTab, prefill?: string) => void;
@@ -17,6 +23,8 @@ interface MascotUi {
   closeDock: () => void;
   toggleDock: () => void;
   setTab: (tab: DockTab) => void;
+  pin: (a: AgentId | "auto") => void;
+  setLastAgent: (a: AgentId | null) => void;
   clearPrefill: () => void;
 }
 
@@ -25,6 +33,8 @@ export const useMascotUi = create<MascotUi>()((set) => ({
   open: false,
   expanded: false,
   tab: "home",
+  pinned: "auto",
+  lastAgent: null,
   prefill: "",
   // Desde el menú ("home") baja primero la barra compacta; cualquier otra entrada abre el panel completo.
   openDock: (tab = "home", prefill = "") => set({ open: true, tab, prefill, expanded: tab !== "home" || !!prefill }),
@@ -33,5 +43,7 @@ export const useMascotUi = create<MascotUi>()((set) => ({
   closeDock: () => set({ open: false }),
   toggleDock: () => set((s) => ({ open: !s.open, tab: "home", expanded: false })),
   setTab: (tab) => set({ tab, expanded: true }),
+  pin: (pinned) => set({ pinned }),
+  setLastAgent: (lastAgent) => set({ lastAgent }),
   clearPrefill: () => set({ prefill: "" }),
 }));

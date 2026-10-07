@@ -13,6 +13,7 @@
  *  8. según el modo efectivo: auto_total → permitir · auto_safe → lecturas solas + escrituras con nivel "permitir" ·
  *     ask_always → solo lo marcado "permitir"; el resto pregunta.
  */
+import { agentAllowsTool } from "./agents";
 import { effectiveMode, levelFor, moduleAllowed, writeLimitHit } from "./config";
 import { HARD_MAX_BATCH, NEVER_AUTO, type NeverAutoCode } from "./never-auto";
 import { getTool } from "./tools/registry";
@@ -42,6 +43,9 @@ export function decide(toolName: string, rawArgs: unknown, ctx: PermissionContex
   if (!tool) return { action: "deny", reasons: ["Herramienta desconocida."] };
   const cfg = ctx.config;
   const channel = ctx.channel;
+
+  // Mínimo privilegio: un agente solo puede usar las herramientas de SU lista, sin importar lo que pida el modelo.
+  if (!agentAllowsTool(ctx.agent, toolName)) return { action: "deny", reasons: ["Esa herramienta no es de este agente."] };
 
   if (cfg.killSwitch) return { action: "deny", reasons: ["El agente está apagado (apagado total)."] };
   if (!cfg.channels[channel].enabled) return { action: "deny", reasons: [`El canal ${channel === "app" ? "de la app" : "de Telegram"} está desactivado.`] };

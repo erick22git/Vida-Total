@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, Lock, Power, ShieldAlert, Undo2, Zap } from "lucide-react";
 import { AutoTotalBadge, useAutoTotalActive } from "@/components/agente/auto-total-badge";
 import { TelegramLinkCard } from "@/components/agente/telegram-link-card";
+import { AgentsTable } from "@/components/agente/agents-table";
 import { BORDER, Toggle } from "@/components/agente/ui";
 import { CARD, SURFACE } from "@/components/agenda/sheet";
 import { NEVER_AUTO } from "@/lib/agent/never-auto";
@@ -155,6 +156,10 @@ export function AgentPermissionsScreen() {
             </button>
           )}
         </div>
+      </Section>
+
+      <Section title="Agentes" hint="Cada especialista ve solo sus herramientas. Los permisos, los límites y la lista «nunca automático» valen igual para todos.">
+        <AgentsTable />
       </Section>
 
       <Section title="Herramientas por módulo" hint="Nivel de cada herramienta, por canal.">

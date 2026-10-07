@@ -22,7 +22,7 @@ export interface TickResult {
 
 const warn = (label: string, err: unknown) => console.warn(`[agent-tick] ${label}:`, err instanceof Error ? err.message : err);
 
-async function loadRoutines(db: dbx.Admin, userId: string): Promise<HabitRoutine[]> {
+export async function loadRoutines(db: dbx.Admin, userId: string): Promise<HabitRoutine[]> {
   const { data, error } = await db.from("habit_routines").select("*").eq("user_id", userId).limit(100);
   if (error) {
     warn("habit_routines", error.message);

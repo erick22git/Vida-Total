@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import type { Costume } from "@/lib/agent/agents";
 import { Mascot, type MascotMood } from "@/components/agente/mascot";
 import { CARD, CHIP, SURFACE, BORDER } from "@/components/agente/ui";
 import { useGymStore } from "@/lib/store/gymStore";
-import { sendChat } from "@/lib/store/agentChatStore";
+import { sendFromUi } from "@/lib/store/agentSend";
 import { useMascotUi } from "@/lib/store/mascotUiStore";
 import { useAgentStore } from "@/lib/store/agentStore";
 
@@ -15,14 +16,14 @@ interface Quick {
 }
 
 /** Inicio del panel: la mascota con su estado a la izquierda y las opciones rápidas a la derecha. */
-export function DockHome({ mood, status }: { mood: MascotMood; status: string }) {
+export function DockHome({ mood, status, costume, accent }: { mood: MascotMood; status: string; costume?: Costume; accent?: string }) {
   const [done, setDone] = useState<string | null>(null);
   const open = useMascotUi((s) => s.openDock);
   const config = useAgentStore((s) => s.config);
 
   const ask = (text: string) => {
     open("chat");
-    void sendChat(text);
+    void sendFromUi(text);
   };
   const compose = (prefill: string) => open("chat", prefill);
 
@@ -47,7 +48,7 @@ export function DockHome({ mood, status }: { mood: MascotMood; status: string })
   return (
     <div className="grid grid-cols-[1fr_1.25fr] gap-2.5 p-2.5">
       <div className="rounded-[22px] p-3 flex flex-col items-center justify-center gap-2 text-center" style={{ background: SURFACE, border: BORDER }}>
-        <Mascot mood={mood} size={104} />
+        <Mascot mood={mood} size={104} costume={costume} accent={accent} />
         <p className="text-[13px] font-extrabold leading-tight">{status}</p>
         <p className="text-[11px] text-white/45 leading-tight">
           {config.killSwitch ? "Apagado" : config.channels.telegram.enabled ? "App + Telegram" : "Solo en la app"}

@@ -15,12 +15,26 @@ import { executeClient, previewClient, type ExecResult } from "./actions/client"
 import { newId } from "./actions/pure";
 import { TOOLS, getTool } from "./tools/registry";
 import type { Decision, Origin } from "./types";
+import { AGENTS, type AgentId } from "./agents";
 
 export type ChatEntry =
   | { id: string; kind: "user"; text: string }
-  | { id: string; kind: "assistant"; text: string }
+  | { id: string; kind: "assistant"; text: string; agent?: AgentId }
   | { id: string; kind: "result"; ok: boolean; text: string }
   | { id: string; kind: "error"; text: string };
+
+export interface RunOptions {
+  /** "auto" = el servidor enruta; o un agente fijado por el usuario. */
+  agent?: AgentId | "auto";
+  /** Clave de la pantalla actual (ver `screenKey`), para el enrutamiento. */
+  screen?: string;
+  /** La orden viene de contenido no confiable (delegación tras leer datos). */
+  untrusted?: boolean;
+  /** Profundidad de delegación: 0 = turno del usuario; 1 = especialista delegado (no puede delegar). */
+  depth?: number;
+  /** Avisa qué agente quedó activo (para mostrar su traje). */
+  onAgent?: (agent: AgentId) => void;
+}
 
 export interface RunnerUi {
   /** Muestra el plan y devuelve el plan con cada paso aprobado u omitido por el usuario. */
@@ -38,9 +52,11 @@ export function stricter(a: Decision, b: Decision): Decision {
 }
 
 interface StepResponse {
+  agent: AgentId;
+  routedBy?: string;
   text: string;
   assistant: { role: "assistant"; content: string | null; tool_calls?: LlmToolCall[] };
-  calls: Array<{ id: string; name: string; args: Record<string, unknown>; error?: string; decision: Decision }>;
+  calls: Array<{ id: string; name: string; args: Record<string, unknown>; error?: string; decision: Decision; delegate?: { agent: AgentId; request: string } }>;
   origin: Origin;
   error?: string;
   retryAfterSec?: number;
@@ -48,7 +64,7 @@ interface StepResponse {
 
 const ERRORS: Record<string, string> = {
   no_api_key: "Falta configurar la clave del modelo en el servidor (GROQ_API_KEY).",
-  rate_limit: "Estoy recibiendo demasiadas peticiones. Espera unos segundos y vuelve a intentar.",
+  rate_limit: "El proveedor del modelo está al límite. Espera un momento y vuelve a intentar.",
   timeout: "El modelo tardó demasiado. Intenta de nuevo.",
   unauthorized: "Tu sesión expiró. Vuelve a iniciar sesión.",
 };
@@ -58,10 +74,12 @@ function toolResultContent(r: ExecResult): string {
   return body.length > 6000 ? body.slice(0, 6000) + "…(recortado)" : body;
 }
 
-export async function runAgentTurn(userText: string, prior: LlmMessage[], ui: RunnerUi, signal?: AbortSignal): Promise<LlmMessage[]> {
+export async function runAgentTurn(userText: string, prior: LlmMessage[], ui: RunnerUi, signal?: AbortSignal, opts: RunOptions = {}): Promise<LlmMessage[]> {
+  let agent: AgentId | "auto" = opts.agent ?? "auto";
+  const depth = opts.depth ?? 0;
   const store = useAgentStore;
   const messages: LlmMessage[] = [...prior, { role: "user", content: userText }];
-  ui.push({ id: newId(), kind: "user", text: userText });
+  if (depth === 0) ui.push({ id: newId(), kind: "user", text: userText });
 
   for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
     const st = store.getState();
@@ -73,6 +91,9 @@ export async function runAgentTurn(userText: string, prior: LlmMessage[], ui: Ru
         signal,
         body: JSON.stringify({
           messages,
+          agent,
+          screen: opts.screen,
+          untrusted: opts.untrusted === true,
           client: {
             now: new Date().toISOString(),
             tzOffsetMin: new Date().getTimezoneOffset(),
@@ -84,7 +105,8 @@ export async function runAgentTurn(userText: string, prior: LlmMessage[], ui: Ru
       });
       data = (await res.json()) as StepResponse;
       if (!res.ok || data.error) {
-        ui.push({ id: newId(), kind: "error", text: ERRORS[data.error ?? ""] ?? "No pude hablar con el asistente. Intenta de nuevo." });
+        const wait = data.retryAfterSec ? ` (prueba en ~${data.retryAfterSec} s)` : "";
+        ui.push({ id: newId(), kind: "error", text: (ERRORS[data.error ?? ""] ?? "No pude hablar con el asistente. Intenta de nuevo.") + (data.error === "rate_limit" ? wait : "") });
         return messages;
       }
     } catch (err) {
@@ -92,9 +114,29 @@ export async function runAgentTurn(userText: string, prior: LlmMessage[], ui: Ru
       return messages;
     }
 
+    agent = data.agent;
+    opts.onAgent?.(data.agent);
     messages.push({ role: "assistant", content: data.assistant.content, tool_calls: data.assistant.tool_calls });
-    if (data.text.trim()) ui.push({ id: newId(), kind: "assistant", text: data.text.trim() });
+    if (data.text.trim()) ui.push({ id: newId(), kind: "assistant", text: data.text.trim(), agent: data.agent });
     if (data.calls.length === 0) return messages;
+
+    // Delegación (solo General, profundidad máxima 1): el especialista corre su propio turno y su respuesta vuelve como resultado de la herramienta.
+    const delegations = data.calls.filter((c) => c.name === "delegate");
+    for (const d of delegations) {
+      let content: string;
+      if (depth >= 1 || !d.delegate || d.decision.action !== "allow") {
+        content = JSON.stringify({ ok: false, summary: "Delegación no permitida." });
+      } else {
+        opts.onAgent?.(d.delegate.agent);
+        const sub = await runAgentTurn(d.delegate.request, [], ui, signal, { agent: d.delegate.agent, screen: opts.screen, untrusted: data.origin === "untrusted" || opts.untrusted, depth: 1, onAgent: opts.onAgent });
+        const last = [...sub].reverse().find((m) => m.role === "assistant" && m.content)?.content ?? "";
+        content = JSON.stringify({ ok: true, agente: AGENTS[d.delegate.agent].name, respuesta: last.slice(0, 1500) });
+        opts.onAgent?.("general");
+      }
+      messages.push({ role: "tool", tool_call_id: d.id, name: "delegate", content });
+    }
+    data.calls = data.calls.filter((c) => c.name !== "delegate");
+    if (data.calls.length === 0) continue;
 
     // Plan con la política LOCAL (la configuración de este dispositivo manda) y la del servidor: gana la más estricta.
     const cur = store.getState();
@@ -105,6 +147,7 @@ export async function runAgentTurn(userText: string, prior: LlmMessage[], ui: Ru
       now: Date.now(),
       recentWrites: writeTimestamps(cur.history, READ_TOOLS),
       sessionId: getAgentSessionId(),
+      agent: data.agent,
     });
     const serverBy = new Map(data.calls.map((c) => [c.id, c]));
     let plan: Plan = {
@@ -146,6 +189,7 @@ export async function runAgentTurn(userText: string, prior: LlmMessage[], ui: Ru
           recentWrites: writeTimestamps(store.getState().history, READ_TOOLS),
           sessionId: getAgentSessionId(),
           batchSize: plan.steps.filter((x) => getTool(x.tool)?.kind !== "read").length,
+          agent: data.agent,
         });
         if (recheck.action === "deny") {
           content = JSON.stringify({ ok: false, summary: `No permitido: ${recheck.reasons.join(" ")}` });

@@ -5,7 +5,10 @@
  *  3. corre el mismo bucle de agente que la app (mismo prompt, mismas herramientas, mismos permisos);
  *  4. cuando algo pide permiso, guarda un plan en `agent_pending` y lo pregunta con botones.
  */
-import { callLlm, parseArgs, type LlmMessage } from "@/lib/agent/llm";
+import { AGENTS, SPECIALISTS, isAgentId, type AgentId } from "@/lib/agent/agents";
+import { callLlm, classifyShort, parseArgs, type LlmMessage } from "@/lib/agent/llm";
+import { agentForCommand, classifierPrompt, routeAgent } from "@/lib/agent/router";
+import { recordUsage } from "./usage";
 import { sanitizeConfig } from "@/lib/agent/config";
 import { turnOrigin } from "@/lib/agent/messages";
 import { decide } from "@/lib/agent/permissions";
@@ -36,6 +39,12 @@ import { SNOOZE_MIN } from "@/lib/agent/notifications";
 
 const NEUTRAL = "Este bot es privado. Para usarlo, vincúlalo desde la app: Agente y permisos → Telegram.";
 const MAX_ITER = 4;
+/** Qué se pregunta cuando el comando llega solo ("/comida" a secas). */
+const COMMAND_DEFAULT: Partial<Record<AgentId, string>> = {
+  nutricion: "¿Cuántas calorías y cuánta agua llevo hoy?",
+  organizacion: "¿Qué tareas tengo pendientes?",
+  entrenamiento: "¿Qué entreno hoy?",
+};
 const MAX_MEMORY = 10;
 const MAX_DOC_BYTES = 100 * 1024;
 const TEXT_MIMES = new Set(["text/plain", "text/markdown", "text/csv", "application/json"]);
@@ -119,8 +128,10 @@ export async function handleInbound(inb: Inbound): Promise<void> {
     if (cmd) {
       if (cmd.cmd === "start") return void (await sendMessage(inb.chatId, "Ya estás vinculado ✅. Escríbeme lo que necesites."));
       if (cmd.cmd === "ayuda" || cmd.cmd === "help") {
-        return void (await sendMessage(inb.chatId, "Puedo: crear/editar/completar tareas y subtareas, crear y editar notas, registrar agua y comidas y decirte tus totales del día. Escríbeme normal o mándame una nota de voz. Los permisos y el apagado están en la app."));
+        return void (await sendMessage(inb.chatId, "Atajos: /comida, /tareas, /entreno (y puedes seguir con tu mensaje, por ejemplo: /comida arroz 150 g). Puedo: crear/editar/completar tareas y subtareas, crear y editar notas, registrar agua y comidas y decirte tus totales del día. Escríbeme normal o mándame una nota de voz. Los permisos y el apagado están en la app."));
       }
+      const viaCommand = agentForCommand(cmd.cmd);
+      if (viaCommand) return runTurn(db, link, config, cmd.arg || COMMAND_DEFAULT[viaCommand] || "¿Qué puedes hacer?", false, viaCommand);
       if (cmd.cmd === "desvincular" || cmd.cmd === "unlink") return void (await sendMessage(inb.chatId, "Por seguridad, desvincular Telegram solo se puede desde la app (Agente y permisos)."));
       return void (await sendMessage(inb.chatId, "No conozco ese comando. Escríbeme lo que necesitas."));
     }
@@ -165,9 +176,19 @@ async function saveMemory(db: dbx.Admin, userId: string, msgs: LlmMessage[]) {
   await db.from("agent_chat_state").upsert({ user_id: userId, messages: keep, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
 }
 
-function systemFor(config: AgentConfig, nowMs: number): LlmMessage {
+function systemFor(config: AgentConfig, nowMs: number, agent: AgentId): LlmMessage {
   const lp = localParts(nowMs, config.timezone);
-  return { role: "system", content: buildSystemPrompt({ today: lp.date, time: `${String(lp.hour).padStart(2, "0")}:${String(lp.minute).padStart(2, "0")}`, weekday: WEEKDAYS_ES[lp.weekday], channel: "telegram" }) };
+  return {
+    role: "system",
+    content: buildSystemPrompt({
+      today: lp.date,
+      time: `${String(lp.hour).padStart(2, "0")}:${String(lp.minute).padStart(2, "0")}`,
+      weekday: WEEKDAYS_ES[lp.weekday],
+      channel: "telegram",
+      agentName: AGENTS[agent].name,
+      agentInstructions: AGENTS[agent].instructions,
+    }),
+  };
 }
 
 const LLM_ERR: Record<string, string> = {
@@ -176,31 +197,67 @@ const LLM_ERR: Record<string, string> = {
   timeout: "El modelo tardó demasiado. Intenta de nuevo.",
 };
 
-async function runTurn(db: dbx.Admin, link: Linked, config: AgentConfig, userText: string, forcedUntrusted: boolean): Promise<void> {
+async function runTurn(db: dbx.Admin, link: Linked, config: AgentConfig, userText: string, forcedUntrusted: boolean, forcedAgent?: AgentId): Promise<void> {
   await sendTyping(link.chatId);
   const nowMs = Date.now();
   const ctx: ServerCtx = { db, userId: link.userId, config, nowMs };
   const memory = await loadMemory(db, link.userId);
-  const messages: LlmMessage[] = [...memory, { role: "user", content: userText.slice(0, 7000) }];
+  let messages: LlmMessage[] = [...memory, { role: "user", content: userText.slice(0, 7000) }];
   let finalText = "";
+  let untrustedTurn = forcedUntrusted;
 
-  for (let iter = 0; iter < MAX_ITER; iter++) {
-    const res = await callLlm([systemFor(config, nowMs), ...messages]);
-    if (!res.ok) return void (await sendMessage(link.chatId, LLM_ERR[res.error] ?? "No pude hablar con el asistente ahora."));
+  // Agente: el del comando (/comida…), o enrutamiento barato por palabras clave; solo si es ambiguo, una clasificación corta.
+  let agent: AgentId =
+    forcedAgent ??
+    (
+      await routeAgent({ text: userText }, async (t) => {
+        const c = await classifyShort(classifierPrompt(t));
+        await recordUsage(db, link.userId, "general", c.meta, "classify");
+        return c.text;
+      })
+    ).agent;
+  let delegated = false;
+
+  for (let iter = 0; iter < MAX_ITER + 1; iter++) {
+    const res = await callLlm([systemFor(config, nowMs, agent), ...messages], { agent });
+    await recordUsage(db, link.userId, agent, res.meta);
+    if (!res.ok) {
+      const wait = res.error === "rate_limit" && res.retryAfterSec ? ` Prueba en ~${res.retryAfterSec} s.` : "";
+      return void (await sendMessage(link.chatId, (LLM_ERR[res.error] ?? "No pude hablar con el asistente ahora.") + wait));
+    }
     const calls = res.message.tool_calls ?? [];
+
+    // Delegación de General a un especialista (profundidad máxima 1): el especialista atiende la petición con SOLO sus herramientas.
+    const del = calls.find((c) => c.function.name === "delegate");
+    if (del) {
+      const a = parseArgs(del.function.arguments);
+      const target = a.ok ? a.args.agent : undefined;
+      const request = a.ok && typeof a.args.request === "string" ? a.args.request.trim() : "";
+      if (!delegated && AGENTS[agent].canDelegate && typeof target === "string" && isAgentId(target) && (SPECIALISTS as readonly string[]).includes(target) && request) {
+        if (turnOrigin(messages) === "untrusted") untrustedTurn = true; // lo delegado después de leer datos ajenos sigue siendo no confiable
+        agent = target;
+        delegated = true;
+        messages = [...memory, { role: "user", content: request.slice(0, 2000) }];
+        continue;
+      }
+      messages.push({ role: "assistant", content: res.message.content, tool_calls: calls });
+      for (const c of calls) messages.push({ role: "tool", tool_call_id: c.id, name: c.function.name, content: JSON.stringify({ ok: false, summary: "Delegación no permitida." }) });
+      continue;
+    }
+
     messages.push({ role: "assistant", content: res.message.content, tool_calls: calls.length ? calls : undefined });
     if (calls.length === 0) {
       finalText = (res.message.content ?? "").trim();
       break;
     }
 
-    const origin: Origin = forcedUntrusted ? "untrusted" : turnOrigin(messages);
+    const origin: Origin = untrustedTurn ? "untrusted" : turnOrigin(messages);
     const recent = await dbx.recentWriteTimes(db, link.userId);
     const parsed = calls.map((c) => ({ c, p: parseArgs(c.function.arguments) }));
     const plan = buildPlan(
       "tg",
       parsed.map(({ c, p }) => ({ id: c.id, tool: c.function.name, args: p.ok ? p.args : {} })),
-      { channel: "telegram", origin, config, now: Date.now(), recentWrites: recent },
+      { channel: "telegram", origin, config, now: Date.now(), recentWrites: recent, agent },
     );
     // Argumentos ilegibles = denegado.
     parsed.forEach(({ p }, i) => {
@@ -213,7 +270,7 @@ async function runTurn(db: dbx.Admin, link: Linked, config: AgentConfig, userTex
         const pv = s.decision.action === "deny" ? null : await previewServer(ctx, s.tool, s.args);
         steps.push({ id: s.id, tool: s.tool, args: s.args, label: s.label, decision: s.decision, status: s.status === "denied" ? "denied" : "pending", before: pv?.before, after: pv?.after });
       }
-      return savePlanAndAsk(db, link, { steps, mode: "all", untrusted: origin === "untrusted" }, messages, finalText);
+      return savePlanAndAsk(db, link, { steps, mode: "all", untrusted: origin === "untrusted", agent }, messages, finalText);
     }
 
     // Todo permitido y como mucho una escritura: se ejecuta y el resultado vuelve al modelo.
@@ -261,7 +318,7 @@ async function runPlan(db: dbx.Admin, link: Linked, config: AgentConfig, id: str
   for (const i of runnableSteps(plan)) {
     const s = steps[i];
     // Última barrera: se vuelve a decidir con la configuración de AHORA (pudo cambiar) y con los topes.
-    const again = decide(s.tool, s.args, { channel: "telegram", origin: plan.untrusted ? "untrusted" : "user", config, now: Date.now(), recentWrites: recent, batchSize: writes });
+    const again = decide(s.tool, s.args, { channel: "telegram", origin: plan.untrusted ? "untrusted" : "user", config, now: Date.now(), recentWrites: recent, batchSize: writes, agent: plan.agent });
     if (again.action === "deny") {
       steps[i] = { ...s, status: "denied" };
       lines.push(`✗ ${s.label}: ${again.reasons.join(" ")}`);

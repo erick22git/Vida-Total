@@ -20,6 +20,8 @@ import type { Args } from "../tools/meta";
 import type { AgentConfig } from "../types";
 import { localParts, addDays, zonedTimeToMs } from "../tz";
 import * as db from "./db";
+import { loadRoutines } from "./tick";
+import { agendaForDay, exerciseName, trainingToday } from "../actions/readers-pure";
 
 export interface ServerCtx {
   db: db.Admin;
@@ -47,6 +49,19 @@ export async function execServer(ctx: ServerCtx, tool: string, args: Args): Prom
         return { ok: true, summary: "Tareas", data: listTasks(await db.fetchTasks(ctx.db, ctx.userId), args) };
       case "note_list":
         return { ok: true, summary: "Notas", data: listNotes(await db.fetchNotes(ctx.db, ctx.userId), args) };
+
+      case "training_today": {
+        const wd = new Date(`${(args.fecha as string | undefined) ?? localParts(ctx.nowMs, ctx.config.timezone).date}T12:00:00Z`).getUTCDay();
+        const [plan, routines] = await Promise.all([db.fetchWeeklyPlan(ctx.db, ctx.userId), db.fetchGymRoutines(ctx.db, ctx.userId)]);
+        return { ok: true, summary: "Entrenamiento del día", data: trainingToday(plan, routines, wd, (id) => exerciseName(id)) };
+      }
+      case "agenda_today": {
+        const key = (args.fecha as string | undefined) ?? localParts(ctx.nowMs, ctx.config.timezone).date;
+        const [tasks, blocks, routines] = await Promise.all([db.fetchTasks(ctx.db, ctx.userId), db.fetchTimeBlocks(ctx.db, ctx.userId), loadRoutines(ctx.db, ctx.userId)]);
+        return { ok: true, summary: "Agenda del día", data: agendaForDay(tasks, blocks, routines, key) };
+      }
+      case "ranks_summary":
+        return fail("Los rangos se calculan en la app: ábrela y pregúntale ahí (por Telegram todavía no está disponible).");
 
       case "day_totals": {
         const key = (args.fecha as string | undefined) ?? localParts(ctx.nowMs, ctx.config.timezone).date;

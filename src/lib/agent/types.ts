@@ -17,13 +17,14 @@ export const CHANNELS: Channel[] = ["app", "telegram"];
 export type Origin = "user" | "untrusted";
 
 /** Módulos sobre los que puede actuar el agente. */
-export type AgentModule = "tareas" | "notas" | "agua" | "comidas" | "habitos" | "sistema";
-export const AGENT_MODULES: AgentModule[] = ["tareas", "notas", "agua", "comidas", "habitos", "sistema"];
+export type AgentModule = "tareas" | "notas" | "agua" | "comidas" | "entrenamiento" | "habitos" | "sistema";
+export const AGENT_MODULES: AgentModule[] = ["tareas", "notas", "agua", "comidas", "entrenamiento", "habitos", "sistema"];
 export const MODULE_LABEL: Record<AgentModule, string> = {
   tareas: "Tareas",
   notas: "Notas",
   agua: "Agua",
   comidas: "Comidas y calorías",
+  entrenamiento: "Entrenamiento",
   habitos: "Hábitos",
   sistema: "Sistema",
 };
@@ -138,4 +139,6 @@ export interface PermissionContext {
   sessionId?: string;
   /** Cuántas acciones en total trae la propuesta del agente en este turno (para "por lotes"). */
   batchSize?: number;
+  /** Agente que hace la llamada: si se indica, solo puede usar las herramientas de su lista (mínimo privilegio). */
+  agent?: string;
 }

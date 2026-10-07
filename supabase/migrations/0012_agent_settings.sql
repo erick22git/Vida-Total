@@ -31,6 +31,19 @@ create table if not exists public.agent_action_log (
 create index if not exists agent_action_log_user_idx on public.agent_action_log (user_id, created_at desc);
 alter table public.agent_action_log enable row level security;
 
+-- agent_llm_usage: contador de llamadas al proveedor del modelo (una fila por usuario y día UTC).
+create table if not exists public.agent_llm_usage (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  day date not null,
+  calls integer not null default 0,
+  rate_limited integer not null default 0,
+  fallbacks integer not null default 0,
+  by_agent jsonb not null default '{}'::jsonb,
+  primary key (user_id, day)
+);
+alter table public.agent_llm_usage enable row level security;
+
 -- Políticas "solo tus filas" (las crea la función de 0002; ignora las que ya existen).
 select public.apply_own_rows_rls('agent_settings');
 select public.apply_own_rows_rls('agent_action_log');
+select public.apply_own_rows_rls('agent_llm_usage');

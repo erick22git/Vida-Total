@@ -9,6 +9,7 @@ import type { UndoSpec } from "../history";
 import type { Args } from "../tools/meta";
 import { addSubtaskTo, buildNoteBlocks, buildTask, describeTaskChange, listNotes, listTasks, noteUpdatePatch, taskUpdatePatch } from "./pure";
 import { NUTRITION_EXECUTORS, NUTRITION_PREVIEWS } from "./nutrition-client";
+import { READER_EXECUTORS } from "./readers-client";
 
 export interface ExecResult {
   ok: boolean;
@@ -103,6 +104,7 @@ const EXECUTORS: Record<string, Executor> = {
     };
   },
   ...NUTRITION_EXECUTORS,
+  ...READER_EXECUTORS,
 };
 
 /** Vista previa "antes → después" para las tarjetas de permiso (lee el estado real, no cambia nada). */

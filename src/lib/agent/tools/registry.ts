@@ -2,10 +2,11 @@
 import type { ToolMeta } from "./meta";
 import { NOTE_TOOLS } from "./notes";
 import { NUTRITION_TOOLS } from "./nutrition";
+import { READER_TOOLS } from "./readers";
 import { SYSTEM_TOOLS } from "./system";
 import { TASK_TOOLS } from "./tasks";
 
-const ALL: ToolMeta[] = [...SYSTEM_TOOLS, ...TASK_TOOLS, ...NOTE_TOOLS, ...NUTRITION_TOOLS];
+const ALL: ToolMeta[] = [...SYSTEM_TOOLS, ...TASK_TOOLS, ...NOTE_TOOLS, ...NUTRITION_TOOLS, ...READER_TOOLS];
 
 export const TOOLS: Record<string, ToolMeta> = Object.fromEntries(ALL.map((t) => [t.name, t]));
 
