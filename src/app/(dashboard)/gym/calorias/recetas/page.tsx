@@ -9,6 +9,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Sparkles, Plus, Heart, Clock, Users, X } from "lucide-react";
 import { FoodSectionHeader, FOOD_SECTION_BG } from "@/components/gym/food-section-header";
+import { VerifiedBadge } from "@/components/gym/verified-badge";
 import { useGymStore } from "@/lib/store/gymStore";
 import { MEAL_LABELS, type MealType } from "@/lib/types";
 import { generateAiRecipe } from "@/lib/ai-recipe";
@@ -135,7 +136,10 @@ export default function RecetasPage() {
               </div>
               <div className="flex-1 min-w-0 flex flex-col gap-1">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-sm font-semibold text-white truncate">{recipe.nombre}</span>
+                  <span className="flex items-center gap-1.5 min-w-0 text-sm font-semibold text-white">
+                    <span className="truncate">{recipe.nombre}</span>
+                    <VerifiedBadge item={recipe} size={14} />
+                  </span>
                   <span
                     onClick={(e) => {
                       e.stopPropagation();

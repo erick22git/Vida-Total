@@ -25,7 +25,8 @@ import { ChevronLeft, ImagePlus, ShieldCheck, X } from "lucide-react";
 import { useGymStore } from "@/lib/store/gymStore";
 import { FOOD_CATEGORIES } from "@/lib/types";
 import type { CookedState, NutritionProfile } from "@/lib/types";
-import { MICRONUTRIENT_LABELS, mergeFoods } from "@/lib/food-utils";
+import { MICRONUTRIENT_LABELS, mergeFoods, nutritionChanged } from "@/lib/food-utils";
+import { VerifiedBadge } from "@/components/gym/verified-badge";
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 
@@ -242,6 +243,7 @@ function CrearAlimentoWizard() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState(0);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const canSave = nombre.trim().length > 0 && porcionNombre.trim().length > 0 && crudoForm.fields.calorias.trim().length > 0;
   const stepValid = step !== 0 || nombre.trim().length > 0;
@@ -280,7 +282,15 @@ function CrearAlimentoWizard() {
   function handleSave() {
     if (!canSave) return;
     if (isEditing && editId) {
-      upsertFoodOverride(editId, buildPatch());
+      const patch = buildPatch();
+      // Editar los valores nutricionales de un alimento verificado lo devuelve a "sin verificar" (y se avisa).
+      if (editingFood?.verificado && nutritionChanged(editingFood, patch)) {
+        upsertFoodOverride(editId, { ...patch, verificado: false });
+        setNotice("Cambiaste los valores: el alimento vuelve a “Sin verificar”.");
+        setTimeout(() => goToFood(editId), 1600);
+        return;
+      }
+      upsertFoodOverride(editId, patch);
       goToFood(editId);
       return;
     }
@@ -329,13 +339,19 @@ function CrearAlimentoWizard() {
   return (
     <div className="fixed inset-0 z-[45] flex flex-col app-bg text-white select-none overflow-hidden">
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onPickPhoto} />
+      {notice && (
+        <div className="fixed top-16 inset-x-0 z-[70] flex justify-center px-4 pointer-events-none">
+          <span className="rounded-full bg-black/85 px-4 py-2 text-xs text-amber-200">{notice}</span>
+        </div>
+      )}
 
       <header className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),14px)] shrink-0">
         <button onClick={close} aria-label="Cerrar" className="w-9 h-9 flex items-center justify-center cursor-pointer text-white/80">
           <X size={22} />
         </button>
-        <span className="text-sm text-white/50 tabular-nums" style={MONO_FONT}>
+        <span className="flex items-center gap-2 text-sm text-white/50 tabular-nums" style={MONO_FONT}>
           {step + 1} / {STEP_COUNT}
+          {isEditing && <VerifiedBadge item={editingFood} label showUnverified />}
         </span>
         {step > 0 ? (
           <button

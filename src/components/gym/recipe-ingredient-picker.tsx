@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import { GlassModal } from "@/components/glass/glass-modal";
 import { GlassInput } from "@/components/glass/glass-input";
 import { FoodPhoto } from "@/components/gym/food-photo";
+import { VerifiedBadge } from "@/components/gym/verified-badge";
 import { useGymStore } from "@/lib/store/gymStore";
 import { mergeFoods } from "@/lib/food-utils";
 import { buildUsageMap, resolveFood } from "@/lib/nutrition/food-resolver";
@@ -60,7 +61,10 @@ export function RecipeIngredientPicker({
             >
               <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={36} emoji={categoryEmoji(food.categoria)} />
               <div className="flex flex-col min-w-0">
-                <span className="text-sm font-medium text-white truncate">{food.nombre}</span>
+                <span className="flex items-center gap-1.5 text-sm font-medium text-white min-w-0">
+                  <span className="truncate">{food.nombre}</span>
+                  <VerifiedBadge item={food} size={13} />
+                </span>
                 <span className="text-xs text-white/45">
                   {food.porcion} · {Math.round(food.calorias)} kcal
                 </span>

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { BookOpen, ChevronDown, Clock, Plus } from "lucide-react";
 import { draftFromResult, draftNuevo, type DraftItem } from "@/lib/nutrition/draft-item";
 import { resolveCandidate, type Candidate, type ResolverIndex } from "@/lib/nutrition/food-resolver";
+import { VerifiedBadge } from "@/components/gym/verified-badge";
 import { cn } from "@/lib/utils";
 
 /** Gramos editables: el texto se escribe libremente y solo se confirma un número válido (> 0). 16 px: sin zoom en iOS. */
@@ -54,6 +55,8 @@ export function FoodChip({
     onOpenChange?.(next);
   };
   const currentId = item.foodId ?? item.recipeId;
+  // El check sale del campo REAL del alimento/receta elegido (no del borrador).
+  const entity = item.foodId ? idx.byId.get(item.foodId) : item.candidates.find((c) => c.kind === "receta" && c.id === item.recipeId)?.recipe;
   const alternatives = item.candidates.filter((c) => !(c.id === currentId && c.kind === (item.tipo === "receta" ? "receta" : "alimento")));
   const canChange = item.tipo !== "nuevo" || item.candidates.length > 0;
 
@@ -76,6 +79,7 @@ export function FoodChip({
       >
         {item.tipo === "receta" && <BookOpen size={13} className="shrink-0 text-white/60" />}
         <span className="truncate">{item.nombre}</span>
+        <VerifiedBadge item={entity} size={13} />
         {item.tipo === "nuevo" && <span className="text-[10px] uppercase shrink-0">nuevo</span>}
         {item.tipo === "ia" && <span className="text-[10px] uppercase shrink-0">estimado IA</span>}
         {canChange && <ChevronDown size={13} className="shrink-0 text-white/40" />}
@@ -85,7 +89,8 @@ export function FoodChip({
           {alternatives.map((c) => (
             <button key={`${c.kind}-${c.id}`} onClick={() => pick(c)} className="w-full flex items-center gap-2 px-3.5 py-2.5 text-left hover:bg-white/[0.08] cursor-pointer border-b border-white/[0.06] last:border-b-0">
               {c.kind === "receta" ? <BookOpen size={14} className="text-white/50 shrink-0" /> : <Clock size={14} className="text-white/40 shrink-0" />}
-              <span className="text-sm text-white/90 truncate flex-1 min-w-0">{c.nombre}</span>
+              <span className="text-sm text-white/90 truncate min-w-0">{c.nombre}</span>
+              <VerifiedBadge item={c.food ?? c.recipe} size={13} className="mr-auto" />
             </button>
           ))}
           {item.tipo !== "nuevo" && (

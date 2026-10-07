@@ -213,3 +213,29 @@ export const DAILY_VALUES: Record<string, number> = {
   azucares: 50,
   azucaresAnadidos: 50,
 };
+
+const NUTRITION_KEYS = [
+  "calorias", "proteina", "carbos", "grasas", "grasasSaturadas", "grasasTrans", "grasasMonoinsaturadas", "grasasPoliinsaturadas",
+  "omega3Ala", "omega6Linoleico", "colesterol", "sodio", "fibra", "azucares", "azucaresAnadidos", "agua", "ceniza",
+] as const;
+
+function nutritionSnapshot(p: Partial<NutritionProfile> | undefined | null) {
+  const out: Record<string, number | Record<string, number>> = {};
+  for (const k of NUTRITION_KEYS) out[k] = Number(p?.[k] ?? 0);
+  const micro: Record<string, number> = {};
+  for (const [k, v] of Object.entries(p?.micronutrientes ?? {})) if (typeof v === "number" && v !== 0) micro[k] = v;
+  out.micronutrientes = Object.fromEntries(Object.entries(micro).sort(([a], [b]) => a.localeCompare(b)));
+  return out;
+}
+
+/** ¿Cambió algún valor nutricional (crudo o cocido), o la porción base? Faltante y 0 se consideran lo mismo, así que
+ * guardar sin tocar nada no cuenta como cambio. Se usa para devolver a "sin verificar" un alimento verificado editado. */
+export function nutritionChanged(before: Food, after: Partial<Food>): boolean {
+  const next = { ...before, ...after };
+  if (JSON.stringify(nutritionSnapshot(before)) !== JSON.stringify(nutritionSnapshot(next))) return true;
+  const hadCocido = !!before.cocido;
+  const hasCocido = !!next.cocido;
+  if (hadCocido !== hasCocido) return true;
+  if (hadCocido && hasCocido && JSON.stringify(nutritionSnapshot(before.cocido)) !== JSON.stringify(nutritionSnapshot(next.cocido))) return true;
+  return parsePorcionGramos(before) !== parsePorcionGramos(next as Food);
+}

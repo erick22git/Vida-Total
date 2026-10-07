@@ -15,6 +15,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { motion, type PanInfo } from "framer-motion";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { FoodPhoto } from "@/components/gym/food-photo";
+import { VerifiedBadge } from "@/components/gym/verified-badge";
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import type { Food } from "@/lib/types";
 
@@ -65,7 +66,10 @@ function FoodCard({ food, offset, compact, onClick }: { food: Food; offset: -2 |
     >
       <FoodPhoto photoUrl={food.photoUrl} alt={food.nombre} size={focused ? 52 : 40} emoji={categoryEmoji(food.categoria)} />
       <div className="min-w-0 flex-1">
-        <p className={`truncate font-semibold text-white ${focused ? "text-sm" : "text-xs text-white/70"}`}>{food.nombre}</p>
+        <p className={`flex items-center gap-1.5 font-semibold text-white ${focused ? "text-sm" : "text-xs text-white/70"}`}>
+          <span className="truncate">{food.nombre}</span>
+          <VerifiedBadge item={food} size={focused ? 14 : 12} />
+        </p>
         {focused && (
           <p className="text-xs text-white/45 truncate">
             {food.porcion} · {Math.round(food.calorias)} kcal
