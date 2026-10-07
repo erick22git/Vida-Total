@@ -689,6 +689,8 @@ export interface RecipeRow {
   favorito: boolean;
   fuente: string | null;
   enlace: string | null;
+  /** Columna agregada por la migración 0008 (puede no existir todavía en la base remota). */
+  verificado?: boolean;
   created_at: string;
 }
 
@@ -725,6 +727,7 @@ function rowToRecipe(row: RecipeRow): Recipe {
     favorito: row.favorito,
     fuente: (row.fuente as Recipe["fuente"]) ?? undefined,
     enlace: row.enlace ?? undefined,
+    verificado: row.verificado === true,
     createdAt: new Date(row.created_at).getTime(),
   };
 }
@@ -756,6 +759,14 @@ export function syncUpdateRecipe(id: string, patch: Partial<Recipe>, userId: str
   if (Object.keys(row).length === 0) return;
   void safeWrite("update recipes", () =>
     createClient().from("recipes").update(row).eq("id", id).eq("user_id", userId),
+  );
+}
+
+/** `verificado` va en su propia escritura (y NO en insert/update de arriba): si la migración 0008 todavía no se aplicó,
+ * esta escritura falla sola (queda en consola) y no arrastra el resto de los cambios de la receta. */
+export function syncRecipeVerified(id: string, verificado: boolean, userId: string): void {
+  void safeWrite("update recipes.verificado", () =>
+    createClient().from("recipes").update({ verificado }).eq("id", id).eq("user_id", userId),
   );
 }
 

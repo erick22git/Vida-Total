@@ -47,6 +47,7 @@ import {
   syncInsertCustomPortion,
   syncInsertRecipe,
   syncUpdateRecipe,
+  syncRecipeVerified,
   syncDeleteRecipe,
   syncInsertWaterEntry,
   syncDeleteWaterEntry,
@@ -648,7 +649,10 @@ export const useGymStore = create<GymState>()(
           recipes: state.recipes.map((r) => (r.id === id ? { ...r, ...patch } : r)),
         }));
         const uidUser = getCurrentUserId();
-        if (uidUser) syncUpdateRecipe(id, patch, uidUser);
+        if (uidUser) {
+          syncUpdateRecipe(id, patch, uidUser);
+          if (patch.verificado !== undefined) syncRecipeVerified(id, patch.verificado, uidUser);
+        }
       },
       toggleFavoriteRecipe: (id) => {
         let nextFavorito = false;

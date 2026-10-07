@@ -9,12 +9,15 @@
  * Toda la lógica (qué hace cada acción) sigue siendo la misma de siempre — esto solo mueve el JSX y
  * el estado del menú a un solo lugar para no mantener dos copias.
  */
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Copy, ClipboardPaste, RotateCcw, Trash2, Scale, BookOpen, Share2, ChevronRight, Image as ImageIcon, FileStack } from "lucide-react";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassInput } from "@/components/glass/glass-input";
 import { useGymStore } from "@/lib/store/gymStore";
-import type { LoggedFood, MealType } from "@/lib/types";
+import { mergeFoods } from "@/lib/food-utils";
+import { getResolverIndex } from "@/lib/nutrition/food-resolver";
+import { buildRecipeFromLogged, findRecipeByName, updatePatchFromLogged } from "@/lib/nutrition/meal-to-recipe";
+import type { LoggedFood, MealType, Recipe } from "@/lib/types";
 import { MEAL_LABELS } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -77,6 +80,9 @@ export function MealActionsMenu({
   const scaleMealPortions = useGymStore((s) => s.scaleMealPortions);
   const saveMealAsTemplate = useGymStore((s) => s.saveMealAsTemplate);
   const addRecipe = useGymStore((s) => s.addRecipe);
+  const updateRecipe = useGymStore((s) => s.updateRecipe);
+  const recipes = useGymStore((s) => s.recipes);
+  const customFoods = useGymStore((s) => s.customFoods);
   const mealClipboard = useGymStore((s) => s.mealClipboard);
 
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
@@ -84,22 +90,16 @@ export function MealActionsMenu({
   const [scaleOpen, setScaleOpen] = useState(false);
   const [templateOpen, setTemplateOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
+  const [recipeOpen, setRecipeOpen] = useState(false);
+  const [recipeName, setRecipeName] = useState("");
+  const [recipeConflict, setRecipeConflict] = useState<Recipe | null>(null);
+  const resolverIdx = useMemo(() => getResolverIndex(mergeFoods(customFoods), recipes), [customFoods, recipes]);
   const [toast, setToast] = useState<string | null>(null);
 
   function flashToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 1800);
   }
-
-  const total = foods.reduce(
-    (acc, f) => ({
-      calorias: acc.calorias + f.calorias,
-      proteina: acc.proteina + f.proteina,
-      carbos: acc.carbos + f.carbos,
-      grasas: acc.grasas + f.grasas,
-    }),
-    { calorias: 0, proteina: 0, carbos: 0, grasas: 0 },
-  );
 
   return (
     <>
@@ -162,28 +162,10 @@ export function MealActionsMenu({
                 label="Guardar como receta"
                 disabled={foods.length === 0}
                 onClick={() => {
-                  const created = addRecipe({
-                    nombre: `${MEAL_LABELS[meal]} guardada`,
-                    porciones: 1,
-                    tiempoPrepMin: 10,
-                    tipos: [meal],
-                    ingredientes: foods.map((f) => ({
-                      foodId: f.foodId,
-                      nombre: f.nombre,
-                      cantidad: f.cantidad ?? 1,
-                      porcionNombre: f.porcionNombre ?? "porción",
-                      gramos: f.gramos ?? 100,
-                      calorias: f.calorias,
-                      proteina: f.proteina,
-                      carbos: f.carbos,
-                      grasas: f.grasas,
-                    })),
-                    instrucciones: [],
-                    totales: total,
-                    fuente: "manual",
-                  });
                   onOpenChange(false);
-                  flashToast(created ? "Receta guardada" : "No se pudo guardar");
+                  setRecipeName(`${MEAL_LABELS[meal]} guardada`);
+                  setRecipeConflict(null);
+                  setRecipeOpen(true);
                 }}
               />
               <div className="relative">
@@ -267,6 +249,64 @@ export function MealActionsMenu({
           <button onClick={() => setScaleOpen(false)} className="text-xs text-white/40 hover:text-white/70 cursor-pointer self-end">
             Cancelar
           </button>
+        </div>
+      )}
+
+      {recipeOpen && (
+        <div className="flex flex-col gap-2 rounded-2xl bg-white/[0.04] glass-specular-ring p-3">
+          {recipeConflict ? (
+            <>
+              <p className="text-xs text-amber-200/90">
+                Ya existe la receta “{recipeConflict.nombre}” ({recipeConflict.ingredientes.length} ingredientes). ¿Actualizarla con esta comida en vez de duplicarla?
+              </p>
+              <p className="text-[11px] text-white/45">Al actualizarla vuelve a “Sin verificar”, porque cambian sus valores.</p>
+              <div className="flex gap-2">
+                <GlassButton
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    const fresh = buildRecipeFromLogged(recipeName, meal, foods, resolverIdx);
+                    updateRecipe(recipeConflict.id, updatePatchFromLogged(recipeConflict, fresh));
+                    setRecipeOpen(false);
+                    setRecipeConflict(null);
+                    flashToast("Receta actualizada (sin verificar)");
+                  }}
+                >
+                  Actualizar
+                </GlassButton>
+                <GlassButton size="sm" variant="ghost" className="flex-1" onClick={() => setRecipeConflict(null)}>
+                  Cambiar nombre
+                </GlassButton>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-white/60">Nombre de la receta</p>
+              <GlassInput value={recipeName} onChange={(e) => setRecipeName(e.target.value)} placeholder="Ej. Almuerzo fit" />
+              <div className="flex gap-2">
+                <GlassButton
+                  size="sm"
+                  className="flex-1"
+                  disabled={!recipeName.trim()}
+                  onClick={() => {
+                    const existing = findRecipeByName(recipes, recipeName);
+                    if (existing) {
+                      setRecipeConflict(existing);
+                      return;
+                    }
+                    const created = addRecipe(buildRecipeFromLogged(recipeName, meal, foods, resolverIdx));
+                    setRecipeOpen(false);
+                    flashToast(created ? "Receta guardada (sin verificar)" : "No se pudo guardar");
+                  }}
+                >
+                  Guardar
+                </GlassButton>
+                <GlassButton size="sm" variant="ghost" className="flex-1" onClick={() => setRecipeOpen(false)}>
+                  Cancelar
+                </GlassButton>
+              </div>
+            </>
+          )}
         </div>
       )}
 

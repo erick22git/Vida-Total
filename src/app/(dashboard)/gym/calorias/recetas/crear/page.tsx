@@ -9,9 +9,10 @@
  */
 import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, X, Plus, Minus, Trash2, Camera, Link2, FileEdit } from "lucide-react";
+import { ChevronLeft, X, Plus, Minus, Trash2, Camera, Link2, FileEdit, MoreVertical, ShieldCheck } from "lucide-react";
 import { FOOD_SECTION_BG } from "@/components/gym/food-section-header";
 import { RecipeIngredientPicker } from "@/components/gym/recipe-ingredient-picker";
+import { VerifiedBadge } from "@/components/gym/verified-badge";
 import { useGymStore } from "@/lib/store/gymStore";
 import { MEAL_LABELS, type Food, type MealType, type RecipeIngredient } from "@/lib/types";
 import { MONO_FONT } from "@/lib/ui/mono-font";
@@ -91,6 +92,9 @@ function CrearRecetaForm() {
   const [instrucciones, setInstrucciones] = useState<string[]>(draft?.instrucciones ?? existing?.instrucciones ?? [""]);
   const [enlace, setEnlace] = useState(draft?.enlace ?? existing?.enlace ?? "");
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmVerify, setConfirmVerify] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Note: form fields are seeded from `existing`/`draft` at initial mount via
   // useState above. If `recipeId` changes without a remount, the form
@@ -168,11 +172,29 @@ function CrearRecetaForm() {
       enlace: enlace.trim() || undefined,
     };
     if (existing) {
+      // Editar los valores nutricionales (ingredientes/porciones) de una receta verificada la devuelve a "sin verificar".
+      const changedValues = JSON.stringify(ingredientes) !== JSON.stringify(existing.ingredientes) || porciones !== existing.porciones;
+      if (existing.verificado && changedValues) {
+        updateRecipe(existing.id, { ...payload, verificado: false });
+        setNotice("Cambiaste los ingredientes: la receta vuelve a “Sin verificar”.");
+        setTimeout(() => router.push("/gym/calorias/recetas"), 1600);
+        return;
+      }
       updateRecipe(existing.id, payload);
     } else {
-      addRecipe(payload);
+      addRecipe({ ...payload, verificado: false });
     }
     router.push("/gym/calorias/recetas");
+  }
+
+  // TODO: restringir "Verificar" al rol admin cuando exista el sistema de roles (hoy cualquier usuario puede,
+  // igual que en alimentos). Solo MANUAL: ningún script ni migración puede poner verificado = true.
+  function handleVerify() {
+    if (!existing) return;
+    updateRecipe(existing.id, { verificado: true });
+    setConfirmVerify(false);
+    setNotice("Receta verificada.");
+    setTimeout(() => setNotice(null), 1800);
   }
 
   if (choosing) {
@@ -237,8 +259,61 @@ function CrearRecetaForm() {
           <h1 className="text-[15px] uppercase tracking-[0.12em]" style={MONO_FONT}>
             {existing ? "Editar receta" : "Crear receta"}
           </h1>
-          <span className="w-10 h-10" />
+          {existing ? (
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label="Más opciones"
+                className="w-10 h-10 flex items-center justify-center cursor-pointer"
+              >
+                <MoreVertical size={20} className="text-white/70" />
+              </button>
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+                  <div className="absolute right-0 top-10 z-40 w-48 rounded-2xl shadow-2xl overflow-hidden py-1" style={{ background: "#151515" }}>
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setConfirmVerify(true);
+                      }}
+                      disabled={existing.verificado === true}
+                      className="w-full flex items-center gap-2.5 text-left px-3.5 py-2.5 text-xs text-white cursor-pointer hover:bg-white/[0.08] disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <ShieldCheck size={14} /> {existing.verificado ? "Ya está verificada" : "Verificar"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <span className="w-10 h-10" />
+          )}
         </header>
+
+        {existing && (
+          <div className="-mt-2 flex justify-center">
+            <VerifiedBadge item={existing} label showUnverified />
+          </div>
+        )}
+
+        {confirmVerify && (
+          <div className="flex flex-col gap-2 rounded-3xl p-4" style={{ background: "#0d0d0d" }}>
+            <p className="text-xs text-white/70 text-center">
+              ¿Confirmás que los ingredientes y valores de esta receta son correctos? Va a aparecer con el check de &quot;Verificado&quot;.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={handleVerify} className="flex-1 rounded-full py-3 text-sm font-semibold cursor-pointer bg-white text-black">
+                Sí, marcar como verificada
+              </button>
+              <button onClick={() => setConfirmVerify(false)} className="flex-1 rounded-full py-3 text-sm font-semibold cursor-pointer bg-white/10 text-white">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {notice && <p className="text-xs text-center text-amber-200/90">{notice}</p>}
 
         {mode === "enlace" && (
           <div className="flex flex-col gap-2 rounded-3xl p-4" style={{ background: "#0d0d0d" }}>
