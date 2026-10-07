@@ -10,6 +10,7 @@ import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GlassInput } from "@/components/glass/glass-input";
 import { FoodSectionHeader } from "@/components/gym/food-section-header";
+import { CaloriasSkeleton } from "@/components/gym/calorias-skeleton";
 import { FoodSearchCarousel } from "@/components/gym/food-search-carousel";
 import { useGymStore } from "@/lib/store/gymStore";
 import { mergeFoods } from "@/lib/food-utils";
@@ -25,7 +26,7 @@ const TABS: { key: Tab; label: string }[] = [
 
 export default function BuscarNuevoPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<CaloriasSkeleton />}>
       <BuscarNuevoContent />
     </Suspense>
   );

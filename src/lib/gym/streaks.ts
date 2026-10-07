@@ -2,18 +2,34 @@ import { format, isSameDay, subDays } from "date-fns";
 import type { LoggedFood } from "@/lib/types";
 import { calorieStatus } from "./calorie-state";
 
+const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+
+/** "yyyy-MM-dd" en hora local — equivale a `format(d, "yyyy-MM-dd")` pero sin el costo de date-fns
+ * (con miles de entradas, `format` era lo más lento al abrir Calorías). */
+function dayKeyOf(timestamp: number): string {
+  const d = new Date(timestamp);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+const groupedCache = new WeakMap<LoggedFood[], Map<string, LoggedFood[]>>();
+
 /** Groups logged foods by calendar-day key (yyyy-MM-dd, local time). Entries
  * the user un-checked (activo === false) are excluded — they don't count
- * toward streaks, scores, or "day has entry" indicators. */
+ * toward streaks, scores, or "day has entry" indicators.
+ * El resultado se guarda por referencia del arreglo (el store lo reemplaza entero en cada cambio), así que
+ * racha + días registrados + puntaje comparten un solo recorrido. No mutar el Map devuelto. */
 export function groupLoggedFoodsByDay(loggedFoods: LoggedFood[]): Map<string, LoggedFood[]> {
+  const cached = groupedCache.get(loggedFoods);
+  if (cached) return cached;
   const map = new Map<string, LoggedFood[]>();
   for (const f of loggedFoods) {
     if (f.activo === false) continue;
-    const key = format(new Date(f.timestamp), "yyyy-MM-dd");
+    const key = dayKeyOf(f.timestamp);
     const list = map.get(key);
     if (list) list.push(f);
     else map.set(key, [f]);
   }
+  groupedCache.set(loggedFoods, map);
   return map;
 }
 

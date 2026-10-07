@@ -22,6 +22,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { isSameDay, startOfDay } from "date-fns";
 import { ChevronLeft, MoreVertical, Share2, Sparkles, Check, Circle, CheckCircle2, Plus, Copy, Trash2 } from "lucide-react";
+import { CaloriasSkeleton } from "@/components/gym/calorias-skeleton";
 import { FoodPhoto } from "@/components/gym/food-photo";
 import { DigitWheel } from "@/components/gym/digit-wheel";
 import { CantidadCounter } from "@/components/gym/cantidad-counter";
@@ -52,7 +53,7 @@ const INFO_VIEW_COUNT = 3;
 
 export function FoodDetailScreen({ id, mode }: { id: string; mode: "agregar" | "editar" }) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<CaloriasSkeleton />}>
       <FoodDetailContent id={id} mode={mode} />
     </Suspense>
   );

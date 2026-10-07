@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { userScopedLocalStorage } from "./scoped-storage";
-import { isSameDay, differenceInCalendarDays } from "date-fns";
+import { useMemo } from "react";
+import { isSameDay, differenceInCalendarDays, startOfDay } from "date-fns";
 import { localDayKey, daysDiff, toLocalDayKey } from "@/lib/gym/kegel-dates";
 import type {
   Exercise,
@@ -1542,7 +1543,11 @@ export function useTodayLoggedFoods() {
  * registro de otros días. */
 export function useLoggedFoodsForDate(date: Date) {
   const loggedFoods = useGymStore((s) => s.loggedFoods);
-  return loggedFoods.filter((f) => isSameDay(new Date(f.timestamp), date));
+  const dayStart = startOfDay(date).getTime();
+  return useMemo(
+    () => loggedFoods.filter((f) => isSameDay(new Date(f.timestamp), dayStart)),
+    [loggedFoods, dayStart],
+  );
 }
 
 export function useTodayWaterEntries() {

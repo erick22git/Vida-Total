@@ -33,7 +33,7 @@ import { useGymStore, useLoggedFoodsForDate } from "@/lib/store/gymStore";
 import { activeLoggedFoods, mergeFoods, nutrientTotalsForLoggedFoods } from "@/lib/food-utils";
 import { computeLoggedDaysStreak, loggedDayKeys } from "@/lib/gym/streaks";
 import { mealForTime, mealTimePassed } from "@/lib/gym/meal-time";
-import { MEAL_LABELS, type Food, type MealType, type TrackableNutrient } from "@/lib/types";
+import { MEAL_LABELS, type MealType, type TrackableNutrient } from "@/lib/types";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { SwipeCarouselDots, SwipeCarouselStage, swipeSlide, useSwipeCarousel } from "@/components/shared/swipe-carousel";
 
@@ -62,6 +62,7 @@ export function MealHomeScreen() {
   const loggedStreak = useMemo(() => computeLoggedDaysStreak(allLoggedFoods), [allLoggedFoods]);
   const loggedDays = useMemo(() => loggedDayKeys(allLoggedFoods), [allLoggedFoods]);
 
+  const [view, setView] = useState(0);
   const [index, setIndex] = useState(() => MEALS.indexOf(mealForTime()));
   const { direction, goTo, onDragEnd } = useSwipeCarousel({
     index,
@@ -83,6 +84,10 @@ export function MealHomeScreen() {
   // pero es otra página), empezando por el ÚLTIMO alimento agregado — deslizando sobre su foto/nombre se
   // ven los demás. Si la comida todavía no tiene nada, igual se abre (vacía, sin foto) para poder pegar
   // desde el "..." (ver `food-detail-screen.tsx`).
+  // Precalienta la ruta del "+" (en producción Next la deja lista; en desarrollo no hace nada).
+  useEffect(() => {
+    if (viendoHoy) router.prefetch(`/gym/calorias/buscar-nuevo?meal=${meal}`);
+  }, [router, viendoHoy, meal]);
   const openSearch = () => {
     if (viendoHoy) router.push(`/gym/calorias/buscar-nuevo?meal=${meal}`);
   };
@@ -135,11 +140,14 @@ export function MealHomeScreen() {
     }),
     { calorias: 0, proteina: 0, carbos: 0, grasas: 0 },
   );
-  const allFoods = useMemo<Food[]>(() => mergeFoods(customFoods), [customFoods]);
+  // Los nutrientes "otros" solo se ven en la vista 1: no se calculan hasta que el usuario llega ahí.
   const otherNutrientTotals = useMemo(
-    () => nutrientTotalsForLoggedFoods(activeLoggedFoods(loggedFoods), allFoods),
-    [loggedFoods, allFoods],
-  ) as Partial<Record<TrackableNutrient, number>>;
+    () =>
+      view === 1
+        ? (nutrientTotalsForLoggedFoods(activeLoggedFoods(loggedFoods), mergeFoods(customFoods)) as Partial<Record<TrackableNutrient, number>>)
+        : {},
+    [view, loggedFoods, customFoods],
+  );
 
   // El título sigue la hora real mientras el usuario no navegó a mano ni cambió de día — si ya
   // está mirando otra comida o un día pasado, no se lo salteamos de abajo cada minuto.
@@ -161,7 +169,6 @@ export function MealHomeScreen() {
   // Swipe VERTICAL = cambia de vista (comida / nutrientes / racha) — igual mecánica que
   // `/habitos/habito` (el horizontal es entre comidas, drag="x" con dragDirectionLock, así que no
   // compite con esto). Se desactiva mientras la comida está expandida (esa lista ya scrollea sola).
-  const [view, setView] = useState(0);
   const [viewDir, setViewDir] = useState(1);
   const gestureStart = useRef<{ x: number; y: number } | null>(null);
   const wheelLock = useRef(false);
