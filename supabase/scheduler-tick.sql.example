@@ -1,0 +1,25 @@
+-- PLANTILLA (no es una migración y no se ejecuta sola). Programa el aviso cada minuto con Supabase pg_cron + pg_net.
+-- 1) Cambia TU-APP.vercel.app y TU_CRON_SECRET por tus valores REALES, SOLO en el SQL Editor de Supabase.
+--    El secreto real NUNCA se escribe en este archivo ni se sube al repositorio (que es público).
+-- 2) Es el mismo valor que la variable CRON_SECRET de Vercel (≥ 24 caracteres).
+-- 3) Antes: migraciones 0012 y 0015 aplicadas y avisos activados en la app (Agente y permisos → Avisos).
+
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+select cron.schedule(
+  'vida-total-tick',
+  '* * * * *',
+  $$
+  select net.http_post(
+    url := 'https://TU-APP.vercel.app/api/agent/tick',
+    headers := jsonb_build_object('Authorization', 'Bearer TU_CRON_SECRET', 'Content-Type', 'application/json'),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 20000
+  );
+  $$
+);
+
+-- Ver que corre:      select * from cron.job;   select * from cron.job_run_details order by start_time desc limit 10;
+-- Respuestas HTTP:    select id, status_code, left(content, 120) from net._http_response order by created desc limit 10;
+-- Pausar / quitar:    select cron.unschedule('vida-total-tick');

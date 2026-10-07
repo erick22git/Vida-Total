@@ -26,18 +26,17 @@ export function TelegramLinkCard() {
     }
   }, []);
   useEffect(() => {
-    void refresh();
+    const t = setTimeout(() => void refresh(), 0);
+    return () => clearTimeout(t);
   }, [refresh]);
 
   // Mientras hay un código a la vista, revisa si ya se vinculó.
+  const showCode = code && !status?.linked ? code : null;
   useEffect(() => {
-    if (!code) return;
+    if (!showCode) return;
     const t = setInterval(() => void refresh(), 4000);
     return () => clearInterval(t);
-  }, [code, refresh]);
-  useEffect(() => {
-    if (status?.linked && code) setCode(null);
-  }, [status?.linked, code]);
+  }, [showCode, refresh]);
 
   const link = async () => {
     setBusy(true);
@@ -78,16 +77,16 @@ export function TelegramLinkCard() {
         <button onClick={unlink} disabled={busy} className="rounded-xl bg-red-500/15 text-red-200 text-sm py-2.5 cursor-pointer disabled:opacity-40">
           Desvincular Telegram
         </button>
-      ) : code ? (
+      ) : showCode ? (
         <div className="flex flex-col gap-2">
           <p className="text-xs text-white/60">Tu código (vale 10 minutos y sirve una sola vez):</p>
-          <p className="text-2xl font-mono tracking-[0.3em] text-center py-1 select-all">{code.code}</p>
-          {code.botUsername && (
-            <a href={`https://t.me/${code.botUsername}?start=${code.code}`} target="_blank" rel="noreferrer" className="rounded-xl bg-sky-500 text-black text-sm font-medium py-2.5 text-center">
-              Abrir @{code.botUsername} en Telegram
+          <p className="text-2xl font-mono tracking-[0.3em] text-center py-1 select-all">{showCode.code}</p>
+          {showCode.botUsername && (
+            <a href={`https://t.me/${showCode.botUsername}?start=${showCode.code}`} target="_blank" rel="noreferrer" className="rounded-xl bg-sky-500 text-black text-sm font-medium py-2.5 text-center">
+              Abrir @{showCode.botUsername} en Telegram
             </a>
           )}
-          <p className="text-[11px] text-white/45">O escríbele al bot: <b>/start {code.code}</b></p>
+          <p className="text-[11px] text-white/45">O escríbele al bot: <b>/start {showCode.code}</b></p>
         </div>
       ) : (
         <button onClick={link} disabled={busy || (status ? !status.configured : true)} className="rounded-xl bg-sky-500/90 text-black text-sm font-medium py-2.5 cursor-pointer disabled:opacity-40">

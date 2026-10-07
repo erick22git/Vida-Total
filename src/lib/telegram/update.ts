@@ -89,14 +89,17 @@ export function parseCommand(text: string): { cmd: string; arg: string } | null 
 /** callback_data (máx. 64 bytes): "<tipo>:<id>:<acción>[:<n>]". */
 export type CallbackAction =
   | { type: "plan"; id: string; action: "all" | "step" | "cancel" }
-  | { type: "step"; id: string; index: number; action: "ok" | "skip" | "always" };
+  | { type: "step"; id: string; index: number; action: "ok" | "skip" | "always" }
+  | { type: "notif"; id: string; action: "done" | "snooze" | "water" | "later" };
 
-export const encodeCallback = (c: CallbackAction): string => (c.type === "plan" ? `p:${c.id}:${c.action}` : `s:${c.id}:${c.index}:${c.action}`);
+export const encodeCallback = (c: CallbackAction): string =>
+  c.type === "plan" ? `p:${c.id}:${c.action}` : c.type === "notif" ? `n:${c.id}:${c.action}` : `s:${c.id}:${c.index}:${c.action}`;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function decodeCallback(data: string): CallbackAction | null {
   const p = data.split(":");
   if (p[0] === "p" && p.length === 3 && UUID.test(p[1]) && (p[2] === "all" || p[2] === "step" || p[2] === "cancel")) return { type: "plan", id: p[1], action: p[2] };
+  if (p[0] === "n" && p.length === 3 && UUID.test(p[1]) && (p[2] === "done" || p[2] === "snooze" || p[2] === "water" || p[2] === "later")) return { type: "notif", id: p[1], action: p[2] };
   if (p[0] === "s" && p.length === 4 && UUID.test(p[1]) && /^\d{1,2}$/.test(p[2]) && (p[3] === "ok" || p[3] === "skip" || p[3] === "always")) {
     return { type: "step", id: p[1], index: Number(p[2]), action: p[3] };
   }

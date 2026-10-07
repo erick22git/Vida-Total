@@ -32,6 +32,7 @@ import { decodeCallback, isWellFormedCode, normalizeCode, parseCommand, type Inb
 import * as dbx from "./db";
 import { execServer, previewServer, type ServerCtx } from "./executor";
 import { MAX_VOICE_BYTES, MAX_VOICE_SECONDS, transcribeVoice } from "./transcribe";
+import { SNOOZE_MIN } from "@/lib/agent/notifications";
 
 const NEUTRAL = "Este bot es privado. Para usarlo, vincúlalo desde la app: Agente y permisos → Telegram.";
 const MAX_ITER = 4;
@@ -283,6 +284,7 @@ async function handleCallback(db: dbx.Admin, link: Linked, config: AgentConfig, 
     await answerCallback(inb.callbackId, "Agente desactivado");
     return;
   }
+  if (act.type === "notif") return handleNotif(db, link, config, inb, act);
   const { data } = await db.from("agent_pending").select("payload,status,expires_at,user_id,chat_id").eq("id", act.id).maybeSingle();
   if (!data || data.user_id !== link.userId || Number(data.chat_id) !== link.chatId) return void (await answerCallback(inb.callbackId, "Solicitud no encontrada"));
   if (data.status !== "open" || new Date(data.expires_at as string).getTime() < Date.now()) {
@@ -336,4 +338,51 @@ async function handleCallback(db: dbx.Admin, link: Linked, config: AgentConfig, 
   }
   const report = await runPlan(db, link, cfg, act.id, plan);
   await editMessage(link.chatId, inb.messageId, report);
+}
+
+// ───────────── Botones de los avisos (Hecho / Posponer / +250 ml / Entendido) ─────────────
+
+async function handleNotif(db: dbx.Admin, link: Linked, config: AgentConfig, inb: Extract<Inbound, { kind: "callback" }>, act: { id: string; action: "done" | "snooze" | "water" | "later" }): Promise<void> {
+  const { data: row } = await db.from("agent_notification_log").select("id,user_id,title,body,payload,read_at").eq("id", act.id).maybeSingle();
+  if (!row || row.user_id !== link.userId) return void (await answerCallback(inb.callbackId));
+  if (row.read_at) return void (await answerCallback(inb.callbackId, "Ya lo atendiste"));
+  const payload = (row.payload ?? {}) as { taskId?: string | null; subtaskId?: string | null };
+  const head = `🔔 ${row.title}
+${row.body}`;
+  const now = new Date().toISOString();
+  const markRead = (extra: Record<string, unknown> = {}) => db.from("agent_notification_log").update({ read_at: now, ...extra }).eq("id", act.id);
+
+  if (act.action === "later") {
+    await markRead();
+    await answerCallback(inb.callbackId);
+    return void (await editMessage(link.chatId, inb.messageId, `${head}
+
+👍 Entendido`));
+  }
+  if (act.action === "snooze") {
+    await markRead({ snooze_until: new Date(Date.now() + SNOOZE_MIN * 60_000).toISOString() });
+    await answerCallback(inb.callbackId, `Te aviso en ${SNOOZE_MIN} min`);
+    return void (await editMessage(link.chatId, inb.messageId, `${head}
+
+⏰ Pospuesto ${SNOOZE_MIN} min`));
+  }
+
+  // "Hecho" y "+250 ml": el toque ES tu permiso, pero igual pasan por los límites, el apagado y la lista fija.
+  const tool = act.action === "water" ? "water_add" : payload.subtaskId ? "subtask_complete" : "task_complete";
+  const args = act.action === "water" ? { ml: 250 } : payload.subtaskId ? { taskId: payload.taskId, subtaskId: payload.subtaskId, done: true } : { id: payload.taskId, done: true };
+  const tapped = sanitizeConfig({ ...config, levels: { ...config.levels, telegram: { ...config.levels.telegram, [tool]: "allow" } } });
+  const verdict = decide(tool, args, { channel: "telegram", origin: "user", config: tapped, now: Date.now(), recentWrites: await dbx.recentWriteTimes(db, link.userId) });
+  if (verdict.action !== "allow") {
+    await answerCallback(inb.callbackId, "No permitido");
+    return void (await editMessage(link.chatId, inb.messageId, `${head}
+
+✗ No permitido: ${verdict.reasons.join(" ")}`));
+  }
+  const r = await execServer({ db, userId: link.userId, config, nowMs: Date.now() }, tool, args);
+  await dbx.logAction(db, link.userId, { channel: "telegram", tool, args, summary: r.summary, ok: r.ok, undo: r.undo });
+  await markRead();
+  await answerCallback(inb.callbackId, r.ok ? "Listo" : "No se pudo");
+  await editMessage(link.chatId, inb.messageId, `${head}
+
+${r.ok ? "✅" : "✗"} ${r.summary}`);
 }

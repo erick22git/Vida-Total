@@ -16,6 +16,7 @@ import {
   type AgentModule,
   type AutoTotalDuration,
   type AutoTotalState,
+  type NotificationPrefs,
   type Channel,
   type EffectiveMode,
   type ToolLevel,
@@ -23,6 +24,20 @@ import {
 
 export const HOUR_MS = 3_600_000;
 export const DAY_MS = 86_400_000;
+
+export function defaultNotificationPrefs(): NotificationPrefs {
+  return {
+    enabled: false,
+    inApp: true,
+    telegram: true,
+    types: { tasks: true, routines: true, water: false, meals: false, summary: false },
+    mealTimes: { desayuno: "09:30", almuerzo: "14:30", cena: "21:00" },
+    summaryTime: "21:30",
+    waterEveryMin: 150,
+    routineLeadMin: 10,
+    maxPerDay: 10,
+  };
+}
 
 export function defaultAgentConfig(): AgentConfig {
   return {
@@ -37,6 +52,7 @@ export function defaultAgentConfig(): AgentConfig {
     writesPerDay: 150,
     quietHours: { enabled: true, from: "22:30", to: "07:00" },
     timezone: "UTC",
+    notifications: defaultNotificationPrefs(),
     channels: {
       app: { enabled: true, readOnly: false, maxMode: "auto_safe" },
       // Telegram, más estricto: todo pregunta salvo lo que permitas para ese canal.
@@ -70,6 +86,34 @@ const isLevel = (v: unknown): v is ToolLevel => v === "ask" || v === "allow" || 
  * lo desconocido se ignora, lo que falta toma el valor por defecto y los números se recortan a sus topes duros.
  * El modo `auto_total` nunca sale de aquí para Telegram (`maxMode` es solo ask_always/auto_safe por tipo).
  */
+function sanitizeNotifications(raw: unknown): NotificationPrefs {
+  const d = defaultNotificationPrefs();
+  if (!isObj(raw)) return d;
+  const ty = isObj(raw.types) ? raw.types : {};
+  const mt = isObj(raw.mealTimes) ? raw.mealTimes : {};
+  return {
+    enabled: bool(raw.enabled, d.enabled),
+    inApp: bool(raw.inApp, d.inApp),
+    telegram: bool(raw.telegram, d.telegram),
+    types: {
+      tasks: bool(ty.tasks, d.types.tasks),
+      routines: bool(ty.routines, d.types.routines),
+      water: bool(ty.water, d.types.water),
+      meals: bool(ty.meals, d.types.meals),
+      summary: bool(ty.summary, d.types.summary),
+    },
+    mealTimes: {
+      desayuno: isHHmm(mt.desayuno) ? mt.desayuno : d.mealTimes.desayuno,
+      almuerzo: isHHmm(mt.almuerzo) ? mt.almuerzo : d.mealTimes.almuerzo,
+      cena: isHHmm(mt.cena) ? mt.cena : d.mealTimes.cena,
+    },
+    summaryTime: isHHmm(raw.summaryTime) ? raw.summaryTime : d.summaryTime,
+    waterEveryMin: clampInt(raw.waterEveryMin, 60, 480, d.waterEveryMin),
+    routineLeadMin: clampInt(raw.routineLeadMin, 0, 60, d.routineLeadMin),
+    maxPerDay: clampInt(raw.maxPerDay, 1, 30, d.maxPerDay),
+  };
+}
+
 export function sanitizeConfig(raw: unknown): AgentConfig {
   const d = defaultAgentConfig();
   if (!isObj(raw)) return d;
@@ -126,6 +170,7 @@ export function sanitizeConfig(raw: unknown): AgentConfig {
       to: isHHmm(qh.to) ? qh.to : d.quietHours.to,
     },
     timezone: isValidTimeZone(raw.timezone) ? raw.timezone : d.timezone,
+    notifications: sanitizeNotifications(raw.notifications),
     channels,
     levels,
   };

@@ -76,6 +76,26 @@ export interface ChannelPolicy {
   maxMode: AgentMode;
 }
 
+export interface NotificationPrefs {
+  /** Interruptor general (apagado por defecto: nada se envía hasta que lo actives). */
+  enabled: boolean;
+  /** Avisos dentro de la app (cuando está abierta). */
+  inApp: boolean;
+  /** Avisos por Telegram (solo a quien ya vinculó el bot y escribió primero). */
+  telegram: boolean;
+  types: { tasks: boolean; routines: boolean; water: boolean; meals: boolean; summary: boolean };
+  /** Horas "HH:mm" a las que se espera cada comida. */
+  mealTimes: { desayuno: string; almuerzo: string; cena: string };
+  /** Hora del resumen diario. */
+  summaryTime: string;
+  /** Mínimo de minutos entre avisos de agua. */
+  waterEveryMin: number;
+  /** Cuántos minutos antes de un paso de rutina se avisa. */
+  routineLeadMin: number;
+  /** Tope de avisos por día (todos los tipos). */
+  maxPerDay: number;
+}
+
 export interface AgentConfig {
   version: 1;
   mode: AgentMode;
@@ -92,6 +112,7 @@ export interface AgentConfig {
   quietHours: QuietHours;
   /** Zona horaria IANA del usuario (la fija la app). El servidor la usa para saber qué día y qué hora es para el usuario. */
   timezone: string;
+  notifications: NotificationPrefs;
   channels: Record<Channel, ChannelPolicy>;
   /** Nivel por herramienta y canal. Lo que falte = "ask". */
   levels: Record<Channel, Record<string, ToolLevel>>;

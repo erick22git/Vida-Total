@@ -264,6 +264,54 @@ export function AgentPermissionsScreen() {
         )}
       </Section>
 
+      <Section title="Avisos" hint="Recordatorios de tareas, rutinas, agua y comidas. Apagados por defecto; respetan el horario silencioso.">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm">Activar avisos</span>
+          <Toggle on={config.notifications.enabled} onChange={(v) => setConfig((c) => ({ ...c, notifications: { ...c.notifications, enabled: v } }))} label="Activar avisos" />
+        </div>
+        {config.notifications.enabled && (
+          <>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm">Dentro de la app</span>
+              <Toggle on={config.notifications.inApp} onChange={(v) => setConfig((c) => ({ ...c, notifications: { ...c.notifications, inApp: v } }))} label="Avisos dentro de la app" />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm">Por Telegram (requiere vincularlo)</span>
+              <Toggle on={config.notifications.telegram} onChange={(v) => setConfig((c) => ({ ...c, notifications: { ...c.notifications, telegram: v } }))} label="Avisos por Telegram" />
+            </div>
+            {(
+              [
+                ["tasks", "Tareas y subtareas con recordatorio"],
+                ["routines", "Rutina próxima"],
+                ["water", "Agua (si vas por debajo del ritmo)"],
+                ["meals", "Comidas sin registrar"],
+                ["summary", "Resumen diario"],
+              ] as const
+            ).map(([k, label]) => (
+              <div key={k} className="flex items-center justify-between gap-3">
+                <span className="text-sm">{label}</span>
+                <Toggle on={config.notifications.types[k]} onChange={(v) => setConfig((c) => ({ ...c, notifications: { ...c.notifications, types: { ...c.notifications.types, [k]: v } } }))} label={label} />
+              </div>
+            ))}
+            <NumberField label="Avisar la rutina con" value={config.notifications.routineLeadMin} min={0} max={60} suffix="min" onChange={(n) => setConfig((c) => ({ ...c, notifications: { ...c.notifications, routineLeadMin: n } }))} />
+            <NumberField label="Agua: mínimo entre avisos" value={config.notifications.waterEveryMin} min={60} max={480} step={30} suffix="min" onChange={(n) => setConfig((c) => ({ ...c, notifications: { ...c.notifications, waterEveryMin: n } }))} />
+            <NumberField label="Máximo de avisos por día" value={config.notifications.maxPerDay} min={1} max={30} onChange={(n) => setConfig((c) => ({ ...c, notifications: { ...c.notifications, maxPerDay: n } }))} />
+            <div className="grid grid-cols-2 gap-2 text-xs text-white/60">
+              {(["desayuno", "almuerzo", "cena"] as const).map((m) => (
+                <label key={m} className="flex flex-col gap-1">
+                  {m[0].toUpperCase() + m.slice(1)}
+                  <input type="time" value={config.notifications.mealTimes[m]} onChange={(e) => e.target.value && setConfig((c) => ({ ...c, notifications: { ...c.notifications, mealTimes: { ...c.notifications.mealTimes, [m]: e.target.value } } }))} className="rounded-xl bg-white/[0.07] px-3 py-2 text-sm text-white outline-none" />
+                </label>
+              ))}
+              <label className="flex flex-col gap-1">
+                Resumen
+                <input type="time" value={config.notifications.summaryTime} onChange={(e) => e.target.value && setConfig((c) => ({ ...c, notifications: { ...c.notifications, summaryTime: e.target.value } }))} className="rounded-xl bg-white/[0.07] px-3 py-2 text-sm text-white outline-none" />
+              </label>
+            </div>
+          </>
+        )}
+      </Section>
+
       <Section title="Canales" hint="Telegram es más estricto por defecto.">
         <TelegramLinkCard />
         <div className="flex items-center justify-between gap-3">
