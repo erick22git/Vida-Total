@@ -1632,7 +1632,7 @@
     },
     {
       "id": "rango_cuerpo_m_001",
-      "name": "Cuerpo masculino para la pantalla de Rango (14 regiones musculares)",
+      "name": "Cuerpo masculino para la pantalla de Rango (15 regiones musculares)",
       "module": "gym",
       "category": "body-regions",
       "background": "transparent",
@@ -1640,33 +1640,55 @@
       "license": "UNVERIFIED",
       "author": null,
       "publishable": false,
-      "licenseNote": "El archivo BlenRig4_01_NickZ.blend no declara autor ni licencia (el nombre sugiere el personaje de ejemplo de BlenRig 4, de Juan Pablo Bouza, que se distribuye con su propia licencia: NO verificada). El dueño mencionó modelos de BlenderKit (adult male body base mesh / skinny female) pero en la carpeta rangos solo está este .blend. Algunos assets de BlenderKit son de pago (candado): verificar licencia y plan ANTES de publicar. Sigue UNVERIFIED y publishable:false.",
-      "originalFile": "biblioteca de assets/rangos/BlenRig4_01_NickZ.blend",
-      "originalSha256": "c4295c369d512bac7882692c83e1e410a68d163f826d09a5a1ebeae39796b4f4",
+      "licenseNote": "El archivo HumanBaseMale.blend no declara autor ni licencia dentro del archivo. El dueño lo agregó a la carpeta rangos; el origen exacto no está registrado. Sigue UNVERIFIED y publishable:false hasta verificar la fuente y licencia.",
+      "originalFile": "biblioteca de assets/rangos/HumanBaseMale.blend",
+      "originalSha256": null,
       "workingFile": "biblioteca de assets/_trabajo/rango_cuerpo_m.blend",
       "format": "blend → glb (meshopt)",
-      "build": "tools/3d/blender/70_rango_cuerpo.py (blender -b --python)",
+      "build": "tools/3d/blender/70_rango_cuerpo.py y 71_rango_cuerpo_pintado.py (blender -b --python)",
       "runtime": "src/lib/3d/rank-body.ts + src/components/gym/rank-body-3d.tsx",
       "inspection": {
-        "objects": "49 objetos: cuerpo H_M_A_nickZ (5 092 vértices, 10 172 tris, Multires apagado en la vista), 2 armaduras (622 y 68 huesos), jaulas MeshDeform, formas de control cs_*",
+        "objects": "2 objetos: malla MaleBASE (325 559 vértices, 651 008 polígonos, sin grupos de vértices) + Armature (28 huesos). Sin shape keys, sin vertex groups de músculos.",
         "licenseEvidence": "ninguna dentro del archivo"
       },
       "adaptations": [
-        "Solo se usa el cuerpo (cabeza, manos y pies incluidos); armaduras, jaulas y controles se descartan",
-        "Se toma el cuerpo ya deformado (pose actual) y se le da 1 nivel de subdivisión",
-        "14 regiones (Pecho, Espalda, Hombros, Biceps, Triceps, Antebrazo, Abdomen, Gluteos, Cuadriceps, Femoral, Aductores, Abductores, Pantorrilla, Neutro): el archivo no trae músculos separados ni grupos de vértices del torso, así que se reparten por geometría (hueso más cercano, posición a lo largo del hueso y orientación de la superficie)",
-        "UNA malla con 14 pesos de región por vértice (atributos _REGA.._REGD), suavizados sobre la malla; el visor toma el argmax suavizado por píxel, así el borde entre músculos es una curva lisa",
-        "La malla es lisa (sin músculos esculpidos): no se esculpió nada; las regiones se leen con color por rango, luz de borde (Fresnel) y entorno de estudio",
+        "Decimate ratio=0.065 → ~42 314 tris / 21 187 verts (malla de trabajo)",
+        "15 regiones (Pecho, Espalda, Hombros, Biceps, Triceps, Antebrazo, Abdomen, Gluteos, Cuadriceps, Femoral, Aductores, Abductores, Pantorrilla, Cuello, Neutro): clasificación por proyección de polígonos 2D en espacio (Y,Z) world + proximidad a huesos + normales de cara",
+        "Simetría Y=0: se clasifica el lado Y>=0 y se replica al lado Y<0 por vecino más próximo",
+        "Limpieza de islas: se conserva solo el componente conexo más grande por región (BFS sobre aristas compartidas)",
+        "8 pasadas de suavizado Laplaciano de pesos por vértice",
+        "UNA malla con 15 pesos de región por vértice en atributos _REGA.._REGD (4 canales cada uno, 16 slots, el 16° queda spare)",
+        "Cabeza (Z>3.47), manos (Y>1.21) y pies (Z<0.18) clasificados como Neutro (nunca colorea el rango)",
         "Sin esqueleto, sin animación, sin luces ni cámaras"
       ],
       "polyCount": {
-        "glbUniqueTris": 40688,
-        "uniqueVerts": 20350,
+        "sourceMeshPolys": 651008,
+        "decimatedTris": 42314,
+        "glbUniqueTris": 42314,
+        "uniqueVerts": 21187,
         "drawCalls": 1
+      },
+      "regionCounts": {
+        "Neutro": 18646,
+        "Cuello": 8221,
+        "Abdomen": 3338,
+        "Espalda": 2826,
+        "Cuadriceps": 1846,
+        "Gluteos": 1696,
+        "Pecho": 1347,
+        "Aductores": 805,
+        "Hombros": 830,
+        "Femoral": 572,
+        "Pantorrilla": 555,
+        "Triceps": 518,
+        "Biceps": 482,
+        "Antebrazo": 404,
+        "Abductores": 228,
+        "iteration": 12
       },
       "glb": {
         "file": "public/models/rango_cuerpo_m_001_meshopt.glb",
-        "bytes": 581392
+        "bytes": 970772
       },
       "futureAssets": "Avatar femenino pendiente (la pantalla elige el modelo según gymProfile.sexo; hoy usa el masculino para ambos y lo avisa)"
     }
