@@ -108,3 +108,14 @@ Al revertir, las policies de una tabla borrada desaparecen con ella. Revertir 00
 - `supabase/verificar-migraciones.sql`: solo lectura.
 - `supabase/aplicar-pendientes.sql`: 0003–0008, idempotente, en una transacción, sin DROP/DELETE. Es la concatenación literal de los archivos de `migrations/` (si editas uno, regenera este).
 - `supabase/migrations/0009`, `0010`, `0011`: propuestas, sin aplicar. Ojo: `supabase db push` las aplicaría si usas el CLI; mueve o renombra esos tres archivos si no quieres que entren.
+
+## 8. Migraciones del agente (0012 a 0015)
+
+Nuevas, **sin aplicar**. Se aplican juntas con `supabase/aplicar-agente.sql` (aditivo, idempotente, una transacción) y se comprueban con `supabase/verificar-agente.sql` (solo lectura). Requieren 0001 y 0002. Detalle y avisos de RLS en `docs/telegram.md` (Paso 2); el programador de avisos, en `docs/notificaciones.md`.
+
+| # | Qué crea |
+|---|---|
+| 0012 `agent_settings` | `agent_settings`, `agent_action_log`, `agent_llm_usage` (contador de llamadas al modelo) |
+| 0013 `tasks_reminder` | `tasks.reminder` |
+| 0014 `telegram_agent` | `telegram_links`, `telegram_link_codes`, `telegram_updates`, `agent_pending`, `agent_chat_state`, `agent_commands` |
+| 0015 `agent_notifications` | `agent_notification_log` |

@@ -1,8 +1,13 @@
 -- PLANTILLA (no es una migración y no se ejecuta sola). Programa el aviso cada minuto con Supabase pg_cron + pg_net.
--- 1) Cambia TU-APP.vercel.app y TU_CRON_SECRET por tus valores REALES, SOLO en el SQL Editor de Supabase.
---    El secreto real NUNCA se escribe en este archivo ni se sube al repositorio (que es público).
--- 2) Es el mismo valor que la variable CRON_SECRET de Vercel (≥ 24 caracteres).
--- 3) Antes: migraciones 0012 y 0015 aplicadas y avisos activados en la app (Agente y permisos → Avisos).
+--
+-- 1) Cambia DOS valores, SOLO en el SQL Editor de Supabase (nunca en este archivo ni en el repositorio, que es público):
+--      https://TU-DOMINIO-DE-PRODUCCION  →  el dominio de PRODUCCIÓN de tu app (el que Vercel marca como "Production").
+--                                           NO uses una URL de preview (algo-git-rama-usuario.vercel.app) ni la de un deploy
+--                                           concreto: cambian y suelen estar protegidas (responden 401/403 al cron).
+--      TU_CRON_SECRET                    →  el mismo valor que la variable CRON_SECRET de Vercel (>= 24 caracteres).
+-- 2) Antes: aplicar supabase/aplicar-agente.sql, activar las extensiones pg_cron y pg_net (Database → Extensions) y
+--    activar los avisos en la app (Agente y permisos → Avisos).
+-- 3) Cuántas llamadas son: 1 por minuto = 60 × 24 × 30 = 43.200 al mes (ver docs/notificaciones.md para los límites a revisar).
 
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
@@ -12,7 +17,7 @@ select cron.schedule(
   '* * * * *',
   $$
   select net.http_post(
-    url := 'https://TU-APP.vercel.app/api/agent/tick',
+    url := 'https://TU-DOMINIO-DE-PRODUCCION/api/agent/tick',
     headers := jsonb_build_object('Authorization', 'Bearer TU_CRON_SECRET', 'Content-Type', 'application/json'),
     body := '{}'::jsonb,
     timeout_milliseconds := 20000
@@ -21,5 +26,6 @@ select cron.schedule(
 );
 
 -- Ver que corre:      select * from cron.job;   select * from cron.job_run_details order by start_time desc limit 10;
--- Respuestas HTTP:    select id, status_code, left(content, 120) from net._http_response order by created desc limit 10;
+-- Respuestas HTTP:    select id, status_code, left(content::text, 120) from net._http_response order by created desc limit 10;
+--                     (debe salir 200; un 401 = el secreto no coincide; un 404 = el dominio/ruta no es el de producción)
 -- Pausar / quitar:    select cron.unschedule('vida-total-tick');

@@ -30,10 +30,10 @@ programador (cada minuto) ──POST──▶ /api/agent/tick  (Authorization: B
 **Elegida: Supabase `pg_cron` + `pg_net` → `/api/agent/tick`.** Es gratis, no depende de tu PC ni de un servidor extra, tiene precisión de minuto y el aviso sale aunque la app esté cerrada. El endpoint es **agnóstico**: n8n (nodo *Schedule* + nodo *HTTP Request* con el mismo encabezado), Vercel Cron (`vercel.json`, si pasas a Pro) o `curl` funcionan igual sin tocar código.
 
 ### Despliegue (pasos manuales)
-1. Aplica las migraciones `0012` y `0015` (SQL Editor de Supabase).
+1. Aplica `supabase/aplicar-agente.sql` (SQL Editor de Supabase) y comprueba con `supabase/verificar-agente.sql`.
 2. En Vercel agrega `CRON_SECRET` (aleatorio, ≥ 24 caracteres; p. ej. `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) y vuelve a desplegar.
 3. En Supabase → **Database → Extensions** activa `pg_cron` y `pg_net`.
-4. Abre `supabase/scheduler-tick.sql.example`, cambia la URL y el secreto **solo en el SQL Editor** (no en el archivo ni en el repo) y ejecútalo.
+4. Abre `supabase/scheduler-tick.sql.example`, cambia el dominio (**el de producción**, no una URL de preview) y el secreto **solo en el SQL Editor** (no en el archivo ni en el repo) y ejecútalo.
 5. Activa los avisos en la app. Comprueba con `select * from cron.job_run_details order by start_time desc limit 10;` y, en la app, con una tarea de hoy con recordatorio en 2 minutos.
 
 ### Probar sin esperar (local o producción)
@@ -44,6 +44,25 @@ curl -X POST https://tu-app.vercel.app/api/agent/tick -H "Authorization: Bearer 
 
 ### Si usas n8n (primero local, luego en un servidor)
 Un flujo de dos nodos basta: **Schedule Trigger** (cada minuto) → **HTTP Request** (`POST` a `/api/agent/tick`, encabezado `Authorization: Bearer <CRON_SECRET>`). En local apunta a `http://localhost:3000` con la app corriendo; cuando lo muevas a un servidor, solo cambias la URL. Mientras n8n esté solo en tu PC, **no avisa con la PC apagada** — por eso la opción elegida es `pg_cron`.
+
+## Cuántas llamadas son y qué límites revisar
+
+Con el programador cada minuto: **60 × 24 × 30 = 43.200 llamadas al mes** a `/api/agent/tick` (≈ 1.440 al día).
+
+| Dónde | Qué cuenta | Estimación | Límite del plan (según la documentación de cada servicio) |
+|---|---|---|---|
+| **Vercel** — invocaciones | 1 por llamada | 43.200 | Hobby: primeras **1.000.000**/mes → usas ≈ **4 %** |
+| **Vercel** — Active CPU | tiempo de CPU de la función | ≈ 0,05–0,1 s por llamada → **0,6–1,2 h** | Hobby: **4 h**/mes → ≈ **15–30 %** (es lo que más conviene vigilar) |
+| **Vercel** — memoria provisionada | GB-hora | ≈ 3–4 GB-h | Hobby: **360 GB-h**/mes → ≈ 1 % |
+| **Vercel** — duración | máx. por ejecución | un tick tarda < 1 s con un usuario | la ruta declara `maxDuration = 60`; Hobby permite menos (revísalo en *Settings → Functions*) |
+| **Vercel** — plan Hobby | uso **no comercial** personal | — | si la app pasa a ser comercial hace falta Pro |
+| **Supabase** — `pg_net` | 1 petición/min | 43.200/mes | pensado para ≤ 200 peticiones/s; las respuestas se guardan 6 h (`net._http_response`, unas 360 filas) |
+| **Supabase** — `pg_cron` | 1 job | 1 | se recomienda ≤ 8 jobs a la vez y que ninguno dure más de 10 min |
+| **Supabase** — base de datos | lecturas por tick | ≈ 8–10 consultas por usuario con avisos activados | revisa *Reports → Database* y el uso de la API en el plan gratuito |
+| **Supabase** — proyecto gratuito | inactividad | — | conviene revisar la política de **pausa por inactividad** de tu plan; el tick genera actividad en la API cada minuto |
+| **Groq** | — | el tick **no** llama al modelo | sin costo de modelo |
+
+Para gastar menos: baja la frecuencia en `scheduler-tick.sql.example` (p. ej. `*/2 * * * *` = 21.600/mes; los avisos de tarea tienen una ventana de 2 h, así que 2 minutos de retraso no se nota), o quita el aviso de agua/comidas.
 
 ## Notificaciones push web (solo investigación, no implementado)
 - Se haría con un **Service Worker** + la **Push API** + claves **VAPID** (la librería habitual es `web-push`) y una tabla de suscripciones por dispositivo.

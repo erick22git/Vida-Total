@@ -38,6 +38,9 @@ create table if not exists public.telegram_link_codes (
 );
 create index if not exists telegram_link_codes_user_idx on public.telegram_link_codes (user_id);
 alter table public.telegram_link_codes enable row level security;
+do $$ begin
+  create policy telegram_link_codes_deny_all on public.telegram_link_codes for all to anon, authenticated using (false) with check (false);
+exception when duplicate_object then null; end $$;
 
 -- 3) Deduplicación de updates de Telegram.
 create table if not exists public.telegram_updates (
@@ -45,6 +48,9 @@ create table if not exists public.telegram_updates (
   received_at timestamptz not null default now()
 );
 alter table public.telegram_updates enable row level security;
+do $$ begin
+  create policy telegram_updates_deny_all on public.telegram_updates for all to anon, authenticated using (false) with check (false);
+exception when duplicate_object then null; end $$;
 
 -- 4) Confirmaciones y planes pendientes de un botón.
 create table if not exists public.agent_pending (
@@ -58,6 +64,9 @@ create table if not exists public.agent_pending (
 );
 create index if not exists agent_pending_user_idx on public.agent_pending (user_id, status);
 alter table public.agent_pending enable row level security;
+do $$ begin
+  create policy agent_pending_deny_all on public.agent_pending for all to anon, authenticated using (false) with check (false);
+exception when duplicate_object then null; end $$;
 
 -- 5) Memoria corta de la conversación de Telegram.
 create table if not exists public.agent_chat_state (
@@ -66,6 +75,9 @@ create table if not exists public.agent_chat_state (
   updated_at timestamptz not null default now()
 );
 alter table public.agent_chat_state enable row level security;
+do $$ begin
+  create policy agent_chat_state_deny_all on public.agent_chat_state for all to anon, authenticated using (false) with check (false);
+exception when duplicate_object then null; end $$;
 
 -- 6) Bandeja de comandos que la app aplica.
 create table if not exists public.agent_commands (
