@@ -75,7 +75,16 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
   const copyFoodEntry = useGymStore((s) => s.copyFoodEntry);
   const loggedFoods = useGymStore((s) => s.loggedFoods);
 
-  const existingEntry = useMemo(() => (entryId ? loggedFoods.find((f) => f.id === entryId) : undefined), [entryId, loggedFoods]);
+  // Comida vacía (se llega sin `entryId`): en cuanto Pegar/Repetir le agregan alimentos, se adopta el
+  // primero como entrada actual para que la pantalla se llene al instante, sin salir y volver a entrar.
+  const firstOfEmptyMeal = useMemo(
+    () => (mode === "editar" && !entryId ? loggedFoods.find((f) => f.meal === mealParam && isSameDay(new Date(f.timestamp), new Date())) : undefined),
+    [mode, entryId, loggedFoods, mealParam],
+  );
+  const existingEntry = useMemo(
+    () => (entryId ? loggedFoods.find((f) => f.id === entryId) : firstOfEmptyMeal),
+    [entryId, loggedFoods, firstOfEmptyMeal],
+  );
   const isEditing = !!existingEntry;
   const mealDate = useMemo(
     () => (existingEntry ? startOfDay(new Date(existingEntry.timestamp)) : startOfDay(new Date())),
