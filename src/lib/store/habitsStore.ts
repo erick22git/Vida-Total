@@ -228,6 +228,7 @@ export const useHabitsStore = create<HabitsState>()(
           priority: task.priority ?? "media",
           dueDate: task.dueDate,
           timeSlot: task.timeSlot,
+          reminder: task.reminder,
           isCompleted: false,
           subtasks: task.subtasks ?? [],
           tags: task.tags ?? [],

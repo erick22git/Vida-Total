@@ -86,6 +86,8 @@ export interface TaskRow {
   priority: Task["priority"];
   due_date: string | null;
   time_slot: number | null;
+  /** Solo viaja cuando la tarea tiene recordatorio (así, sin la migración 0013, nada cambia para el resto de tareas). */
+  reminder?: string | null;
   is_completed: boolean;
   subtasks: Task["subtasks"];
   tags: string[];
@@ -95,6 +97,7 @@ export interface TaskRow {
 
 function taskToRow(t: Task, userId: string): TaskRow {
   return {
+    ...(t.reminder ? { reminder: t.reminder } : {}),
     id: t.id,
     user_id: userId,
     title: t.title,
@@ -118,6 +121,7 @@ function rowToTask(row: TaskRow): Task {
     priority: row.priority,
     dueDate: row.due_date ?? undefined,
     timeSlot: row.time_slot ?? undefined,
+    reminder: row.reminder ?? undefined,
     isCompleted: row.is_completed,
     subtasks: row.subtasks ?? [],
     tags: row.tags ?? [],
@@ -144,6 +148,7 @@ export function syncUpdateTask(id: string, patch: Partial<Task>, userId: string)
   if (patch.priority !== undefined) row.priority = patch.priority;
   if (patch.dueDate !== undefined) row.due_date = patch.dueDate;
   if (patch.timeSlot !== undefined) row.time_slot = patch.timeSlot;
+  if (patch.reminder !== undefined) row.reminder = patch.reminder || null;
   if (patch.isCompleted !== undefined) row.is_completed = patch.isCompleted;
   if (patch.subtasks !== undefined) row.subtasks = patch.subtasks;
   if (patch.tags !== undefined) row.tags = patch.tags;

@@ -4,6 +4,10 @@ export interface Subtask {
   id: string;
   title: string;
   done: boolean;
+  /** Fecha límite opcional (yyyy-MM-dd). Viaja dentro del jsonb `tasks.subtasks`: no necesita migración. */
+  dueDate?: string;
+  /** Hora del recordatorio "HH:mm" (opcional, requiere dueDate). */
+  reminder?: string;
 }
 
 export interface Task {
@@ -13,6 +17,8 @@ export interface Task {
   priority: TaskPriority;
   dueDate?: string; // ISO date string (yyyy-MM-dd)
   timeSlot?: number; // hour of day 0-23, used by the timeline view
+  /** Hora del recordatorio "HH:mm" (opcional, requiere dueDate). Columna `tasks.reminder` (migración 0013). */
+  reminder?: string;
   isCompleted: boolean;
   subtasks: Subtask[];
   tags: string[];

@@ -23,6 +23,8 @@ export interface ToolMeta {
   /** JSON Schema de los parámetros (formato de herramientas de OpenAI/Groq). */
   parameters: Record<string, unknown>;
   validate: (raw: unknown) => Validation;
+  /** Lo que devuelve contiene datos del usuario/ajenos (notas, tareas, mensajes): desde ahí el turno queda "no confiable". */
+  taints?: boolean;
   /** Cuántos elementos toca esta llamada (para "por lotes"). Default 1. */
   batchSize?: (args: Args) => number;
   /** Devuelve un mensaje si la llamada supera un límite configurable (agua máx., calorías máx.). */
@@ -72,4 +74,15 @@ export function isDayKey(v: unknown): v is string {
   const [y, m, d] = v.split("-").map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
   return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
+
+export function isHHmm(v: unknown): v is string {
+  return typeof v === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+}
+
+/** Texto opcional ya recortado; "" cuenta como ausente. */
+export function optText(a: Args, key: string, max = 2000): string | undefined | { error: string } {
+  const r = optString(a, key, max);
+  if (isErr(r)) return r;
+  return r === undefined || r.trim() === "" ? undefined : r.trim();
 }
