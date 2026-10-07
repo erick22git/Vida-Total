@@ -7,6 +7,7 @@ import { GlassInput } from "@/components/glass/glass-input";
 import { FoodPhoto } from "@/components/gym/food-photo";
 import { useGymStore } from "@/lib/store/gymStore";
 import { mergeFoods } from "@/lib/food-utils";
+import { buildUsageMap, resolveFood } from "@/lib/nutrition/food-resolver";
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import type { Food } from "@/lib/types";
 
@@ -25,14 +26,21 @@ export function RecipeIngredientPicker({
   onPick: (food: Food) => void;
 }) {
   const customFoods = useGymStore((s) => s.customFoods);
+  const loggedFoods = useGymStore((s) => s.loggedFoods);
   const [query, setQuery] = useState("");
   const allFoods = useMemo<Food[]>(() => mergeFoods(customFoods), [customFoods]);
+  const usage = useMemo(() => buildUsageMap(loggedFoods), [loggedFoods]);
 
+  // Mismo resolvedor que Lista/Buscar/Escáner/Voz: alias, plurales, tildes, errores de tipeo y última palabra incompleta.
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
     if (!q) return allFoods.slice(0, 30);
-    return allFoods.filter((f) => f.nombre.toLowerCase().includes(q)).slice(0, 40);
-  }, [allFoods, query]);
+    const r = resolveFood(q, allFoods, [], { partialLast: true, foodsOnly: true, maxCandidates: 40, usage });
+    const ranked = r.candidates.map((c) => c.food).filter((f): f is Food => !!f);
+    if (ranked.length > 0) return ranked;
+    const lower = q.toLowerCase();
+    return allFoods.filter((f) => f.nombre.toLowerCase().includes(lower)).slice(0, 40);
+  }, [allFoods, query, usage]);
 
   function handlePick(food: Food) {
     setQuery("");
@@ -42,7 +50,7 @@ export function RecipeIngredientPicker({
   return (
     <GlassModal open={open} onClose={onClose} title="Agregar ingrediente">
       <div className="flex flex-col gap-3">
-        <GlassInput icon={<Search size={16} />} placeholder="Buscar alimento..." value={query} onChange={(e) => setQuery(e.target.value)} autoFocus />
+        <GlassInput icon={<Search size={16} />} placeholder="Buscar alimento..." value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck={false} enterKeyHint="search" autoFocus />
         <div className="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1">
           {results.map((food) => (
             <button

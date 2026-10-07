@@ -1,48 +1,40 @@
-import { BASE_FOODS, defaultPortions, scaleNutrition } from "@/lib/food-utils";
-import type { MealType, Recipe, RecipeIngredient } from "@/lib/types";
+import { BASE_FOODS } from "@/lib/food-utils";
+import { getResolverIndex, nutritionForResult, resolveFoodText } from "@/lib/nutrition/food-resolver";
+import type { Food, MealType, Recipe, RecipeIngredient } from "@/lib/types";
 
 /**
- * Rule-based "AI" recipe generator — no real model involved. Matches free-text
- * ingredient names against the local food database (simple substring/fuzzy
- * match), builds a plausible recipe with 1 default portion of each match, and
- * sums up the macros. Intentionally simple and transparent about being a
- * heuristic rather than a real AI suggestion.
+ * Generador de recetas por reglas — no hay ningún modelo de IA de por medio. Cada ingrediente escrito se resuelve
+ * contra la base de alimentos con el resolvedor común (`lib/nutrition/food-resolver.ts`: alias, plurales, tildes,
+ * errores de tipeo), con la porción por defecto de cada uno (o la cantidad si se escribió "arroz 150 g"), y se suman
+ * los macros. Es deliberadamente simple y transparente sobre ser una heurística.
  */
-export function generateAiRecipe(freeText: string): Omit<Recipe, "id" | "createdAt"> {
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "");
-
+export function generateAiRecipe(freeText: string, foods: Food[] = BASE_FOODS): Omit<Recipe, "id" | "createdAt"> {
+  const idx = getResolverIndex(foods);
   const terms = freeText
     .split(/[,\n]/)
-    .map((t) => normalize(t.trim()))
+    .map((t) => t.trim())
     .filter(Boolean);
 
   const ingredientes: RecipeIngredient[] = [];
   const usedIds = new Set<string>();
 
   for (const term of terms) {
-    const match = BASE_FOODS.find((f) => {
-      if (usedIds.has(f.id)) return false;
-      const name = normalize(f.nombre);
-      return name.includes(term) || term.includes(name.split(" ")[0]);
-    });
-    if (!match) continue;
-    usedIds.add(match.id);
-    const portion = defaultPortions(match)[0];
-    const nutrition = scaleNutrition(match, portion.gramos);
+    const r = resolveFoodText(term, idx, { foodsOnly: true, maxCandidates: 1 });
+    const food = r.tipo === "alimento" ? r.chosen?.food : undefined;
+    if (!food || usedIds.has(food.id)) continue;
+    const n = nutritionForResult(r);
+    if (!n) continue;
+    usedIds.add(food.id);
     ingredientes.push({
-      foodId: match.id,
-      nombre: match.nombre,
+      foodId: food.id,
+      nombre: food.nombre,
       cantidad: 1,
-      porcionNombre: portion.nombre,
-      gramos: portion.gramos,
-      calorias: nutrition.calorias,
-      proteina: nutrition.proteina,
-      carbos: nutrition.carbos,
-      grasas: nutrition.grasas,
+      porcionNombre: `${Math.round(n.gramos * 10) / 10} g`,
+      gramos: n.gramos,
+      calorias: n.calorias,
+      proteina: n.proteina,
+      carbos: n.carbos,
+      grasas: n.grasas,
     });
   }
 

@@ -12,6 +12,7 @@ import { FoodSectionHeader, FOOD_SECTION_BG } from "@/components/gym/food-sectio
 import { useGymStore } from "@/lib/store/gymStore";
 import { MEAL_LABELS, type MealType } from "@/lib/types";
 import { generateAiRecipe } from "@/lib/ai-recipe";
+import { mergeFoods } from "@/lib/food-utils";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 
 type FilterChip = "mejor" | MealType | "favoritos";
@@ -21,6 +22,7 @@ export default function RecetasPage() {
   const recipes = useGymStore((s) => s.recipes);
   const addRecipe = useGymStore((s) => s.addRecipe);
   const toggleFavoriteRecipe = useGymStore((s) => s.toggleFavoriteRecipe);
+  const customFoods = useGymStore((s) => s.customFoods);
 
   const [query, setQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState<FilterChip[]>([]);
@@ -58,7 +60,7 @@ export default function RecetasPage() {
     if (!aiIngredients.trim()) return;
     setAiGenerating(true);
     setTimeout(() => {
-      const draft = generateAiRecipe(aiIngredients);
+      const draft = generateAiRecipe(aiIngredients, mergeFoods(customFoods));
       const created = addRecipe(draft);
       setAiGenerating(false);
       setAiOpen(false);
