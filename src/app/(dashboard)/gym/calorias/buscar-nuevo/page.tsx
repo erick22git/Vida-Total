@@ -1,10 +1,12 @@
 "use client";
 
 /**
- * Rediseño Calorías, etapa 4 (WIP, preview): buscador con el carrusel VERTICAL en vez de la lista plana
- * que ya existe en /gym/calorias/buscar (esa sigue intacta — MealCard/el flujo viejo la siguen usando).
- * Reutiliza la misma lógica de búsqueda/pestañas de esa pantalla, solo cambia cómo se muestran los
- * resultados. Tocar la tarjeta central entra al detalle rediseñado de la etapa 3.
+ * Buscador con el carrusel VERTICAL. La búsqueda usa el resolvedor de alimentos (alias, singular/plural, tildes,
+ * errores de tipeo, última palabra incompleta) en vez de un `includes`. Tocar la tarjeta central entra al detalle.
+ *
+ * Teclado: la pantalla ocupa SOLO el viewport visible (`--vv-h`/`--vv-top` de `useKeyboardInset`), así el carrusel
+ * queda siempre por encima del teclado en iPhone y Android; con el teclado abierto se compacta. Los inputs son de
+ * 16 px o más (por debajo, iOS hace zoom al enfocar) y el zoom del usuario nunca se bloquea.
  */
 import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,6 +16,8 @@ import { CaloriasSkeleton } from "@/components/gym/calorias-skeleton";
 import { FoodSearchCarousel } from "@/components/gym/food-search-carousel";
 import { useGymStore } from "@/lib/store/gymStore";
 import { mergeFoods } from "@/lib/food-utils";
+import { buildUsageMap, resolveFood } from "@/lib/nutrition/food-resolver";
+import { useKeyboardInset } from "@/lib/ui/use-keyboard-inset";
 import type { Food, MealType } from "@/lib/types";
 
 type Tab = "base" | "favoritos" | "creados" | "verificados";
@@ -41,33 +45,54 @@ function BuscarNuevoContent() {
 
   const customFoods = useGymStore((s) => s.customFoods);
   const favoriteFoodIds = useGymStore((s) => s.favoriteFoodIds);
+  const loggedFoods = useGymStore((s) => s.loggedFoods);
+  const { keyboardOpen } = useKeyboardInset();
 
   const allFoods = useMemo<Food[]>(() => mergeFoods(customFoods), [customFoods]);
+  const usage = useMemo(() => buildUsageMap(loggedFoods), [loggedFoods]);
+
+  const tabFoods = useMemo(() => {
+    if (tab === "favoritos") return allFoods.filter((f) => favoriteFoodIds.includes(f.id));
+    if (tab === "creados") return allFoods.filter((f) => f.creadoPorUsuario);
+    if (tab === "verificados") return allFoods.filter((f) => f.verificado);
+    return allFoods;
+  }, [allFoods, tab, favoriteFoodIds]);
 
   const results = useMemo(() => {
-    let list = allFoods;
-    if (tab === "favoritos") list = list.filter((f) => favoriteFoodIds.includes(f.id));
-    if (tab === "creados") list = list.filter((f) => f.creadoPorUsuario);
-    if (tab === "verificados") list = list.filter((f) => f.verificado);
-    const q = query.trim().toLowerCase();
-    if (q) list = list.filter((f) => f.nombre.toLowerCase().includes(q));
-    return list.slice(0, 60);
-  }, [allFoods, tab, favoriteFoodIds, query]);
+    const q = query.trim();
+    if (!q) return tabFoods.slice(0, 60);
+    const r = resolveFood(q, tabFoods, [], { partialLast: true, foodsOnly: true, maxCandidates: 60, usage });
+    const ranked = r.candidates.map((c) => c.food).filter((f): f is Food => !!f);
+    if (ranked.length > 0) return ranked;
+    // Sin coincidencia "inteligente" (p. ej. una sola letra): búsqueda simple por texto, como antes.
+    const lower = q.toLowerCase();
+    return tabFoods.filter((f) => f.nombre.toLowerCase().includes(lower)).slice(0, 60);
+  }, [tabFoods, query, usage]);
 
   return (
-    <div className="relative min-h-screen text-white">
-      <div className="fixed inset-0" style={{ background: "var(--app-bg)" }} aria-hidden />
-      <div className="relative z-10 flex flex-col gap-4 pb-24 px-4 pt-2 max-w-md mx-auto">
+    <div
+      className="fixed inset-x-0 z-[45] text-white overflow-hidden"
+      style={{ top: "var(--vv-top, 0px)", height: "var(--vv-h, 100dvh)", background: "var(--app-bg)" }}
+    >
+      <div className={`flex flex-col h-full max-w-md w-full mx-auto px-4 pb-[max(env(safe-area-inset-bottom),12px)] ${keyboardOpen ? "gap-2" : "gap-4"}`}>
         <FoodSectionHeader current="buscar" />
 
         <GlassInput
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
           placeholder="Buscar alimento…"
+          enterKeyHint="search"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
           className="w-full"
         />
 
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar shrink-0">
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -84,9 +109,11 @@ function BuscarNuevoContent() {
           ))}
         </div>
 
-        <div className="flex-1 w-full pt-6">
+        <div className="flex-1 min-h-0 w-full">
           <FoodSearchCarousel
+            key={`${tab}|${query}`}
             foods={results}
+            compact={keyboardOpen}
             onSelect={(food) => router.push(`/gym/calorias/alimento/${food.id}?meal=${targetMeal}`)}
           />
         </div>

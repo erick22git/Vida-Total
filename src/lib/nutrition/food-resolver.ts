@@ -195,7 +195,7 @@ export function buildUsageMap(logged: LoggedFood[]): Map<string, number> {
 
 // ───────────────────────── Puntaje ─────────────────────────
 
-export type MatchSource = "exacto" | "sinonimo" | "alias" | "prefijo" | "contenido" | "tolerante" | "parcial";
+export type MatchSource = "exacto" | "sinonimo" | "alias" | "prefijo" | "contenido" | "incompleto" | "tolerante" | "parcial";
 
 export interface Candidate {
   kind: "alimento" | "receta";
@@ -208,16 +208,21 @@ export interface Candidate {
   recipe?: Recipe;
 }
 
-type TokenMatch = "exacto" | "tolerante" | null;
+type TokenMatch = "exacto" | "incompleto" | "tolerante" | null;
 
-function tokenMatch(q: string, t: string): TokenMatch {
+function tokenMatch(q: string, t: string, allowPartial = false): TokenMatch {
   if (q === t) return "exacto";
+  if (allowPartial && q.length >= 2 && t.startsWith(q)) return "incompleto";
   if (fuzzyEqual(q, t)) return "tolerante";
   return null;
 }
 
 /** Puntaje base de `query` (tokens núcleo) contra una variante. */
-function scoreVariant(query: string[], v: Variant): { score: number; source: MatchSource; extra: number; coverage: number } {
+function scoreVariant(
+  query: string[],
+  v: Variant,
+  partialLast: boolean,
+): { score: number; source: MatchSource; extra: number; coverage: number } {
   const core = v.core;
   if (query.length === core.length && query.every((q, i) => q === core[i])) {
     return { score: v.exactScore, source: v.exactScore === 100 ? "exacto" : "sinonimo", extra: 0, coverage: 1 };
@@ -225,26 +230,31 @@ function scoreVariant(query: string[], v: Variant): { score: number; source: Mat
   const used = new Set<number>();
   let matched = 0;
   let fuzzy = 0;
-  for (const q of query) {
+  let partial = 0;
+  query.forEach((q, qi) => {
+    const allowPartial = partialLast && qi === query.length - 1;
     let hit = -1;
     let kind: TokenMatch = null;
     for (let i = 0; i < core.length; i++) {
       if (used.has(i)) continue;
-      const m = tokenMatch(q, core[i]);
+      const m = tokenMatch(q, core[i], allowPartial);
       if (m === "exacto") { hit = i; kind = m; break; }
-      if (m === "tolerante" && hit < 0) { hit = i; kind = m; }
+      if (m && hit < 0) { hit = i; kind = m; }
     }
     if (hit >= 0) {
       used.add(hit);
       matched++;
       if (kind === "tolerante") fuzzy++;
+      if (kind === "incompleto") partial++;
     }
-  }
+  });
   const coverage = query.length ? matched / query.length : 0;
   const extra = core.length - used.size;
   if (coverage === 1) {
-    const isPrefix = query.every((q, i) => core[i] !== undefined && tokenMatch(q, core[i]) !== null);
+    const isPrefix = query.every((q, i) => core[i] !== undefined && tokenMatch(q, core[i], partialLast && i === query.length - 1) !== null);
     if (fuzzy > 0) return { score: 55, source: "tolerante", extra, coverage };
+    // La última palabra aún se está escribiendo ("arr" → Arroz): por debajo de una palabra completa, por encima de un error de tipeo.
+    if (partial > 0) return { score: isPrefix ? 66 : 62, source: "incompleto", extra, coverage };
     if (isPrefix) return { score: 80, source: "prefijo", extra, coverage };
     return { score: 70, source: "contenido", extra, coverage };
   }
@@ -257,10 +267,11 @@ function scoreEntry(
   queryTokens: string[],
   aliasTargets: Map<string, number>,
   usage: Map<string, number> | undefined,
+  partialLast: boolean,
 ): Candidate | null {
   let best = { score: 0, source: "parcial" as MatchSource, extra: 0, coverage: 0 };
   for (const v of e.variants) {
-    const s = scoreVariant(queryTokens, v);
+    const s = scoreVariant(queryTokens, v, partialLast);
     if (s.score > best.score || (s.score === best.score && s.extra < best.extra)) best = s;
   }
   let score = best.score;
@@ -334,6 +345,8 @@ export interface ResolveOptions {
   maxCandidates?: number;
   /** Ignora las recetas (se usa al resolver los ingredientes de una receta, para no recursar). */
   foodsOnly?: boolean;
+  /** Búsqueda mientras se escribe: la última palabra puede estar incompleta ("arr" → Arroz). */
+  partialLast?: boolean;
 }
 
 const FOOD_MIN = 40;
@@ -408,7 +421,7 @@ export function resolveFoodText(text: string, idx: ResolverIndex, opts: ResolveO
   const scored: Candidate[] = [];
   for (const e of idx.entries) {
     if (opts.foodsOnly && e.kind === "receta") continue;
-    const c = scoreEntry(e, queryTokens, aliasTargets, opts.usage);
+    const c = scoreEntry(e, queryTokens, aliasTargets, opts.usage, !!opts.partialLast);
     if (c) scored.push(c);
   }
   scored.sort(

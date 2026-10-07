@@ -111,6 +111,16 @@ for (const m of missing) console.log(`  · ${m}`);
 ok(resolveFood("mantequilla", foods).confidence === "baja", "una palabra que solo coincide por prefijo no es confianza alta/media");
 ok(resolveFood("pescado", foods).confidence === "baja", "pescado → solo sugerencia (confianza baja)");
 
+// búsqueda mientras se escribe (última palabra incompleta)
+{
+  const names = (q: string, n = 60) => resolveFood(q, foods, [], { partialLast: true, maxCandidates: n, foodsOnly: true }).candidates.map((c) => c.nombre);
+  ok(names("arr").includes("Arroz blanco"), "'arr' encuentra Arroz blanco");
+  ok(names("pol").some((n) => n.toLowerCase().includes("pollo")), "'pol' encuentra algo de pollo");
+  ok(names("arroz in")[0] === "Arroz integral cocido", "'arroz in' → Arroz integral cocido primero");
+  ok(names("a").length === 0, "una sola letra no devuelve candidatos (se usa el listado)");
+  ok(resolveFood("arroz", foods, [], { partialLast: true }).chosen?.nombre === "Arroz blanco", "palabra completa sigue ganando con partialLast");
+}
+
 // ── 5. recetas ────────────────────────────────────────────────────
 {
   const leche = foods.find((f) => f.nombre === "Leche entera")!;

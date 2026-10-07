@@ -21,18 +21,29 @@ import type { Food } from "@/lib/types";
 const SWIPE_OFFSET = 45;
 const SWIPE_VELOCITY = 350;
 
-/** Escala/traslación/opacidad de cada posición relativa al centro — mismos 5 niveles que el original
- * (center, ±1, ±2), el resto queda oculto. */
-const SLOT = {
-  0: { y: 0, scale: 1, opacity: 1, z: 0, gray: 0 },
-  1: { y: 128, scale: 0.86, opacity: 0.55, z: -80, gray: 1 },
-  2: { y: 224, scale: 0.72, opacity: 0.28, z: -180, gray: 1 },
-  "-1": { y: -128, scale: 0.86, opacity: 0.55, z: -80, gray: 1 },
-  "-2": { y: -224, scale: 0.72, opacity: 0.28, z: -180, gray: 1 },
+/** Escala/opacidad de cada posición relativa al centro — mismos 5 niveles que el original (center, ±1, ±2), el
+ * resto queda oculto. La separación vertical (`y`) se acercó para que se vean más tarjetas a la vez, y se acerca
+ * todavía más con el teclado abierto (`compact`); la escala y el estilo no cambian. Con tarjetas de 92/62/52 px
+ * (enfocada/±1/±2) las separaciones mínimas sin solaparse son 77 y 134 px: ninguna queda por debajo. */
+const SLOT_Y = {
+  normal: { 1: 100, 2: 172 },
+  compact: { 1: 82, 2: 142 },
+} as const;
+const SLOT_BASE = {
+  0: { scale: 1, opacity: 1, z: 0, gray: 0 },
+  1: { scale: 0.86, opacity: 0.55, z: -80, gray: 1 },
+  2: { scale: 0.72, opacity: 0.28, z: -180, gray: 1 },
 } as const;
 
-function FoodCard({ food, offset, onClick }: { food: Food; offset: -2 | -1 | 0 | 1 | 2; onClick: () => void }) {
-  const slot = SLOT[String(offset) as keyof typeof SLOT];
+function slotFor(offset: -2 | -1 | 0 | 1 | 2, compact: boolean) {
+  const abs = Math.abs(offset) as 0 | 1 | 2;
+  const base = SLOT_BASE[abs];
+  const y = abs === 0 ? 0 : SLOT_Y[compact ? "compact" : "normal"][abs] * Math.sign(offset);
+  return { ...base, y };
+}
+
+function FoodCard({ food, offset, compact, onClick }: { food: Food; offset: -2 | -1 | 0 | 1 | 2; compact: boolean; onClick: () => void }) {
+  const slot = slotFor(offset, compact);
   const focused = offset === 0;
   return (
     <motion.div
@@ -65,7 +76,7 @@ function FoodCard({ food, offset, onClick }: { food: Food; offset: -2 | -1 | 0 |
   );
 }
 
-export function FoodSearchCarousel({ foods, onSelect }: { foods: Food[]; onSelect: (food: Food) => void }) {
+export function FoodSearchCarousel({ foods, onSelect, compact = false }: { foods: Food[]; onSelect: (food: Food) => void; compact?: boolean }) {
   const [index, setIndex] = useState(0);
   const busy = useRef(false);
   const n = foods.length;
@@ -87,7 +98,7 @@ export function FoodSearchCarousel({ foods, onSelect }: { foods: Food[]; onSelec
 
   const visible = useMemo(() => {
     if (n === 0) return [];
-    const offsets: (-2 | -1 | 0 | 1 | 2)[] = n > 4 ? [-2, -1, 0, 1, 2] : n > 2 ? [-1, 0, 1] : [0];
+    const offsets: (-2 | -1 | 0 | 1 | 2)[] = n > 4 ? [-2, -1, 0, 1, 2] : n > 2 ? [-1, 0, 1] : n === 2 ? [0, 1] : [0];
     return offsets.map((o) => ({ offset: o, food: foods[((index + o) % n + n) % n] }));
   }, [foods, index, n]);
 
@@ -96,18 +107,21 @@ export function FoodSearchCarousel({ foods, onSelect }: { foods: Food[]; onSelec
   }
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <button
-        onClick={() => goTo(index - 1)}
-        aria-label="Anterior"
-        className="w-9 h-9 flex items-center justify-center rounded-full bg-white/[0.06] text-white/60 cursor-pointer"
-      >
-        <ChevronUp size={18} />
-      </button>
+    <div className="flex flex-col items-center justify-center gap-2 h-full min-h-0">
+      {/* Con el teclado abierto se esconden las flechas y el contador (se sigue deslizando/tocando) para dar el espacio a las tarjetas. */}
+      {!compact && (
+        <button
+          onClick={() => goTo(index - 1)}
+          aria-label="Anterior"
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-white/[0.06] text-white/60 cursor-pointer shrink-0"
+        >
+          <ChevronUp size={18} />
+        </button>
+      )}
 
       <motion.div
-        className="relative w-full touch-none"
-        style={{ height: 340, perspective: 900 }}
+        className="relative w-full touch-none flex-1 min-h-[120px] overflow-hidden"
+        style={{ maxHeight: 400, perspective: 900 }}
         drag="y"
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={0.5}
@@ -115,21 +129,25 @@ export function FoodSearchCarousel({ foods, onSelect }: { foods: Food[]; onSelec
         onDragEnd={onDragEnd}
       >
         {visible.map(({ offset, food }) => (
-          <FoodCard key={`${offset}-${food.id}`} food={food} offset={offset} onClick={() => (offset === 0 ? onSelect(food) : goTo(index + offset))} />
+          <FoodCard key={`${offset}-${food.id}`} food={food} offset={offset} compact={compact} onClick={() => (offset === 0 ? onSelect(food) : goTo(index + offset))} />
         ))}
       </motion.div>
 
-      <button
-        onClick={() => goTo(index + 1)}
-        aria-label="Siguiente"
-        className="w-9 h-9 flex items-center justify-center rounded-full bg-white/[0.06] text-white/60 cursor-pointer"
-      >
-        <ChevronDown size={18} />
-      </button>
+      {!compact && (
+        <>
+          <button
+            onClick={() => goTo(index + 1)}
+            aria-label="Siguiente"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-white/[0.06] text-white/60 cursor-pointer shrink-0"
+          >
+            <ChevronDown size={18} />
+          </button>
 
-      <span className="text-[11px] text-white/35 tabular-nums">
-        {index + 1} / {n}
-      </span>
+          <span className="text-[11px] text-white/35 tabular-nums shrink-0">
+            {index + 1} / {n}
+          </span>
+        </>
+      )}
     </div>
   );
 }
