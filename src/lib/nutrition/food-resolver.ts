@@ -21,7 +21,6 @@ const STOPWORDS = new Set([
 ]);
 const CRUDO = new Set(["crudo", "cruda", "crudos", "crudas"]);
 const COCIDO = new Set(["cocido", "cocida", "cocidos", "cocidas"]);
-const UNIT_WORDS = new Set(["g", "gr", "grs", "gramo", "gramos", "kg", "kilo", "kilos", "ml", "mililitro", "mililitros", "l", "litro", "litros"]);
 
 /** minúsculas, sin tildes ni ñ, solo letras/números separados por un espacio. */
 export function normalizeText(input: string): string {
@@ -441,9 +440,22 @@ export function resolveFoodText(text: string, idx: ResolverIndex, opts: ResolveO
   else if (chosen.score >= 80 && margin >= 8 && !singleVsMany) confidence = "alta";
   else if (chosen.score >= 65 && !singleVsMany) confidence = "media";
 
+  return finalizeResult(text, normalized, chosen, candidates, confidence, gramosPedidos, idx, opts.usage);
+}
+
+function finalizeResult(
+  text: string,
+  normalized: string,
+  chosen: Candidate,
+  candidates: Candidate[],
+  confidence: Confidence,
+  gramosPedidos: number | null,
+  idx: ResolverIndex,
+  usage: Map<string, number> | undefined,
+): ResolveResult {
   const stateAsked = requestedState(normalized);
   if (chosen.kind === "receta" && chosen.recipe) {
-    const r = resolveRecipe(chosen.recipe, idx, opts.usage, gramosPedidos);
+    const r = resolveRecipe(chosen.recipe, idx, usage, gramosPedidos);
     return { query: text, tipo: "receta", candidates, chosen, confidence, gramosPedidos, gramos: r.gramos, ingredientes: r.ingredientes, recipeId: chosen.id };
   }
   const food = chosen.food!;
@@ -453,6 +465,13 @@ export function resolveFoodText(text: string, idx: ResolverIndex, opts: ResolveO
   if (stateAsked) cookedState = stateAsked;
   if (cookedState === "cocido" && !food.cocido) cookedState = "crudo";
   return { query: text, tipo: "alimento", candidates, chosen, confidence, gramosPedidos, gramos: gramosPedidos ?? base, cookedState };
+}
+
+/** Igual que `resolveFoodText`, pero el usuario ya eligió `candidate` a mano (chip "cambiar"): confianza alta. */
+export function resolveCandidate(text: string, candidate: Candidate, candidates: Candidate[], idx: ResolverIndex, opts: ResolveOptions = {}): ResolveResult {
+  const parsed = parseQuantityFromText(text);
+  const gramosPedidos = opts.gramos != null && opts.gramos > 0 ? opts.gramos : parsed.gramos;
+  return finalizeResult(text, normalizeText(parsed.texto), candidate, candidates, "alta", gramosPedidos, idx, opts.usage);
 }
 
 /** Atajo: construye (o reutiliza) el índice y resuelve. */

@@ -203,6 +203,9 @@ export interface LoggedFood {
   /** De dónde vino este registro (para mostrar un badge/ícono distinto). Sin
    * valor = entrada manual/normal, como hasta ahora. */
   source?: "escaner-ia";
+  /** Si este ingrediente salió de expandir una receta del usuario (Lista/Voz/Escáner), el id de esa receta.
+   * Solo local: la tabla `logged_foods` de Supabase todavía no tiene la columna. */
+  recipeId?: string;
 }
 
 /** A meal saved explicitly by name for later reuse (see "Compartir > Como plantilla"). */
