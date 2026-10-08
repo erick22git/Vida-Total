@@ -40,17 +40,25 @@ import {
   scaleMicronutrients,
   scaleCookedNutrition,
   scaleCookedMicronutrients,
-  MICRONUTRIENT_LABELS,
   DAILY_VALUES,
 } from "@/lib/food-utils";
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import { MEAL_LABELS } from "@/lib/types";
 import type { CookedState, Food, MealType } from "@/lib/types";
 import { MONO_FONT } from "@/lib/ui/mono-font";
+import { buildInfoPages, formatInfoValue, rowsThatFit } from "@/lib/nutrition/info-pages";
 
 const RECIPE_DRAFT_KEY = "vt-recipe-draft";
 
-const INFO_VIEW_COUNT = 3;
+// Bloque de nutrientes con ALTURA FIJA: título + `INFO_ROWS_H` de filas. Cuántas filas entran por página se calcula de ahí
+// (no está escrito a mano) y los grupos que no caben se parten en más páginas; así la configuración de abajo (anillo,
+// gramos y botones) queda siempre en el mismo lugar, sin importar la página ni el contenido.
+const INFO_ROW_H = 24;
+const INFO_GAP = 6;
+const INFO_TITLE_H = 18;
+const INFO_ROWS_H = 174;
+const INFO_AREA_H = INFO_TITLE_H + INFO_GAP + INFO_ROWS_H;
+const INFO_ROWS_PER_PAGE = rowsThatFit(INFO_ROWS_H, INFO_ROW_H, INFO_GAP);
 
 export function FoodDetailScreen({ id, mode }: { id: string; mode: "agregar" | "editar" }) {
   return (
@@ -169,6 +177,7 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
   // Carrusel VERTICAL (dentro del bloque de números): calorías+macros → información nutricional →
   // micronutrientes — misma mecánica que MealHomeScreen (swipe/wheel verticales).
   const [infoView, setInfoView] = useState(0);
+  const infoSwipe = useRef<{ y: number } | null>(null);
 
   if (!food) {
     // Editando una comida que todavía no tiene ningún alimento (se llega acá manteniendo presionado
@@ -240,23 +249,10 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
     grasas: (macroKcal.grasas / totalMacroKcal) * 100,
   };
 
-  const nutritionRows: { label: string; value: number | undefined; unit: string; dvKey: string }[] = [
-    { label: "Grasas Saturadas", value: nutrition.grasasSaturadas, unit: "g", dvKey: "grasasSaturadas" },
-    { label: "Grasas Trans", value: nutrition.grasasTrans, unit: "g", dvKey: "" },
-    { label: "Grasas Monoinsaturadas", value: nutrition.grasasMonoinsaturadas, unit: "g", dvKey: "" },
-    { label: "Grasas Poliinsaturadas", value: nutrition.grasasPoliinsaturadas, unit: "g", dvKey: "" },
-    { label: "Omega-3 (ALA)", value: nutrition.omega3Ala, unit: "g", dvKey: "" },
-    { label: "Omega-6 (Linoleico)", value: nutrition.omega6Linoleico, unit: "g", dvKey: "" },
-    { label: "Colesterol", value: nutrition.colesterol, unit: "mg", dvKey: "colesterol" },
-    { label: "Sodio", value: nutrition.sodio, unit: "mg", dvKey: "sodio" },
-    { label: "Fibra", value: nutrition.fibra, unit: "g", dvKey: "fibra" },
-    { label: "Azúcares", value: nutrition.azucares, unit: "g", dvKey: "azucares" },
-    { label: "Azúcares Añadidos", value: nutrition.azucaresAnadidos, unit: "g", dvKey: "azucaresAnadidos" },
-    { label: "Agua", value: nutrition.agua, unit: "g", dvKey: "" },
-    { label: "Ceniza", value: nutrition.ceniza, unit: "g", dvKey: "" },
-  ];
-  const vitaminEntries = Object.entries(micronutrients ?? {}).filter(([k]) => MICRONUTRIENT_LABELS[k]?.group === "vitamina");
-  const mineralEntries = Object.entries(micronutrients ?? {}).filter(([k]) => MICRONUTRIENT_LABELS[k]?.group === "mineral");
+  const infoPages = buildInfoPages(nutrition, micronutrients as Record<string, number> | undefined, INFO_ROWS_PER_PAGE);
+  const pageIndex = Math.min(infoView, infoPages.length - 1);
+  const infoPage = infoPages[pageIndex];
+  const goInfo = (next: number) => setInfoView(Math.max(0, Math.min(infoPages.length - 1, next)));
 
   function buildPayload() {
     return {
@@ -503,71 +499,56 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
               </p>
             ) : (
               <>
-                {/* Bloque de números — 3 vistas con swipe/scroll vertical, sin tarjeta. */}
+                {/* Bloque de números — páginas con swipe/rueda vertical o tocando los puntos, SIN tarjeta y con
+                    altura fija (ver INFO_AREA_H). `touch-action: none`: sin eso el navegador se queda con el
+                    gesto vertical y dispara pointercancel, y el deslizamiento no cambia de página. */}
                 <div
-                  className="flex flex-col gap-3"
+                  className="relative pr-6 select-none"
+                  style={{ height: INFO_AREA_H, overflow: "hidden", touchAction: "none" }}
                   onWheel={(e) => {
                     if (Math.abs(e.deltaY) < 30) return;
-                    setInfoView((v) => Math.max(0, Math.min(INFO_VIEW_COUNT - 1, v + (e.deltaY > 0 ? 1 : -1))));
+                    goInfo(pageIndex + (e.deltaY > 0 ? 1 : -1));
+                  }}
+                  onPointerDown={(e) => {
+                    infoSwipe.current = { y: e.clientY };
+                  }}
+                  onPointerUp={(e) => {
+                    const st = infoSwipe.current;
+                    infoSwipe.current = null;
+                    if (!st) return;
+                    const dy = e.clientY - st.y;
+                    if (Math.abs(dy) > 36) goInfo(pageIndex + (dy < 0 ? 1 : -1));
+                  }}
+                  onPointerCancel={() => {
+                    infoSwipe.current = null;
                   }}
                 >
-                  {/* `relative` + los puntos en `absolute`: si fueran flex normales, quedarían
-                      centrados verticalmente CONTRA el contenido — y como el contenido tiene distinta
-                      altura en cada página (4 filas / hasta 7 / micronutrientes), los puntos saltaban
-                      de posición al cambiar de página. Fijos así, siempre quedan en el mismo lugar
-                      (más abajo que antes) sin importar cuánto contenido haya al lado. */}
-                  <div className="relative pr-6">
-                    <div className="flex-1 flex flex-col gap-3">
-                      {infoView === 0 && (
-                        <>
-                          <StatRow label="Kcal" value={`${Math.round(nutrition.calorias)}`} big />
-                          <StatRow label="Proteínas" value={`${Math.round(nutrition.proteina)} g`} />
-                          <StatRow label="Carbohidratos" value={`${Math.round(nutrition.carbos)} g`} />
-                          <StatRow label="Grasas" value={`${Math.round(nutrition.grasas)} g`} />
-                        </>
-                      )}
-                      {infoView === 1 &&
-                        nutritionRows
-                          .filter((r) => r.value !== undefined)
-                          .map((row) => {
-                            const dv = DAILY_VALUES[row.dvKey];
-                            return (
-                              <StatRow
-                                key={row.label}
-                                label={row.label}
-                                value={`${Math.round((row.value ?? 0) * 10) / 10}${row.unit}${dv ? ` / ${dv}${row.unit}` : ""}`}
-                              />
-                            );
-                          })}
-                      {infoView === 2 &&
-                        (vitaminEntries.length === 0 && mineralEntries.length === 0 ? (
-                          <p className="text-xs text-white/40">Sin micronutrientes registrados.</p>
-                        ) : (
-                          <>
-                            {vitaminEntries.map(([key, value]) => (
-                              <StatRow key={key} label={MICRONUTRIENT_LABELS[key]?.label} value={`${value} ${MICRONUTRIENT_LABELS[key]?.unit}`} />
-                            ))}
-                            {mineralEntries.map(([key, value]) => (
-                              <StatRow key={key} label={MICRONUTRIENT_LABELS[key]?.label} value={`${value} ${MICRONUTRIENT_LABELS[key]?.unit}`} />
-                            ))}
-                          </>
-                        ))}
-                    </div>
-                    <div className="absolute right-0 top-11 flex flex-col gap-2 shrink-0">
-                      {Array.from({ length: INFO_VIEW_COUNT }, (_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setInfoView(i)}
-                          aria-label={["Calorías y macros", "Información nutricional", "Micronutrientes"][i]}
-                          className="w-4 h-4 flex items-center justify-center cursor-pointer"
-                        >
-                          <span
-                            className="rounded-full"
-                            style={{ width: 6, height: 6, background: i === infoView ? "#fff" : "rgba(255,255,255,0.3)" }}
-                          />
-                        </button>
-                      ))}
-                    </div>
+                  <div className="flex flex-col" style={{ gap: INFO_GAP }}>
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-white/35 truncate" style={{ ...MONO_FONT, height: INFO_TITLE_H, lineHeight: `${INFO_TITLE_H}px` }}>
+                      {infoPage.title}
+                    </p>
+                    {infoPage.rows.map((row) => (
+                      <StatRow
+                        key={row.key}
+                        label={row.label}
+                        value={formatInfoValue(row, row.dvKey ? DAILY_VALUES[row.dvKey] : undefined)}
+                        big={row.big}
+                        muted={row.value === undefined}
+                      />
+                    ))}
+                  </div>
+                  {/* Los puntos salen de los datos (uno por página) y quedan centrados en el alto fijo. */}
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-1 shrink-0">
+                    {infoPages.map((pg, i) => (
+                      <button
+                        key={pg.id}
+                        onClick={() => goInfo(i)}
+                        aria-label={pg.title}
+                        className="w-4 h-4 flex items-center justify-center cursor-pointer"
+                      >
+                        <span className="rounded-full" style={{ width: 6, height: 6, background: i === pageIndex ? "#fff" : "rgba(255,255,255,0.3)" }} />
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -737,16 +718,24 @@ function CookedToggle({ cocido, onChange }: { cocido: boolean; onChange: (cocido
   );
 }
 
-function StatRow({ label, value, big }: { label: string; value: string; big?: boolean }) {
+function StatRow({ label, value, big, muted }: { label: string; value: string; big?: boolean; muted?: boolean }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3" style={{ height: INFO_ROW_H }}>
       <span
         className={big ? "text-[12.5px] font-bold uppercase tracking-wide text-white shrink-0" : "text-[11px] uppercase tracking-wide text-white/70 shrink-0"}
       >
         {label}
       </span>
       <span className="flex-1 h-px bg-white/15" />
-      <span className={big ? "text-lg font-bold text-white tabular-nums shrink-0" : "text-[12.5px] font-semibold text-white tabular-nums shrink-0"}>
+      <span
+        className={
+          big
+            ? "text-[19px] leading-6 font-bold text-white tabular-nums shrink-0"
+            : muted
+              ? "text-[11.5px] font-normal text-white/35 shrink-0"
+              : "text-[12.5px] font-semibold text-white tabular-nums shrink-0"
+        }
+      >
         {value}
       </span>
     </div>
