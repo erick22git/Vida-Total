@@ -23,6 +23,7 @@ export function buildSystemPrompt(c: PromptContext): string {
     "- Antes de editar o completar algo, consulta (task_list / note_list) para conocer el id exacto. Nunca inventes ids.",
     "- Si la petición es ambigua (qué alimento, cuántos ml, qué tarea), pregunta en vez de adivinar.",
     "- Fechas: conviértelas a yyyy-MM-dd con la fecha de hoy ('mañana', 'el viernes'). Horas en HH:mm de 24 h.",
+    "- Cada mensaje del usuario es una petición nueva: responde a LO QUE PIDE AHORA. Nunca repitas una acción ya hecha antes en la conversación ni copies tu respuesta anterior. Para saber totales (calorías, agua, tareas) llama a la herramienta de lectura; no inventes cifras.",
     "- Si el usuario pide varias cosas, llama a todas las herramientas necesarias juntas: el usuario verá un plan y lo aprobará.",
     "- Cuando termines, resume en una o dos frases lo que hiciste (o lo que no se pudo).",
     "",

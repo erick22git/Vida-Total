@@ -168,11 +168,34 @@ export async function handleInbound(inb: Inbound): Promise<void> {
 async function loadMemory(db: dbx.Admin, userId: string): Promise<LlmMessage[]> {
   const { data } = await db.from("agent_chat_state").select("messages,updated_at").eq("user_id", userId).maybeSingle();
   if (!data || Date.now() - new Date(data.updated_at as string).getTime() > 30 * 60_000) return [];
-  const raw = Array.isArray(data.messages) ? (data.messages as Array<{ role?: string; content?: string }>) : [];
-  return raw.filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string").map((m) => ({ role: m.role as "user" | "assistant", content: (m.content as string).slice(0, 2000) }));
+  const raw = Array.isArray(data.messages) ? (data.messages as LlmMessage[]) : [];
+  const out: LlmMessage[] = [];
+  for (const m of raw) {
+    if (m.role === "user" && typeof m.content === "string") out.push({ role: "user", content: m.content.slice(0, 2000) });
+    else if (m.role === "assistant" && (typeof m.content === "string" || m.tool_calls?.length)) out.push({ role: "assistant", content: m.content ?? null, ...(m.tool_calls?.length ? { tool_calls: m.tool_calls } : {}) });
+    else if (m.role === "tool" && typeof m.content === "string" && m.tool_call_id) out.push({ role: "tool", tool_call_id: m.tool_call_id, name: m.name, content: m.content.slice(0, 800) });
+  }
+  return trimMemory(out);
 }
+
+/** Recorta por turnos completos: nunca empieza en un mensaje huérfano (tool o assistant con llamadas) ni deja llamadas sin su resultado. */
+function trimMemory(msgs: LlmMessage[]): LlmMessage[] {
+  let list = msgs.slice(-MAX_MEMORY);
+  const firstUser = list.findIndex((m) => m.role === "user");
+  list = firstUser < 0 ? [] : list.slice(firstUser);
+  const answered = new Set(list.filter((m) => m.role === "tool").map((m) => m.tool_call_id));
+  const ok = list.every((m) => m.role !== "assistant" || !m.tool_calls || m.tool_calls.every((c) => answered.has(c.id)));
+  return ok ? list : list.filter((m) => m.role === "user" || (m.role === "assistant" && !m.tool_calls && m.content));
+}
+
+/** Guarda el turno con su estructura (pregunta → llamada → resultado → respuesta): sin ella el modelo imita la respuesta anterior en vez de actuar. */
 async function saveMemory(db: dbx.Admin, userId: string, msgs: LlmMessage[]) {
-  const keep = msgs.filter((m) => (m.role === "user" || m.role === "assistant") && m.content).slice(-MAX_MEMORY).map((m) => ({ role: m.role, content: String(m.content).slice(0, 2000) }));
+  const keep = trimMemory(msgs.filter((m) => m.role !== "system")).map((m) => ({
+    role: m.role,
+    content: m.content == null ? null : String(m.content).slice(0, m.role === "tool" ? 800 : 2000),
+    ...(m.tool_calls ? { tool_calls: m.tool_calls } : {}),
+    ...(m.tool_call_id ? { tool_call_id: m.tool_call_id, name: m.name } : {}),
+  }));
   await db.from("agent_chat_state").upsert({ user_id: userId, messages: keep, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
 }
 
@@ -287,7 +310,7 @@ async function runTurn(db: dbx.Admin, link: Linked, config: AgentConfig, userTex
     }
   }
 
-  await saveMemory(db, link.userId, messages.filter((m) => m.role !== "tool" && !m.tool_calls));
+  await saveMemory(db, link.userId, messages);
   await sendMessage(link.chatId, finalText || "Listo.");
 }
 
