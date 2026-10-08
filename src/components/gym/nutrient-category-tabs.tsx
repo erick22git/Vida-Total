@@ -61,7 +61,7 @@ export function NutrientCategoryTabs({
   const nutrient = (key: TrackableNutrient) => otherNutrientTotals[key] ?? 0;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 flex-1 min-h-0">
       <div className="min-h-[92px]">
         {tab === 0 && (
           <div className="grid grid-cols-4 gap-2">
@@ -104,25 +104,30 @@ export function NutrientCategoryTabs({
         )}
       </div>
 
-      <div className="flex items-center justify-center gap-4">
-        <span className="text-[11px] text-white/35 tabular-nums shrink-0" style={MONO_FONT}>
+      {/* Controles abajo de todo: el contador "n/4" arriba de los íconos y los 3 puntos de la vista a la derecha. */}
+      <div className="mt-auto flex flex-col items-center gap-2 pb-2">
+        <span className="text-[11px] text-white/35 tabular-nums" style={MONO_FONT}>
           {tab + 1}/{TABS.length}
         </span>
-        <div className="flex items-center gap-2">
-          {TABS.map(({ key, icon: Icon }, i) => (
-            <button
-              key={key}
-              onClick={() => setTab(i)}
-              aria-label={TABS[i].label}
-              aria-current={tab === i}
-              className="w-11 h-11 rounded-full flex items-center justify-center cursor-pointer transition-colors"
-              style={{ background: tab === i ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.05)" }}
-            >
-              <Icon size={18} className={tab === i ? "text-white" : "text-white/45"} />
-            </button>
-          ))}
+        <div className="relative w-full flex items-center justify-center">
+          <div className="flex items-center gap-2">
+            {TABS.map(({ key, icon: Icon }, i) => (
+              <button
+                key={key}
+                onClick={() => setTab(i)}
+                aria-label={TABS[i].label}
+                aria-current={tab === i}
+                className="w-11 h-11 rounded-full flex items-center justify-center cursor-pointer transition-colors"
+                style={{ background: tab === i ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.05)" }}
+              >
+                <Icon size={18} className={tab === i ? "text-white" : "text-white/45"} />
+              </button>
+            ))}
+          </div>
+          <div className="absolute right-1 top-1/2 -translate-y-1/2">
+            <ViewDots index={viewIndex} count={viewCount} />
+          </div>
         </div>
-        <ViewDots index={viewIndex} count={viewCount} />
       </div>
     </div>
   );
