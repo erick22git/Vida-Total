@@ -46,6 +46,7 @@ const COMMAND_DEFAULT: Partial<Record<AgentId, string>> = {
   entrenamiento: "¿Qué entreno hoy?",
 };
 const MAX_MEMORY = 10;
+const MEMORY_VERSION = "memoria-v2";
 const MAX_DOC_BYTES = 100 * 1024;
 const TEXT_MIMES = new Set(["text/plain", "text/markdown", "text/csv", "application/json"]);
 
@@ -169,6 +170,8 @@ async function loadMemory(db: dbx.Admin, userId: string): Promise<LlmMessage[]> 
   const { data } = await db.from("agent_chat_state").select("messages,updated_at").eq("user_id", userId).maybeSingle();
   if (!data || Date.now() - new Date(data.updated_at as string).getTime() > 30 * 60_000) return [];
   const raw = Array.isArray(data.messages) ? (data.messages as LlmMessage[]) : [];
+  // Memoria guardada antes del formato estructurado (sin marca): se descarta; imitarla hacía repetir acciones.
+  if (raw[0]?.role !== "system" || raw[0].content !== MEMORY_VERSION) return [];
   const out: LlmMessage[] = [];
   for (const m of raw) {
     if (m.role === "user" && typeof m.content === "string") out.push({ role: "user", content: m.content.slice(0, 2000) });
@@ -196,7 +199,7 @@ async function saveMemory(db: dbx.Admin, userId: string, msgs: LlmMessage[]) {
     ...(m.tool_calls ? { tool_calls: m.tool_calls } : {}),
     ...(m.tool_call_id ? { tool_call_id: m.tool_call_id, name: m.name } : {}),
   }));
-  await db.from("agent_chat_state").upsert({ user_id: userId, messages: keep, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+  await db.from("agent_chat_state").upsert({ user_id: userId, messages: [{ role: "system", content: MEMORY_VERSION }, ...keep], updated_at: new Date().toISOString() }, { onConflict: "user_id" });
 }
 
 function systemFor(config: AgentConfig, nowMs: number, agent: AgentId): LlmMessage {
@@ -311,7 +314,7 @@ async function runTurn(db: dbx.Admin, link: Linked, config: AgentConfig, userTex
   }
 
   await saveMemory(db, link.userId, messages);
-  await sendMessage(link.chatId, finalText || "Listo.");
+  await sendMessage(link.chatId, finalText || "Listo.", undefined, { rich: true });
 }
 
 async function savePlanAndAsk(db: dbx.Admin, link: Linked, plan: PendingPlan, messages: LlmMessage[], text: string): Promise<void> {

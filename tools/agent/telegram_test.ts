@@ -1,6 +1,6 @@
 // Pruebas del canal Telegram: lectura segura de updates, comandos, botones, código de vinculación, plan pendiente y zonas horarias.
 // Ejecutar: node tools/3d/verify/run_ts.mjs tools/agent/telegram_test.ts
-import { chunkMessage, decodeCallback, encodeCallback, isWellFormedCode, normalizeCode, parseCommand, parseUpdate, LINK_CODE_ALPHABET, LINK_CODE_LENGTH } from "../../src/lib/telegram/update";
+import { renderTelegramHtml, chunkMessage, decodeCallback, encodeCallback, isWellFormedCode, normalizeCode, parseCommand, parseUpdate, LINK_CODE_ALPHABET, LINK_CODE_LENGTH } from "../../src/lib/telegram/update";
 import { generateLinkCode, hashLinkCode, safeEqual } from "../../src/lib/telegram/link-code";
 import { answerStep, approveAllPending, nextToConfirm, renderPlan, runnableSteps, stepButtons, type PendingPlan } from "../../src/lib/telegram/pending";
 import { addDays, localParts, zonedTimeToMs } from "../../src/lib/agent/tz";
@@ -103,6 +103,13 @@ ok(runnableSteps(plan).join() === "1", "pendiente + permitido corre solo; el que
 ok(runnableSteps(all).join() === "0,1,2", "tras aprobar todo corren los aprobados");
 ok(renderPlan(plan).includes("Plan (4 pasos)") && renderPlan({ ...plan, untrusted: true }).includes("no escribiste"), "texto del plan y aviso de contenido no confiable");
 ok(stepButtons(id, 0, true).flat().length === 3 && stepButtons(id, 0, false).flat().length === 2, "botones: «siempre» solo si se puede");
+
+// ── tablas en Telegram ─────────────────────────────────────────────
+const FENCE = "```";
+const html = renderTelegramHtml(["Hoy <b>:", FENCE, "HORA  | ACTIVIDAD", "07:00 | Gym & pesas", FENCE, "⬜ Pagar"].join("\n"));
+ok(html.includes("<pre>HORA  | ACTIVIDAD\n07:00 | Gym &amp; pesas</pre>"), "bloque ``` → <pre> con HTML escapado");
+ok(html.includes("&lt;b&gt;") && !html.includes("<b>"), "etiquetas del modelo escapadas (no inyecta HTML)");
+ok(renderTelegramHtml("sin bloques") === "sin bloques", "texto sin bloques intacto");
 
 // ── zona horaria ───────────────────────────────────────────────────
 const noon = Date.UTC(2026, 9, 7, 3, 30); // 03:30 UTC

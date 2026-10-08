@@ -118,7 +118,14 @@ export function isWellFormedCode(code: string): boolean {
 }
 export const normalizeCode = (raw: string) => raw.trim().toUpperCase().replace(/[\s-]/g, "");
 
+/** Convierte la respuesta del modelo a HTML de Telegram: escapa todo y deja solo bloques ``` como <pre> (tablas alineadas). */
+export function renderTelegramHtml(text: string): string {
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return esc(text).replace(/```[a-zA-Z]*[ \t]*\n?([\s\S]*?)```/g, (_m, body: string) => `<pre>${body.replace(/\n$/, "")}</pre>`);
+}
+
 /** Cortes de mensaje de Telegram: máx. 4096 caracteres. */
+
 export function chunkMessage(text: string, max = 3800): string[] {
   if (text.length <= max) return [text];
   const out: string[] = [];

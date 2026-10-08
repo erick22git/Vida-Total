@@ -2,7 +2,7 @@
  * Cliente mínimo de la Bot API oficial de Telegram. SOLO SERVIDOR: el token (TELEGRAM_BOT_TOKEN) nunca va al navegador ni
  * al repositorio. Sin librerías de terceros (nada que automatice cuentas de usuario).
  */
-import { chunkMessage } from "./update";
+import { chunkMessage, renderTelegramHtml } from "./update";
 
 export interface InlineButton {
   text: string;
@@ -34,16 +34,15 @@ async function call<T>(method: string, body: Record<string, unknown>): Promise<T
 }
 
 /** Envía un texto (partido si es largo). Los botones van en el último trozo. */
-export async function sendMessage(chatId: number, text: string, buttons?: InlineButton[][]): Promise<void> {
+export async function sendMessage(chatId: number, text: string, buttons?: InlineButton[][], opts?: { rich?: boolean }): Promise<void> {
   const parts = chunkMessage(text.trim() || "…");
   for (let i = 0; i < parts.length; i++) {
     const last = i === parts.length - 1;
-    await call("sendMessage", {
-      chat_id: chatId,
-      text: parts[i],
-      disable_web_page_preview: true,
-      ...(last && buttons?.length ? { reply_markup: { inline_keyboard: buttons } } : {}),
-    });
+    const base = { chat_id: chatId, disable_web_page_preview: true, ...(last && buttons?.length ? { reply_markup: { inline_keyboard: buttons } } : {}) };
+    if (opts?.rich && parts[i].includes("```")) {
+      if (await call("sendMessage", { ...base, text: renderTelegramHtml(parts[i]), parse_mode: "HTML" })) continue;
+    }
+    await call("sendMessage", { ...base, text: parts[i] });
   }
 }
 

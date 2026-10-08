@@ -105,7 +105,7 @@ export const AGENTS: Record<AgentId, AgentDef> = {
     defaultLevels: {},
     chat: true,
     screens: ["habitos"],
-    keywords: ["tarea", "tareas", "subtarea", "nota", "notas", "pendiente", "pendientes", "agenda", "apunta", "anota", "recuerdame", "recordatorio", "rutina", "calendario", "lista", "checklist"],
+    keywords: ["tarea", "tareas", "subtarea", "nota", "notas", "pendiente", "pendientes", "agenda", "horario", "apunta", "anota", "recuerdame", "recordatorio", "rutina", "calendario", "lista", "checklist"],
     commands: ["tareas", "tarea", "notas", "nota", "organiza"],
   },
   recordatorios: {

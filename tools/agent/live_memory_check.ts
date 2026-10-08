@@ -9,7 +9,7 @@ for (const line of readFileSync(".env.local", "utf8").split(/\r?\n/)) {
   const m = /^([A-Z0-9_]+)=(.*)$/.exec(line);
   if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].replace(/^"|"$/g, "");
 }
-const agent = "nutricion" as const;
+const agent = (process.argv[2] ?? "general") as "general";
 const system: LlmMessage = { role: "system", content: buildSystemPrompt({ today: "2026-10-07", time: "21:54", weekday: "miércoles", channel: "telegram", agentName: AGENTS[agent].name, agentInstructions: AGENTS[agent].instructions }) };
 
 const structured: LlmMessage[] = [
@@ -18,11 +18,13 @@ const structured: LlmMessage[] = [
   { role: "tool", tool_call_id: "c1", name: "water_add", content: '{"ok":true,"summary":"Agua +250 ml"}' },
   { role: "assistant", content: "✓ Agua +250 ml" },
 ];
-const flat: LlmMessage[] = [structured[0], structured[3]];
+const flat: LlmMessage[] = [];
+for (let k = 0; k < 4; k++) flat.push({ role: "user", content: "Registra 250 ml de agua" }, { role: "assistant", content: "✓ Agua +250 ml" });
+flat.push({ role: "user", content: "Cuántas calorías llevo?" }, { role: "assistant", content: "✓ Agua +250 ml" });
 
 async function main() {
 for (const [label, hist] of [["memoria plana (antes)", flat], ["memoria estructurada (ahora)", structured]] as const) {
-  for (const q of ["¿Cuántas calorías llevo?", "Comí 200 g de arroz"]) {
+  for (const q of ["¿Cuántas calorías llevo?", "Comí 200 g de arroz", "pasame mi horario de hoy", "qué tareas tengo mañana"]) {
     const r = await callLlm([system, ...hist, { role: "user", content: q }], { agent });
     if (!r.ok) { console.log(label, q, "→ error", r.error); continue; }
     const calls = (r.message.tool_calls ?? []).map((c) => `${c.function.name}(${c.function.arguments.slice(0, 60)})`);
