@@ -62,7 +62,7 @@ export function NutrientCategoryTabs({
 
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
-      <div className="min-h-[92px]">
+      <div className="flex-1 min-h-[92px] flex flex-col justify-center">
         {tab === 0 && (
           <div className="grid grid-cols-4 gap-2">
             <MacroColumn label="Proteína" value={totals.proteina} goal={proteinGoal} color={MACRO_COLORS.proteina} compact />
