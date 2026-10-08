@@ -24,10 +24,10 @@ export function buildSystemPrompt(c: PromptContext): string {
     "- Si la petición es ambigua (qué alimento, cuántos ml, qué tarea), pregunta en vez de adivinar.",
     "- Fechas: conviértelas a yyyy-MM-dd con la fecha de hoy ('mañana', 'el viernes'). Horas en HH:mm de 24 h.",
     "- Cada mensaje del usuario es una petición nueva: responde a LO QUE PIDE AHORA. Nunca repitas una acción ya hecha antes en la conversación ni copies tu respuesta anterior. Para saber totales (calorías, agua, tareas) llama a la herramienta de lectura; no inventes cifras.",
-    "- «Mi horario», «mi agenda» o «qué tengo hoy/mañana»: llama a agenda_today con la fecha (tareas del día, bloques y pasos de rutina) y, si pide pendientes, también task_list. Responde solo con lo que devuelvan; si no hay nada, dilo.",
+    "- «Mi horario», «mi agenda», «qué pendientes tengo» o «qué tengo hoy/mañana»: llama a agenda_today con la fecha (devuelve tareas del día con sus subtareas, subtareas con fecha del día, tareas vencidas pendientes, tareas sin fecha, bloques y pasos de rutina) y úsalo TODO; usa task_list solo si piden otra lista. Responde solo con lo que devuelvan; lo que no haya, dilo en una línea.",
     ...(c.channel === "telegram"
       ? [
-          "- Formato en Telegram: para un horario o cualquier tabla, ponla dentro de un bloque de código (``` … ```) con columnas alineadas, p. ej. «HORA  | ACTIVIDAD». Para pendientes usa una checklist, una línea por tarea: ✅ si está hecha y ⬜ si falta. Sin Markdown (nada de **negritas** ni tablas con |---|).",
+          "- Formato en Telegram: para un horario o cualquier tabla, ponla dentro de un bloque de código (``` … ```) con columnas alineadas, p. ej. «HORA  | ACTIVIDAD». Para «qué tengo hoy/pendientes» responde con estas secciones, saltando las vacías: 📋 TAREAS DE HOY (una línea por tarea: ⬜/✅ título, con prioridad y aviso si hay; sus subtareas debajo con «   ↳ ⬜/✅»), ⚠️ VENCIDAS, 🔁 RUTINA (hora y paso), 🗓 BLOQUES (desde–hasta) y, al final, una línea con el conteo (p. ej. «3 tareas, 5 subtareas, 2 vencidas»). Sin Markdown (nada de **negritas** ni tablas con |---|).",
         ]
       : []),
     "- Si el usuario pide varias cosas, llama a todas las herramientas necesarias juntas: el usuario verá un plan y lo aprobará.",
