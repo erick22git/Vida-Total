@@ -48,7 +48,7 @@ const PLACEHOLDER_KEY = "TU_API_KEY_AQUI";
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 // Modelo con herramientas disponible en Groq (revisado con GET /openai/v1/models; llama-3.3-70b ya no está). Se cambia con GROQ_AGENT_MODEL.
 const TIMEOUT_MS = 25_000;
-const MAX_WAIT_MS = 3000;
+const MAX_WAIT_MS = 12_000;
 
 /** Herramientas que se le ofrecen a un agente: las suyas (que existan y estén expuestas) + `delegate` si puede delegar. */
 export function toolSchemas(agent?: AgentId) {
@@ -78,7 +78,7 @@ async function once(key: string, model: string, messages: LlmMessage[], opts: Ll
         messages,
         ...(tools.length ? { tools, tool_choice: "auto" } : {}),
         temperature: 0.2,
-        max_completion_tokens: opts.maxTokens ?? 900,
+        max_completion_tokens: opts.maxTokens ?? 1800,
         ...(model.startsWith("openai/gpt-oss") && opts.reasoning ? { reasoning_effort: opts.reasoning } : {}),
       }),
       signal: ctrl.signal,
@@ -106,7 +106,7 @@ export async function callLlm(messages: LlmMessage[], opts: LlmOptions = {}): Pr
       meta.rateLimited++;
       retryAfterSec = Number(res.headers.get("retry-after")) || undefined;
       // 1) pausa corta: esperar y reintentar el mismo modelo; 2) si no, un modelo más liviano (una sola vez); 3) avisar el tiempo.
-      if (attempt === 0 && retryAfterSec !== undefined && retryAfterSec * 1000 <= MAX_WAIT_MS) {
+      if (attempt <= 1 && retryAfterSec !== undefined && retryAfterSec * 1000 <= (attempt === 0 ? MAX_WAIT_MS : 5000)) {
         await sleep(retryAfterSec * 1000);
         continue;
       }

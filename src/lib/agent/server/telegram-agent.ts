@@ -5,11 +5,13 @@
  *  3. corre el mismo bucle de agente que la app (mismo prompt, mismas herramientas, mismos permisos);
  *  4. cuando algo pide permiso, guarda un plan en `agent_pending` y lo pregunta con botones.
  */
-import { AGENTS, SPECIALISTS, isAgentId, type AgentId } from "@/lib/agent/agents";
+import { AGENTS, DEFAULT_MODEL, SPECIALISTS, isAgentId, type AgentId } from "@/lib/agent/agents";
 import { callLlm, classifyShort, parseArgs, type LlmMessage } from "@/lib/agent/llm";
 import { agentForCommand, classifierPrompt, routeAgent } from "@/lib/agent/router";
-import { recordUsage } from "./usage";
+import { probeGroqLimits, readUsage, recordUsage, utcDay } from "./usage";
 import { replayedWrites } from "@/lib/agent/replay";
+import { asksAboutUsage, renderUsage } from "@/lib/agent/usage-render";
+import { renderAgendaText } from "@/lib/agent/actions/readers-pure";
 import { sanitizeConfig } from "@/lib/agent/config";
 import { turnOrigin } from "@/lib/agent/messages";
 import { decide } from "@/lib/agent/permissions";
@@ -129,14 +131,16 @@ export async function handleInbound(inb: Inbound): Promise<void> {
     const cmd = parseCommand(inb.text);
     if (cmd) {
       if (cmd.cmd === "start") return void (await sendMessage(inb.chatId, "Ya estás vinculado ✅. Escríbeme lo que necesites."));
+      if (cmd.cmd === "uso" || cmd.cmd === "tokens") return sendUsage(db, link);
       if (cmd.cmd === "ayuda" || cmd.cmd === "help") {
-        return void (await sendMessage(inb.chatId, "Atajos: /comida, /tareas, /entreno (y puedes seguir con tu mensaje, por ejemplo: /comida arroz 150 g). Puedo: crear/editar/completar tareas y subtareas, crear y editar notas, registrar agua y comidas y decirte tus totales del día. Escríbeme normal o mándame una nota de voz. Los permisos y el apagado están en la app."));
+        return void (await sendMessage(inb.chatId, "Atajos: /comida, /tareas, /entreno, /uso (cuántos tokens quedan) (y puedes seguir con tu mensaje, por ejemplo: /comida arroz 150 g). Puedo: crear/editar/completar tareas y subtareas, crear y editar notas, registrar agua y comidas y decirte tus totales del día. Escríbeme normal o mándame una nota de voz. Los permisos y el apagado están en la app."));
       }
       const viaCommand = agentForCommand(cmd.cmd);
       if (viaCommand) return runTurn(db, link, config, cmd.arg || COMMAND_DEFAULT[viaCommand] || "¿Qué puedes hacer?", false, viaCommand);
       if (cmd.cmd === "desvincular" || cmd.cmd === "unlink") return void (await sendMessage(inb.chatId, "Por seguridad, desvincular Telegram solo se puede desde la app (Agente y permisos)."));
       return void (await sendMessage(inb.chatId, "No conozco ese comando. Escríbeme lo que necesitas."));
     }
+    if (!inb.forwarded && asksAboutUsage(inb.text)) return sendUsage(db, link);
     return runTurn(db, link, config, inb.text, inb.forwarded);
   }
 
@@ -163,6 +167,13 @@ export async function handleInbound(inb: Inbound): Promise<void> {
 
   if (inb.kind === "photo") return void (await sendMessage(inb.chatId, "Todavía no leo fotos por aquí. Para comidas usa el escáner de la app."));
   return void (await sendMessage(inb.chatId, "Ese tipo de mensaje todavía no lo entiendo. Escríbeme o mándame una nota de voz."));
+}
+
+async function sendUsage(db: dbx.Admin, link: Linked): Promise<void> {
+  await sendTyping(link.chatId);
+  const [limits, rows] = await Promise.all([probeGroqLimits(process.env.GROQ_AGENT_MODEL || DEFAULT_MODEL), readUsage(db, link.userId, 1)]);
+  const today = rows.find((r) => r.day === utcDay());
+  await sendMessage(link.chatId, renderUsage(limits, today ? { calls: today.calls, rateLimited: today.rate_limited, fallbacks: today.fallbacks } : null));
 }
 
 // ───────────── Un turno del agente ─────────────
@@ -254,10 +265,13 @@ async function runTurn(db: dbx.Admin, link: Linked, config: AgentConfig, userTex
     ).agent;
   let delegated = false;
   let replayNudged = false;
+  let usedFallback = false;
+  let agendaData: unknown;
 
   for (let iter = 0; iter < MAX_ITER + 1; iter++) {
     const res = await callLlm([systemFor(config, nowMs, agent), ...messages], { agent });
     await recordUsage(db, link.userId, agent, res.meta);
+    if (res.meta.fallback) usedFallback = true;
     if (!res.ok) {
       const wait = res.error === "rate_limit" && res.retryAfterSec ? ` Prueba en ~${res.retryAfterSec} s.` : "";
       return void (await sendMessage(link.chatId, (LLM_ERR[res.error] ?? "No pude hablar con el asistente ahora.") + wait));
@@ -328,6 +342,7 @@ async function runTurn(db: dbx.Admin, link: Linked, config: AgentConfig, userTex
         content = JSON.stringify({ ok: false, summary: `No permitido: ${s.decision.reasons.join(" ")}` });
       } else {
         const r = await execServer(ctx, s.tool, s.args);
+        if (s.tool === "agenda_today" && r.ok) agendaData = r.data;
         content = JSON.stringify({ ok: r.ok, summary: r.summary, ...(r.data !== undefined ? { data: r.data } : {}) }).slice(0, 6000);
         if (getTool(s.tool)?.kind !== "read" || !r.ok) await dbx.logAction(db, link.userId, { channel: "telegram", tool: s.tool, args: s.args, summary: r.summary, ok: r.ok, undo: r.undo });
       }
@@ -335,6 +350,9 @@ async function runTurn(db: dbx.Admin, link: Linked, config: AgentConfig, userTex
     }
   }
 
+  // Si el modelo contestó algo vacío o solo el título tras leer la agenda, se arma la respuesta sin él.
+  if (agendaData && finalText.length < 60) finalText = renderAgendaText(agendaData as Parameters<typeof renderAgendaText>[0]);
+  if (usedFallback && finalText) finalText += "\n\n⚠️ Respondí con un modelo más ligero porque se alcanzó el límite por minuto (escribe /uso para verlo).";
   await saveMemory(db, link.userId, messages);
   await sendMessage(link.chatId, finalText || "Listo.", undefined, { rich: true });
 }

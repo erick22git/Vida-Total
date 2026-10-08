@@ -1,5 +1,7 @@
 // Pruebas del canal Telegram: lectura segura de updates, comandos, botones, código de vinculación, plan pendiente y zonas horarias.
 // Ejecutar: node tools/3d/verify/run_ts.mjs tools/agent/telegram_test.ts
+import { asksAboutUsage, bar, parseGroqLimits, renderUsage } from "../../src/lib/agent/usage-render";
+import { renderAgendaText } from "../../src/lib/agent/actions/readers-pure";
 import { isQuestion, replayedWrites } from "../../src/lib/agent/replay";
 import { renderTelegramHtml, chunkMessage, decodeCallback, encodeCallback, isWellFormedCode, normalizeCode, parseCommand, parseUpdate, LINK_CODE_ALPHABET, LINK_CODE_LENGTH } from "../../src/lib/telegram/update";
 import { generateLinkCode, hashLinkCode, safeEqual } from "../../src/lib/telegram/link-code";
@@ -125,6 +127,19 @@ ok(replayedWrites([call("food_log", '{"items":[{"texto":"arroz blanco","gramos":
 ok(replayedWrites([call("food_log", '{"meal":"cena","items":[{"gramos":200,"texto":"arroz blanco"}]}')], hist, "Comí otra vez 200g de arroz blanco").length === 0, "sin pregunta, no se bloquea (puede ser un registro nuevo)");
 ok(replayedWrites([call("day_totals", "{}")], hist, "¿cuántas calorías llevo?").length === 0, "las lecturas nunca cuentan");
 ok(replayedWrites([call("water_add", '{"ml":500}')], hist, "¿y si tomo más?").length === 0, "escritura distinta no es repetición");
+
+// ── uso del modelo y agenda de respaldo ───────────────────────────────
+ok(bar(0) === "░░░░░░░░░░" && bar(100) === "▓▓▓▓▓▓▓▓▓▓" && bar(42) === "▓▓▓▓░░░░░░" && bar(250) === "▓▓▓▓▓▓▓▓▓▓", "barra de porcentaje");
+const hdr: Record<string, string> = { "x-ratelimit-limit-requests": "1000", "x-ratelimit-remaining-requests": "956", "x-ratelimit-limit-tokens": "8000", "x-ratelimit-remaining-tokens": "6000", "x-ratelimit-reset-requests": "1h3m", "x-ratelimit-reset-tokens": "9s" };
+const lim = parseGroqLimits("openai/gpt-oss-120b", (k) => hdr[k] ?? null);
+ok(!!lim && lim.reqLimit === 1000 && lim.tokRemaining === 6000, "lee los encabezados de Groq");
+ok(parseGroqLimits("m", () => null) === null, "sin encabezados → null");
+const usageText = renderUsage(lim, { calls: 12, rateLimited: 1, fallbacks: 0 });
+ok(usageText.includes("4%") && usageText.includes("25%") && usageText.includes("▓") && usageText.includes("Tus llamadas hoy: 12"), "renderUsage: porcentaje + barra + conteo propio");
+ok(asksAboutUsage("cuantos tokens tengo?") && asksAboutUsage("tiene límite del modelo?") && !asksAboutUsage("registra 250 ml de agua"), "detecta la pregunta por tokens");
+const ag = renderAgendaText({ fecha: "2026-10-07", tareas: [{ id: "1", titulo: "Pagar internet", hecha: false, prioridad: "alta", subtareas: [{ titulo: "Transferir", hecha: false }] }], subtareasConFechaHoy: [], vencidasPendientes: [{ titulo: "Carnet", venciaEl: "2026-10-05", subtareasPendientes: 0 }], sinFechaPendientes: [], bloques: [], rutina: [{ hora: "07:00", paso: "Estirar", rutina: "Mañana" }] } as never);
+ok(ag.includes("📋 TAREAS DE HOY") && ag.includes("   ↳ ⬜ Transferir") && ag.includes("⚠️ VENCIDAS") && ag.includes("07:00 – Estirar"), "agenda de respaldo con secciones");
+ok(renderAgendaText({ fecha: "2026-10-07", tareas: [], subtareasConFechaHoy: [], vencidasPendientes: [], sinFechaPendientes: [], bloques: [], rutina: [] } as never).includes("nada agendado"), "agenda vacía");
 
 // ── zona horaria ───────────────────────────────────────────────────
 const noon = Date.UTC(2026, 9, 7, 3, 30); // 03:30 UTC

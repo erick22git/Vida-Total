@@ -5,6 +5,7 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { LlmMeta } from "../llm";
+import { parseGroqLimits, type GroqLimits } from "../usage-render";
 
 export const utcDay = (ms = Date.now()) => new Date(ms).toISOString().slice(0, 10);
 
@@ -35,4 +36,21 @@ export async function readUsage(db: SupabaseClient, userId: string, days = 30) {
   const since = utcDay(Date.now() - days * 86_400_000);
   const { data } = await db.from("agent_llm_usage").select("day,calls,rate_limited,fallbacks,by_agent").eq("user_id", userId).gte("day", since).order("day", { ascending: false });
   return (data ?? []) as Array<{ day: string; calls: number; rate_limited: number; fallbacks: number; by_agent: Record<string, number> }>;
+}
+
+/** Pregunta a Groq cuánto queda (1 petición mínima: lee los encabezados x-ratelimit-*). Null si no hay clave o falla. */
+export async function probeGroqLimits(model: string): Promise<GroqLimits | null> {
+  const key = process.env.GROQ_API_KEY;
+  if (!key || key === "TU_API_KEY_AQUI") return null;
+  try {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model, messages: [{ role: "user", content: "ok" }], max_completion_tokens: 4, ...(model.startsWith("openai/gpt-oss") ? { reasoning_effort: "low" } : {}) }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    return parseGroqLimits(model, (k) => res.headers.get(k));
+  } catch {
+    return null;
+  }
 }

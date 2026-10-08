@@ -64,3 +64,39 @@ export interface RankLine {
   evaluados: number;
   total: number;
 }
+
+type AgendaData = ReturnType<typeof agendaForDay>;
+
+/** Texto de respaldo (sin modelo) con las mismas secciones que pide el prompt, por si el modelo contesta algo vacío o cortado. */
+export function renderAgendaText(a: AgendaData): string {
+  const out: string[] = [];
+  const box = (d: boolean) => (d ? "✅" : "⬜");
+  if (a.tareas.length || a.subtareasConFechaHoy.length) {
+    out.push("📋 TAREAS DE HOY");
+    for (const t of a.tareas) {
+      out.push(`${box(t.hecha)} ${t.titulo}${t.prioridad ? ` (${t.prioridad})` : ""}${t.aviso ? ` ⏰${t.aviso}` : ""}`);
+      for (const s of t.subtareas) out.push(`   ↳ ${box(s.hecha)} ${s.titulo}`);
+    }
+    for (const s of a.subtareasConFechaHoy) out.push(`${box(s.hecha)} ${s.titulo} (de «${s.tarea}»)`);
+  }
+  if (a.vencidasPendientes.length) {
+    out.push("", "⚠️ VENCIDAS");
+    for (const v of a.vencidasPendientes) out.push(`⬜ ${v.titulo} (venció el ${v.venciaEl})${v.subtareasPendientes ? ` · ${v.subtareasPendientes} subtarea(s) pendiente(s)` : ""}`);
+  }
+  if (a.rutina.length) {
+    out.push("", "🔁 RUTINA");
+    for (const r of a.rutina) out.push(`${r.hora} – ${r.paso}`);
+  }
+  if (a.bloques.length) {
+    out.push("", "🗓 BLOQUES");
+    for (const b of a.bloques) out.push(`${b.desde}–${b.hasta} ${b.titulo}`);
+  }
+  if (a.sinFechaPendientes.length) {
+    out.push("", "📝 SIN FECHA");
+    for (const t of a.sinFechaPendientes) out.push(`⬜ ${t.titulo}`);
+  }
+  if (!out.length) return `No tienes nada agendado para ${a.fecha}.`;
+  const subs = a.tareas.reduce((n, t) => n + t.subtareas.length, 0);
+  out.push("", `${a.tareas.length} tarea(s), ${subs} subtarea(s), ${a.vencidasPendientes.length} vencida(s).`);
+  return out.join("\n");
+}
