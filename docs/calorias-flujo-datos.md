@@ -12,28 +12,30 @@ crear-alimento (formulario)  →  Food (crudo + cocido opcional)  →  LoggedFoo
 
 ## Tabla campo → contador
 
-Leyenda: ✅ sí · ❌ no · ⚠️ parcial. «Sync» = columna en la tabla `custom_foods` de Supabase.
+Leyenda: ✅ sí · ❌ no. «Sync» = viaja a Supabase (columna propia, o `perfil_extra` / `micronutrientes` jsonb; ver migración 0016). Todo lo opcional sale como **«sin dato»** cuando falta, nunca como 0.
 
 | Campo (unidad) | ¿Lo pide el formulario? | ¿Se guarda? | Sync | ¿Escala por gramos? | ¿Crudo/cocido por entrada? | ¿Suma al día? | ¿Se ve en el contador? | ¿Meta / rango? |
 |---|---|---|---|---|---|---|---|---|
-| Calorías, proteína, carbos, grasas (kcal, g) | ✅ | ✅ (también en cada `LoggedFood`) | ✅ | ✅ | ✅ (se guardan ya con el estado elegido) | ✅ | ✅ | meta de kcal y de macros del usuario |
-| Grasas saturadas (g) | ✅ | ✅ | ✅ | ✅ | ✅ *(corregido: antes siempre crudo)* | ✅ | ✅ A limitar | 20 g fijo |
-| Grasas trans (g) | ✅ | ✅ | ✅ | ✅ | ✅ *(corregido)* | ✅ | ✅ A limitar | 2 g fijo |
-| Grasas mono / poliinsaturadas (g) | ✅ | ✅ | ❌ **no se sincroniza** | ✅ | ✅ | ✅ *(antes no)* | ❌ | — |
-| Omega-3 ALA, omega-6 linoleico (g) | ✅ | ✅ | ❌ **no se sincroniza** | ✅ | ✅ | ✅ *(antes no)* | ❌ | — |
-| Colesterol (mg) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ *(antes no)* | ❌ | — |
-| Sodio (mg) | ✅ | ✅ | ✅ | ✅ | ✅ *(corregido)* | ✅ | ✅ A limitar | 2300 mg fijo |
-| Fibra (g) | ✅ | ✅ | ✅ | ✅ | ✅ *(corregido)* | ✅ | ✅ Principales | 28 g fijo |
-| Azúcares (g) | ✅ | ✅ | ✅ | ✅ | ✅ *(corregido)* | ✅ | ✅ Otros | 50 g fijo |
-| Azúcares añadidos (g) | ✅ | ✅ | ✅ | ✅ | ✅ *(corregido)* | ✅ | ✅ A limitar | 25 g fijo |
-| Agua (g) | ✅ | ✅ | ❌ **no se sincroniza** | ✅ | ✅ | ✅ *(antes no)* | ❌ | — |
-| Ceniza (g) | ✅ | ✅ | ❌ **no se sincroniza** | ✅ | ✅ | — (no es un nutriente que sumar) | ❌ | — |
-| Carbs netos (g) | derivado: carbos − fibra | — | — | ✅ | ✅ | ✅ | ✅ Otros | 150 g fijo |
-| Vitaminas A, B1, B2, B3, B5, B6, B12, C, D, E, K, folato | ✅ | ✅ (`micronutrientes`) | ✅ (JSON) | ✅ | ✅ *(corregido)* | ✅ | ✅ Micronutrientes | un valor adulto fijo, sin sexo ni edad |
-| Colina (mg) | ✅ | ✅ | ✅ (JSON) | ✅ | ✅ | ✅ | ❌ | — |
-| Minerales: calcio, hierro, magnesio, fósforo, potasio, zinc, selenio, cobre, manganeso | ✅ | ✅ | ✅ (JSON) | ✅ | ✅ *(corregido)* | ✅ | ✅ Micronutrientes | un valor adulto fijo, sin sexo ni edad |
-| Alcohol (g) | ❌ **no existe en el esquema** | — | — | — | — | — | ✅ aparece en «Otros» | 0 |
-| **Perfil «cocido» completo** | ✅ (segundo paso) | ✅ | ❌ **no se sincroniza** | ✅ | — | — | — | — |
+| Calorías, proteína, carbos, grasas (kcal, g) | ✅ | ✅ (también en cada `LoggedFood`) | ✅ columna | ✅ | ✅ (se guardan ya con el estado elegido) | ✅ | ✅ | meta de kcal y de macros del usuario; **«Revisar sugerencia»** (proteína por kg, AMDR) |
+| Grasas saturadas / trans (g) | ✅ | ✅ | ✅ columna | ✅ | ✅ | ✅ | ✅ A limitar | **límite**: < 10 % / < 1 % de la energía (OMS) |
+| Grasas mono / poliinsaturadas (g) | ✅ | ✅ | ✅ `perfil_extra` | ✅ | ✅ | ✅ | ❌ (sí en la pantalla del alimento) | sin meta |
+| Omega-3 ALA, omega-6 linoleico (g) | ✅ | ✅ | ✅ `perfil_extra` | ✅ | ✅ | ✅ | ✅ Otros | AI por sexo y edad (DRI) |
+| **EPA, DHA, EPA+DHA (mg)** | ✅ *(nuevo)* | ✅ | ✅ `perfil_extra` | ✅ | ✅ | ✅ (el total sale de EPA + DHA solo si están los dos) | ✅ Otros (EPA + DHA) | 250 mg (**EFSA**; no hay DRI de EE. UU. para EPA+DHA) |
+| Colesterol (mg) | ✅ | ✅ | ✅ columna | ✅ | ✅ | ✅ | ❌ | sin meta (la DRI no da un número) |
+| Sodio (mg) | ✅ | ✅ | ✅ columna | ✅ | ✅ | ✅ | ✅ A limitar | **límite** CDRR 2300 mg (AI 1500) |
+| Fibra (g) | ✅ | ✅ | ✅ columna | ✅ | ✅ | ✅ | ✅ Principales | 14 g por 1000 kcal |
+| Azúcares / azúcares añadidos (g) | ✅ | ✅ | ✅ columna | ✅ | ✅ | ✅ | ✅ Otros / A limitar | totales: sin meta · añadidos: **límite** < 10 % de la energía (OMS, azúcares libres) |
+| Agua del alimento (g ≈ ml) | ✅ | ✅ | ✅ `perfil_extra` | ✅ | ✅ | ✅ | ✅ **Agua total** (con las bebidas del módulo Agua) | agua total AI 3,7 / 2,7 L (DRI); meta de bebidas sugerida ~81 % |
+| Ceniza (g) | ✅ | ✅ | ✅ `perfil_extra` | ✅ | ✅ | — | ❌ | — |
+| **Alcohol (g)** | ✅ *(nuevo)* | ✅ | ✅ `perfil_extra` | ✅ | ✅ | ✅ | ✅ Otros | sin meta; entra a la validación kcal (7 kcal/g) |
+| Carbs netos (g) | derivado: carbos − fibra | — | — | ✅ | ✅ | ✅ | ✅ Otros | sin meta |
+| Vitaminas A, B1, B2, B3, B5, B6, B12, C, D, E, K, folato, colina | ✅ | ✅ (`micronutrientes`) | ✅ jsonb | ✅ | ✅ | ✅ | ✅ Micronutrientes | RDA/AI por **sexo y edad** (DRI) |
+| **Biotina (mcg)** | ✅ *(nuevo)* | ✅ | ✅ jsonb | ✅ | ✅ | ✅ | ✅ Micronutrientes | AI 25–30 mcg |
+| Minerales: calcio, hierro, magnesio, fósforo, potasio, zinc, selenio, cobre, manganeso | ✅ | ✅ | ✅ jsonb | ✅ | ✅ | ✅ | ✅ Micronutrientes | RDA/AI por sexo y edad |
+| **Yodo, cromo, molibdeno, flúor (mcg), cloruro (mg)** | ✅ *(nuevo)* | ✅ | ✅ jsonb | ✅ | ✅ | ✅ | ✅ Micronutrientes | RDA/AI por sexo y edad (flúor en mcg; la tabla DRI lo da en mg) |
+| **Perfil «cocido» completo** | ✅ (segundo paso) | ✅ | ✅ `perfil_extra` | ✅ | — | — | — | — |
+
+Notas: **FoodData Central no trae cloruro** (no hay número de nutriente): solo cuenta lo que se escriba a mano. EPA y DHA llegan de USDA en gramos y se convierten a mg al importar. Los números de nutriente usados salen de `nutrient.csv` de FoodData Central (Foundation Foods, 2026-04-30): alcohol 221 · EPA 629 · DHA 621 · biotina 416 · yodo 314 · cromo 310 · molibdeno 316 · flúor 313.
 
 ## Errores corregidos en esta fase
 
@@ -57,7 +59,7 @@ Leyenda: ✅ sí · ❌ no · ⚠️ parcial. «Sync» = columna en la tabla `cu
 
 ## Dudosos (solo se reportan)
 
-- **Sincronización de alimentos incompleta.** La tabla `custom_foods` solo tiene columnas para parte del perfil: **no viajan** grasas mono/poliinsaturadas, omega-3/6, agua, ceniza, el perfil **cocido** completo, `verificado`, `configurado`, `estadoDefault`, `unSoloEstado` ni `fdcIdCrudo`. Al iniciar sesión en otro dispositivo un alimento verificado pierde su cocido. Arreglarlo exige una migración (borrador: `supabase/migrations/0016_custom_foods_full_profile.sql`, **no aplicada**) y cambiar `foodToRow`/`rowToFood`; si el código escribiera la columna antes de aplicarla, los inserts fallarían en silencio, así que no se cambió el código.
+- **Sincronización de alimentos: corregida en el código; falta aplicar la migración 0016.** Antes, si un alimento existía en los dos lados, ganaba el remoto **entero** (`mergeById`) y se perdían el perfil cocido, `verificado`, grasas mono/poliinsaturadas, omega, agua, ceniza, etc. Ahora la fusión es **campo por campo** (`src/lib/sync/food-sync-map.ts`): un dato que solo está de un lado se conserva, nunca se pisa uno local con uno remoto vacío, en un conflicto gana el lado con `actualizadoEn` más nuevo, un 0 es un dato y la fusión sube lo que el servidor no tenía. Si las columnas aún no existen, la escritura se reintenta sin ellas (aviso solo en desarrollo) y no se pierde nada local. Nada en el código pone `verificado` en verdadero. Los alimentos base editados (override con id de texto, no uuid) **siguen siendo solo locales**.
 - **Editar un alimento cambia el pasado.** Como `LoggedFood` no guarda micronutrientes, corregir un alimento recalcula también los días ya registrados.
 - **Ingredientes de receta sin estado crudo/cocido.** Al registrar una receta, cada ingrediente entra con los macros de la receta pero sin `cookedState`: los micronutrientes se calculan como crudo aunque los macros vengan de un cocido.
 - **Redondeos.** Cada entrada se redondea a 2 decimales y las kcal a enteros antes de sumar; la suma del día puede diferir en ±1–2 kcal de calcular todo junto. Sin impacto práctico.

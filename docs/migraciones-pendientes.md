@@ -16,7 +16,7 @@ Nada de esto se ejecutó contra producción. Todo el SQL se revisó con el parse
 | 0008 `recipes_verificado` | Columna `recipes.verificado boolean not null default false`. No marca ninguna fila como verificada. | **Pendiente** |
 | 0009 `logged_foods_recipe_id` | **Propuesta.** `logged_foods.recipe_id uuid` (sin FK) + índice parcial. | No aplicar todavía (ver sección 5) |
 | 0010 `gym_profile` | **Propuesta.** Tabla `gym_profile` (perfil corporal, una fila por usuario) + RLS. | No aplicar todavía |
-| 0011 `water_goal_default` | **Propuesta.** `gym_settings.water_goal_ml` default 2000 → 2500 (solo filas nuevas). | No aplicar todavía |
+| 0011 `water_goal_default` | **Propuesta, reemplazada por 0016** (el mismo cambio va dentro de 0016; no hace falta aplicar las dos). | No aplicar |
 
 "Pendiente (confirmar)" = lo más probable es que falte, pero `verificar-migraciones.sql` lo dice con certeza.
 
@@ -119,3 +119,19 @@ Nuevas, **sin aplicar**. Se aplican juntas con `supabase/aplicar-agente.sql` (ad
 | 0013 `tasks_reminder` | `tasks.reminder` |
 | 0014 `telegram_agent` | `telegram_links`, `telegram_link_codes`, `telegram_updates`, `agent_pending`, `agent_chat_state`, `agent_commands` |
 | 0015 `agent_notifications` | `agent_notification_log` |
+
+## 9. Migración 0016 (campos nuevos del alimento, sync sin pérdida y default de agua)
+
+Nueva, **sin aplicar**. Es la **única** migración de la tanda de Calorías «cierre». Aditiva e idempotente (`add column if not exists`, `set default`), sin DROP, DELETE ni UPDATE de filas, en una transacción.
+
+| Qué hace | Detalle |
+|---|---|
+| `custom_foods.perfil_extra` (jsonb) | Lleva todo lo que no tenía columna: grasas mono/poliinsaturadas, omega-3/6, agua, ceniza, alcohol, EPA/DHA, el perfil **cocido** completo, `verificado`, `configurado`, `estadoDefault`, `unSoloEstado`, `fdcIdCrudo`. |
+| `custom_foods.updated_at` (timestamptz, sin default) | Última edición hecha en la app: decide qué lado gana al fusionar. Las filas que ya existen quedan en `null` (gana el dato local). |
+| `gym_settings.water_goal_ml` default **2500** | Alinea el SQL (2000) con la app (2500); respaldo en `docs/ciencia-nutricion.md`. Solo filas nuevas; no cambia metas ya guardadas. |
+
+Los micronutrientes nuevos (biotina, yodo, cromo, molibdeno, flúor, cloruro) **no necesitan columna**: viajan dentro de `micronutrientes` (jsonb).
+
+**Cómo aplicarla** (SQL Editor de Supabase): 1) `supabase/verificar-0016.sql` (solo lectura, debe mostrar `existe = false` antes); 2) `supabase/aplicar-0016.sql`; 3) `verificar-0016.sql` otra vez: `migracion_completa = true` y `default_ok = true`. Si cambias la migración, regenera el script con `node scripts/build-aplicar-0016.mjs`.
+
+**Es retrocompatible:** la app funciona igual **antes y después** de aplicarla. Sin las columnas, guarda sin ellas (y avisa en la consola solo en desarrollo) y no pierde nada local; cuando las aplicas, la siguiente hidratación sube lo que faltaba.

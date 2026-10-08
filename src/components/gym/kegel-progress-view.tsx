@@ -7,9 +7,9 @@
  */
 import { useMemo } from "react";
 import { MONO_FONT } from "@/lib/ui/mono-font";
-import { computeKegelStreak, localDayKey, daysDiff } from "@/lib/gym/kegel-dates";
+import { computeKegelStreak, localDayKey } from "@/lib/gym/kegel-dates";
 import { fullyDoneDays } from "@/lib/store/kegelPlanStore";
-import { KEGEL_SESSIONS, suggestedLevel, LEVEL_DAY_THRESHOLDS } from "@/lib/gym/kegel-plan";
+import { LEVEL_DAY_THRESHOLDS } from "@/lib/gym/kegel-plan";
 import { useGymStore } from "@/lib/store/gymStore";
 import { useKegelPlanStore } from "@/lib/store/kegelPlanStore";
 
@@ -17,7 +17,8 @@ const DAYS_ES = ["L", "M", "X", "J", "V", "S", "D"];
 const WEEKS_BACK = 8;
 
 function getWeekGrid(doneDays: Set<string>, todayKey: string): { key: string; done: boolean; partial: boolean }[][] {
-  const today = new Date();
+  const [ty, tm, td] = todayKey.split("-").map(Number);
+  const today = new Date(ty, tm - 1, td);
   const dayOfWeek = (today.getDay() + 6) % 7; // 0=lunes
   const weeks: { key: string; done: boolean; partial: boolean }[][] = [];
 
@@ -56,7 +57,6 @@ export function KegelProgressView({
 }) {
   const todayKey = localDayKey();
   const completed = useKegelPlanStore((s) => s.completed);
-  const gymStreak = useGymStore((s) => s.kegelStreak);
   const totalSessions = useGymStore((s) => s.kegelTotalSessions);
   const level = useGymStore((s) => s.kegelLevel);
 
