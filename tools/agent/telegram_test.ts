@@ -1,5 +1,6 @@
 // Pruebas del canal Telegram: lectura segura de updates, comandos, botones, código de vinculación, plan pendiente y zonas horarias.
 // Ejecutar: node tools/3d/verify/run_ts.mjs tools/agent/telegram_test.ts
+import { isQuestion, replayedWrites } from "../../src/lib/agent/replay";
 import { renderTelegramHtml, chunkMessage, decodeCallback, encodeCallback, isWellFormedCode, normalizeCode, parseCommand, parseUpdate, LINK_CODE_ALPHABET, LINK_CODE_LENGTH } from "../../src/lib/telegram/update";
 import { generateLinkCode, hashLinkCode, safeEqual } from "../../src/lib/telegram/link-code";
 import { answerStep, approveAllPending, nextToConfirm, renderPlan, runnableSteps, stepButtons, type PendingPlan } from "../../src/lib/telegram/pending";
@@ -110,6 +111,15 @@ const html = renderTelegramHtml(["Hoy <b>:", FENCE, "HORA  | ACTIVIDAD", "07:00 
 ok(html.includes("<pre>HORA  | ACTIVIDAD\n07:00 | Gym &amp; pesas</pre>"), "bloque ``` → <pre> con HTML escapado");
 ok(html.includes("&lt;b&gt;") && !html.includes("<b>"), "etiquetas del modelo escapadas (no inyecta HTML)");
 ok(renderTelegramHtml("sin bloques") === "sin bloques", "texto sin bloques intacto");
+
+// ── barrera contra repetir escrituras ──────────────────────────────
+const call = (name: string, args: string) => ({ function: { name, arguments: args } });
+const hist = [{ role: "assistant", tool_calls: [call("food_log", '{"meal":"cena","items":[{"gramos":200,"texto":"arroz blanco"}]}'), call("water_add", '{"ml":250}')] }];
+ok(isQuestion("Ahora cuantas calorías llevo?") && isQuestion("pásame mi horario") && isQuestion("qué tengo mañana") && !isQuestion("Comí 200g de arroz") && !isQuestion("registra 250 ml de agua"), "isQuestion");
+ok(replayedWrites([call("food_log", '{"items":[{"texto":"arroz blanco","gramos":200}],"meal":"cena"}')], hist, "Ahora cuantas calorías llevo?").length === 1, "misma escritura (otro orden de claves) + pregunta → repetición");
+ok(replayedWrites([call("food_log", '{"meal":"cena","items":[{"gramos":200,"texto":"arroz blanco"}]}')], hist, "Comí otra vez 200g de arroz blanco").length === 0, "sin pregunta, no se bloquea (puede ser un registro nuevo)");
+ok(replayedWrites([call("day_totals", "{}")], hist, "¿cuántas calorías llevo?").length === 0, "las lecturas nunca cuentan");
+ok(replayedWrites([call("water_add", '{"ml":500}')], hist, "¿y si tomo más?").length === 0, "escritura distinta no es repetición");
 
 // ── zona horaria ───────────────────────────────────────────────────
 const noon = Date.UTC(2026, 9, 7, 3, 30); // 03:30 UTC

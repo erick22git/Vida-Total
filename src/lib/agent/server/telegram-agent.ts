@@ -9,6 +9,7 @@ import { AGENTS, SPECIALISTS, isAgentId, type AgentId } from "@/lib/agent/agents
 import { callLlm, classifyShort, parseArgs, type LlmMessage } from "@/lib/agent/llm";
 import { agentForCommand, classifierPrompt, routeAgent } from "@/lib/agent/router";
 import { recordUsage } from "./usage";
+import { replayedWrites } from "@/lib/agent/replay";
 import { sanitizeConfig } from "@/lib/agent/config";
 import { turnOrigin } from "@/lib/agent/messages";
 import { decide } from "@/lib/agent/permissions";
@@ -243,6 +244,7 @@ async function runTurn(db: dbx.Admin, link: Linked, config: AgentConfig, userTex
       })
     ).agent;
   let delegated = false;
+  let replayNudged = false;
 
   for (let iter = 0; iter < MAX_ITER + 1; iter++) {
     const res = await callLlm([systemFor(config, nowMs, agent), ...messages], { agent });
@@ -268,6 +270,17 @@ async function runTurn(db: dbx.Admin, link: Linked, config: AgentConfig, userTex
       }
       messages.push({ role: "assistant", content: res.message.content, tool_calls: calls });
       for (const c of calls) messages.push({ role: "tool", tool_call_id: c.id, name: c.function.name, content: JSON.stringify({ ok: false, summary: "Delegación no permitida." }) });
+      continue;
+    }
+
+    // Barrera: el usuario solo pregunta y el modelo repite una escritura ya hecha → se descarta (una vez se le avisa; la segunda se corta).
+    if (replayedWrites(calls, memory, userText).length) {
+      if (replayNudged) {
+        finalText = "Eso ya lo registré antes. ¿Qué necesitas ahora?";
+        break;
+      }
+      replayNudged = true;
+      messages.push({ role: "user", content: "[Aviso interno] Lo que ibas a hacer ya se hizo antes en esta conversación y el usuario ahora solo pregunta. NO repitas escrituras: responde a su pregunta actual con herramientas de lectura." });
       continue;
     }
 
