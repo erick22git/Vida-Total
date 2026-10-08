@@ -68,6 +68,7 @@ import {
   hydrateGymStoreFromSupabase,
   type GymHydratedState,
 } from "@/lib/sync/gym-sync";
+import { mergeFoodLists } from "@/lib/sync/food-sync-map";
 
 /**
  * Id único usado tanto como key local (React, lookups en el store) como
@@ -576,28 +577,31 @@ export const useGymStore = create<GymState>()(
       // Custom foods & favorites
       customFoods: [],
       addCustomFood: (food) => {
-        const created: Food = { ...food, id: uid(), creadoPorUsuario: true };
+        const created: Food = { ...food, id: uid(), creadoPorUsuario: true, actualizadoEn: Date.now() };
         set((state) => ({ customFoods: [created, ...state.customFoods] }));
         const uidUser = getCurrentUserId();
         if (uidUser) syncInsertCustomFood(created, uidUser);
         return created;
       },
       updateCustomFood: (id, patch) => {
+        const stamped = { ...patch, actualizadoEn: Date.now() };
         set((state) => ({
-          customFoods: state.customFoods.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+          customFoods: state.customFoods.map((f) => (f.id === id ? { ...f, ...stamped } : f)),
         }));
         const uidUser = getCurrentUserId();
-        if (uidUser) syncUpdateCustomFood(id, patch, uidUser);
+        const full = get().customFoods.find((f) => f.id === id);
+        if (uidUser) syncUpdateCustomFood(id, stamped, uidUser, full);
       },
       upsertFoodOverride: (id, patch) => {
         const alreadyCustom = get().customFoods.some((f) => f.id === id);
+        const stamped = { ...patch, actualizadoEn: Date.now() };
         set((state) => {
           if (alreadyCustom) {
-            return { customFoods: state.customFoods.map((f) => (f.id === id ? { ...f, ...patch } : f)) };
+            return { customFoods: state.customFoods.map((f) => (f.id === id ? { ...f, ...stamped } : f)) };
           }
           const base = BASE_FOODS.find((f) => f.id === id);
           if (!base) return {};
-          return { customFoods: [{ ...base, ...patch }, ...state.customFoods] };
+          return { customFoods: [{ ...base, ...stamped }, ...state.customFoods] };
         });
         // Nota: `custom_foods.id` en Supabase es `uuid` (ver migración
         // 0002_module_data_sync.sql) — un override de un alimento base usa
@@ -607,7 +611,7 @@ export const useGymStore = create<GymState>()(
         // TODO: si esto se vuelve un problema real, agregar una tabla
         // aparte (p.ej. food_overrides con food_id text) para sincronizarlo.
         const uidUser = getCurrentUserId();
-        if (uidUser && alreadyCustom) syncUpdateCustomFood(id, patch, uidUser);
+        if (uidUser && alreadyCustom) syncUpdateCustomFood(id, stamped, uidUser, get().customFoods.find((f) => f.id === id));
       },
       favoriteFoodIds: [],
       toggleFavoriteFood: (foodId) => {
@@ -1464,7 +1468,8 @@ export async function hydrateGymStore(userId: string): Promise<void> {
 
   const loggedFoods = mergeById(remote.loggedFoods, local.loggedFoods);
   const mealTemplates = mergeById(remote.mealTemplates, local.mealTemplates);
-  const customFoods = mergeById(remote.customFoods, local.customFoods);
+  // Alimentos propios: fusión CAMPO POR CAMPO (con mergeById ganaba el remoto entero y se perdían cocido, verificado, etc.).
+  const customFoods = mergeFoodLists(remote.customFoods, local.customFoods);
   const favoriteFoodIds = mergeIds(remote.favoriteFoodIds, local.favoriteFoodIds);
   const recipes = mergeById(remote.recipes, local.recipes);
   const waterEntries = mergeById(remote.waterEntries, local.waterEntries);
@@ -1524,6 +1529,8 @@ export async function hydrateGymStore(userId: string): Promise<void> {
   }
   for (const template of mealTemplates.localOnly) syncInsertMealTemplate(template, userId);
   for (const food of customFoods.localOnly) syncInsertCustomFood(food, userId);
+  // La fusión trae datos que el servidor no tiene (p. ej. el cocido guardado antes de la migración): se suben.
+  for (const food of customFoods.needsPush) syncUpdateCustomFood(food.id, {}, userId, food);
   for (const foodId of favoriteFoodIds.localOnly) syncAddFavoriteFood(foodId, userId);
   for (const { foodId, portion } of localOnlyPortions) syncInsertCustomPortion(foodId, portion, userId);
   for (const recipe of recipes.localOnly) syncInsertRecipe(recipe, userId);

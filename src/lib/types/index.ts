@@ -181,6 +181,8 @@ export interface Food extends NutritionProfile {
    * pollo, huevo suelen registrarse ya cocidos, no crudos). Ausente = "crudo". No afecta un
    * `LoggedFood` ya guardado (cada uno conserva su propio `cookedState` de cuando se registró). */
   estadoDefault?: CookedState;
+  /** ms de la última edición hecha en la app (para decidir qué lado gana al sincronizar; ver lib/sync/food-sync-map.ts). */
+  actualizadoEn?: number;
 }
 
 export type MealType = "desayuno" | "almuerzo" | "cena" | "snack1" | "snack2";

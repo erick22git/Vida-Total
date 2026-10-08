@@ -48,6 +48,7 @@ import type {
   WorkoutSession,
 } from "@/lib/types";
 import type { DrinkOverride } from "@/lib/data/drinks";
+import { foodToRow, patchToRow, rowToFood, writeWithColumnFallback, type CustomFoodRow, type ExtrasState } from "./food-sync-map";
 
 // ============================================================================
 // Helpers genéricos
@@ -496,84 +497,7 @@ export function syncInsertMealTemplate(template: MealTemplate, userId: string): 
 // custom_foods
 // ============================================================================
 
-export interface CustomFoodRow {
-  id: string;
-  user_id: string;
-  nombre: string;
-  marca: string | null;
-  categoria: string;
-  porcion: string;
-  peso_gramos: number | null;
-  calorias: number;
-  proteina: number;
-  carbos: number;
-  grasas: number;
-  grasas_saturadas: number | null;
-  grasas_trans: number | null;
-  colesterol: number | null;
-  sodio: number | null;
-  fibra: number | null;
-  azucares: number | null;
-  azucares_anadidos: number | null;
-  micronutrientes: Food["micronutrientes"] | null;
-  photo_url: string | null;
-  barcode: string | null;
-  porciones: FoodPortion[] | null;
-}
-
-function foodToRow(f: Food, userId: string): CustomFoodRow {
-  return {
-    id: f.id,
-    user_id: userId,
-    nombre: f.nombre,
-    marca: f.marca ?? null,
-    categoria: f.categoria,
-    porcion: f.porcion,
-    peso_gramos: f.pesoGramos ?? null,
-    calorias: f.calorias,
-    proteina: f.proteina,
-    carbos: f.carbos,
-    grasas: f.grasas,
-    grasas_saturadas: f.grasasSaturadas ?? null,
-    grasas_trans: f.grasasTrans ?? null,
-    colesterol: f.colesterol ?? null,
-    sodio: f.sodio ?? null,
-    fibra: f.fibra ?? null,
-    azucares: f.azucares ?? null,
-    azucares_anadidos: f.azucaresAnadidos ?? null,
-    micronutrientes: f.micronutrientes ?? null,
-    photo_url: f.photoUrl ?? null,
-    barcode: f.barcode ?? null,
-    porciones: f.porciones ?? null,
-  };
-}
-
-function rowToFood(row: CustomFoodRow): Food {
-  return {
-    id: row.id,
-    nombre: row.nombre,
-    marca: row.marca ?? undefined,
-    categoria: row.categoria,
-    porcion: row.porcion,
-    pesoGramos: row.peso_gramos ?? undefined,
-    calorias: row.calorias,
-    proteina: row.proteina,
-    carbos: row.carbos,
-    grasas: row.grasas,
-    grasasSaturadas: row.grasas_saturadas ?? undefined,
-    grasasTrans: row.grasas_trans ?? undefined,
-    colesterol: row.colesterol ?? undefined,
-    sodio: row.sodio ?? undefined,
-    fibra: row.fibra ?? undefined,
-    azucares: row.azucares ?? undefined,
-    azucaresAnadidos: row.azucares_anadidos ?? undefined,
-    micronutrientes: row.micronutrientes ?? undefined,
-    photoUrl: row.photo_url ?? undefined,
-    barcode: row.barcode ?? undefined,
-    porciones: row.porciones ?? undefined,
-    creadoPorUsuario: true,
-  };
-}
+// El mapeo fila ↔ alimento (y la fusión sin pérdida) vive en ./food-sync-map.ts, que es puro y tiene pruebas.
 
 async function fetchCustomFoods(userId: string): Promise<Food[]> {
   const rows = await safeFetchList<CustomFoodRow>("custom_foods", () =>
@@ -582,36 +506,44 @@ async function fetchCustomFoods(userId: string): Promise<Food[]> {
   return rows.map(rowToFood);
 }
 
+const foodExtras: ExtrasState = { supported: null };
+const devWarn = (msg: string) => {
+  if (process.env.NODE_ENV === "development") console.warn(`[gym-sync] ${msg}`);
+};
+
 export function syncInsertCustomFood(food: Food, userId: string): void {
-  void safeWrite("insert custom_foods", () => createClient().from("custom_foods").insert(foodToRow(food, userId)));
+  void (async () => {
+    try {
+      const { error } = await writeWithColumnFallback(
+        (row) => createClient().from("custom_foods").insert(row),
+        foodToRow(food, userId) as unknown as Record<string, unknown>,
+        foodExtras,
+        devWarn,
+      );
+      if (error) console.warn("[gym-sync] insert custom_foods falló:", error.message);
+    } catch (err) {
+      console.warn("[gym-sync] insert custom_foods lanzó una excepción:", err);
+    }
+  })();
 }
 
-export function syncUpdateCustomFood(id: string, patch: Partial<Food>, userId: string): void {
-  const row: Record<string, unknown> = {};
-  if (patch.nombre !== undefined) row.nombre = patch.nombre;
-  if (patch.marca !== undefined) row.marca = patch.marca;
-  if (patch.categoria !== undefined) row.categoria = patch.categoria;
-  if (patch.porcion !== undefined) row.porcion = patch.porcion;
-  if (patch.pesoGramos !== undefined) row.peso_gramos = patch.pesoGramos;
-  if (patch.calorias !== undefined) row.calorias = patch.calorias;
-  if (patch.proteina !== undefined) row.proteina = patch.proteina;
-  if (patch.carbos !== undefined) row.carbos = patch.carbos;
-  if (patch.grasas !== undefined) row.grasas = patch.grasas;
-  if (patch.grasasSaturadas !== undefined) row.grasas_saturadas = patch.grasasSaturadas;
-  if (patch.grasasTrans !== undefined) row.grasas_trans = patch.grasasTrans;
-  if (patch.colesterol !== undefined) row.colesterol = patch.colesterol;
-  if (patch.sodio !== undefined) row.sodio = patch.sodio;
-  if (patch.fibra !== undefined) row.fibra = patch.fibra;
-  if (patch.azucares !== undefined) row.azucares = patch.azucares;
-  if (patch.azucaresAnadidos !== undefined) row.azucares_anadidos = patch.azucaresAnadidos;
-  if (patch.micronutrientes !== undefined) row.micronutrientes = patch.micronutrientes;
-  if (patch.photoUrl !== undefined) row.photo_url = patch.photoUrl;
-  if (patch.barcode !== undefined) row.barcode = patch.barcode;
-  if (patch.porciones !== undefined) row.porciones = patch.porciones;
+/** `full` = el alimento ya fusionado: con él viaja todo el perfil extra (cocido, verificado…); sin él, solo las columnas tocadas. */
+export function syncUpdateCustomFood(id: string, patch: Partial<Food>, userId: string, full?: Food): void {
+  const row = patchToRow(patch, full);
   if (Object.keys(row).length === 0) return;
-  void safeWrite("update custom_foods", () =>
-    createClient().from("custom_foods").update(row).eq("id", id).eq("user_id", userId),
-  );
+  void (async () => {
+    try {
+      const { error } = await writeWithColumnFallback(
+        (r) => createClient().from("custom_foods").update(r).eq("id", id).eq("user_id", userId),
+        row,
+        foodExtras,
+        devWarn,
+      );
+      if (error) console.warn("[gym-sync] update custom_foods falló:", error.message);
+    } catch (err) {
+      console.warn("[gym-sync] update custom_foods lanzó una excepción:", err);
+    }
+  })();
 }
 
 // ============================================================================
