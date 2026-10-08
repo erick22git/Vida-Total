@@ -17,7 +17,7 @@ Valores de referencia generales para adultos y adolescentes sanos; **no son cons
 ### Lo que NO pude comprobar y por qué
 - **NIH Office of Dietary Supplements** y **NCBI Bookshelf** (las tablas originales de National Academies) responden con una verificación anti-bot; no la salté. Las tablas DRI las tomé de la reproducción de **Health Canada** (las DRI son un trabajo conjunto de EE. UU. y Canadá). La herramienta de lectura avisó que el diseño de algunas columnas era ambiguo: los 22 micronutrientes y los 5 rangos de edad conviene **contrastarlos una vez** con la tabla original de National Academies antes de darlos por definitivos. Las pruebas (`tools/nutrition/targets_test.ts`) fijan hoy los valores transcritos.
 - **EFSA**: el dictamen completo de grasas (EFSA Journal 2010;8(3):1461) devolvió 403; usé la nota oficial de EFSA de 2012 que repite los 250 mg/día. No consulté los demás valores de referencia de EFSA.
-- **Mifflin-St Jeor**, los **factores de actividad** (1,2–1,9) y los **% de déficit/superávit** que usa la calculadora: **no los verifiqué contra una fuente primaria** en esta pasada.
+- **Fórmulas de la meta calórica:** ya verificadas (sección «Fórmulas de la meta calórica»). Lo que sigue sin poder abrirse está listado allí.
 - El **piso de calorías** no sale de una DRI: es un criterio práctico de una fuente secundaria. La app solo lo **informa**, no cambia la meta.
 
 ## Preguntas de la auditoría
@@ -42,3 +42,30 @@ Valores de referencia generales para adultos y adolescentes sanos; **no son cons
 
 ## Validación del formulario (avisa, no bloquea)
 Calorías vs 4P+4C+9G (tolerancia 15 % o 20 kcal), fibra y azúcares ≤ carbohidratos, saturadas + trans + mono + poli ≤ grasa total, azúcares añadidos ≤ azúcares, omega-3 + omega-6 ≤ poliinsaturadas, ≤ 900 kcal por 100 g, proteína + carbos + grasa ≤ 100 g por 100 g, sodio ≤ 40 000 mg por 100 g y máximos plausibles por 100 g para cada vitamina y mineral (`src/lib/nutrition/food-validation.ts`).
+
+## Fórmulas de la meta calórica (verificadas el 2026-10-08)
+
+Fuentes abiertas vía [Europe PMC](https://europepmc.org) (PubMed devuelve un aviso de cookies que no se salta) y [FAO](https://www.fao.org/4/y5686e/y5686e07.htm). **No se cambió ninguna cifra**: abajo está la diferencia y la decisión queda tuya.
+
+| Pieza | Qué usa la app | Qué dice la fuente | Veredicto |
+|---|---|---|---|
+| **Mifflin-St Jeor** (gasto basal) | `10·kg + 6,25·cm − 5·años + 5` (hombre) / `− 161` (mujer) | Mifflin MD, St Jeor ST y cols., *Am J Clin Nutr* 1990;51(2):241-7 ([PMID 2305711](https://pubmed.ncbi.nlm.nih.gov/2305711/)): ecuación por sexo **idéntica** (10 / 6,25 / 5 / +5 / −161) y una general `9,99·kg + 6,25·cm − 4,92·años + 166·sexo − 161`. Medida en **498 adultos de 19 a 78 años** con calorimetría indirecta. | ✅ **Coincide.** La versión por sexo difiere de la general en menos de 6 kcal/día (probado). Fuera de 19–78 años es una extrapolación: la calculadora lo avisa. |
+| **«Katch-McArdle»** (con % de grasa) | `370 + 21,6 × masa libre de grasa` | La ecuación `REE = 370 + 21,6 × FFM` es de **Cunningham**, *Am J Clin Nutr* 1991;54(6):963-9 ([PMID 1957828](https://pubmed.ncbi.nlm.nih.gov/1957828/)). La anterior de Cunningham (1980, [PMID 7435418](https://pubmed.ncbi.nlm.nih.gov/7435418/)) era otra: `500 + 22 × LBM`. | ✅ **Coincide con Cunningham 1991.** El nombre «Katch-McArdle» es el que le dan los libros de fisiología del ejercicio; **no pude abrir ese libro**, así que la atribución del nombre no está verificada. La interfaz ahora dice «Cunningham / Katch-McArdle». |
+| **Factores de actividad** | 1,2 · 1,375 · 1,55 · 1,725 · 1,9 | **No son de la FAO/OMS.** FAO/OMS/UNU, *Human energy requirements* (2001), [Tabla 5.3](https://www.fao.org/4/y5686e/y5686e07.htm): PAL **1,40–1,69** sedentario o ligero · **1,70–1,99** activo · **2,00–2,40** vigoroso. El 1,2 se parece al «1,21» que la FAO sugiere solo para supervivencia a corto plazo de personas totalmente inactivas y dependientes en crisis (y lo considera demasiado bajo; propone 1,40). | ⚠️ **Convención, no norma.** Diferencias abajo. |
+| **% de déficit y superávit** | perder −10 / −20 / −25 % · mantener 0 / −5 % · ganar +10 / +15 / +20 % | No hay una norma con esos porcentajes. La postura de la ISSN ([Aragon et al., 2017, PMC5470183](https://pmc.ncbi.nlm.nih.gov/articles/PMC5470183/)) cita estudios con un «déficit moderado» de 80 % de los requerimientos (= −20 %) y dice que los superávits grandes sirven más a principiantes y los pequeños a avanzados, **sin dar un porcentaje**. | ⚠️ **Convención.** La interfaz lo dice. |
+
+### Diferencia de los factores de actividad con la FAO/OMS (ejemplo con un gasto basal de 1780 kcal)
+| Nivel de la app | Factor | Gasto total con el factor de la app | Rango FAO que le toca | Gasto total con ese rango | Diferencia |
+|---|---|---|---|---|---|
+| Sedentario | 1,2 | 2136 kcal | sedentario o ligero 1,40–1,69 | 2492–3008 | **−14 % o más** por debajo del mínimo FAO |
+| Ligero | 1,375 | 2448 kcal | sedentario o ligero | 2492–3008 | −2 % (casi en el límite inferior) |
+| Moderado | 1,55 | 2759 kcal | la FAO lo clasificaría **sedentario o ligero** (1,55 ∈ 1,40–1,69) | 2492–3008 | dentro del rango, pero con otra etiqueta |
+| Intenso | 1,725 | 3071 kcal | activo 1,70–1,99 | 3026–3542 | dentro |
+| Muy intenso | 1,9 | 3382 kcal | activo 1,70–1,99 | 3026–3542 | dentro; **no hay nivel que llegue al «vigoroso» 2,00–2,40** |
+
+Matices: el PAL de la FAO es gasto total ÷ gasto basal **con las ecuaciones de la FAO** (Schofield), no con Mifflin, y viene de estudios de agua doblemente marcada; la comparación es orientativa. Lo relevante es que, para una persona de oficina que no entrena, el 1,2 de la app **subestima** el gasto respecto de lo que la FAO considera sedentario (≥ 1,40). Cambiarlo cambia la meta calórica de todos los usuarios que usan la calculadora: por eso **no se tocó** y queda como decisión.
+
+### Lo que no pude abrir
+- **El libro de Katch y McArdle** (de donde viene el nombre de la fórmula) y su atribución exacta.
+- **Guías de práctica clínica sobre ritmo de pérdida de peso** (NHLBI, AHA/ACC/TOS 2013, ACSM): NCBI Bookshelf responde con una verificación anti-bot que no salté y no abrí las otras; por eso los porcentajes de déficit/superávit quedan documentados solo como convención.
+- **Tabla S-1 de agua para menores de 19 años** (NAM 2005): la proporción de bebidas (~81 %) se aplica a ellos por extensión.

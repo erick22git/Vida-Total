@@ -301,6 +301,11 @@ export default function ConfigurarCaloriasPage() {
           <div className="flex-1 flex flex-col gap-6">
             <h1 className="text-[30px] leading-[1.05] font-black tracking-tight uppercase">Edad</h1>
             <PlainNumberField label="Edad" value={edad} onChange={setEdad} unit="años" placeholder="30" />
+            {(Number(edad) > 0 && (Number(edad) < 19 || Number(edad) > 78)) && (
+              <p className="text-xs text-white/45">
+                La ecuación Mifflin-St Jeor se midió en adultos de 19 a 78 años; fuera de ese rango el resultado es una extrapolación.
+              </p>
+            )}
           </div>
         )}
 
@@ -370,6 +375,10 @@ export default function ConfigurarCaloriasPage() {
                 />
               ))}
             </div>
+            <p className="text-[11px] leading-snug text-white/40">
+              Convención, no norma: estos factores (1,2 a 1,9) son los clásicos de las calculadoras, no los de la FAO/OMS. La FAO/OMS/UNU (2001)
+              usa niveles de actividad física de 1,40–1,69 (sedentario o ligero), 1,70–1,99 (activo) y 2,00–2,40 (muy activo).
+            </p>
           </div>
         )}
 
@@ -402,6 +411,9 @@ export default function ConfigurarCaloriasPage() {
                 />
               ))}
             </div>
+            <p className="text-[11px] leading-snug text-white/40">
+              Convención, no norma: estos porcentajes de déficit o superávit son una práctica común, no una recomendación médica. Si tienes dudas, consulta a un profesional.
+            </p>
           </div>
         )}
 
@@ -419,7 +431,7 @@ export default function ConfigurarCaloriasPage() {
                   </span>
                 </div>
                 <div className="rounded-3xl p-4 flex flex-col gap-2" style={{ background: "#0d0d0d" }}>
-                  <Row label={result.formula === "katch" ? "BMR (Katch-McArdle)" : "BMR (Mifflin-St Jeor)"} value={`${Math.round(result.bmr)} kcal`} />
+                  <Row label={result.formula === "katch" ? "BMR (Cunningham / Katch-McArdle)" : "BMR (Mifflin-St Jeor)"} value={`${Math.round(result.bmr)} kcal`} />
                   <Row label="TDEE (gasto total)" value={`${Math.round(result.tdee)} kcal`} />
                   <Row
                     label="Ajuste"
@@ -427,6 +439,10 @@ export default function ConfigurarCaloriasPage() {
                   />
                 </div>
                 <p className="text-xs text-white/45">{result.explicacion}</p>
+                <p className="text-[11px] leading-snug text-white/35">
+                  El gasto basal usa una fórmula publicada ({result.formula === "katch" ? "Cunningham, 1991: 370 + 21,6 × masa libre de grasa; en libros se llama Katch-McArdle" : "Mifflin y cols., 1990"}).
+                  El factor de actividad y el porcentaje de déficit o superávit son convenciones, no normas.
+                </p>
                 {(() => {
                   const piso = reviewCalorieGoal(sexo || undefined, result.calorieGoal);
                   return piso.mensaje ? <p className="text-xs text-white/60">{piso.mensaje}</p> : null;

@@ -1,4 +1,8 @@
 /**
+ * Fuentes verificadas (ver docs/ciencia-nutricion.md): Mifflin-St Jeor = Mifflin et al., Am J Clin Nutr 1990;51:241-7 (la ecuación por sexo con
+ * 10 / 6,25 / 5 / +5 / −161 es la del propio resumen); 370 + 21,6 × masa libre de grasa = Cunningham, Am J Clin Nutr 1991;54:963-9 (los libros la
+ * llaman Katch-McArdle). Los factores de actividad (1,2–1,9) y los % de déficit/superávit son CONVENCIONES, no normas: no vienen de la FAO/OMS.
+ *
  * Cálculo de meta calórica — Modo Básico (Configuración > Calorías).
  * Funciones puras, sin dependencias de React/store, para poder verificarlas
  * a mano contra casos de manual. Fórmula: Mifflin-St Jeor (estándar, la más
