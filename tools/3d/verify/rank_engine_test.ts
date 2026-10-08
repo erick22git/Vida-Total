@@ -88,7 +88,9 @@ eq("percentil 0 = HIERRO I", lbl(0), "HIERRO I");
 eq("percentil 20 = HIERRO III", lbl(20), "HIERRO III");
 eq("percentil 21 = COBRE I", lbl(21), "COBRE I");
 eq("percentil 50 = PLATA II", lbl(50), "PLATA II");
-eq("percentil 80 = ESMERALDA I", lbl(80), "ESMERALDA I");
+eq("percentil 80 = ZAFIRO II", lbl(80), "ZAFIRO II");
+eq("percentil 69 = ESMERALDA I", lbl(69), "ESMERALDA I");
+eq("percentil 89 = DIAMANTE I", lbl(89), "DIAMANTE I");
 eq("percentil 95 = CAMPEÓN I", lbl(95), "CAMPEÓN I");
 eq("percentil 99 = SIMÉTRICO (sin niveles)", lbl(99), "SIMÉTRICO");
 eq("Simétrico no tiene nivel", rankFromPercentile(99.5).level, null);
@@ -100,9 +102,9 @@ for (let p = 0; p < 100; p += 0.5) {
   last = s;
 }
 eq("el escalón nunca baja al subir el percentil", stepsOk, true);
-eq("9 rangos, 25 escalones (24 + Simétrico)", [RANK_TIER_DEFS.length, MAX_STEP + 1], [9, 25]);
+eq("10 rangos, 28 escalones (27 + Simétrico)", [RANK_TIER_DEFS.length, MAX_STEP + 1], [10, 28]);
 eq("rankFromScore(0) = HIERRO I", rankFromScore(0).label, "HIERRO I");
-eq("rankFromScore(24) = SIMÉTRICO", rankFromScore(24).label, "SIMÉTRICO");
+eq("rankFromScore(27) = SIMÉTRICO", rankFromScore(27).label, "SIMÉTRICO");
 eq("rankFromScore(8.5) = PLATA III", rankFromScore(8.5).label, "PLATA III");
 
 // 6) Un ejercicio completo

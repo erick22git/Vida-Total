@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-08T04:18:08.327Z",
+  "generatedAt": "2026-10-08T04:20:47.393Z",
   "sizes": [
     128,
     384
@@ -132,25 +132,50 @@
       "aspect": 1.19,
       "side": 1144
     },
+    "rubi-1": {
+      "source": "limpiado",
+      "from": "RUBI I.png",
+      "aspect": 1.282,
+      "side": 1126
+    },
+    "rubi-2": {
+      "source": "limpiado",
+      "from": "RUBI II.png",
+      "aspect": 1.359,
+      "side": 1128
+    },
+    "rubi-3": {
+      "source": "limpiado",
+      "from": "RUBI III.png",
+      "aspect": 1.191,
+      "side": 1198
+    },
     "simetrico-0": {
       "source": "limpiado",
       "from": "SIMETRICO",
       "aspect": 1.141,
       "side": 1215
+    },
+    "zafiro-1": {
+      "source": "limpiado",
+      "from": "ZAFIRO I.png",
+      "aspect": 1.242,
+      "side": 1102
+    },
+    "zafiro-2": {
+      "source": "limpiado",
+      "from": "ZAFIRO II.png",
+      "aspect": 1.371,
+      "side": 1108
+    },
+    "zafiro-3": {
+      "source": "limpiado",
+      "from": "ZAFIRO III.png",
+      "aspect": 1.342,
+      "side": 1133
     }
   },
   "rejected": [],
-  "unknownFiles": [
-    "RUBI I.png",
-    "RUBI II.png",
-    "RUBI III.png",
-    "ZAFIRO I.png",
-    "ZAFIRO II.png",
-    "ZAFIRO III.png"
-  ],
-  "missing": [
-    "platino-1",
-    "platino-2",
-    "platino-3"
-  ]
+  "unknownFiles": [],
+  "missing": []
 }

@@ -46,12 +46,12 @@ de una serie. Las series de calentamiento y las no completadas no cuentan.
 
 El valor se convierte a percentil asumiendo una distribución normal entre los cinco puntos del estándar (interpolación
 lineal en la escala z; fuera de P5–P95 se extrapola con la pendiente del tramo extremo, con tope de z = ±3).
-Los rangos son los 9 de la pirámide original (`topPct`), con el percentil de inicio = 100 − topPct:
+Los rangos son los 10 de `rank-config.ts` (`topPct`), con el percentil de inicio = 100 − topPct (Platino se quitó y se agregaron Zafiro y Rubí entre Esmeralda y Diamante, repartiendo ese tramo en partes casi iguales):
 
-Hierro 0 · Cobre 21 · Plata 40 · Oro 56 · Platino 69 · Esmeralda 80 · Diamante 89 · Campeón 95 · Simétrico 99.
+Hierro 0 · Cobre 21 · Plata 40 · Oro 56 · Esmeralda 69 · Zafiro 76 · Rubí 83 · Diamante 89 · Campeón 95 · Simétrico 99.
 
 Cada rango se divide en tres niveles iguales (I, II, III); Simétrico no tiene niveles. Puntaje numérico: `tier × 3 + nivel`
-(Hierro I = 0 … Campeón III = 23, Simétrico = 24). *Cobre reemplaza a Bronce* por decisión del usuario.
+(Hierro I = 0 … Campeón III = 26, Simétrico = 27). *Cobre reemplaza a Bronce* por decisión del usuario.
 
 ## Agregación
 
