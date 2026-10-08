@@ -20,7 +20,8 @@ const SRC = path.resolve("img vida toal", "RANGOS");
 const OUT = path.resolve("public", "ranks");
 const SIZES = [128, 384];
 const ROMAN = { I: 1, II: 2, III: 3 };
-const ASYM_MAX = 0.03; // diferencia máxima de silueta izquierda/derecha permitida
+const ASYM_MAX = Number(process.env.ASYM_MAX ?? 0.03);
+const ASYM_REPAIR_MAX = 0.08; // por encima de esto no se intenta reparar: se rechaza // diferencia máxima de silueta izquierda/derecha permitida
 
 const norm = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().trim();
 
@@ -40,14 +41,29 @@ function hasRealAlpha(data, w, h) {
 }
 
 /** Quita el cuadriculado de fondo con relleno desde los bordes. Devuelve null si no es confiable. */
-function removeCheckerboard(data, w, h) {
+function removeCheckerboard(data, w, h, strict = false) {
   const N = w * h;
   const candidate = new Uint8Array(N);
+  // Modo estricto (íconos metálicos cuyos brillos se parecen al fondo): solo los dos tonos más comunes en el borde de la imagen.
+  let tones = [];
+  if (strict) {
+    const hist = new Map();
+    const band = 14;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (y >= band && y < h - band && x >= band && x < w - band) continue;
+        const p = y * w + x;
+        const lum = Math.round((data[p * 4] + data[p * 4 + 1] + data[p * 4 + 2]) / 3);
+        hist.set(lum, (hist.get(lum) ?? 0) + 1);
+      }
+    }
+    tones = [...hist.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2).map(([t]) => t);
+  }
   for (let p = 0; p < N; p++) {
     const r = data[p * 4], g = data[p * 4 + 1], b = data[p * 4 + 2];
     const lum = (r + g + b) / 3;
     // gris/blanco neutro y claro: los dos tonos del cuadriculado (varían de 232 a 255 según la zona)
-    if (Math.abs(r - g) < 7 && Math.abs(g - b) < 7 && lum >= 205) candidate[p] = 1;
+    if (Math.abs(r - g) < 7 && Math.abs(g - b) < 7 && lum >= 205 && (!strict || tones.some((t) => Math.abs(lum - t) <= 3))) candidate[p] = 1;
   }
   const bg = new Uint8Array(N);
   const stack = [];
@@ -132,8 +148,33 @@ function removeCheckerboard(data, w, h) {
       if (here !== there) mismatch++;
     }
   }
-  const asym = solid ? mismatch / solid : 1;
+  let asym = solid ? mismatch / solid : 1;
+  let repaired = false;
   console.log("   simetría de la silueta:", (asym * 100).toFixed(2), "% de diferencia");
+  if (asym > ASYM_MAX && asym <= ASYM_REPAIR_MAX) {
+    // El ícono es simétrico por diseño: si el relleno se comió un brillo de un lado, se restaura desde el lado intacto
+    // (se agregan al ícono los píxeles cuyo espejo sí es ícono). Se vuelve a medir y se avisa en el manifest.
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
+        const mx = Math.round(2 * cx - x);
+        if (mx < 0 || mx >= w) continue;
+        if (!cur[y * w + mx] && cur[y * w + x]) cur[y * w + x] = 0;
+      }
+    }
+    let m2 = 0, s2 = 0;
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
+        const mx = Math.round(2 * cx - x);
+        const here = !cur[y * w + x];
+        const there = mx >= 0 && mx < w ? !cur[y * w + mx] : false;
+        if (here) s2++;
+        if (here !== there) m2++;
+      }
+    }
+    console.log("   reparada por simetría:", (asym * 100).toFixed(2), "% ->", ((s2 ? m2 / s2 : 1) * 100).toFixed(2), "%");
+    asym = s2 ? m2 / s2 : 1;
+    repaired = true;
+  }
   if (asym > ASYM_MAX) return { ok: false, reason: `silueta asimétrica (${(asym * 100).toFixed(1)} %): el fondo se comió parte del ícono` };
 
   // Alfa suave: 1 px de transición para que el borde no quede dentado.
@@ -154,7 +195,7 @@ function removeCheckerboard(data, w, h) {
       out[p * 4 + 2] = 0;
     }
   }
-  return { ok: true, data: out, frac, haloRatio };
+  return { ok: true, data: out, frac, haloRatio, repaired };
 }
 
 fs.mkdirSync(OUT, { recursive: true });
@@ -163,8 +204,9 @@ for (const f of fs.readdirSync(OUT)) if (f.endsWith(".webp")) fs.unlinkSync(path
 const manifest = { generatedAt: new Date().toISOString(), sizes: SIZES, icons: {}, rejected: [], unknownFiles: [], missing: [] };
 
 for (const file of fs.readdirSync(SRC).sort()) {
-  if (!/\.png$/i.test(file)) continue;
-  const base = norm(file.replace(/\.png$/i, ""));
+  // Acepta .png/.jpg/.jpeg/.webp y también archivos sin extensión ("CAMPEON III"): sharp detecta el formato por el contenido.
+  if (fs.statSync(path.join(SRC, file)).isDirectory() || !/(\.(png|jpe?g|webp))?$/i.test(file) || /\.(txt|json|md|psd|blend\d*)$/i.test(file)) continue;
+  const base = norm(file.replace(/\.(png|jpe?g|webp)$/i, ""));
   const m = base.match(/^([A-Z]+)(?:\s+(I{1,3}))?$/);
   const tier = m && tiers.find((t) => norm(t.iconName) === m[1]);
   if (!tier || (tier.levels && !m[2]) || (!tier.levels && m[2])) {
@@ -177,8 +219,13 @@ for (const file of fs.readdirSync(SRC).sort()) {
   const { data, info } = await sharp(path.join(SRC, file)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   let rgba = data;
   let source = "alfa";
+  let repairedFlag = false;
   if (!hasRealAlpha(data, info.width, info.height)) {
-    const res = removeCheckerboard(data, info.width, info.height);
+    let res = removeCheckerboard(data, info.width, info.height);
+    if (!res.ok) {
+      const retry = removeCheckerboard(data, info.width, info.height, true);
+      if (retry.ok) res = retry;
+    }
     if (!res.ok) {
       manifest.rejected.push({ file, id, reason: res.reason });
       console.log("RECHAZADO", file, "-", res.reason);
@@ -186,6 +233,7 @@ for (const file of fs.readdirSync(SRC).sort()) {
     }
     rgba = res.data;
     source = "limpiado";
+    repairedFlag = !!res.repaired;
   }
   const img = () => sharp(rgba, { raw: { width: info.width, height: info.height, channels: 4 } }).trim({ threshold: 1 });
   // Recorta el espacio vacío y deja el ícono centrado en un cuadrado.
@@ -197,7 +245,7 @@ for (const file of fs.readdirSync(SRC).sort()) {
       .webp({ quality: 88, alphaQuality: 95 })
       .toFile(path.join(OUT, `${tier.key}-${level}-${size}.webp`));
   }
-  manifest.icons[id] = { source, from: file, aspect: +(trimmed.info.width / trimmed.info.height).toFixed(3), side };
+  manifest.icons[id] = { source, ...(repairedFlag ? { repairedBySymmetry: true } : {}), from: file, aspect: +(trimmed.info.width / trimmed.info.height).toFixed(3), side };
   console.log("ok       ", file, "->", id, `(${source})`);
 }
 

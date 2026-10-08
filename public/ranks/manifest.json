@@ -1,10 +1,28 @@
 {
-  "generatedAt": "2026-10-04T21:09:35.578Z",
+  "generatedAt": "2026-10-08T04:18:08.327Z",
   "sizes": [
     128,
     384
   ],
   "icons": {
+    "campeon-1": {
+      "source": "limpiado",
+      "from": "CAMPEON I.png",
+      "aspect": 1.079,
+      "side": 1087
+    },
+    "campeon-2": {
+      "source": "limpiado",
+      "from": "CAMPEON II.png",
+      "aspect": 1.169,
+      "side": 1157
+    },
+    "campeon-3": {
+      "source": "limpiado",
+      "from": "CAMPEON III",
+      "aspect": 1.144,
+      "side": 1197
+    },
     "cobre-1": {
       "source": "limpiado",
       "from": "COBRE I.png",
@@ -22,6 +40,42 @@
       "from": "COBRE III.png",
       "aspect": 1.396,
       "side": 1033
+    },
+    "diamante-1": {
+      "source": "limpiado",
+      "from": "DIAMANTE I.png",
+      "aspect": 1.163,
+      "side": 1135
+    },
+    "diamante-2": {
+      "source": "limpiado",
+      "from": "DIAMANTE II.png",
+      "aspect": 1.098,
+      "side": 1185
+    },
+    "diamante-3": {
+      "source": "limpiado",
+      "from": "DIAMANTE III.png",
+      "aspect": 1.179,
+      "side": 1177
+    },
+    "esmeralda-1": {
+      "source": "limpiado",
+      "from": "ESMERALDA I.png",
+      "aspect": 1.306,
+      "side": 1093
+    },
+    "esmeralda-2": {
+      "source": "limpiado",
+      "from": "ESMERALDA II.png",
+      "aspect": 1.373,
+      "side": 1123
+    },
+    "esmeralda-3": {
+      "source": "limpiado",
+      "from": "ESMERALDA III.png",
+      "aspect": 1.379,
+      "side": 1149
     },
     "hierro-1": {
       "source": "limpiado",
@@ -65,35 +119,38 @@
       "aspect": 0.985,
       "side": 847
     },
+    "plata-2": {
+      "source": "limpiado",
+      "repairedBySymmetry": true,
+      "from": "PLATA II.png",
+      "aspect": 1.439,
+      "side": 1059
+    },
     "plata-3": {
       "source": "alfa",
       "from": "PLATA III.png",
       "aspect": 1.19,
       "side": 1144
+    },
+    "simetrico-0": {
+      "source": "limpiado",
+      "from": "SIMETRICO",
+      "aspect": 1.141,
+      "side": 1215
     }
   },
-  "rejected": [
-    {
-      "file": "PLATA II.png",
-      "id": "plata-2",
-      "reason": "silueta asimétrica (4.8 %): el fondo se comió parte del ícono"
-    }
+  "rejected": [],
+  "unknownFiles": [
+    "RUBI I.png",
+    "RUBI II.png",
+    "RUBI III.png",
+    "ZAFIRO I.png",
+    "ZAFIRO II.png",
+    "ZAFIRO III.png"
   ],
-  "unknownFiles": [],
   "missing": [
-    "plata-2",
     "platino-1",
     "platino-2",
-    "platino-3",
-    "esmeralda-1",
-    "esmeralda-2",
-    "esmeralda-3",
-    "diamante-1",
-    "diamante-2",
-    "diamante-3",
-    "campeon-1",
-    "campeon-2",
-    "campeon-3",
-    "simetrico-0"
+    "platino-3"
   ]
 }
