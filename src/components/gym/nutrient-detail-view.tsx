@@ -12,7 +12,7 @@ import { NutrientCategoryTabs } from "@/components/gym/nutrient-category-tabs";
 import { useGymStore } from "@/lib/store/gymStore";
 import type { CalorieTotals } from "@/components/gym/calorie-arc-visual";
 import type { NutrientCoverage } from "@/lib/food-utils";
-import type { TrackableNutrient } from "@/lib/types";
+import { useNutrientTargets } from "@/lib/nutrition/use-targets";
 
 export function NutrientDetailView({
   totals,
@@ -20,12 +20,13 @@ export function NutrientDetailView({
   coverage,
 }: {
   totals: CalorieTotals;
-  otherNutrientTotals: Partial<Record<TrackableNutrient, number>>;
+  otherNutrientTotals: Partial<Record<string, number>>;
   coverage?: Record<string, NutrientCoverage>;
 }) {
   const proteinGoal = useGymStore((s) => s.proteinGoal);
   const carbsGoal = useGymStore((s) => s.carbsGoal);
   const fatGoal = useGymStore((s) => s.fatGoal);
+  const targetsInfo = useNutrientTargets();
 
   return (
     // Sin scroll propio (ni `overflow-y-auto` ni `touchAction: pan-y`): esta vista es una más del swipe
@@ -41,6 +42,8 @@ export function NutrientDetailView({
         totals={totals}
         otherNutrientTotals={otherNutrientTotals}
         coverage={coverage}
+        targets={targetsInfo.targets}
+        generico={!targetsInfo.personalizado}
         proteinGoal={proteinGoal}
         carbsGoal={carbsGoal}
         fatGoal={fatGoal}

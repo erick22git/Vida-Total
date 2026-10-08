@@ -26,6 +26,7 @@ import { useGymStore } from "@/lib/store/gymStore";
 import { FOOD_CATEGORIES } from "@/lib/types";
 import type { CookedState, NutritionProfile } from "@/lib/types";
 import { MICRONUTRIENT_LABELS, mergeFoods, nutritionChanged } from "@/lib/food-utils";
+import { validateNutritionProfile } from "@/lib/nutrition/food-validation";
 import { VerifiedBadge } from "@/components/gym/verified-badge";
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import { MONO_FONT } from "@/lib/ui/mono-font";
@@ -250,6 +251,13 @@ function CrearAlimentoWizard() {
   const stepValid = step !== 0 || nombre.trim().length > 0;
   const cocidoFilled = !isNutFormEmpty(cocidoForm);
   const readyToVerify = canSave && (unSoloEstado || cocidoFilled);
+
+  // Avisos de coherencia (NO bloquean): kcal vs 4/4/9, fibra y azúcares vs carbos, grasas desglosadas vs total, valores plausibles por 100 g.
+  const baseGramos = (parseFloat(peso) || 100) * (unidadPeso === "oz" ? 28.35 : 1);
+  const warnings = [
+    ...(!isNutFormEmpty(crudoForm) ? validateNutritionProfile(buildProfileFromForm(crudoForm), baseGramos).map((w) => ({ ...w, estado: cocidoFilled ? "crudo" : "" })) : []),
+    ...(cocidoFilled ? validateNutritionProfile(buildProfileFromForm(cocidoForm), baseGramos).map((w) => ({ ...w, estado: "cocido" })) : []),
+  ];
 
   function buildPatch() {
     const pesoNum = parseFloat(peso) || 100;
@@ -538,6 +546,20 @@ function CrearAlimentoWizard() {
               <p className="text-[11px] text-amber-300/80 text-center mb-2">
                 Falta la versión cocida (o marcá que no aplica) para poder verificar.
               </p>
+            )}
+
+            {warnings.length > 0 && (
+              <div className="rounded-xl bg-amber-400/10 border border-amber-300/20 px-3 py-2 mb-3 max-h-32 overflow-y-auto">
+                <p className="text-[11px] font-semibold text-amber-200/90 mb-1">Conviene revisar (puedes guardar igual):</p>
+                <ul className="flex flex-col gap-0.5">
+                  {warnings.map((w, i) => (
+                    <li key={i} className="text-[11px] leading-snug text-amber-100/70">
+                      {w.estado ? `(${w.estado}) ` : ""}
+                      {w.mensaje}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
 
             <div className="flex flex-col gap-2.5 shrink-0">

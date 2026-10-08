@@ -28,6 +28,9 @@ const CHART_OPTIONS: { id: CalorieChartKind; label: string }[] = [
   { id: "battery", label: GAUGES.battery.name },
 ];
 
+import { useTargetProfile } from "@/lib/nutrition/use-targets";
+import { macrosVsMeta, reviewCalorieGoal, suggestMacros } from "@/lib/nutrition/nutrient-targets";
+
 export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
   const calorieGoal = useGymStore((s) => s.calorieGoal);
@@ -70,6 +73,18 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
 
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [macroModalOpen, setMacroModalOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const perfilMetas = useTargetProfile();
+  const sugerencia = useMemo(() => {
+    const completo = !!perfilMetas.sexo && !!perfilMetas.edad && !!perfilMetas.pesoKg;
+    if (!completo) return null;
+    const macros = suggestMacros({ ...perfilMetas, kcal: calorieGoal });
+    return {
+      macros,
+      piso: reviewCalorieGoal(perfilMetas.sexo, calorieGoal),
+      actual: macrosVsMeta(calorieGoal, proteinGoal, carbsGoal, fatGoal),
+    };
+  }, [perfilMetas, calorieGoal, proteinGoal, carbsGoal, fatGoal]);
   const [calorieInput, setCalorieInput] = useState(String(calorieGoal));
   const [proteinInput, setProteinInput] = useState(String(proteinGoal));
   const [carbsInput, setCarbsInput] = useState(String(carbsGoal));
@@ -173,6 +188,12 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
               >
                 Configurar macros
               </button>
+              <button
+                onClick={() => setReviewOpen(true)}
+                className="w-full text-left px-3.5 py-3 rounded-xl text-sm text-white/85 hover:bg-white/[0.06] cursor-pointer"
+              >
+                Revisar sugerencia de macros
+              </button>
             </div>
 
             <div className="flex flex-col gap-1">
@@ -229,6 +250,76 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
                 Guardar
               </GlassButton>
             </div>
+          </GlassModal>
+
+          <GlassModal open={reviewOpen} onClose={() => setReviewOpen(false)} title="Revisar sugerencia">
+            {!sugerencia ? (
+              <div className="flex flex-col gap-3">
+                <p className="text-sm text-white/70">
+                  Para sugerir un reparto necesitamos tu sexo, edad y peso. Complétalos en el perfil y vuelve aquí.
+                </p>
+                <GlassButton
+                  className="w-full"
+                  onClick={() => {
+                    setReviewOpen(false);
+                    onClose();
+                    router.push("/gym/calorias/configurar-calorias");
+                  }}
+                >
+                  Completar mis datos
+                </GlassButton>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <p className="text-xs text-white/55 leading-relaxed">
+                  Tu meta de {calorieGoal} kcal no cambia. Esto es solo una referencia: la proteína sale de g por kg de peso y el resto
+                  reparte la meta (4 kcal por g de proteína y carbos, 9 por g de grasa).
+                </p>
+                <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 gap-y-1.5 text-sm tabular-nums">
+                  <span />
+                  <span className="text-[10px] uppercase text-white/40 text-right">Ahora</span>
+                  <span className="text-[10px] uppercase text-white/40 text-right">Sugerido</span>
+                  <span className="text-white/75">Proteína</span>
+                  <span className="text-right text-white/60">{proteinGoal} g</span>
+                  <span className="text-right text-white">{sugerencia.macros.proteinaG} g</span>
+                  <span className="text-white/75">Carbohidratos</span>
+                  <span className="text-right text-white/60">{carbsGoal} g</span>
+                  <span className="text-right text-white">{sugerencia.macros.carbosG} g</span>
+                  <span className="text-white/75">Grasas</span>
+                  <span className="text-right text-white/60">{fatGoal} g</span>
+                  <span className="text-right text-white">{sugerencia.macros.grasasG} g</span>
+                  <span className="text-white/45 text-xs">Suman</span>
+                  <span className="text-right text-xs text-white/45">{Math.round(sugerencia.actual.kcalMacros)} kcal</span>
+                  <span className="text-right text-xs text-white/45">{Math.round(sugerencia.macros.kcalMacros)} kcal</span>
+                </div>
+                {sugerencia.actual.difiere && (
+                  <p className="text-xs text-white/55">
+                    Tus macros actuales suman {Math.round(sugerencia.actual.kcalMacros)} kcal, un {Math.round(sugerencia.actual.difierePct)} % distinto de tu meta.
+                  </p>
+                )}
+                {sugerencia.piso.mensaje && <p className="text-xs text-white/55">{sugerencia.piso.mensaje}</p>}
+                {sugerencia.macros.avisos.map((a) => (
+                  <p key={a} className="text-xs text-white/45">{a}</p>
+                ))}
+                <p className="text-[10px] text-white/35">Valores de referencia generales (DRI, ISSN), no consejo médico.</p>
+                <GlassButton
+                  className="w-full"
+                  onClick={() => {
+                    useGymStore.setState({
+                      proteinGoal: sugerencia.macros.proteinaG,
+                      carbsGoal: sugerencia.macros.carbosG,
+                      fatGoal: sugerencia.macros.grasasG,
+                    });
+                    setReviewOpen(false);
+                  }}
+                >
+                  Aplicar estos macros
+                </GlassButton>
+                <button onClick={() => setReviewOpen(false)} className="w-full rounded-2xl py-3 text-sm text-white/70 bg-white/[0.06] cursor-pointer">
+                  Dejar como está
+                </button>
+              </div>
+            )}
           </GlassModal>
 
           <GlassModal open={macroModalOpen} onClose={() => setMacroModalOpen(false)} title="Configurar macros">

@@ -33,6 +33,7 @@ import {
   type Sexo,
 } from "@/lib/gym/calorie-calc";
 import { MONO_FONT } from "@/lib/ui/mono-font";
+import { reviewCalorieGoal } from "@/lib/nutrition/nutrient-targets";
 
 type StepKind = "sexo" | "edad" | "peso" | "altura" | "bodyfat" | "actividad" | "objetivo" | "intensidad" | "resultado";
 type MetodoBf = "manual" | "navy";
@@ -426,6 +427,10 @@ export default function ConfigurarCaloriasPage() {
                   />
                 </div>
                 <p className="text-xs text-white/45">{result.explicacion}</p>
+                {(() => {
+                  const piso = reviewCalorieGoal(sexo || undefined, result.calorieGoal);
+                  return piso.mensaje ? <p className="text-xs text-white/60">{piso.mensaje}</p> : null;
+                })()}
                 {applied ? (
                   <p className="text-xs text-white/70 text-center">Meta aplicada.</p>
                 ) : (
