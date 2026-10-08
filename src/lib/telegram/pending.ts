@@ -38,8 +38,10 @@ export function describeArgs(args: Args): string {
 }
 
 export function renderStep(s: PendingStep, index: number): string {
-  const head = `${index + 1}. ${s.label}${describeArgs(s.args) ? ` — ${describeArgs(s.args)}` : ""}`;
-  const change = s.before !== undefined || s.after !== undefined ? `\n   ${s.before ?? "—"} → ${s.after ?? "—"}` : "";
+  // Comida: se muestra lo que encontró en la base (nombre, gramos, kcal), no los argumentos crudos.
+  const food = s.tool === "food_log" && !!s.after;
+  const head = food ? `${index + 1}. ${s.label} (${s.before ?? "comida"}) — de tu base de alimentos:` : `${index + 1}. ${s.label}${describeArgs(s.args) ? ` — ${describeArgs(s.args)}` : ""}`;
+  const change = food ? `\n${s.after}` : s.before !== undefined || s.after !== undefined ? `\n   ${s.before ?? "—"} → ${s.after ?? "—"}` : "";
   const state =
     s.status === "denied" ? `\n   ✗ No permitido: ${s.decision.reasons.join(" ")}` : s.status === "skipped" ? "\n   ⏭ Omitido" : s.status === "done" ? "\n   ✓ Hecho" : s.status === "approved" ? "\n   ✓ Aprobado" : "";
   return head + change + state;

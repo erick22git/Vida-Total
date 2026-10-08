@@ -167,6 +167,23 @@ export async function previewServer(ctx: ServerCtx, tool: string, args: Args): P
       const { patch } = noteUpdatePatch(p, args);
       return { before: p.title, after: `${patch.title ?? p.title}${patch.blocks ? ` (+${patch.blocks.length - p.blocks.length} bloque/s)` : ""}` };
     }
+    if (tool === "food_log") {
+      const lp = localParts(ctx.nowMs, ctx.config.timezone);
+      const meal = (args.meal as MealType | undefined) ?? inferMeal(lp.hour);
+      const cat = await db.fetchFoodCatalog(ctx.db, ctx.userId);
+      const idx = getResolverIndex(mergeFoods(cat.foods), cat.recipes);
+      const outcomes = planFoodItems(args.items as Args[], meal, idx, { usage: buildUsageMap(cat.usage), caloriesMax: ctx.config.limits.caloriesMaxPerEntry });
+      const lines = outcomes.map((o) =>
+        o.kind === "ok"
+          ? `   • ${o.draft.nombre} — ${o.draft.gramos} g · ${o.calorias} kcal`
+          : o.kind === "ambiguous"
+            ? `   • «${o.texto}»: no estoy seguro, ¿${o.options.join(" o ")}?`
+            : o.kind === "not_found"
+              ? `   • «${o.texto}»: no está en tu base de alimentos`
+              : `   • ${o.nombre}: ${o.calorias} kcal, supera tu límite por entrada`,
+      );
+      return { before: meal, after: lines.join("\n") };
+    }
     if (tool === "water_add") {
       const key = localParts(ctx.nowMs, ctx.config.timezone).date;
       const w = await dayWindow(ctx, key);

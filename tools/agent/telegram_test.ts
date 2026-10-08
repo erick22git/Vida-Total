@@ -3,7 +3,7 @@
 import { isQuestion, replayedWrites } from "../../src/lib/agent/replay";
 import { renderTelegramHtml, chunkMessage, decodeCallback, encodeCallback, isWellFormedCode, normalizeCode, parseCommand, parseUpdate, LINK_CODE_ALPHABET, LINK_CODE_LENGTH } from "../../src/lib/telegram/update";
 import { generateLinkCode, hashLinkCode, safeEqual } from "../../src/lib/telegram/link-code";
-import { answerStep, approveAllPending, nextToConfirm, renderPlan, runnableSteps, stepButtons, type PendingPlan } from "../../src/lib/telegram/pending";
+import { answerStep, approveAllPending, nextToConfirm, renderPlan, renderStepPrompt, runnableSteps, stepButtons, type PendingPlan } from "../../src/lib/telegram/pending";
 import { addDays, localParts, zonedTimeToMs } from "../../src/lib/agent/tz";
 import { sanitizeConfig } from "../../src/lib/agent/config";
 
@@ -111,6 +111,11 @@ const html = renderTelegramHtml(["Hoy <b>:", FENCE, "HORA  | ACTIVIDAD", "07:00 
 ok(html.includes("<pre>HORA  | ACTIVIDAD\n07:00 | Gym &amp; pesas</pre>"), "bloque ``` → <pre> con HTML escapado");
 ok(html.includes("&lt;b&gt;") && !html.includes("<b>"), "etiquetas del modelo escapadas (no inyecta HTML)");
 ok(renderTelegramHtml("sin bloques") === "sin bloques", "texto sin bloques intacto");
+
+// ── aviso de comida: muestra lo que encontró en la base ───────────────
+const foodStep = { id: "f", tool: "food_log", args: { items: [{ texto: "papa" }] }, label: "Registrar comida", decision: { action: "ask" as const, reasons: [], canAlways: true }, status: "pending" as const, before: "cena", after: "   • Papa cocida / hervida — 200 g · 154 kcal" };
+const foodText = renderStepPrompt({ steps: [foodStep], mode: "step", untrusted: false }, 0);
+ok(foodText.includes("Papa cocida / hervida — 200 g · 154 kcal") && !foodText.includes("items:"), "el aviso de comida muestra el alimento de la base, no el JSON");
 
 // ── barrera contra repetir escrituras ──────────────────────────────
 const call = (name: string, args: string) => ({ function: { name, arguments: args } });
