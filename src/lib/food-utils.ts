@@ -1,5 +1,6 @@
 import foodsData from "@/lib/data/foods.json";
 import foodsRegionalData from "@/lib/data/foods-regional.json";
+import { TRACKABLE_NUTRIENTS } from "@/lib/types";
 import type { Food, FoodPortion, LoggedFood, NutritionProfile, TrackableNutrient } from "@/lib/types";
 
 /** `verificado: true` significa específicamente "un admin revisó estos
@@ -163,42 +164,93 @@ export const MICRONUTRIENT_LABELS: Record<string, { label: string; unit: string;
   manganeso: { label: "Manganeso", unit: "mg", group: "mineral" },
 };
 
+/** Nutrientes que se suman al día además de los macros de cabecera (los macros viven en `LoggedFood`). */
+export const DAY_NUTRIENT_KEYS = [
+  ...TRACKABLE_NUTRIENTS,
+  "colina",
+  "colesterol",
+  "grasasMonoinsaturadas",
+  "grasasPoliinsaturadas",
+  "omega3Ala",
+  "omega6Linoleico",
+  "agua",
+] as const;
+export type DayNutrientKey = (typeof DAY_NUTRIENT_KEYS)[number];
+
+/** Cuántos de los alimentos activos del día traen dato de un nutriente. `con < de` = datos incompletos. */
+export interface NutrientCoverage {
+  con: number;
+  de: number;
+}
+
+export interface DayNutrientReport {
+  /** Suma solo de lo que tiene dato. Un nutriente sin ningún dato no aparece (nunca se muestra como 0). */
+  totals: Partial<Record<DayNutrientKey, number>>;
+  coverage: Record<DayNutrientKey, NutrientCoverage>;
+  /** Alimentos activos del día. */
+  entries: number;
+}
+
+type MicroMap = Record<string, number> | undefined;
+
+function readDayValue(key: DayNutrientKey, n: ScaledNutrition, micro: MicroMap): number | undefined {
+  switch (key) {
+    case "carbsNetos":
+      return n.fibra !== undefined ? Math.max(0, n.carbos - n.fibra) : undefined;
+    case "alcohol":
+      return undefined; // el esquema del alimento no tiene alcohol: no hay de dónde sacarlo
+    case "azucares":
+    case "fibra":
+    case "sodio":
+    case "grasasSaturadas":
+    case "grasasTrans":
+    case "azucaresAnadidos":
+    case "colesterol":
+    case "grasasMonoinsaturadas":
+    case "grasasPoliinsaturadas":
+    case "omega3Ala":
+    case "omega6Linoleico":
+    case "agua":
+      return n[key];
+    default:
+      return micro?.[key];
+  }
+}
+
 /**
- * Best-effort totals for the "Otros nutrientes" card: `LoggedFood` entries only
- * store the four headline macros, so this looks up each entry's source `Food`
- * (falling back to skipping it if it can no longer be found — e.g. a deleted
- * custom food) and re-scales its detailed nutrition/micronutrients to the
- * gram amount that was actually logged.
+ * Totales del día para el contador, SIN inventar datos: un valor que falta no cuenta como 0 y se informa en
+ * `coverage` ("n de m alimentos con dato"). Cada entrada usa el perfil del estado con que se registró (crudo o
+ * cocido, si el alimento tiene perfil cocido real). Una entrada sin alimento en el catálogo (escáner IA, manual,
+ * alimento borrado) o con un alimento "sin configurar" cuenta como sin dato para todos los nutrientes de detalle.
  */
-export function nutrientTotalsForLoggedFoods(
-  entries: LoggedFood[],
-  allFoods: Food[],
-): Partial<Record<TrackableNutrient, number>> {
-  const totals: Partial<Record<TrackableNutrient, number>> = {};
-  const add = (key: TrackableNutrient, v: number | undefined) => {
-    if (!v) return;
-    totals[key] = (totals[key] ?? 0) + v;
-  };
+export function nutrientDayReport(entries: LoggedFood[], allFoods: Food[]): DayNutrientReport {
+  const byId = new Map(allFoods.map((f) => [f.id, f]));
+  const sums: Partial<Record<DayNutrientKey, number>> = {};
+  const coverage = {} as Record<DayNutrientKey, NutrientCoverage>;
+  for (const k of DAY_NUTRIENT_KEYS) coverage[k] = { con: 0, de: entries.length };
+
   for (const entry of entries) {
-    const food = allFoods.find((f) => f.id === entry.foodId);
-    if (!food) continue;
+    const food = byId.get(entry.foodId);
+    if (!food || food.configurado === false) continue;
     const gramos = entry.gramos ?? (entry.cantidad ? entry.cantidad * parsePorcionGramos(food) : parsePorcionGramos(food));
-    const n = scaleNutrition(food, gramos);
-    const micro = scaleMicronutrients(food, gramos);
-    add("azucares", n.azucares);
-    add("fibra", n.fibra);
-    add("sodio", n.sodio);
-    add("grasasSaturadas", n.grasasSaturadas);
-    add("grasasTrans", n.grasasTrans);
-    add("azucaresAnadidos", n.azucaresAnadidos);
-    add("carbsNetos", n.carbos !== undefined ? Math.max(0, n.carbos - (n.fibra ?? 0)) : undefined);
-    if (micro) {
-      for (const [key, value] of Object.entries(micro)) {
-        add(key as TrackableNutrient, value);
-      }
+    const cooked = entry.cookedState === "cocido" && food.cocido ? scaleCookedNutrition(food, gramos) : null;
+    const n = cooked ?? scaleNutrition(food, gramos);
+    const micro = (cooked ? scaleCookedMicronutrients(food, gramos) : scaleMicronutrients(food, gramos)) as MicroMap;
+    for (const k of DAY_NUTRIENT_KEYS) {
+      const v = readDayValue(k, n, micro);
+      if (v === undefined || !Number.isFinite(v)) continue;
+      sums[k] = (sums[k] ?? 0) + v;
+      coverage[k].con++;
     }
   }
-  return totals;
+  const totals: Partial<Record<DayNutrientKey, number>> = {};
+  for (const k of DAY_NUTRIENT_KEYS) if (sums[k] !== undefined) totals[k] = Math.round((sums[k] as number) * 100) / 100;
+  return { totals, coverage, entries: entries.length };
+}
+
+/** Compatibilidad: solo los totales de los nutrientes que el contador puede seguir. */
+export function nutrientTotalsForLoggedFoods(entries: LoggedFood[], allFoods: Food[]): Partial<Record<TrackableNutrient, number>> {
+  return nutrientDayReport(entries, allFoods).totals as Partial<Record<TrackableNutrient, number>>;
 }
 
 /** Daily reference values (approximate adult RDA) used for the nutrient progress bars. */

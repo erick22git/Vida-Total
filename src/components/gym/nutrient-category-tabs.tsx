@@ -12,6 +12,7 @@ import { MacroColumn, MACRO_COLORS } from "@/components/gym/calorie-arc-visual";
 import { ViewDots } from "@/components/habitos/view-dots";
 import { NUTRIENT_LABELS, NUTRIENT_SECTIONS, type TrackableNutrient } from "@/lib/types";
 import { MONO_FONT } from "@/lib/ui/mono-font";
+import type { NutrientCoverage } from "@/lib/food-utils";
 
 const TABS = [
   { key: "principales", label: "Principales", icon: Dna },
@@ -20,20 +21,36 @@ const TABS = [
   { key: "otros", label: "Otros", icon: Droplet },
 ] as const;
 
-function NutrientBar({ label, value, goal, unit }: { label: string; value: number; goal: number; unit: string }) {
-  const pct = goal > 0 ? Math.min(100, (value / goal) * 100) : 0;
+/** Cómo mostrar un nutriente según cuántos alimentos del día traen dato: ninguno = "sin dato", algunos = "datos incompletos". */
+function coverageNote(c: NutrientCoverage | undefined): { noData: boolean; note?: string } {
+  if (!c || c.de === 0) return { noData: false };
+  if (c.con === 0) return { noData: true };
+  if (c.con < c.de) return { noData: false, note: `datos incompletos · ${c.con} de ${c.de}` };
+  return { noData: false };
+}
+
+function NutrientBar({ label, value, goal, unit, cov }: { label: string; value: number; goal: number; unit: string; cov?: NutrientCoverage }) {
+  const { noData, note } = coverageNote(cov);
+  const pct = noData ? 0 : goal > 0 ? Math.min(100, (value / goal) * 100) : 0;
   return (
     <div className="flex flex-col gap-1">
       <div className="flex justify-between text-xs">
         <span className="text-white/80">{label}</span>
         <span className="text-white/50 tabular-nums">
-          {Math.round(value * 10) / 10} / {goal}
-          {unit}
+          {noData ? (
+            "sin dato"
+          ) : (
+            <>
+              {Math.round(value * 10) / 10} / {goal}
+              {unit}
+            </>
+          )}
         </span>
       </div>
       <div className="h-1.5 w-full rounded-full bg-white/[0.08] overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "rgba(255,255,255,0.85)" }} />
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "rgba(255,255,255,0.85)", opacity: note ? 0.45 : 1 }} />
       </div>
+      {note && <span className="text-[10px] text-white/35">{note}</span>}
     </div>
   );
 }
@@ -46,6 +63,7 @@ export function NutrientCategoryTabs({
   proteinGoal,
   carbsGoal,
   fatGoal,
+  coverage,
   viewIndex = 1,
   viewCount = 3,
 }: {
@@ -54,11 +72,13 @@ export function NutrientCategoryTabs({
   proteinGoal: number;
   carbsGoal: number;
   fatGoal: number;
+  coverage?: Record<string, NutrientCoverage>;
   viewIndex?: number;
   viewCount?: number;
 }) {
   const [tab, setTab] = useState(0);
   const nutrient = (key: TrackableNutrient) => otherNutrientTotals[key] ?? 0;
+  const cov = (key: string) => coverage?.[key];
 
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
@@ -68,15 +88,15 @@ export function NutrientCategoryTabs({
             <MacroColumn label="Proteína" value={totals.proteina} goal={proteinGoal} color={MACRO_COLORS.proteina} compact />
             <MacroColumn label="Carbs" value={totals.carbos} goal={carbsGoal} color={MACRO_COLORS.carbos} compact />
             <MacroColumn label="Grasas" value={totals.grasas} goal={fatGoal} color={MACRO_COLORS.grasas} compact />
-            <MacroColumn label="Fibra" value={nutrient("fibra")} goal={NUTRIENT_LABELS.fibra.goal} color="#a78bfa" compact />
+            <MacroColumn label="Fibra" value={nutrient("fibra")} goal={NUTRIENT_LABELS.fibra.goal} color="#a78bfa" compact {...coverageNote(cov("fibra"))} />
           </div>
         )}
         {tab === 1 && (
           <div className="flex flex-col gap-2.5">
-            <NutrientBar label="Azúcares añadidos" value={nutrient("azucaresAnadidos")} goal={NUTRIENT_LABELS.azucaresAnadidos.goal} unit={NUTRIENT_LABELS.azucaresAnadidos.unit} />
-            <NutrientBar label="Grasas trans" value={nutrient("grasasTrans")} goal={NUTRIENT_LABELS.grasasTrans.goal} unit={NUTRIENT_LABELS.grasasTrans.unit} />
-            <NutrientBar label="Grasas saturadas" value={nutrient("grasasSaturadas")} goal={NUTRIENT_LABELS.grasasSaturadas.goal} unit={NUTRIENT_LABELS.grasasSaturadas.unit} />
-            <NutrientBar label="Sodio" value={nutrient("sodio")} goal={NUTRIENT_LABELS.sodio.goal} unit={NUTRIENT_LABELS.sodio.unit} />
+            <NutrientBar label="Azúcares añadidos" value={nutrient("azucaresAnadidos")} goal={NUTRIENT_LABELS.azucaresAnadidos.goal} unit={NUTRIENT_LABELS.azucaresAnadidos.unit} cov={cov("azucaresAnadidos")} />
+            <NutrientBar label="Grasas trans" value={nutrient("grasasTrans")} goal={NUTRIENT_LABELS.grasasTrans.goal} unit={NUTRIENT_LABELS.grasasTrans.unit} cov={cov("grasasTrans")} />
+            <NutrientBar label="Grasas saturadas" value={nutrient("grasasSaturadas")} goal={NUTRIENT_LABELS.grasasSaturadas.goal} unit={NUTRIENT_LABELS.grasasSaturadas.unit} cov={cov("grasasSaturadas")} />
+            <NutrientBar label="Sodio" value={nutrient("sodio")} goal={NUTRIENT_LABELS.sodio.goal} unit={NUTRIENT_LABELS.sodio.unit} cov={cov("sodio")} />
           </div>
         )}
         {tab === 2 && (
@@ -88,7 +108,7 @@ export function NutrientCategoryTabs({
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {section.keys.map((key) => (
-                    <MacroColumn key={key} label={NUTRIENT_LABELS[key].label} value={nutrient(key)} goal={NUTRIENT_LABELS[key].goal} color="#38bdf8" compact />
+                    <MacroColumn key={key} label={NUTRIENT_LABELS[key].label} value={nutrient(key)} goal={NUTRIENT_LABELS[key].goal} color="#38bdf8" compact {...coverageNote(cov(key))} />
                   ))}
                 </div>
               </div>
@@ -97,9 +117,9 @@ export function NutrientCategoryTabs({
         )}
         {tab === 3 && (
           <div className="flex flex-col gap-2.5">
-            <NutrientBar label="Carbs netos" value={nutrient("carbsNetos")} goal={NUTRIENT_LABELS.carbsNetos.goal} unit={NUTRIENT_LABELS.carbsNetos.unit} />
-            <NutrientBar label="Azúcares" value={nutrient("azucares")} goal={NUTRIENT_LABELS.azucares.goal} unit={NUTRIENT_LABELS.azucares.unit} />
-            <NutrientBar label="Alcohol" value={nutrient("alcohol")} goal={NUTRIENT_LABELS.alcohol.goal || 1} unit={NUTRIENT_LABELS.alcohol.unit} />
+            <NutrientBar label="Carbs netos" value={nutrient("carbsNetos")} goal={NUTRIENT_LABELS.carbsNetos.goal} unit={NUTRIENT_LABELS.carbsNetos.unit} cov={cov("carbsNetos")} />
+            <NutrientBar label="Azúcares" value={nutrient("azucares")} goal={NUTRIENT_LABELS.azucares.goal} unit={NUTRIENT_LABELS.azucares.unit} cov={cov("azucares")} />
+            <NutrientBar label="Alcohol" value={nutrient("alcohol")} goal={NUTRIENT_LABELS.alcohol.goal || 1} unit={NUTRIENT_LABELS.alcohol.unit} cov={cov("alcohol")} />
           </div>
         )}
       </div>

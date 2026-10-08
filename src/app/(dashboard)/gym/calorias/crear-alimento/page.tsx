@@ -86,7 +86,8 @@ function emptyNutForm(): NutForm {
 
 function nutFormFromProfile(p: NutritionProfile | null | undefined): NutForm {
   if (!p) return emptyNutForm();
-  const numToStr = (n?: number) => (n ? String(n) : "");
+  // Un 0 real (p. ej. 0 g de grasas trans) es un dato; solo `undefined` es "sin dato".
+  const numToStr = (n?: number) => (n === undefined || n === null ? "" : String(n));
   const fields = {} as Record<NutFieldKey, string>;
   for (const k of NUT_FIELD_KEYS) fields[k] = numToStr(p[k]);
   const micro: Record<string, string> = {};

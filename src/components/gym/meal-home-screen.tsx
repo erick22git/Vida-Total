@@ -30,7 +30,7 @@ import { CalorieWeekStrip } from "@/components/gym/calorie-week-strip";
 import { CalorieYearView } from "@/components/gym/calorie-year-view";
 import { NutrientDetailView } from "@/components/gym/nutrient-detail-view";
 import { useGymStore, useLoggedFoodsForDate } from "@/lib/store/gymStore";
-import { activeLoggedFoods, mergeFoods, nutrientTotalsForLoggedFoods } from "@/lib/food-utils";
+import { activeLoggedFoods, mergeFoods, nutrientDayReport } from "@/lib/food-utils";
 import { computeLoggedDaysStreak, loggedDayKeys } from "@/lib/gym/streaks";
 import { mealForTime, mealTimePassed } from "@/lib/gym/meal-time";
 import { MEAL_LABELS, type MealType, type TrackableNutrient } from "@/lib/types";
@@ -141,13 +141,11 @@ export function MealHomeScreen() {
     { calorias: 0, proteina: 0, carbos: 0, grasas: 0 },
   );
   // Los nutrientes "otros" solo se ven en la vista 1: no se calculan hasta que el usuario llega ahí.
-  const otherNutrientTotals = useMemo(
-    () =>
-      view === 1
-        ? (nutrientTotalsForLoggedFoods(activeLoggedFoods(loggedFoods), mergeFoods(customFoods)) as Partial<Record<TrackableNutrient, number>>)
-        : {},
+  const dayReport = useMemo(
+    () => (view === 1 ? nutrientDayReport(activeLoggedFoods(loggedFoods), mergeFoods(customFoods)) : null),
     [view, loggedFoods, customFoods],
   );
+  const otherNutrientTotals = (dayReport?.totals ?? {}) as Partial<Record<TrackableNutrient, number>>;
 
   // El título sigue la hora real mientras el usuario no navegó a mano ni cambió de día — si ya
   // está mirando otra comida o un día pasado, no se lo salteamos de abajo cada minuto.
@@ -348,7 +346,7 @@ export function MealHomeScreen() {
               </SwipeCarouselStage>
             )}
 
-            {view === 1 && <NutrientDetailView totals={totals} otherNutrientTotals={otherNutrientTotals} />}
+            {view === 1 && <NutrientDetailView totals={totals} otherNutrientTotals={otherNutrientTotals} coverage={dayReport?.coverage} />}
 
             {view === 2 && (
               <CalorieYearView

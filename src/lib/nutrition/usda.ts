@@ -123,7 +123,8 @@ const NUTRIENT_NUMBER = {
   vitaminaB5: "410", // Pantothenic acid
   vitaminaB6: "415",
   vitaminaB12: "418",
-  folato: "417",
+  folato: "435", // Folate, DFE (equivalentes de folato dietético): la unidad de la RDA. El 417 es "folato total" y subestima en alimentos fortificados.
+  folatoTotal: "417",
   colina: "421", // Choline, total
   calcio: "301",
   hierro: "303",
@@ -230,7 +231,7 @@ export function normalizeUsdaFood(detail: UsdaFoodDetail): NormalizedUsdaNutriti
       vitaminaB5: findAmount(n, NUTRIENT_NUMBER.vitaminaB5),
       vitaminaB6: findAmount(n, NUTRIENT_NUMBER.vitaminaB6),
       vitaminaB12: findAmount(n, NUTRIENT_NUMBER.vitaminaB12),
-      folato: findAmount(n, NUTRIENT_NUMBER.folato),
+      folato: findAmount(n, NUTRIENT_NUMBER.folato) ?? findAmount(n, NUTRIENT_NUMBER.folatoTotal),
       colina: findAmount(n, NUTRIENT_NUMBER.colina),
       calcio: findAmount(n, NUTRIENT_NUMBER.calcio),
       hierro: findAmount(n, NUTRIENT_NUMBER.hierro),

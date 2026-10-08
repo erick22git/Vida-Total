@@ -16,24 +16,31 @@ export function MacroColumn({
   goal,
   color,
   compact = false,
+  note,
+  noData = false,
 }: {
   label: string;
   value: number;
   goal: number;
   color: string;
   compact?: boolean;
+  /** Texto corto bajo la barra (p. ej. "datos incompletos"). */
+  note?: string;
+  /** Ningún alimento trae dato: se muestra "sin dato" en vez de 0 y la barra queda vacía. */
+  noData?: boolean;
 }) {
-  const pct = Math.min(100, goal > 0 ? (value / goal) * 100 : 0);
+  const pct = noData ? 0 : Math.min(100, goal > 0 ? (value / goal) * 100 : 0);
   return (
     <div className="flex flex-col items-center gap-1.5">
       <span className={compact ? "text-[9px] text-white/45" : "text-[11px] text-white/45"}>{label}</span>
       <span className={compact ? "text-[10px] font-medium text-white tabular-nums" : "text-xs font-medium text-white tabular-nums"}>
-        {Math.round(value)}
-        {compact ? "" : "g"}
+        {noData ? "sin dato" : Math.round(value)}
+        {compact || noData ? "" : "g"}
       </span>
       <div className={compact ? "w-full h-1 rounded-full bg-white/[0.08] overflow-hidden" : "w-full h-1.5 rounded-full bg-white/[0.08] overflow-hidden"}>
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color, opacity: note ? 0.45 : 1 }} />
       </div>
+      {note && <span className="text-[8px] leading-none text-white/35 text-center">{note}</span>}
     </div>
   );
 }

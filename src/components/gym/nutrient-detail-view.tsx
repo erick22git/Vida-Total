@@ -11,14 +11,17 @@ import { CalorieGaugeDisplay } from "@/components/gym/calorie-gauge-display";
 import { NutrientCategoryTabs } from "@/components/gym/nutrient-category-tabs";
 import { useGymStore } from "@/lib/store/gymStore";
 import type { CalorieTotals } from "@/components/gym/calorie-arc-visual";
+import type { NutrientCoverage } from "@/lib/food-utils";
 import type { TrackableNutrient } from "@/lib/types";
 
 export function NutrientDetailView({
   totals,
   otherNutrientTotals,
+  coverage,
 }: {
   totals: CalorieTotals;
   otherNutrientTotals: Partial<Record<TrackableNutrient, number>>;
+  coverage?: Record<string, NutrientCoverage>;
 }) {
   const proteinGoal = useGymStore((s) => s.proteinGoal);
   const carbsGoal = useGymStore((s) => s.carbsGoal);
@@ -37,6 +40,7 @@ export function NutrientDetailView({
       <NutrientCategoryTabs
         totals={totals}
         otherNutrientTotals={otherNutrientTotals}
+        coverage={coverage}
         proteinGoal={proteinGoal}
         carbsGoal={carbsGoal}
         fatGoal={fatGoal}
