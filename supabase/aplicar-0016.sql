@@ -1,8 +1,8 @@
 -- ============================================================================
--- aplicar-0016.sql — migración 0016 (campos nuevos del alimento + sync sin pérdida)
+-- aplicar-0016.sql — migración 0016 (campos nuevos del alimento + sync sin pérdida + default de agua)
 --
 -- Se puede correr DOS (o más) veces sin dañar datos:
---   · solo ADITIVO: add column IF NOT EXISTS. NO hay DROP, DELETE, UPDATE de filas ni TRUNCATE.
+--   · solo ADITIVO: add column IF NOT EXISTS y un DEFAULT nuevo. NO hay DROP, DELETE, UPDATE de filas ni TRUNCATE.
 -- Va dentro de UNA transacción: si algo falla, no queda nada a medias (todo o nada).
 --
 -- ANTES: tener aplicadas 0001 y 0002 (la tabla custom_foods).
@@ -19,15 +19,18 @@ begin
   if to_regclass('public.custom_foods') is null then
     raise exception 'Falta la tabla custom_foods (migración 0002). Aplícala primero.';
   end if;
+  if to_regclass('public.gym_settings') is null then
+    raise exception 'Falta la tabla gym_settings (migración 0002). Aplícala primero.';
+  end if;
 end $$;
 
 -- ############################################################################
 -- 0016_custom_foods_full_profile.sql
 -- ############################################################################
 
--- 0016 — custom_foods: perfil completo + fecha de edición (NO aplicada). Única migración de esta tanda (campos nuevos y sync).
+-- 0016 — custom_foods: perfil completo + fecha de edición, y default de la meta de agua (NO aplicada). Única migración de esta tanda.
 --
--- Idempotente (add column if not exists). Sin DROP, DELETE ni UPDATE de filas. Requiere 0002.
+-- Idempotente (add column if not exists / set default). Sin DROP, DELETE ni UPDATE de filas. Requiere 0002.
 --
 -- Por qué: la tabla solo tiene columnas para parte del perfil de un alimento, así que al sincronizar se perdían las grasas
 -- mono/poliinsaturadas, omega-3/6, agua, ceniza, alcohol, EPA/DHA, el perfil COCIDO completo y las marcas
@@ -45,6 +48,13 @@ alter table public.custom_foods
 -- dato local), en vez de aparecer todas como «editadas ahora».
 alter table public.custom_foods
   add column if not exists updated_at timestamptz;
+
+-- Meta de agua por defecto: la columna remota usa 2000 ml y la app 2500 ml (src/lib/store/gymStore.ts). La DRI (agua total 3,7 L
+-- hombres / 2,7 L mujeres; ~81 % como bebidas ≈ 3,0 L y 2,2 L) deja 2000 ml por debajo de lo observado en ambos sexos y 2500 ml
+-- cerca del punto medio (2,6 L), así que el valor de la app es el respaldado y se alinea el SQL. Solo cambia el DEFAULT para
+-- filas NUEVAS: no toca ninguna fila existente ni ninguna meta ya guardada. Reemplaza a 0011 (no hace falta aplicar las dos).
+alter table public.gym_settings
+  alter column water_goal_ml set default 2500;
 
 comment on column public.custom_foods.perfil_extra is
   'Resto del perfil sin columna propia: grasasMonoinsaturadas, grasasPoliinsaturadas, omega3Ala, omega6Linoleico, agua, ceniza, alcohol, epa, dha, epaDha (mg), cocido (perfil completo), verificado, configurado, estadoDefault, unSoloEstado, fdcIdCrudo. Un 0 es un dato; una clave ausente es «sin dato».';

@@ -5,6 +5,7 @@
  */
 import {
   AGE_BANDS,
+  AGUA_FRACCION_BEBIDAS,
   AMDR,
   EPA_DHA_AI_MG,
   FIBRA_G_POR_1000_KCAL,
@@ -121,7 +122,11 @@ export function getNutrientTargets(p: TargetProfile): TargetsResult {
   targets.epaDha = { id: "epaDha", nombre: "EPA + DHA", unidad: "mg", sentido: "meta", tipo: "EFSA", objetivo: EPA_DHA_AI_MG, generico: false, nota: "no hay DRI de EE. UU. para EPA+DHA; valor de EFSA (adultos)" };
 
   const agua = pick(MACRO_REFS.aguaTotalLitros.hombre, MACRO_REFS.aguaTotalLitros.mujer, sexo, band);
-  targets.aguaTotal = { id: "aguaTotal", nombre: "Agua total (bebidas y alimentos)", unidad: "L", sentido: "meta", tipo: "AI", objetivo: agua.v, generico: agua.generico, nota: "aprox. 80 % viene de bebidas" };
+  targets.aguaTotal = { id: "aguaTotal", nombre: "Agua total (bebidas y alimentos)", unidad: "L", sentido: "meta", tipo: "AI", objetivo: agua.v, generico: agua.generico, nota: "incluye bebidas, agua de los alimentos y agua para beber" };
+  // Bebidas (ml): derivada del agua total (la DRI no da una AI de bebidas). Sin sexo: punto medio entre hombre y mujer de 19–50.
+  const bebidasMl = (litros: number) => Math.round((litros * AGUA_FRACCION_BEBIDAS * 1000) / 100) * 100;
+  const bebidasGen = Math.round((bebidasMl(Math.max(...MACRO_REFS.aguaTotalLitros.hombre.slice(1, 3))) + bebidasMl(Math.max(...MACRO_REFS.aguaTotalLitros.mujer.slice(1, 3)))) / 2 / 100) * 100;
+  targets.aguaBebidas = { id: "aguaBebidas", nombre: "Bebidas (meta de agua sugerida)", unidad: "ml", sentido: "meta", tipo: "AI", objetivo: agua.generico ? bebidasGen : bebidasMl(agua.v), generico: agua.generico, nota: "derivada: ~81 % del agua total (lo observado en adultos); no es una AI propia" };
 
   // Macros en gramos a partir de la meta calórica.
   const macros = suggestMacros({ ...p, kcal });

@@ -18,10 +18,12 @@ export function NutrientDetailView({
   totals,
   otherNutrientTotals,
   coverage,
+  waterDrinksMl,
 }: {
   totals: CalorieTotals;
   otherNutrientTotals: Partial<Record<string, number>>;
   coverage?: Record<string, NutrientCoverage>;
+  waterDrinksMl?: number;
 }) {
   const proteinGoal = useGymStore((s) => s.proteinGoal);
   const carbsGoal = useGymStore((s) => s.carbsGoal);
@@ -44,6 +46,7 @@ export function NutrientDetailView({
         coverage={coverage}
         targets={targetsInfo.targets}
         generico={!targetsInfo.personalizado}
+        waterDrinksMl={waterDrinksMl}
         proteinGoal={proteinGoal}
         carbsGoal={carbsGoal}
         fatGoal={fatGoal}

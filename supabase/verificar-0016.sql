@@ -1,7 +1,7 @@
 -- ============================================================================
 -- verificar-0016.sql — SOLO LECTURA
 --
--- Dice si la migración 0016 ya está en la base: las columnas nuevas de custom_foods. No crea, modifica ni borra nada: solo
+-- Dice si la migración 0016 ya está en la base: las columnas nuevas de custom_foods y el default de la meta de agua. No crea, modifica ni borra nada: solo
 -- consulta el catálogo y cuenta filas. Se puede correr las veces que quieras en el SQL Editor de Supabase.
 --
 -- Cómo leer el resultado:
@@ -31,6 +31,16 @@ select
   bool_and(existe and coalesce(tipo_ok, false)) over () as migracion_completa
 from estado
 order by columna;
+
+-- ----------------------------------------------------------------------------
+-- Default de la meta de agua (debe ser 2500 tras aplicar 0016; las metas ya guardadas no cambian).
+-- ----------------------------------------------------------------------------
+select
+  column_name as columna,
+  column_default as default_actual,
+  (column_default is not null and column_default like '2500%') as default_ok
+from information_schema.columns
+where table_schema = 'public' and table_name = 'gym_settings' and column_name = 'water_goal_ml';
 
 -- ----------------------------------------------------------------------------
 -- Informativo: cuántos alimentos propios hay y cuántos ya guardan el perfil completo (solo si las columnas existen).

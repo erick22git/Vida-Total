@@ -31,6 +31,7 @@ import { CalorieYearView } from "@/components/gym/calorie-year-view";
 import { NutrientDetailView } from "@/components/gym/nutrient-detail-view";
 import { useGymStore, useLoggedFoodsForDate } from "@/lib/store/gymStore";
 import { activeLoggedFoods, mergeFoods, nutrientDayReport } from "@/lib/food-utils";
+import { totalMlForDay } from "@/lib/gym/water-stats";
 import { computeLoggedDaysStreak, loggedDayKeys } from "@/lib/gym/streaks";
 import { mealForTime, mealTimePassed } from "@/lib/gym/meal-time";
 import { MEAL_LABELS, type MealType, type TrackableNutrient } from "@/lib/types";
@@ -59,6 +60,7 @@ export function MealHomeScreen() {
   const loggedFoods = useLoggedFoodsForDate(selectedDate);
   const allLoggedFoods = useGymStore((s) => s.loggedFoods);
   const customFoods = useGymStore((s) => s.customFoods);
+  const waterEntries = useGymStore((s) => s.waterEntries);
   const loggedStreak = useMemo(() => computeLoggedDaysStreak(allLoggedFoods), [allLoggedFoods]);
   const loggedDays = useMemo(() => loggedDayKeys(allLoggedFoods), [allLoggedFoods]);
 
@@ -346,7 +348,7 @@ export function MealHomeScreen() {
               </SwipeCarouselStage>
             )}
 
-            {view === 1 && <NutrientDetailView totals={totals} otherNutrientTotals={otherNutrientTotals} coverage={dayReport?.coverage} />}
+            {view === 1 && <NutrientDetailView totals={totals} otherNutrientTotals={otherNutrientTotals} coverage={dayReport?.coverage} waterDrinksMl={totalMlForDay(waterEntries, selectedDate)} />}
 
             {view === 2 && (
               <CalorieYearView

@@ -79,6 +79,13 @@ ok(reviewCalorieGoal("mujer", 1100).bajoPiso && !reviewCalorieGoal("mujer", 1200
 ok(reviewCalorieGoal("hombre", 1400).bajoPiso && !reviewCalorieGoal("hombre", 1500).bajoPiso, "piso 1500 hombre");
 ok(!macrosVsMeta(2000, 140, 220, 60).difiere && macrosVsMeta(2000, 100, 150, 40).difiere, "macros guardados vs meta (±5 %)");
 
+// Agua: total (DRI) y bebidas (derivada: ~81 %).
+ok(h25.aguaTotal.objetivo === 3.7 && m25.aguaTotal.objetivo === 2.7 && T({ sexo: "hombre", edad: 16 }).aguaTotal.objetivo === 3.3 && T({ sexo: "mujer", edad: 16 }).aguaTotal.objetivo === 2.3, "agua total AI: 3.7 / 2.7 L (3.3 / 2.3 a los 14–18)");
+ok(h25.aguaBebidas.objetivo === 3000 && m25.aguaBebidas.objetivo === 2200, "bebidas = 81 % del total: 3000 ml hombre / 2200 ml mujer (lo observado en la DRI)");
+ok(T({ sexo: "hombre", edad: 16 }).aguaBebidas.objetivo === 2700 && T({ sexo: "mujer", edad: 16 }).aguaBebidas.objetivo === 1900, "bebidas 14–18: 2700 / 1900 ml (por extensión)");
+ok(T({}).aguaBebidas.objetivo === 2600 && T({}).aguaBebidas.generico, "sin sexo ni edad: punto medio 2600 ml, marcado genérico");
+ok(Math.abs(T({}).aguaBebidas.objetivo - 2500) <= 100, "el valor de la app (2500 ml) queda a ±100 ml del punto medio de la DRI");
+
 // Alcohol: 7 kcal/g en la validación de energía.
 ok(validateNutritionProfile({ calorias: 70, proteina: 0, carbos: 0, grasas: 0, alcohol: 10 }).length === 0, "10 g de alcohol = 70 kcal: coherente");
 ok(validateNutritionProfile({ calorias: 70, proteina: 0, carbos: 0, grasas: 0 }).length === 0 || true, "sin alcohol y sin macros no se compara");

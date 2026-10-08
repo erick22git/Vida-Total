@@ -29,7 +29,7 @@ const CHART_OPTIONS: { id: CalorieChartKind; label: string }[] = [
 ];
 
 import { useTargetProfile } from "@/lib/nutrition/use-targets";
-import { macrosVsMeta, reviewCalorieGoal, suggestMacros } from "@/lib/nutrition/nutrient-targets";
+import { getNutrientTargets, macrosVsMeta, reviewCalorieGoal, suggestMacros } from "@/lib/nutrition/nutrient-targets";
 
 export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
@@ -74,6 +74,7 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [macroModalOpen, setMacroModalOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const waterGoalMl = useGymStore((s) => s.waterGoalMl);
   const perfilMetas = useTargetProfile();
   const sugerencia = useMemo(() => {
     const completo = !!perfilMetas.sexo && !!perfilMetas.edad && !!perfilMetas.pesoKg;
@@ -85,6 +86,7 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
       actual: macrosVsMeta(calorieGoal, proteinGoal, carbsGoal, fatGoal),
     };
   }, [perfilMetas, calorieGoal, proteinGoal, carbsGoal, fatGoal]);
+  const aguaSug = useMemo(() => getNutrientTargets(perfilMetas).targets.aguaBebidas, [perfilMetas]);
   const [calorieInput, setCalorieInput] = useState(String(calorieGoal));
   const [proteinInput, setProteinInput] = useState(String(proteinGoal));
   const [carbsInput, setCarbsInput] = useState(String(carbsGoal));
@@ -320,6 +322,28 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
                 </button>
               </div>
             )}
+
+            <div className="mt-4 pt-4 border-t border-white/10 flex flex-col gap-2">
+              <p className="text-sm font-semibold text-white/85">Meta de agua (bebidas)</p>
+              <p className="text-xs text-white/55 leading-relaxed">
+                La DRI fija el agua <b className="text-white/75">total</b> (bebidas + la de los alimentos); lo observado es que ~81 % viene de bebidas, y de ahí sale la
+                sugerencia. {aguaSug.generico ? "Sin sexo y edad es un punto medio entre hombre y mujer. " : ""}Tu meta guardada: {waterGoalMl} ml · sugerida:{" "}
+                <b className="text-white">{aguaSug.objetivo} ml</b>.
+              </p>
+              {waterGoalMl !== aguaSug.objetivo ? (
+                <GlassButton
+                  className="w-full"
+                  onClick={() => {
+                    useGymStore.setState({ waterGoalMl: aguaSug.objetivo });
+                  }}
+                >
+                  Usar {aguaSug.objetivo} ml como meta de agua
+                </GlassButton>
+              ) : (
+                <p className="text-xs text-white/45">Tu meta de agua ya coincide con la sugerencia.</p>
+              )}
+              <p className="text-[10px] text-white/35">Valores de referencia generales (DRI, 2005), no consejo médico. No cambia tus registros de agua.</p>
+            </div>
           </GlassModal>
 
           <GlassModal open={macroModalOpen} onClose={() => setMacroModalOpen(false)} title="Configurar macros">

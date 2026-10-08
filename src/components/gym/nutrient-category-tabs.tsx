@@ -30,8 +30,11 @@ function coverageNote(c: NutrientCoverage | undefined): { noData: boolean; note?
   return { noData: false };
 }
 
-function NutrientBar({ label, value, goal, unit, cov, limite = false }: { label: string; value: number; goal: number; unit: string; cov?: NutrientCoverage; limite?: boolean }) {
-  const { noData, note } = coverageNote(cov);
+function NutrientBar({ label, value, goal, unit, cov, limite = false, subline, partial = false }: { label: string; value: number; goal: number; unit: string; cov?: NutrientCoverage; limite?: boolean; subline?: string; partial?: boolean }) {
+  const cn = coverageNote(cov);
+  // `partial`: el valor mezcla dos fuentes (bebidas + alimentos); que los alimentos no traigan agua no borra las bebidas.
+  const noData = cn.noData && !partial;
+  const note = cn.note ?? (partial && cov && cov.de > 0 && cov.con < cov.de ? `datos incompletos · ${cov.con} de ${cov.de} alimentos con agua` : undefined);
   const pct = noData ? 0 : goal > 0 ? Math.min(100, (value / goal) * 100) : 0;
   return (
     <div className="flex flex-col gap-1">
@@ -53,6 +56,7 @@ function NutrientBar({ label, value, goal, unit, cov, limite = false }: { label:
       <div className="h-1.5 w-full rounded-full bg-white/[0.08] overflow-hidden">
         <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "rgba(255,255,255,0.85)", opacity: note ? 0.45 : 1 }} />
       </div>
+      {subline && !noData && <span className="text-[10px] text-white/35">{subline}</span>}
       {note && <span className="text-[10px] text-white/35">{note}</span>}
     </div>
   );
@@ -69,6 +73,7 @@ export function NutrientCategoryTabs({
   coverage,
   targets,
   generico = false,
+  waterDrinksMl = 0,
   viewIndex = 1,
   viewCount = 3,
 }: {
@@ -82,6 +87,8 @@ export function NutrientCategoryTabs({
   targets?: Record<string, NutrientTarget>;
   /** true = faltan datos del perfil: los valores son genéricos de adulto. */
   generico?: boolean;
+  /** ml de bebidas registrados hoy en el módulo Agua (no se cambia nada de ese módulo). */
+  waterDrinksMl?: number;
   viewIndex?: number;
   viewCount?: number;
 }) {
@@ -140,6 +147,17 @@ export function NutrientCategoryTabs({
             {targets?.omega6Linoleico && bar("omega6Linoleico", "Omega-6 (linoleico)")}
             {targets?.epaDha && bar("epaDha", "EPA + DHA")}
             {bar("alcohol")}
+            {targets?.aguaTotal && (
+              <NutrientBar
+                label="Agua total"
+                value={waterDrinksMl + nutrient("agua")}
+                goal={Math.round(targets.aguaTotal.objetivo * 1000)}
+                unit=" ml"
+                cov={cov("agua")}
+                partial
+                subline={`Bebidas ${Math.round(waterDrinksMl)} ml + alimentos ${Math.round(nutrient("agua"))} ml`}
+              />
+            )}
           </div>
         )}
         <p className="mt-3 text-[9px] leading-snug text-white/30 text-center">

@@ -75,6 +75,12 @@ export const MACRO_REFS = {
   proteinaGporKg: [0.85, 0.8, 0.8, 0.8, 0.8],
 } as const;
 
+/** Agua: la DRI (Institute of Medicine, 2005) fija solo el agua TOTAL (bebidas + agua de los alimentos). No existe una AI de
+ * bebidas aparte: lo que publica es lo OBSERVADO en adultos de 19 a 30 años, unos 3,0 L (hombres) y 2,2 L (mujeres) de bebidas, es
+ * decir ~81 % del total (los alimentos aportan ~19 %). Aquí la meta de bebidas es DERIVADA: total × 0,81 (para los menores de 19 se
+ * aplica la misma proporción por extensión). */
+export const AGUA_FRACCION_BEBIDAS = 0.81;
+
 /** Rangos de distribución aceptable de macronutrientes (AMDR), % de la energía, adultos. */
 export const AMDR = {
   carbohidratos: { min: 45, max: 65 },
