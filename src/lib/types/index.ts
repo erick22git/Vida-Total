@@ -406,6 +406,11 @@ export interface WorkoutExerciseLog {
    * 1 de B, descanso, serie 2 de A, serie 2 de B...). `undefined` = no
    * agrupado. Se copia desde `RoutineExercise.grupo` al iniciar la sesión. */
   grupo?: string;
+  /** Solo en un bloque: este ejercicio se hace UNA vez, al inicio de la serie compuesta (p. ej. una extensión de
+   * cuádriceps pesada de 10 reps) y no se repite en las rondas siguientes. Tiene una sola serie. */
+  soloInicio?: boolean;
+  /** Solo en un bloque: todo el bloque cuenta como UNA serie; no se descansa entre rondas, solo al terminar. */
+  serieUnica?: boolean;
   /** Segundos que tardaste en pasar de máquina/ejercicio anterior a este
    * (desde que se activó automáticamente hasta que tocaste "Aceptar, ya
    * estoy en la máquina"). `undefined` si nunca se midió (p.ej. el primer
@@ -455,6 +460,10 @@ export interface RoutineExercise {
   /** Ver `WorkoutExerciseLog.grupo` — se configura acá, al armar el plan, y
    * se copia a la sesión en vivo cuando arranca el entrenamiento. */
   grupo?: string;
+  /** Ver `WorkoutExerciseLog.soloInicio`. */
+  soloInicio?: boolean;
+  /** Ver `WorkoutExerciseLog.serieUnica`. */
+  serieUnica?: boolean;
 }
 
 export interface Routine {

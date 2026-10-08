@@ -2890,5 +2890,103 @@
       "Baja la barra en arco por detrás de la cabeza con los codos ligeramente flexionados.",
       "Regresa a la posición inicial jalando con el dorsal, manteniendo el core firme."
     ]
+  },
+  {
+    "id": "tibial-elevacion-pared",
+    "nombre": "Elevación de puntas de pie en pared (tibial anterior)",
+    "categoria": "Pantorrilla",
+    "musculoPrimario": "Tibial anterior",
+    "musculosSecundarios": [],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Apóyate de espaldas a una pared con los talones a unos 30 cm de ella y las piernas rectas.",
+      "Eleva las puntas de los pies tirando de ellas hacia las espinillas, sin separar los talones del suelo.",
+      "Mantén un instante arriba y baja controladamente sin dejar caer los pies."
+    ]
+  },
+  {
+    "id": "tibial-elevacion-sentado-disco",
+    "nombre": "Elevación de puntas sentado con disco o mancuerna",
+    "categoria": "Pantorrilla",
+    "musculoPrimario": "Tibial anterior",
+    "musculosSecundarios": [],
+    "equipo": "Mancuernas",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate en un banco con las rodillas a 90° y los talones apoyados en el suelo.",
+      "Coloca un disco o mancuerna sobre la parte delantera de los pies, sujetándolo con las manos.",
+      "Eleva las puntas de los pies lo más alto que puedas y baja despacio."
+    ]
+  },
+  {
+    "id": "tibial-bar-dorsiflexion",
+    "nombre": "Dorsiflexión con barra tibial (tib bar)",
+    "categoria": "Pantorrilla",
+    "musculoPrimario": "Tibial anterior",
+    "musculosSecundarios": [],
+    "equipo": "Barra tibial",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Pon un pie en la plataforma de la barra tibial con el peso colgando de la punta del pie.",
+      "Apóyate en un soporte para mantener el equilibrio y baja la punta del pie de forma controlada.",
+      "Eleva la punta del pie tirando hacia la espinilla hasta el máximo rango y repite."
+    ]
+  },
+  {
+    "id": "tibial-dorsiflexion-maquina",
+    "nombre": "Dorsiflexión de tibial en máquina",
+    "categoria": "Pantorrilla",
+    "musculoPrimario": "Tibial anterior",
+    "musculosSecundarios": [],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate en la máquina de tibial y ajusta el respaldo para que las rodillas queden cómodas.",
+      "Apoya la parte delantera de los pies bajo las almohadillas.",
+      "Tira de las puntas hacia las espinillas y vuelve a la posición inicial sin soltar la carga."
+    ]
+  },
+  {
+    "id": "tibial-dorsiflexion-banda",
+    "nombre": "Dorsiflexión con banda elástica",
+    "categoria": "Pantorrilla",
+    "musculoPrimario": "Tibial anterior",
+    "musculosSecundarios": [],
+    "equipo": "Banda elástica",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate con las piernas estiradas y ata la banda a un punto fijo frente a ti; pásala por el empeine.",
+      "Tira de las puntas hacia ti venciendo la resistencia de la banda.",
+      "Regresa despacio a la posición inicial manteniendo la tensión en la banda."
+    ]
+  },
+  {
+    "id": "tibial-dorsiflexion-polea",
+    "nombre": "Dorsiflexión en polea baja",
+    "categoria": "Pantorrilla",
+    "musculoPrimario": "Tibial anterior",
+    "musculosSecundarios": [],
+    "equipo": "Polea",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Siéntate frente a la polea baja y engancha el tobillo con una correa de tobillera.",
+      "Tira de la punta del pie hacia la espinilla contra la resistencia de la polea.",
+      "Vuelve controlando la carga sin dejar que el cable te estire de golpe."
+    ]
+  },
+  {
+    "id": "tibial-caminata-talones",
+    "nombre": "Caminata sobre talones",
+    "categoria": "Pantorrilla",
+    "musculoPrimario": "Tibial anterior",
+    "musculosSecundarios": [],
+    "equipo": "Peso corporal",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "De pie, eleva las puntas de ambos pies y apóyate solo sobre los talones.",
+      "Camina hacia adelante con pasos cortos manteniendo las puntas arriba.",
+      "Recorre unos 15–20 metros o hasta sentir fatiga en las espinillas."
+    ]
   }
 ]

@@ -27,7 +27,8 @@ function secondaryToGroup(raw: string): MuscleGroup | null {
     case "triceps": return "Triceps";
     case "biceps": return "Biceps";
     case "gluteos": return "Gluteos";
-    case "gemelos": return "Pantorrilla";
+    case "gemelos":
+    case "tibial anterior": return "Pantorrilla";
     case "antebrazo":
     case "antebrazos": return "Antebrazo";
     case "trapecio":

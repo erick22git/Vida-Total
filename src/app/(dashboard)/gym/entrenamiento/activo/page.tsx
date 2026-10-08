@@ -28,7 +28,7 @@ import { SessionTimer } from "@/components/gym/session-timer";
 import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
 import { SetTypeModal } from "@/components/gym/set-type-modal";
 import { useGymStore } from "@/lib/store/gymStore";
-import { initialDropsetPatch, previaLabelFor } from "@/lib/gym-utils";
+import { blockRoundCount, initialDropsetPatch, nextAfterSet, previaLabelFor } from "@/lib/gym-utils";
 import { unlockAudio } from "@/lib/sound/sound-engine";
 import { RankIcon } from "@/components/gym/rank-icon";
 import { useRankProfile } from "@/lib/gym/use-rank";
@@ -130,7 +130,8 @@ export default function ActiveWorkoutPage() {
   const isBlock = blockMembers.length > 1;
   const pendingRounds = blockMembers.map(({ ex }) => ex.sets.findIndex((s) => !s.completado)).filter((r) => r >= 0);
   const roundIdx = pendingRounds.length > 0 ? Math.min(...pendingRounds) : -1;
-  const maxRounds = Math.max(0, ...blockMembers.map(({ ex }) => ex.sets.length));
+  const maxRounds = blockRoundCount(blockMembers.map(({ ex }) => ex));
+  const isCompound = blockMembers.some(({ ex }) => ex.serieUnica);
   const visibleRounds = roundIdx === -1 ? maxRounds : roundIdx + 1;
 
   function handleSetChange(logIndex: number, setId: string, patch: Parameters<typeof updateSet>[2]) {
@@ -144,44 +145,40 @@ export default function ActiveWorkoutPage() {
     completeSet(log.exerciseId, setId, patch);
 
     const setIndex = log.sets.findIndex((s) => s.id === setId);
-    // Superserie (Bloque agrupar): ejercicios con el mismo `grupo` se hacen
-    // serie por serie, uno tras otro, sin descanso hasta terminar la ronda.
-    // Sin `grupo`, el "grupo" es solo este ejercicio (mismo comportamiento
-    // de siempre).
+    // Superserie / serie compuesta: ejercicios con el mismo `grupo` se hacen uno tras otro. Sin `grupo`, el
+    // "grupo" es solo este ejercicio (comportamiento de siempre). La lógica del orden vive en `nextAfterSet`.
     const groupMembers = log.grupo
       ? ejercicios.map((ex, i) => ({ ex, i })).filter(({ ex }) => ex.grupo === log.grupo)
       : [{ ex: log, i: logIndex }];
-
-    // Primero el que sigue en el orden del bloque; si no hay, cualquiera que falte de esta ronda.
-    const pendingPartners = groupMembers.filter(
-      ({ ex, i }) => i !== logIndex && ex.sets[setIndex] && !ex.sets[setIndex].completado,
+    const serieUnica = groupMembers.some(({ ex }) => ex.serieUnica);
+    const next = nextAfterSet(
+      groupMembers.map(({ ex, i }) => ({ i, sets: ex.sets })),
+      logIndex,
+      setIndex,
+      serieUnica,
     );
-    const nextPartner = pendingPartners.find(({ i }) => i > logIndex) ?? pendingPartners[0];
-    if (nextPartner) {
+
+    if (next.kind === "partner") {
       // Al tocarle al siguiente ejercicio del bloque cambia la foto del hero.
-      setTimeout(() => setActiveExerciseIndex(nextPartner.i), 300);
+      setTimeout(() => setActiveExerciseIndex(next.index), 300);
       return;
     }
 
-    // Ronda de la superserie completa (o ejercicio suelto): recién acá
-    // corresponde descansar.
-    startRest(log.exerciseId, log.restSeconds ?? 90);
-    const groupFullyDone = groupMembers.every(({ ex, i }) =>
-      ex.sets.every((s, si) => (i === logIndex && si === setIndex ? true : s.completado)),
-    );
-    if (!groupFullyDone && groupMembers.length > 1) {
-      // Ronda lista, quedan más: la foto vuelve al primer ejercicio del bloque para la ronda que viene.
-      const first = groupMembers[0].i;
-      setTimeout(() => setActiveExerciseIndex(first), 300);
+    if (next.kind === "round") {
+      // Con "toda la serie compuesta es 1 serie" no se descansa entre rondas.
+      if (next.rest) startRest(log.exerciseId, log.restSeconds ?? 90);
+      if (groupMembers.length > 1) setTimeout(() => setActiveExerciseIndex(next.index), 300);
+      return;
     }
-    if (groupFullyDone) {
-      const lastGroupIndex = Math.max(...groupMembers.map(({ i }) => i));
-      if (lastGroupIndex < total - 1) {
-        setTimeout(() => {
-          setActiveExerciseIndex(lastGroupIndex + 1);
-          startTransition();
-        }, 500);
-      }
+
+    // Bloque (o ejercicio suelto) terminado: recién acá se descansa y se pasa al que sigue.
+    startRest(log.exerciseId, log.restSeconds ?? 90);
+    const lastGroupIndex = Math.max(...groupMembers.map(({ i }) => i));
+    if (lastGroupIndex < total - 1) {
+      setTimeout(() => {
+        setActiveExerciseIndex(lastGroupIndex + 1);
+        startTransition();
+      }, 500);
     }
   }
 
@@ -241,12 +238,16 @@ export default function ActiveWorkoutPage() {
               )}
             </h2>
             <p className="text-xs text-white/45 mt-0.5">
-              {completedSets}/{workingSets.length} series completadas
+              {isBlock && isCompound
+                ? roundIdx === -1
+                  ? `Serie compuesta completa (${maxRounds} rondas)`
+                  : `Serie compuesta: ronda ${Math.min(roundIdx + 1, maxRounds)} de ${maxRounds}`
+                : `${completedSets}/${workingSets.length} series completadas`}
               {currentLog.agregadoEnSesion && " · agregado en esta sesión"}
             </p>
             {groupPartners.length > 0 && (
               <p className="text-xs mt-0.5" style={{ color: "var(--gym-2)" }}>
-                Superserie con: {groupPartners.map((ex) => allExercises.find((e) => e.id === ex.exerciseId)?.nombre ?? "?").join(", ")}
+                {isCompound ? "Serie compuesta con" : "Superserie con"}: {groupPartners.map((ex) => allExercises.find((e) => e.id === ex.exerciseId)?.nombre ?? "?").join(", ")}
               </p>
             )}
           </div>

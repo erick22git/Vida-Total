@@ -31,7 +31,7 @@ import { RestDurationModal, formatRestDuration } from "@/components/gym/rest-dur
 import { PillActionButton } from "@/components/gym/pill-action-button";
 import { RestBar } from "@/components/gym/rest-bar";
 import { ReorderableExerciseCircle } from "@/components/gym/session-exercise-carousel";
-import { newRoutineExercises } from "@/lib/gym-utils";
+import { blockRoundCount, newRoutineExercises } from "@/lib/gym-utils";
 import type { RoutineExercise } from "@/lib/types";
 
 /**
@@ -153,13 +153,14 @@ export function ExerciseSessionBuilder({
     // sentido dejarlo "agrupado" con nadie — se limpia también.
     const remaining = draft.filter((ex) => ex.grupo === grupoId && ex.exerciseId !== active.exerciseId);
     const idsToClear = new Set([active.exerciseId, ...(remaining.length === 1 ? [remaining[0].exerciseId] : [])]);
-    onDraftChange(draft.map((ex) => (idsToClear.has(ex.exerciseId) ? { ...ex, grupo: undefined } : ex)));
+    onDraftChange(draft.map((ex) => (idsToClear.has(ex.exerciseId) ? { ...ex, grupo: undefined, soloInicio: undefined, serieUnica: undefined } : ex)));
   }
 
   // Bloque agrupado: una "serie" del bloque es una RONDA = una serie de cada ejercicio. Todos los
   // miembros tienen siempre la misma cantidad de series (rondas).
   const blockMembers = active?.grupo ? draft.filter((ex) => ex.grupo === active.grupo) : [];
-  const rounds = blockMembers[0]?.sets.length ?? 0;
+  const rounds = blockRoundCount(blockMembers);
+  const serieUnica = blockMembers.some((ex) => ex.serieUnica);
 
   function resizeSets(sets: RoutineExercise["sets"], n: number): RoutineExercise["sets"] {
     if (n <= sets.length) return sets.slice(0, n);
@@ -170,7 +171,7 @@ export function ExerciseSessionBuilder({
   function setBlockRounds(n: number) {
     if (!active?.grupo) return;
     const clamped = Math.max(1, Math.min(30, n));
-    onDraftChange(draft.map((ex) => (ex.grupo === active.grupo ? { ...ex, sets: resizeSets(ex.sets, clamped) } : ex)));
+    onDraftChange(draft.map((ex) => (ex.grupo === active.grupo && !ex.soloInicio ? { ...ex, sets: resizeSets(ex.sets, clamped) } : ex)));
   }
 
   // Mover un ejercicio dentro del bloque = intercambiar su lugar con el vecino del bloque en la rutina.
@@ -191,13 +192,32 @@ export function ExerciseSessionBuilder({
     const grupoId = active.grupo;
     const remaining = blockMembers.filter((m) => m.exerciseId !== exerciseId);
     const clear = new Set([exerciseId, ...(remaining.length <= 1 ? remaining.map((m) => m.exerciseId) : [])]);
-    onDraftChange(draft.map((ex) => (ex.grupo === grupoId && clear.has(ex.exerciseId) ? { ...ex, grupo: undefined } : ex)));
+    onDraftChange(draft.map((ex) => (ex.grupo === grupoId && clear.has(ex.exerciseId) ? { ...ex, grupo: undefined, soloInicio: undefined, serieUnica: undefined } : ex)));
   }
 
   function ungroupAll() {
     if (!active?.grupo) return;
     const grupoId = active.grupo;
-    onDraftChange(draft.map((ex) => (ex.grupo === grupoId ? { ...ex, grupo: undefined } : ex)));
+    onDraftChange(draft.map((ex) => (ex.grupo === grupoId ? { ...ex, grupo: undefined, soloInicio: undefined, serieUnica: undefined } : ex)));
+  }
+
+  // «Solo al inicio»: este ejercicio se hace una vez al comienzo de la serie compuesta (p. ej. extensión pesada de 10
+  // reps) y no se repite en las rondas. Al quitarlo vuelve a repetirse en todas las rondas.
+  function toggleSoloInicio(exerciseId: string) {
+    onDraftChange(
+      draft.map((ex) => {
+        if (ex.exerciseId !== exerciseId) return ex;
+        return ex.soloInicio
+          ? { ...ex, soloInicio: undefined, sets: resizeSets(ex.sets, Math.max(1, rounds)) }
+          : { ...ex, soloInicio: true, sets: ex.sets.slice(0, 1) };
+      }),
+    );
+  }
+
+  // Toda la serie compuesta cuenta como UNA serie: sin descanso entre rondas, solo al terminar.
+  function toggleSerieUnica() {
+    if (!active?.grupo) return;
+    onDraftChange(draft.map((ex) => (ex.grupo === active.grupo ? { ...ex, serieUnica: serieUnica ? undefined : true } : ex)));
   }
 
   function openLadder() {
@@ -215,6 +235,7 @@ export function ExerciseSessionBuilder({
     onDraftChange(
       draft.map((ex) => {
         if (!active?.grupo || ex.grupo !== active.grupo) return ex;
+        if (ex.soloInicio) return ex;
         const sets = resizeSets(ex.sets, n);
         if (ex.exerciseId !== ladderTarget) return { ...ex, sets };
         return { ...ex, sets: sets.map((s, k) => ({ ...s, reps: start + step * k })) };
@@ -324,7 +345,8 @@ export function ExerciseSessionBuilder({
               </div>
               <p className="text-xs text-white/55 leading-relaxed">
                 Haces <b className="text-white/80">1 serie de cada ejercicio, en este orden</b>, sin descansar entre ellos.
-                Al terminar la vuelta descansas. Cada vuelta es una <b className="text-white/80">ronda</b>.
+                Cada vuelta es una <b className="text-white/80">ronda</b>. Ej.: extensión pesada 10 (<i>1× inicio</i>), luego
+                zancadas 2 + sentadillas 1, 2, 3… con la escalera.
               </p>
 
               <div className="flex flex-col gap-1.5">
@@ -352,6 +374,17 @@ export function ExerciseSessionBuilder({
                           {ex.soloReps ? "sin peso · " : ""}
                           reps: {ex.sets.map((s) => s.reps).join(" - ")}
                         </span>
+                      </button>
+                      <button
+                        onClick={() => toggleSoloInicio(ex.exerciseId)}
+                        title="Se hace una sola vez, al inicio de la serie compuesta"
+                        className="shrink-0 rounded-lg px-2 h-7 text-[10px] font-semibold cursor-pointer"
+                        style={{
+                          background: ex.soloInicio ? "var(--gym-2)" : "rgba(255,255,255,0.07)",
+                          color: ex.soloInicio ? "#000" : "rgba(255,255,255,0.6)",
+                        }}
+                      >
+                        1× inicio
                       </button>
                       <button
                         onClick={() => moveMember(ex.exerciseId, -1)}
@@ -402,6 +435,19 @@ export function ExerciseSessionBuilder({
                   </button>
                 </div>
               </div>
+
+              <button
+                onClick={toggleSerieUnica}
+                className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left cursor-pointer"
+                style={{ background: serieUnica ? "var(--gym-2)22" : "rgba(255,255,255,0.04)" }}
+              >
+                <span className="text-xs text-white/75 leading-snug">
+                  <b className="text-white/90">Todo el bloque es 1 serie</b>
+                  <br />
+                  Sin descanso entre rondas; descansas solo al terminar.
+                </span>
+                {serieUnica && <Check size={16} style={{ color: "var(--gym-2)" }} />}
+              </button>
 
               <button
                 onClick={openLadder}

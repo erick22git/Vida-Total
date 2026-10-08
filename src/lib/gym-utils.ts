@@ -26,6 +26,42 @@ export function newRoutineExercises(ids: string[], agrupar = false): RoutineExer
   }));
 }
 
+/** Un miembro de un bloque (superserie / serie compuesta): su posición en la sesión y sus series. */
+export interface BlockMember {
+  i: number;
+  sets: Array<{ completado: boolean }>;
+}
+
+/** Qué sigue después de marcar la serie `setIndex` del ejercicio `logIndex` (ya cuenta como hecha).
+ * - `partner`: sigue otro ejercicio de la MISMA ronda (sin descanso).
+ * - `round`: la ronda terminó y quedan más; `index` = primer ejercicio de la próxima ronda con serie pendiente
+ *   (un ejercicio «solo al inicio» no vuelve a salir). `rest` = si corresponde descansar ahora: con `serieUnica` no.
+ * - `end`: el bloque terminó; se descansa. */
+export type BlockNext = { kind: "partner"; index: number } | { kind: "round"; index: number; rest: boolean } | { kind: "end" };
+
+export function nextAfterSet(members: BlockMember[], logIndex: number, setIndex: number, serieUnica: boolean): BlockNext {
+  const pendingPartners = members.filter((m) => m.i !== logIndex && m.sets[setIndex] && !m.sets[setIndex].completado);
+  const partner = pendingPartners.find((m) => m.i > logIndex) ?? pendingPartners[0];
+  if (partner) return { kind: "partner", index: partner.i };
+
+  const isDone = (m: BlockMember, si: number) => m.i === logIndex && si === setIndex ? true : m.sets[si].completado;
+  let nextRound = -1;
+  for (const m of members) {
+    for (let si = 0; si < m.sets.length; si++) {
+      if (!isDone(m, si) && (nextRound === -1 || si < nextRound)) nextRound = si;
+    }
+  }
+  if (nextRound === -1) return { kind: "end" };
+  const first = members.find((m) => m.sets[nextRound] && !isDone(m, nextRound));
+  return { kind: "round", index: first ? first.i : logIndex, rest: !serieUnica };
+}
+
+/** Rondas de un bloque = la mayor cantidad de series entre los que se repiten (los «solo al inicio» no cuentan). */
+export function blockRoundCount(members: Array<{ soloInicio?: boolean; sets: unknown[] }>): number {
+  const repeating = members.filter((m) => !m.soloInicio);
+  return Math.max(0, ...(repeating.length ? repeating : members).map((m) => m.sets.length));
+}
+
 /** Repeticiones de referencia que se muestran (atenuadas) en cada bajada de un dropset. */
 export const DROP_REPS_REF = 10;
 
