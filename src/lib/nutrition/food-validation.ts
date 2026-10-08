@@ -34,6 +34,12 @@ const MAX_POR_100G: Record<string, { max: number; unidad: string; nombre: string
   selenio: { max: 2000, unidad: "mcg", nombre: "Selenio" },
   cobre: { max: 15, unidad: "mg", nombre: "Cobre" },
   manganeso: { max: 80, unidad: "mg", nombre: "Manganeso" },
+  biotina: { max: 500, unidad: "mcg", nombre: "Biotina" },
+  yodo: { max: 400000, unidad: "mcg", nombre: "Yodo" },
+  cromo: { max: 1000, unidad: "mcg", nombre: "Cromo" },
+  molibdeno: { max: 2000, unidad: "mcg", nombre: "Molibdeno" },
+  fluoruro: { max: 20000, unidad: "mcg", nombre: "Flúor" },
+  cloruro: { max: 65000, unidad: "mg", nombre: "Cloruro" },
 };
 
 const has = (n: number | undefined): n is number => typeof n === "number" && Number.isFinite(n);
@@ -50,11 +56,13 @@ export function validateNutritionProfile(p: Partial<NutritionProfile>, baseGramo
   const gras = p.grasas ?? 0;
 
   // Energía: kcal ≈ 4P + 4C + 9G. Tolerancia amplia: la fibra, el alcohol y los polioles hacen que no sea exacto.
-  const calc = 4 * prot + 4 * carb + 9 * gras;
+  const alc = p.alcohol ?? 0;
+  // El alcohol aporta 7 kcal/g y no cuenta como carbohidrato, proteína ni grasa.
+  const calc = 4 * prot + 4 * carb + 9 * gras + 7 * alc;
   if (kcal > 0 && calc > 0) {
     const dif = Math.abs(kcal - calc);
     if (dif > Math.max(20, kcal * 0.15)) {
-      out.push({ campo: "calorias", mensaje: `Las calorías (${Math.round(kcal)}) no coinciden con 4 × proteína + 4 × carbos + 9 × grasa (${Math.round(calc)}). Puede ser alcohol, fibra o un error de captura.` });
+      out.push({ campo: "calorias", mensaje: `Las calorías (${Math.round(kcal)}) no coinciden con 4 × proteína + 4 × carbos + 9 × grasa${alc > 0 ? " + 7 × alcohol" : ""} (${Math.round(calc)}). Puede ser fibra, polioles o un error de captura.` });
     }
   } else if (kcal === 0 && calc > 20) {
     out.push({ campo: "calorias", mensaje: `Tiene macros (${Math.round(calc)} kcal por 4/4/9) pero 0 calorías.` });
@@ -71,6 +79,14 @@ export function validateNutritionProfile(p: Partial<NutritionProfile>, baseGramo
   if (parts > gras * 1.05 + 0.5) {
     out.push({ campo: "grasas", mensaje: `Saturadas + trans + mono + poliinsaturadas (${Math.round(parts * 10) / 10} g) superan la grasa total (${Math.round(gras * 10) / 10} g).` });
   }
+  if (has(p.alcohol) && p.alcohol * (baseGramos > 0 ? 100 / baseGramos : 1) > 100) out.push({ campo: "alcohol", mensaje: "Más de 100 g de alcohol por 100 g es imposible; revisa la cifra." });
+  const epaDhaG = ((p.epaDha ?? ((p.epa ?? 0) + (p.dha ?? 0))) / 1000);
+  if (epaDhaG > 0 && has(p.grasasPoliinsaturadas) && epaDhaG > p.grasasPoliinsaturadas + 0.5) {
+    out.push({ campo: "epa", mensaje: "EPA + DHA (están en mg) superan las grasas poliinsaturadas; revisa la unidad." });
+  }
+  if (has(p.epaDha) && has(p.epa) && has(p.dha) && Math.abs(p.epaDha - (p.epa + p.dha)) > Math.max(5, p.epaDha * 0.1)) {
+    out.push({ campo: "epaDha", mensaje: "El total EPA + DHA no coincide con la suma de EPA y DHA." });
+  }
   if (has(p.omega3Ala) && has(p.omega6Linoleico) && p.omega3Ala + p.omega6Linoleico > (p.grasasPoliinsaturadas ?? Infinity) + 0.5) {
     out.push({ campo: "grasasPoliinsaturadas", mensaje: "Omega-3 + omega-6 superan las grasas poliinsaturadas." });
   }
@@ -78,9 +94,9 @@ export function validateNutritionProfile(p: Partial<NutritionProfile>, baseGramo
   // Plausibilidad por 100 g.
   const f = baseGramos > 0 ? 100 / baseGramos : 1;
   if (kcal * f > 900) out.push({ campo: "calorias", mensaje: `${Math.round(kcal * f)} kcal por 100 g es más que la grasa pura (~900); revisa la porción o la cifra.` });
-  const masa = (prot + carb + gras) * f;
-  if (masa > 100.5) out.push({ campo: null, mensaje: `Proteína + carbos + grasa suman ${Math.round(masa)} g por 100 g (no puede pasar de 100).` });
-  const total = ((p.agua ?? 0) + (p.ceniza ?? 0) + prot + carb + gras) * f;
+  const masa = (prot + carb + gras + alc) * f;
+  if (masa > 100.5) out.push({ campo: null, mensaje: `Proteína + carbos + grasa${alc > 0 ? " + alcohol" : ""} suman ${Math.round(masa)} g por 100 g (no puede pasar de 100).` });
+  const total = ((p.agua ?? 0) + (p.ceniza ?? 0) + prot + carb + gras + alc) * f;
   if (has(p.agua) && total > 105) out.push({ campo: "agua", mensaje: `Agua + ceniza + macros suman ${Math.round(total)} g por 100 g (no puede pasar de 100).` });
   if (has(p.sodio) && p.sodio * f > 40000) out.push({ campo: "sodio", mensaje: "Más sodio por 100 g que la sal pura (~39 000 mg); revisa la unidad (mg)." });
   if (has(p.colesterol) && p.colesterol * f > 4000) out.push({ campo: "colesterol", mensaje: "Colesterol muy alto por 100 g; revisa la unidad (mg)." });

@@ -4,7 +4,7 @@
  * no caben se parten en más páginas. Los puntos de la pantalla salen de `pages.length`. Un nutriente sin dato sale
  * como «sin dato» (value `undefined`), nunca como 0 ni se omite. Módulo puro.
  */
-import type { ScaledNutrition } from "@/lib/food-utils";
+import { epaDhaOf, type ScaledNutrition } from "@/lib/food-utils";
 
 export interface InfoRow {
   key: string;
@@ -89,6 +89,7 @@ const GROUPS: GroupDef[] = [
       mic(m, "vitaminaB12", "Vitamina B12", "mcg"),
       mic(m, "folato", "Folato", "mcg"),
       mic(m, "vitaminaC", "Vitamina C", "mg"),
+      mic(m, "biotina", "Biotina (B7)", "mcg"),
     ],
   },
   {
@@ -104,6 +105,11 @@ const GROUPS: GroupDef[] = [
       mic(m, "selenio", "Selenio", "mcg"),
       mic(m, "cobre", "Cobre", "mg"),
       mic(m, "manganeso", "Manganeso", "mg"),
+      mic(m, "yodo", "Yodo", "mcg"),
+      mic(m, "cromo", "Cromo", "mcg"),
+      mic(m, "molibdeno", "Molibdeno", "mcg"),
+      mic(m, "fluoruro", "Flúor", "mcg"),
+      mic(m, "cloruro", "Cloruro", "mg"),
     ],
   },
   {
@@ -114,6 +120,10 @@ const GROUPS: GroupDef[] = [
       mic(m, "colina", "Colina", "mg"),
       nut("omega3Ala", "Omega-3 (ALA)", "g", n.omega3Ala),
       nut("omega6Linoleico", "Omega-6 (linoleico)", "g", n.omega6Linoleico),
+      nut("epa", "Omega-3 EPA", "mg", n.epa),
+      nut("dha", "Omega-3 DHA", "mg", n.dha),
+      nut("epaDha", "EPA + DHA", "mg", epaDhaOf(n)),
+      nut("alcohol", "Alcohol", "g", n.alcohol),
       nut("ceniza", "Ceniza", "g", n.ceniza),
     ],
   },

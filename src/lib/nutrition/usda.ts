@@ -135,6 +135,15 @@ const NUTRIENT_NUMBER = {
   selenio: "317",
   cobre: "312",
   manganeso: "315",
+  // Números oficiales de FoodData Central (nutrient.csv, Foundation Foods 2026-04-30). El cloruro NO existe en FDC.
+  alcohol: "221", // Alcohol, ethyl (g)
+  epa: "629", // PUFA 20:5 n-3 (EPA) (g)
+  dha: "621", // PUFA 22:6 n-3 (DHA) (g)
+  biotina: "416", // Biotin (µg)
+  yodo: "314", // Iodine, I (µg)
+  cromo: "310", // Chromium, Cr (µg)
+  molibdeno: "316", // Molybdenum, Mo (µg)
+  fluoruro: "313", // Fluoride, F (µg)
 } as const;
 
 export interface NormalizedUsdaNutrition {
@@ -157,6 +166,9 @@ export interface NormalizedUsdaNutrition {
   sodio?: number;
   fibra?: number;
   azucares?: number;
+  alcohol?: number; // g
+  epa?: number; // mg
+  dha?: number; // mg
   micronutrientes: {
     vitaminaA?: number;
     vitaminaC?: number;
@@ -180,8 +192,16 @@ export interface NormalizedUsdaNutrition {
     selenio?: number;
     cobre?: number;
     manganeso?: number;
+    biotina?: number;
+    yodo?: number;
+    cromo?: number;
+    molibdeno?: number;
+    fluoruro?: number;
   };
 }
+
+/** USDA da EPA y DHA en gramos; la app los guarda en mg. */
+const gToMg = (g: number | undefined) => (g === undefined ? undefined : Math.round(g * 1000 * 100) / 100);
 
 function findAmount(nutrients: UsdaNutrientEntry[], number: string): number | undefined {
   const entry = nutrients.find((n) => n.nutrient?.number === number);
@@ -219,6 +239,9 @@ export function normalizeUsdaFood(detail: UsdaFoodDetail): NormalizedUsdaNutriti
     sodio: findAmount(n, NUTRIENT_NUMBER.sodio),
     fibra: findAmount(n, NUTRIENT_NUMBER.fibra),
     azucares: findAmount(n, NUTRIENT_NUMBER.azucares),
+    alcohol: findAmount(n, NUTRIENT_NUMBER.alcohol),
+    epa: gToMg(findAmount(n, NUTRIENT_NUMBER.epa)),
+    dha: gToMg(findAmount(n, NUTRIENT_NUMBER.dha)),
     micronutrientes: {
       vitaminaA: findAmount(n, NUTRIENT_NUMBER.vitaminaA),
       vitaminaC: findAmount(n, NUTRIENT_NUMBER.vitaminaC),
@@ -242,6 +265,11 @@ export function normalizeUsdaFood(detail: UsdaFoodDetail): NormalizedUsdaNutriti
       selenio: findAmount(n, NUTRIENT_NUMBER.selenio),
       cobre: findAmount(n, NUTRIENT_NUMBER.cobre),
       manganeso: findAmount(n, NUTRIENT_NUMBER.manganeso),
+      biotina: findAmount(n, NUTRIENT_NUMBER.biotina),
+      yodo: findAmount(n, NUTRIENT_NUMBER.yodo),
+      cromo: findAmount(n, NUTRIENT_NUMBER.cromo),
+      molibdeno: findAmount(n, NUTRIENT_NUMBER.molibdeno),
+      fluoruro: findAmount(n, NUTRIENT_NUMBER.fluoruro),
     },
   };
 }

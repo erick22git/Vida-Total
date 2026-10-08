@@ -73,6 +73,10 @@ export interface ScaledNutrition {
   azucaresAnadidos?: number;
   agua?: number;
   ceniza?: number;
+  alcohol?: number;
+  epa?: number;
+  dha?: number;
+  epaDha?: number;
 }
 
 function scaleProfile(profile: NutritionProfile, baseGramos: number, gramos: number): ScaledNutrition {
@@ -96,6 +100,10 @@ function scaleProfile(profile: NutritionProfile, baseGramos: number, gramos: num
     azucaresAnadidos: scale(profile.azucaresAnadidos),
     agua: scale(profile.agua),
     ceniza: scale(profile.ceniza),
+    alcohol: scale(profile.alcohol),
+    epa: scale(profile.epa),
+    dha: scale(profile.dha),
+    epaDha: scale(profile.epaDha),
   };
 }
 
@@ -162,6 +170,12 @@ export const MICRONUTRIENT_LABELS: Record<string, { label: string; unit: string;
   selenio: { label: "Selenio", unit: "mcg", group: "mineral" },
   cobre: { label: "Cobre", unit: "mg", group: "mineral" },
   manganeso: { label: "Manganeso", unit: "mg", group: "mineral" },
+  biotina: { label: "Biotina (B7)", unit: "mcg", group: "vitamina" },
+  yodo: { label: "Yodo", unit: "mcg", group: "mineral" },
+  cromo: { label: "Cromo", unit: "mcg", group: "mineral" },
+  molibdeno: { label: "Molibdeno", unit: "mcg", group: "mineral" },
+  fluoruro: { label: "Flúor", unit: "mcg", group: "mineral" },
+  cloruro: { label: "Cloruro", unit: "mg", group: "mineral" },
 };
 
 /** Nutrientes que se suman al día además de los macros de cabecera (los macros viven en `LoggedFood`). */
@@ -174,6 +188,15 @@ export const DAY_NUTRIENT_KEYS = [
   "omega3Ala",
   "omega6Linoleico",
   "agua",
+  "epa",
+  "dha",
+  "epaDha",
+  "biotina",
+  "yodo",
+  "cromo",
+  "molibdeno",
+  "fluoruro",
+  "cloruro",
 ] as const;
 export type DayNutrientKey = (typeof DAY_NUTRIENT_KEYS)[number];
 
@@ -193,12 +216,18 @@ export interface DayNutrientReport {
 
 type MicroMap = Record<string, number> | undefined;
 
+/** EPA + DHA (mg): el total escrito, o epa + dha cuando están los dos; si falta alguno, sin dato (no se suma a medias). */
+export function epaDhaOf(n: { epa?: number; dha?: number; epaDha?: number }): number | undefined {
+  if (n.epaDha !== undefined) return n.epaDha;
+  return n.epa !== undefined && n.dha !== undefined ? Math.round((n.epa + n.dha) * 100) / 100 : undefined;
+}
+
 function readDayValue(key: DayNutrientKey, n: ScaledNutrition, micro: MicroMap): number | undefined {
   switch (key) {
     case "carbsNetos":
       return n.fibra !== undefined ? Math.max(0, n.carbos - n.fibra) : undefined;
-    case "alcohol":
-      return undefined; // el esquema del alimento no tiene alcohol: no hay de dónde sacarlo
+    case "epaDha":
+      return epaDhaOf(n);
     case "azucares":
     case "fibra":
     case "sodio":
@@ -211,6 +240,9 @@ function readDayValue(key: DayNutrientKey, n: ScaledNutrition, micro: MicroMap):
     case "omega3Ala":
     case "omega6Linoleico":
     case "agua":
+    case "alcohol":
+    case "epa":
+    case "dha":
       return n[key];
     default:
       return micro?.[key];
@@ -268,7 +300,7 @@ export const DAILY_VALUES: Record<string, number> = {
 
 const NUTRITION_KEYS = [
   "calorias", "proteina", "carbos", "grasas", "grasasSaturadas", "grasasTrans", "grasasMonoinsaturadas", "grasasPoliinsaturadas",
-  "omega3Ala", "omega6Linoleico", "colesterol", "sodio", "fibra", "azucares", "azucaresAnadidos", "agua", "ceniza",
+  "omega3Ala", "omega6Linoleico", "colesterol", "sodio", "fibra", "azucares", "azucaresAnadidos", "agua", "ceniza", "alcohol", "epa", "dha", "epaDha",
 ] as const;
 
 function nutritionSnapshot(p: Partial<NutritionProfile> | undefined | null) {

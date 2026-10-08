@@ -124,7 +124,7 @@ export function NutrientCategoryTabs({
                   {section.label}
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {[...section.keys, ...(section.label === "Vitaminas" && targets?.colina ? ["colina"] : [])].map((key) => (
+                  {[...section.keys, ...(section.label === "Vitaminas" ? ["colina", "biotina"] : ["yodo", "cromo", "molibdeno", "fluoruro", "cloruro"]).filter((k) => !!targets?.[k])].map((key) => (
                     <MacroColumn key={key} label={labelOf(key)} value={nutrient(key)} goal={goalOf(key)} color="#38bdf8" compact {...coverageNote(cov(key))} />
                   ))}
                 </div>
@@ -138,6 +138,7 @@ export function NutrientCategoryTabs({
             {bar("azucares")}
             {targets?.omega3Ala && bar("omega3Ala", "Omega-3 (ALA)")}
             {targets?.omega6Linoleico && bar("omega6Linoleico", "Omega-6 (linoleico)")}
+            {targets?.epaDha && bar("epaDha", "EPA + DHA")}
             {bar("alcohol")}
           </div>
         )}

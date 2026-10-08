@@ -59,6 +59,20 @@ ok(sc.coverage.sodio.con === 0 && sc.coverage.sodio.de === 1, "alimento sin conf
 const cn = nutrientDayReport([e("arroz", 100, { cookedState: "crudo" })], foods);
 ok(near(cn.totals.carbsNetos, 80 - 1.3), "carbs netos = carbos − fibra");
 
+// Campos nuevos: alcohol, EPA/DHA, biotina, yodo, cloruro.
+const salmon: Food = { id: "salmon", nombre: "Salmón", categoria: "Proteínas", porcion: "100 g", pesoGramos: 100, calorias: 208, proteina: 20, carbos: 0, grasas: 13, epa: 400, dha: 700, micronutrientes: { yodo: 30, biotina: 5 } };
+const vino: Food = { id: "vino", nombre: "Vino", categoria: "Bebidas", porcion: "100 ml", pesoGramos: 100, calorias: 83, proteina: 0.1, carbos: 2.6, grasas: 0, alcohol: 10.6 };
+const etiqueta: Food = { id: "etiqueta", nombre: "Cápsula", categoria: "Otros", porcion: "1 unidad (1 g)", pesoGramos: 1, calorias: 9, proteina: 0, carbos: 0, grasas: 1, epaDha: 500 };
+const f2 = [...foods, salmon, vino, etiqueta];
+const nr = nutrientDayReport([e("salmon", 200), e("vino", 150), e("pollo", 100), e("etiqueta", 1)], f2);
+ok(near(nr.totals.epa, 800) && nr.coverage.epa.con === 1 && nr.coverage.epa.de === 4, "EPA: 400 mg/100 g × 200 g = 800 mg, 1 de 4 con dato");
+ok(near(nr.totals.epaDha, 2200 + 500) && nr.coverage.epaDha.con === 2, "EPA + DHA = suma de EPA y DHA (2200) + el total escrito de la cápsula (500)");
+ok(near(nr.totals.alcohol, 15.9) && nr.coverage.alcohol.con === 1, "alcohol: 10.6 g/100 ml × 150 ml");
+ok(near(nr.totals.yodo, 60) && near(nr.totals.biotina, 10) && nr.coverage.yodo.con === 1, "yodo y biotina escalados por gramos");
+ok(nr.totals.cloruro === undefined && nr.coverage.cloruro.con === 0, "cloruro: ningún alimento lo trae → sin dato (no 0)");
+const soloEpa = nutrientDayReport([e("x", 100)], [{ ...pollo, id: "x", epa: 50 }]);
+ok(soloEpa.totals.epa === 50 && soloEpa.totals.epaDha === undefined, "solo EPA: el total EPA + DHA queda sin dato");
+
 // Compatibilidad.
 ok(near(nutrientTotalsForLoggedFoods([e("arroz", 100, { cookedState: "crudo" })], foods).fibra, 1.3), "nutrientTotalsForLoggedFoods sigue funcionando");
 

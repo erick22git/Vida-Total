@@ -167,6 +167,9 @@ function applyProfile(target: Record<string, unknown>, n: NormalizedUsdaNutritio
   target.azucares = opt(n.azucares);
   target.agua = opt(n.agua);
   target.ceniza = opt(n.ceniza);
+  target.alcohol = opt(n.alcohol);
+  target.epa = opt(n.epa);
+  target.dha = opt(n.dha);
   const micro: Record<string, number> = {};
   for (const [k, v] of Object.entries(n.micronutrientes)) if (typeof v === "number") micro[k] = Math.round(v * scale * 100) / 100;
   target.micronutrientes = Object.keys(micro).length > 0 ? micro : undefined;
@@ -187,6 +190,9 @@ const MISSING_FIELD_LABELS: Record<string, string> = {
   azucares: "azúcares",
   agua: "agua",
   ceniza: "ceniza",
+  alcohol: "alcohol",
+  epa: "EPA",
+  dha: "DHA",
 };
 
 function missingFields(n: NormalizedUsdaNutrition): string[] {
@@ -194,7 +200,7 @@ function missingFields(n: NormalizedUsdaNutrition): string[] {
   for (const [key, label] of Object.entries(MISSING_FIELD_LABELS)) {
     if ((n as unknown as Record<string, number | undefined>)[key] === undefined) out.push(label);
   }
-  const microKeys = ["vitaminaA","vitaminaC","vitaminaD","vitaminaE","vitaminaK","vitaminaB1","vitaminaB2","vitaminaB3","vitaminaB5","vitaminaB6","vitaminaB12","folato","colina","calcio","hierro","magnesio","fosforo","potasio","zinc","selenio","cobre","manganeso"];
+  const microKeys = ["vitaminaA","vitaminaC","vitaminaD","vitaminaE","vitaminaK","vitaminaB1","vitaminaB2","vitaminaB3","vitaminaB5","vitaminaB6","vitaminaB12","folato","colina","calcio","hierro","magnesio","fosforo","potasio","zinc","selenio","cobre","manganeso","biotina","yodo","cromo","molibdeno","fluoruro"];
   for (const k of microKeys) if (n.micronutrientes[k as keyof typeof n.micronutrientes] === undefined) out.push(k);
   return out;
 }

@@ -118,7 +118,7 @@ export function getNutrientTargets(p: TargetProfile): TargetsResult {
   targets.omega3Ala = { id: "omega3Ala", nombre: "Omega-3 (ALA)", unidad: "g", sentido: "meta", tipo: "AI", objetivo: ala.v, generico: ala.generico };
   const o6 = pick(MACRO_REFS.omega6AI.hombre, MACRO_REFS.omega6AI.mujer, sexo, band);
   targets.omega6Linoleico = { id: "omega6Linoleico", nombre: "Omega-6 (linoleico)", unidad: "g", sentido: "meta", tipo: "AI", objetivo: o6.v, generico: o6.generico };
-  targets.epaDha = { id: "epaDha", nombre: "EPA + DHA", unidad: "mg", sentido: "meta", tipo: "EFSA", objetivo: EPA_DHA_AI_MG, generico: false, sinDatoEnAlimentos: true, nota: "el esquema de alimentos no tiene EPA ni DHA" };
+  targets.epaDha = { id: "epaDha", nombre: "EPA + DHA", unidad: "mg", sentido: "meta", tipo: "EFSA", objetivo: EPA_DHA_AI_MG, generico: false, nota: "no hay DRI de EE. UU. para EPA+DHA; valor de EFSA (adultos)" };
 
   const agua = pick(MACRO_REFS.aguaTotalLitros.hombre, MACRO_REFS.aguaTotalLitros.mujer, sexo, band);
   targets.aguaTotal = { id: "aguaTotal", nombre: "Agua total (bebidas y alimentos)", unidad: "L", sentido: "meta", tipo: "AI", objetivo: agua.v, generico: agua.generico, nota: "aprox. 80 % viene de bebidas" };

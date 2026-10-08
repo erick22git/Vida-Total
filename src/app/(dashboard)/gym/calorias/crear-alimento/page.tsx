@@ -51,6 +51,10 @@ const NUT_FIELD_KEYS = [
   "omega6Linoleico",
   "agua",
   "ceniza",
+  "alcohol",
+  "epa",
+  "dha",
+  "epaDha",
 ] as const;
 type NutFieldKey = (typeof NUT_FIELD_KEYS)[number];
 
@@ -72,6 +76,10 @@ const NUT_FIELD_META: Record<NutFieldKey, { label: string; unit: string }> = {
   omega6Linoleico: { label: "Omega-6 (linoleico)", unit: "g" },
   agua: { label: "Agua", unit: "g" },
   ceniza: { label: "Ceniza", unit: "g" },
+  alcohol: { label: "Alcohol", unit: "g" },
+  epa: { label: "Omega-3 EPA", unit: "mg" },
+  dha: { label: "Omega-3 DHA", unit: "mg" },
+  epaDha: { label: "EPA + DHA (total)", unit: "mg" },
 };
 
 interface NutForm {
@@ -125,6 +133,10 @@ function buildProfileFromForm(f: NutForm): NutritionProfile {
     azucaresAnadidos: num(f.fields.azucaresAnadidos),
     agua: num(f.fields.agua),
     ceniza: num(f.fields.ceniza),
+    alcohol: num(f.fields.alcohol),
+    epa: num(f.fields.epa),
+    dha: num(f.fields.dha),
+    epaDha: num(f.fields.epaDha),
     micronutrientes: Object.keys(microValues).length > 0 ? microValues : undefined,
   };
 }

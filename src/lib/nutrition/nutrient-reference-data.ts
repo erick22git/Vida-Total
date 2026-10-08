@@ -56,6 +56,12 @@ export const MICRO_REFS: MicroRef[] = [
   { id: "potasio", nombre: "Potasio", unidad: "mg", tipo: "AI", hombre: [3000, 3400, 3400, 3400, 3400], mujer: [2300, 2600, 2600, 2600, 2600], ul: null },
   { id: "selenio", nombre: "Selenio", unidad: "mcg", tipo: "RDA", hombre: all(55), mujer: all(55), ul: all(400) },
   { id: "zinc", nombre: "Zinc", unidad: "mg", tipo: "RDA", hombre: all(11), mujer: [9, 8, 8, 8, 8], ul: [34, 40, 40, 40, 40] },
+  { id: "biotina", nombre: "Biotina (B7)", unidad: "mcg", tipo: "AI", hombre: [25, 30, 30, 30, 30], mujer: [25, 30, 30, 30, 30], ul: null },
+  { id: "yodo", nombre: "Yodo", unidad: "mcg", tipo: "RDA", hombre: all(150), mujer: all(150), ul: [900, 1100, 1100, 1100, 1100] },
+  { id: "cromo", nombre: "Cromo", unidad: "mcg", tipo: "AI", hombre: [35, 35, 35, 30, 30], mujer: [24, 25, 25, 20, 20], ul: null },
+  { id: "molibdeno", nombre: "Molibdeno", unidad: "mcg", tipo: "RDA", hombre: [43, 45, 45, 45, 45], mujer: [43, 45, 45, 45, 45], ul: [1700, 2000, 2000, 2000, 2000] },
+  { id: "fluoruro", nombre: "Flúor", unidad: "mcg", tipo: "AI", hombre: [3000, 4000, 4000, 4000, 4000], mujer: all(3000), ul: all(10000), nota: "la tabla DRI lo da en mg (3 y 4 mg); aquí en mcg" },
+  { id: "cloruro", nombre: "Cloruro", unidad: "mg", tipo: "AI", hombre: [2300, 2300, 2300, 2000, 1800], mujer: [2300, 2300, 2300, 2000, 1800], ul: all(3600), nota: "FoodData Central no trae cloruro: solo cuenta lo que escribas a mano" },
 ];
 
 /** Macronutrientes con valor fijo por sexo y edad (AI): fibra (si no se conoce la meta calórica), omega-6, ALA, agua total. */

@@ -75,6 +75,13 @@ export interface FoodMicronutrients {
   selenio?: number; // mcg
   cobre?: number; // mg
   manganeso?: number; // mg
+  biotina?: number; // mcg
+  yodo?: number; // mcg
+  cromo?: number; // mcg
+  molibdeno?: number; // mcg
+  fluoruro?: number; // mcg
+  /** mg. FoodData Central NO trae cloruro: solo se llena a mano. */
+  cloruro?: number; // mg
 }
 
 /**
@@ -104,6 +111,12 @@ export interface NutritionProfile {
   azucaresAnadidos?: number;
   agua?: number; // g
   ceniza?: number; // g
+  alcohol?: number; // g — etanol (7 kcal/g)
+  /** mg. EPA y DHA se guardan en mg (USDA los da en g; se convierte al importar). */
+  epa?: number; // mg
+  dha?: number; // mg
+  /** mg — EPA + DHA combinados, para etiquetas que solo dan el total. Si no se escribe, sale de epa + dha cuando están los dos. */
+  epaDha?: number; // mg
   micronutrientes?: FoodMicronutrients;
 }
 

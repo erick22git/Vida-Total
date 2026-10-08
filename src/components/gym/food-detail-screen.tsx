@@ -538,13 +538,14 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
                     ))}
                   </div>
                   {/* Los puntos salen de los datos (uno por página) y quedan centrados en el alto fijo. */}
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-1 shrink-0">
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col shrink-0">
                     {infoPages.map((pg, i) => (
                       <button
                         key={pg.id}
                         onClick={() => goInfo(i)}
                         aria-label={pg.title}
-                        className="w-4 h-4 flex items-center justify-center cursor-pointer"
+                        className="w-4 flex items-center justify-center cursor-pointer"
+                        style={{ height: Math.min(16, Math.floor(INFO_AREA_H / infoPages.length)) }}
                       >
                         <span className="rounded-full" style={{ width: 6, height: 6, background: i === pageIndex ? "#fff" : "rgba(255,255,255,0.3)" }} />
                       </button>
