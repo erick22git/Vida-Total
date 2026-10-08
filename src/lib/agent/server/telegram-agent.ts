@@ -203,6 +203,15 @@ async function saveMemory(db: dbx.Admin, userId: string, msgs: LlmMessage[]) {
   await db.from("agent_chat_state").upsert({ user_id: userId, messages: [{ role: "system", content: MEMORY_VERSION }, ...keep], updated_at: new Date().toISOString() }, { onConflict: "user_id" });
 }
 
+/** Anota en la memoria qué pasó con una acción que pedía permiso: sin esto el modelo ve el pedido sin respuesta y lo repite. */
+async function noteOutcome(db: dbx.Admin, userId: string, text: string) {
+  const mem = await loadMemory(db, userId);
+  const last = mem[mem.length - 1];
+  if (last?.role === "assistant" && !last.tool_calls && last.content) mem[mem.length - 1] = { role: "assistant", content: `${last.content}\n${text}`.slice(-1800) };
+  else mem.push({ role: "assistant", content: text.slice(0, 1500) });
+  await saveMemory(db, userId, mem);
+}
+
 function systemFor(config: AgentConfig, nowMs: number, agent: AgentId): LlmMessage {
   const lp = localParts(nowMs, config.timezone);
   return {
@@ -334,7 +343,8 @@ async function savePlanAndAsk(db: dbx.Admin, link: Linked, plan: PendingPlan, me
   const { data, error } = await db.from("agent_pending").insert({ user_id: link.userId, chat_id: link.chatId, payload: plan }).select("id").single();
   if (error || !data) return void (await sendMessage(link.chatId, "No pude preparar la confirmación. Intenta de nuevo."));
   const id = data.id as string;
-  await saveMemory(db, link.userId, messages.filter((m) => m.role !== "tool" && !m.tool_calls));
+  const asked = plan.steps.map((st) => st.label).join("; ");
+  await saveMemory(db, link.userId, [...messages.filter((m) => m.role !== "tool" && !m.tool_calls), { role: "assistant", content: `Le pedí permiso al usuario para: ${asked}. Aún no se ejecuta; su resultado llegará en el siguiente aviso. No lo repitas.` }]);
   const intro = text ? `${text}\n\n` : "";
   const single = plan.steps.length === 1 && plan.steps[0].decision.action === "ask";
   if (single) {
@@ -370,7 +380,9 @@ async function runPlan(db: dbx.Admin, link: Linked, config: AgentConfig, id: str
   }
   for (const s of steps) if (s.status === "skipped") lines.push(`⏭ ${s.label}: omitido`);
   await db.from("agent_pending").update({ status: "done", payload: { ...plan, steps } }).eq("id", id);
-  return lines.join("\n") || "No se ejecutó nada.";
+  const report = lines.join("\n") || "No se ejecutó nada.";
+  await noteOutcome(db, link.userId, `El usuario respondió a la confirmación. Resultado ya aplicado, no lo repitas:\n${report}`);
+  return report;
 }
 
 async function handleCallback(db: dbx.Admin, link: Linked, config: AgentConfig, inb: Extract<Inbound, { kind: "callback" }>): Promise<void> {
@@ -393,6 +405,7 @@ async function handleCallback(db: dbx.Admin, link: Linked, config: AgentConfig, 
     if (act.action === "cancel") {
       await db.from("agent_pending").update({ status: "cancelled" }).eq("id", act.id);
       await answerCallback(inb.callbackId, "Cancelado");
+      await noteOutcome(db, link.userId, "El usuario canceló la acción pendiente. No se hizo nada; no la repitas.");
       return void (await editMessage(link.chatId, inb.messageId, "Cancelado. No hice nada."));
     }
     if (act.action === "all") {
