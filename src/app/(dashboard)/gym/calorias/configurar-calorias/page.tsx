@@ -443,6 +443,9 @@ export default function ConfigurarCaloriasPage() {
                   El gasto basal usa una fórmula publicada ({result.formula === "katch" ? "Cunningham, 1991: 370 + 21,6 × masa libre de grasa; en libros se llama Katch-McArdle" : "Mifflin y cols., 1990"}).
                   El factor de actividad y el porcentaje de déficit o superávit son convenciones, no normas.
                 </p>
+                <p className="text-[10px] leading-snug text-white/30">
+                  Con tu sexo y edad de aquí también se calculan tus metas de micronutrientes en el contador de calorías (DRI, OMS). Son valores de referencia generales, no consejo médico.
+                </p>
                 {(() => {
                   const piso = reviewCalorieGoal(sexo || undefined, result.calorieGoal);
                   return piso.mensaje ? <p className="text-xs text-white/60">{piso.mensaje}</p> : null;

@@ -54,11 +54,15 @@ const RECIPE_DRAFT_KEY = "vt-recipe-draft";
 // (no está escrito a mano) y los grupos que no caben se parten en más páginas; así la configuración de abajo (anillo,
 // gramos y botones) queda siempre en el mismo lugar, sin importar la página ni el contenido.
 const INFO_ROW_H = 24;
+// Filas de las páginas que no son "Calorías y macros": más chicas (letra y alto) para que el resto de
+// la pantalla (anillo, rueda de gramos, botones) no quede cortado abajo. "Calorías y macros" (siempre
+// 4 filas) se queda con INFO_ROW_H sin cambios.
+const INFO_ROW_H_COMPACT = 19;
 const INFO_GAP = 6;
 const INFO_TITLE_H = 18;
-const INFO_ROWS_H = 174;
+const INFO_ROWS_H = 140;
 const INFO_AREA_H = INFO_TITLE_H + INFO_GAP + INFO_ROWS_H;
-const INFO_ROWS_PER_PAGE = rowsThatFit(INFO_ROWS_H, INFO_ROW_H, INFO_GAP);
+const INFO_ROWS_PER_PAGE = rowsThatFit(INFO_ROWS_H, INFO_ROW_H_COMPACT, INFO_GAP);
 
 export function FoodDetailScreen({ id, mode }: { id: string; mode: "agregar" | "editar" }) {
   return (
@@ -178,6 +182,8 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
   // micronutrientes — misma mecánica que MealHomeScreen (swipe/wheel verticales).
   const [infoView, setInfoView] = useState(0);
   const infoSwipe = useRef<{ y: number } | null>(null);
+  // Guarda contra doble toque en "Agregar"/"Actualizar" (ver `handleConfirm`).
+  const confirmedRef = useRef(false);
 
   if (!food) {
     // Editando una comida que todavía no tiene ningún alimento (se llega acá manteniendo presionado
@@ -270,24 +276,47 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
     };
   }
 
+  // "Agregar"/"Actualizar" dispara la navegación de inmediato, pero el botón sigue montado (y
+  // clicable) hasta que la ruta termina de cambiar — varios toques rápidos antes de eso agregaban
+  // la misma entrada más de una vez; `confirmedRef` (declarado arriba, con los demás hooks) lo evita.
   function handleConfirm() {
+    if (confirmedRef.current) return;
     if (food && food.configurado === false) {
       router.push(`/gym/calorias/crear-alimento?editId=${food.id}`);
       return;
     }
+    confirmedRef.current = true;
     if (isEditing && currentEntry) {
       updateLoggedFood(currentEntry.id, buildPayload());
       router.push("/gym/calorias");
     } else {
       addLoggedFood(buildPayload());
-      // Al volver, el círculo de ESTA comida muestra sus kcal un par de segundos (solo) y vuelve al "+".
-      router.push(`/gym/calorias?justAdded=${meal}`);
+      // Vuelve al buscador (no a la home) para poder seguir agregando alimentos a esta comida sin
+      // tener que volver a entrar a buscar; el aviso de "agregado" lo muestra el buscador.
+      router.push(`/gym/calorias/buscar-nuevo?meal=${meal}&agregado=1`);
     }
   }
 
+  // Elimina y se queda en Editar mostrando el siguiente alimento de la cola de esta comida (no navega
+  // a ningún lado): antes volvía a la home y había que volver a entrar para borrar el siguiente.
+  // Solo navega si la comida se queda sin alimentos.
   function handleDelete() {
-    if (currentEntry) removeLoggedFood(currentEntry.id);
-    router.push("/gym/calorias");
+    if (!currentEntry) {
+      router.push("/gym/calorias");
+      return;
+    }
+    const deletedId = currentEntry.id;
+    removeLoggedFood(deletedId);
+    setConfirmDelete(false);
+    const remaining = mealFoods.filter((f) => f.id !== deletedId);
+    if (remaining.length === 0) {
+      router.push("/gym/calorias");
+      return;
+    }
+    const nextIndex = Math.min(index, remaining.length - 1);
+    const next = remaining[nextIndex];
+    setManualIndex(nextIndex);
+    window.history.replaceState(null, "", `/gym/calorias/editar/${next.foodId}?meal=${meal}&entryId=${next.id}`);
   }
 
   function handleAddToRecipe() {
@@ -534,6 +563,7 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
                         value={formatInfoValue(row, row.dvKey ? DAILY_VALUES[row.dvKey] : undefined)}
                         big={row.big}
                         muted={row.value === undefined}
+                        compact={infoPage.id !== "macros"}
                       />
                     ))}
                   </div>
@@ -544,10 +574,10 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
                         key={pg.id}
                         onClick={() => goInfo(i)}
                         aria-label={pg.title}
-                        className="w-4 flex items-center justify-center cursor-pointer"
-                        style={{ height: Math.min(16, Math.floor(INFO_AREA_H / infoPages.length)) }}
+                        className="w-3.5 flex items-center justify-center cursor-pointer"
+                        style={{ height: Math.min(14, Math.floor(INFO_AREA_H / infoPages.length)) }}
                       >
-                        <span className="rounded-full" style={{ width: 6, height: 6, background: i === pageIndex ? "#fff" : "rgba(255,255,255,0.3)" }} />
+                        <span className="rounded-full" style={{ width: 5, height: 5, background: i === pageIndex ? "#fff" : "rgba(255,255,255,0.3)" }} />
                       </button>
                     ))}
                   </div>
@@ -719,11 +749,11 @@ function CookedToggle({ cocido, onChange }: { cocido: boolean; onChange: (cocido
   );
 }
 
-function StatRow({ label, value, big, muted }: { label: string; value: string; big?: boolean; muted?: boolean }) {
+function StatRow({ label, value, big, muted, compact = false }: { label: string; value: string; big?: boolean; muted?: boolean; compact?: boolean }) {
   return (
-    <div className="flex items-center gap-3" style={{ height: INFO_ROW_H }}>
+    <div className="flex items-center gap-3" style={{ height: compact ? INFO_ROW_H_COMPACT : INFO_ROW_H }}>
       <span
-        className={big ? "text-[12.5px] font-bold uppercase tracking-wide text-white shrink-0" : "text-[11px] uppercase tracking-wide text-white/70 shrink-0"}
+        className={big ? "text-[12.5px] font-bold uppercase tracking-wide text-white shrink-0" : compact ? "text-[9.5px] uppercase tracking-wide text-white/70 shrink-0" : "text-[11px] uppercase tracking-wide text-white/70 shrink-0"}
       >
         {label}
       </span>
@@ -733,8 +763,12 @@ function StatRow({ label, value, big, muted }: { label: string; value: string; b
           big
             ? "text-[19px] leading-6 font-bold text-white tabular-nums shrink-0"
             : muted
-              ? "text-[11.5px] font-normal text-white/35 shrink-0"
-              : "text-[12.5px] font-semibold text-white tabular-nums shrink-0"
+              ? compact
+                ? "text-[10px] font-normal text-white/35 shrink-0"
+                : "text-[11.5px] font-normal text-white/35 shrink-0"
+              : compact
+                ? "text-[11px] font-semibold text-white tabular-nums shrink-0"
+                : "text-[12.5px] font-semibold text-white tabular-nums shrink-0"
         }
       >
         {value}

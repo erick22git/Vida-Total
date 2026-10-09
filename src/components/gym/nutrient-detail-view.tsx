@@ -45,7 +45,6 @@ export function NutrientDetailView({
         otherNutrientTotals={otherNutrientTotals}
         coverage={coverage}
         targets={targetsInfo.targets}
-        generico={!targetsInfo.personalizado}
         waterDrinksMl={waterDrinksMl}
         proteinGoal={proteinGoal}
         carbsGoal={carbsGoal}

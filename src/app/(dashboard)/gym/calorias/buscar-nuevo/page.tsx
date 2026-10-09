@@ -8,7 +8,7 @@
  * queda siempre por encima del teclado en iPhone y Android; con el teclado abierto se compacta. Los inputs son de
  * 16 px o más (por debajo, iOS hace zoom al enfocar) y el zoom del usuario nunca se bloquea.
  */
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GlassInput } from "@/components/glass/glass-input";
 import { FoodSectionHeader } from "@/components/gym/food-section-header";
@@ -42,6 +42,21 @@ function BuscarNuevoContent() {
   const targetMeal = (searchParams.get("meal") as MealType | null) ?? "desayuno";
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<Tab>("base");
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Volver de "Agregar" trae `?agregado=1`: muestra el aviso y limpia la URL, para no repetirlo si
+  // se recarga o se vuelve a entrar con el botón atrás.
+  useEffect(() => {
+    if (searchParams.get("agregado") !== "1") return;
+    const show = setTimeout(() => setToast("Alimento agregado"), 0);
+    const hide = setTimeout(() => setToast(null), 1800);
+    router.replace(`/gym/calorias/buscar-nuevo?meal=${targetMeal}`);
+    return () => {
+      clearTimeout(show);
+      clearTimeout(hide);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const customFoods = useGymStore((s) => s.customFoods);
   const favoriteFoodIds = useGymStore((s) => s.favoriteFoodIds);
@@ -74,6 +89,11 @@ function BuscarNuevoContent() {
       className="fixed inset-x-0 z-[45] text-white overflow-hidden"
       style={{ top: "var(--vv-top, 0px)", height: "var(--vv-h, 100dvh)", background: "var(--app-bg)" }}
     >
+      {toast && (
+        <div className="fixed inset-x-0 top-[max(env(safe-area-inset-top),14px)] z-50 flex justify-center px-4 pointer-events-none">
+          <span className="rounded-full px-4 py-2 text-xs font-medium bg-white text-black shadow-lg">{toast}</span>
+        </div>
+      )}
       <div className={`flex flex-col h-full max-w-md w-full mx-auto px-4 pb-[max(env(safe-area-inset-bottom),12px)] ${keyboardOpen ? "gap-2" : "gap-4"}`}>
         <FoodSectionHeader current="buscar" />
 

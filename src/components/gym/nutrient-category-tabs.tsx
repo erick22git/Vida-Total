@@ -22,23 +22,20 @@ const TABS = [
   { key: "otros", label: "Otros", icon: Droplet },
 ] as const;
 
-/** Cómo mostrar un nutriente según cuántos alimentos del día traen dato: ninguno = "sin dato", algunos = "datos incompletos". */
-function coverageNote(c: NutrientCoverage | undefined): { noData: boolean; note?: string } {
+/** Un nutriente sin ningún dato hoy sale como "sin dato"; con dato parcial, se suma igual lo que sí hay
+ * (sin el aviso de "datos incompletos" — el número ya es la suma real de lo que trae cada alimento). */
+function coverageNote(c: NutrientCoverage | undefined): { noData: boolean } {
   if (!c || c.de === 0) return { noData: false };
-  if (c.con === 0) return { noData: true };
-  if (c.con < c.de) return { noData: false, note: `datos incompletos · ${c.con} de ${c.de}` };
-  return { noData: false };
+  return { noData: c.con === 0 };
 }
 
-function NutrientBar({ label, value, goal, unit, cov, limite = false, subline, partial = false }: { label: string; value: number; goal: number; unit: string; cov?: NutrientCoverage; limite?: boolean; subline?: string; partial?: boolean }) {
-  const cn = coverageNote(cov);
+function NutrientBar({ label, value, goal, unit, cov, subline, partial = false }: { label: string; value: number; goal: number; unit: string; cov?: NutrientCoverage; subline?: string; partial?: boolean }) {
   // `partial`: el valor mezcla dos fuentes (bebidas + alimentos); que los alimentos no traigan agua no borra las bebidas.
-  const noData = cn.noData && !partial;
-  const note = cn.note ?? (partial && cov && cov.de > 0 && cov.con < cov.de ? `datos incompletos · ${cov.con} de ${cov.de} alimentos con agua` : undefined);
+  const noData = coverageNote(cov).noData && !partial;
   const pct = noData ? 0 : goal > 0 ? Math.min(100, (value / goal) * 100) : 0;
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex justify-between text-xs">
+    <div className="flex flex-col gap-0.5">
+      <div className="flex justify-between text-[10px]">
         <span className="text-white/80">{label}</span>
         <span className="text-white/50 tabular-nums">
           {noData ? (
@@ -48,16 +45,14 @@ function NutrientBar({ label, value, goal, unit, cov, limite = false, subline, p
               {Math.round(value * 10) / 10}
               {goal > 0 ? ` / ${goal}` : ""}
               {unit}
-              {goal > 0 ? (limite ? " · límite" : " · meta") : " · sin meta"}
             </>
           )}
         </span>
       </div>
       <div className="h-1.5 w-full rounded-full bg-white/[0.08] overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "rgba(255,255,255,0.85)", opacity: note ? 0.45 : 1 }} />
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "rgba(255,255,255,0.85)" }} />
       </div>
-      {subline && !noData && <span className="text-[10px] text-white/35">{subline}</span>}
-      {note && <span className="text-[10px] text-white/35">{note}</span>}
+      {subline && !noData && <span className="text-[9px] text-white/35">{subline}</span>}
     </div>
   );
 }
@@ -72,7 +67,6 @@ export function NutrientCategoryTabs({
   fatGoal,
   coverage,
   targets,
-  generico = false,
   waterDrinksMl = 0,
   viewIndex = 1,
   viewCount = 3,
@@ -85,8 +79,6 @@ export function NutrientCategoryTabs({
   coverage?: Record<string, NutrientCoverage>;
   /** Metas por sexo y edad (DRI/OMS). Sin ellas, las metas fijas de siempre. */
   targets?: Record<string, NutrientTarget>;
-  /** true = faltan datos del perfil: los valores son genéricos de adulto. */
-  generico?: boolean;
   /** ml de bebidas registrados hoy en el módulo Agua (no se cambia nada de ese módulo). */
   waterDrinksMl?: number;
   viewIndex?: number;
@@ -99,9 +91,8 @@ export function NutrientCategoryTabs({
   const goalOf = (key: string): number => targets?.[key]?.objetivo ?? (targets ? 0 : NUTRIENT_LABELS[key as TrackableNutrient]?.goal ?? 0);
   const labelOf = (key: string) => NUTRIENT_LABELS[key as TrackableNutrient]?.label ?? targets?.[key]?.nombre ?? key;
   const unitOf = (key: string) => NUTRIENT_LABELS[key as TrackableNutrient]?.unit ?? targets?.[key]?.unidad ?? "";
-  const limiteOf = (key: string) => targets?.[key]?.sentido === "limite";
   const bar = (key: string, label?: string) => (
-    <NutrientBar key={key} label={label ?? labelOf(key)} value={nutrient(key)} goal={goalOf(key)} unit={unitOf(key)} cov={cov(key)} limite={limiteOf(key)} />
+    <NutrientBar key={key} label={label ?? labelOf(key)} value={nutrient(key)} goal={goalOf(key)} unit={unitOf(key)} cov={cov(key)} />
   );
 
   return (
@@ -116,7 +107,7 @@ export function NutrientCategoryTabs({
           </div>
         )}
         {tab === 1 && (
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2">
             {bar("azucaresAnadidos", "Azúcares añadidos")}
             {bar("grasasTrans", "Grasas trans")}
             {bar("grasasSaturadas", "Grasas saturadas")}
@@ -140,7 +131,7 @@ export function NutrientCategoryTabs({
           </div>
         )}
         {tab === 3 && (
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2">
             {bar("carbsNetos")}
             {bar("azucares")}
             {targets?.omega3Ala && bar("omega3Ala", "Omega-3 (ALA)")}
@@ -160,10 +151,6 @@ export function NutrientCategoryTabs({
             )}
           </div>
         )}
-        <p className="mt-3 text-[9px] leading-snug text-white/30 text-center">
-          Valores de referencia generales (DRI, OMS), no consejo médico.
-          {generico ? " Son genéricos de adulto: completa tu sexo y edad en el perfil para personalizarlos." : ""}
-        </p>
       </div>
 
       {/* Controles abajo de todo: el contador "n/4" arriba de los íconos y los 3 puntos de la vista a la derecha. */}

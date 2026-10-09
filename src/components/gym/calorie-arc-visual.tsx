@@ -16,7 +16,6 @@ export function MacroColumn({
   goal,
   color,
   compact = false,
-  note,
   noData = false,
 }: {
   label: string;
@@ -24,8 +23,6 @@ export function MacroColumn({
   goal: number;
   color: string;
   compact?: boolean;
-  /** Texto corto bajo la barra (p. ej. "datos incompletos"). */
-  note?: string;
   /** Ningún alimento trae dato: se muestra "sin dato" en vez de 0 y la barra queda vacía. */
   noData?: boolean;
 }) {
@@ -38,9 +35,8 @@ export function MacroColumn({
         {compact || noData ? "" : "g"}
       </span>
       <div className={compact ? "w-full h-1 rounded-full bg-white/[0.08] overflow-hidden" : "w-full h-1.5 rounded-full bg-white/[0.08] overflow-hidden"}>
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color, opacity: note ? 0.45 : 1 }} />
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
       </div>
-      {note && <span className="text-[8px] leading-none text-white/35 text-center">{note}</span>}
     </div>
   );
 }
