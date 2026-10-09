@@ -1,7 +1,7 @@
 "use client";
 
 import { Settings } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { useGymStore } from "@/lib/store/gymStore";
 import { applyDrinkOverride, DRINK_CATEGORIES, POPULAR_DRINKS, type DrinkOption } from "@/lib/data/drinks";
 
@@ -34,7 +34,7 @@ export function DrinkPickerModal({
   const visiblePopulares = POPULAR_DRINKS.filter((d) => !hiddenDrinkIds.includes(d.id));
 
   return (
-    <GlassModal
+    <ExpandSheet
       open={open}
       onClose={onClose}
       title="Añadir una bebida"
@@ -77,6 +77,6 @@ export function DrinkPickerModal({
           );
         })}
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

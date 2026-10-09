@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bot, LogOut, ShieldCheck } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { createClient } from "@/lib/supabase/client";
 import { setCurrentUserId } from "@/lib/store/user-scope";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
@@ -48,7 +48,7 @@ function Avatar({ user, size = 36 }: { user: SessionUser; size?: number }) {
 }
 
 /**
- * Avatar de usuario + nombre. Al hacer click abre un GlassModal con el
+ * Avatar de usuario + nombre. Al hacer click abre un ExpandSheet con el
  * detalle de la cuenta y el botón de cerrar sesión. Usado en el Sidebar
  * (desktop) y en el header móvil del layout del dashboard.
  */
@@ -96,7 +96,7 @@ export function UserMenu({
         )}
       </button>
 
-      <GlassModal open={open} onClose={() => setOpen(false)} title="Tu cuenta">
+      <ExpandSheet open={open} onClose={() => setOpen(false)} title="Tu cuenta">
         <div className="flex flex-col items-center gap-4 py-2">
           <Avatar user={user} size={64} />
           <div className="text-center">
@@ -135,7 +135,7 @@ export function UserMenu({
             {signingOut ? "Cerrando sesión…" : "Cerrar sesión"}
           </button>
         </div>
-      </GlassModal>
+      </ExpandSheet>
     </>
   );
 }

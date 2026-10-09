@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassInput } from "@/components/glass/glass-input";
 import { useGymStore } from "@/lib/store/gymStore";
@@ -44,7 +44,7 @@ export function DrinkVolumeSheet({
   }
 
   return (
-    <GlassModal open={open} onClose={onClose} title={drink.nombre}>
+    <ExpandSheet open={open} onClose={onClose} title={drink.nombre}>
       <div className="flex flex-col gap-5 pb-2">
         <div className="flex flex-col items-center gap-1 py-2">
           <span className="text-5xl leading-none">{drink.emoji}</span>
@@ -103,6 +103,6 @@ export function DrinkVolumeSheet({
           Añadir
         </GlassButton>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

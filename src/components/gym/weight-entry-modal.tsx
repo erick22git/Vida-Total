@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassButton } from "@/components/glass/glass-button";
 import { format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
@@ -30,7 +30,7 @@ export function WeightEntryModal({
   }
 
   return (
-    <GlassModal open={open} onClose={onClose} title="Registrar Peso">
+    <ExpandSheet open={open} onClose={onClose} title="Registrar Peso">
       <div className="flex flex-col gap-6">
         <p className="text-center text-5xl font-extrabold text-white">
           {kg.toFixed(1)} <span className="text-lg text-white/40">kg</span>
@@ -102,6 +102,6 @@ export function WeightEntryModal({
           Registrar Peso
         </GlassButton>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

@@ -26,7 +26,7 @@ import {
 } from "date-fns";
 import { es } from "date-fns/locale";
 import { GlassCard } from "@/components/glass/glass-card";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { useGymStore } from "@/lib/store/gymStore";
 import {
   computeWorkoutStreak,
@@ -232,14 +232,14 @@ export default function EntrenamientoRachasPage() {
         </div>
       </GlassCard>
 
-      <GlassModal open={helpOpen} onClose={() => setHelpOpen(false)} title="¿Cómo funciona la racha?">
+      <ExpandSheet open={helpOpen} onClose={() => setHelpOpen(false)} title="¿Cómo funciona la racha?">
         <p className="text-sm text-white/70 leading-relaxed">
           Cada día que completes al menos un entrenamiento, tu racha aumenta en uno. Si pasas un día
           completo sin entrenar (y ese día no era de descanso planificado), la racha se reinicia. Los
           días de descanso de tu plan semanal se muestran con 🌙 y no cuentan como entrenamiento, pero
           sí quedan registrados en el calendario.
         </p>
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

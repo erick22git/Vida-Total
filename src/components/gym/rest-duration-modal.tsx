@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Check } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassButton } from "@/components/glass/glass-button";
 
 export const REST_DURATION_PRESETS = [30, 40, 50, 60, 70, 80, 90, 120, 180];
@@ -46,7 +46,7 @@ export function RestDurationModal({
   }
 
   return (
-    <GlassModal open={open} onClose={onClose} title="Tiempo de descanso">
+    <ExpandSheet open={open} onClose={onClose} title="Tiempo de descanso">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-0.5">
           {presets.map((sec) => {
@@ -78,6 +78,6 @@ export function RestDurationModal({
           Continuar
         </GlassButton>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

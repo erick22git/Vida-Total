@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
 import type { Task, TaskPriority } from "@/lib/types/habits";
@@ -72,7 +72,7 @@ export function TaskModal({
   }
 
   return (
-    <GlassModal open={open} onClose={onClose} title={task ? "Editar tarea" : "Nueva tarea"}>
+    <ExpandSheet open={open} onClose={onClose} title={task ? "Editar tarea" : "Nueva tarea"}>
       <div className="flex flex-col gap-4">
         <GlassInput
           placeholder="Título de la tarea"
@@ -166,6 +166,6 @@ export function TaskModal({
           {task ? "Guardar cambios" : "Crear tarea"}
         </GlassButton>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

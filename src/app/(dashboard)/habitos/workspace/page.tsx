@@ -16,7 +16,7 @@ import {
   Heading,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { useHabitsStore } from "@/lib/store/habitsStore";
 import { NotionBlockView } from "@/components/habitos/notion-block";
@@ -244,7 +244,7 @@ export default function WorkspacePage() {
         {viewMode === "tablero" ? <Kanban size={22} className="text-white" /> : <Plus size={24} className="text-white" />}
       </button>
 
-      <GlassModal
+      <ExpandSheet
         open={templateModalOpen}
         onClose={() => setTemplateModalOpen(false)}
         title="Nueva página"
@@ -276,7 +276,7 @@ export default function WorkspacePage() {
             })}
           </div>
         </div>
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

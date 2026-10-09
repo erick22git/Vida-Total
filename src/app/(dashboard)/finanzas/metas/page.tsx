@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Plus, PiggyBank, Trash2 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { useFinanceStore, useCurrencySymbol, formatMoney } from "@/lib/store/financeStore";
@@ -140,7 +140,7 @@ export default function MetasPage() {
         <Plus size={26} color="#fff" />
       </motion.button>
 
-      <GlassModal open={modalOpen} onClose={() => setModalOpen(false)} title="Nueva meta">
+      <ExpandSheet open={modalOpen} onClose={() => setModalOpen(false)} title="Nueva meta">
         <div className="flex flex-col gap-4">
           <GlassInput placeholder="Nombre de la meta" value={name} onChange={(e) => setName(e.target.value)} />
           <GlassInput
@@ -200,9 +200,9 @@ export default function MetasPage() {
             Crear meta
           </GlassButton>
         </div>
-      </GlassModal>
+      </ExpandSheet>
 
-      <GlassModal open={!!addFor} onClose={() => setAddFor(null)} title="Agregar ahorro">
+      <ExpandSheet open={!!addFor} onClose={() => setAddFor(null)} title="Agregar ahorro">
         <div className="flex flex-col gap-4">
           <GlassInput
             type="number"
@@ -224,7 +224,7 @@ export default function MetasPage() {
             Agregar
           </GlassButton>
         </div>
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

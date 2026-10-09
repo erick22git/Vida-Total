@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { OutfitThumbRow } from "@/components/outfit/outfit-thumb-row";
 import { OCCASION_LABELS } from "@/lib/outfit-utils";
 import { useOutfitStore } from "@/lib/store/outfitStore";
@@ -21,7 +21,7 @@ export function DayOutfitModal({
   const outfits = useOutfitStore((s) => s.outfits);
 
   return (
-    <GlassModal open={open} onClose={onClose} title={`Outfit para ${dayLabel}`}>
+    <ExpandSheet open={open} onClose={onClose} title={`Outfit para ${dayLabel}`}>
       <div className="flex flex-col gap-3">
         {outfits.length === 0 ? (
           <p className="text-sm text-white/45 text-center py-6">
@@ -54,6 +54,6 @@ export function DayOutfitModal({
           <PlusCircle size={16} /> Crear un outfit nuevo
         </Link>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

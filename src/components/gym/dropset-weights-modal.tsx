@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassInput } from "@/components/glass/glass-input";
 
@@ -50,7 +50,7 @@ export function DropsetWeightsModal({
   }
 
   return (
-    <GlassModal open={open} onClose={onClose} title="Pesos del dropset">
+    <ExpandSheet open={open} onClose={onClose} title="Pesos del dropset">
       <div className="flex flex-col gap-3">
         <p className="text-xs text-white/50">Registra el peso de cada bajada, en orden (de más a menos peso).</p>
         <div className="flex flex-col gap-2">
@@ -87,6 +87,6 @@ export function DropsetWeightsModal({
           Guardar
         </GlassButton>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

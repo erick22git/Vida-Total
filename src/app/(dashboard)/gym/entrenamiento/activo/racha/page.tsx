@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Flame, Check } from "lucide-react";
 import { GlassButton } from "@/components/glass/glass-button";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { useGymStore } from "@/lib/store/gymStore";
 
 const DAY_LABELS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"];
@@ -81,12 +81,12 @@ export default function StreakPage() {
         Continuar
       </GlassButton>
 
-      <GlassModal open={helpOpen} onClose={() => setHelpOpen(false)} title="¿Cómo funciona la racha?">
+      <ExpandSheet open={helpOpen} onClose={() => setHelpOpen(false)} title="¿Cómo funciona la racha?">
         <p className="text-sm text-white/70 leading-relaxed">
           Cada día que completes al menos un entrenamiento, tu racha aumenta en uno. Si pasas un día completo sin
           entrenar, la racha se reinicia. ¡Entrena seguido para mantenerla viva!
         </p>
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

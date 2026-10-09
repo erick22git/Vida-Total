@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import type { SetType } from "@/lib/types";
 import { SET_TYPE_META, SET_TYPES } from "@/components/gym/set-type";
 
@@ -17,7 +17,7 @@ export function SetTypeModal({
   onSelect: (type: SetType) => void;
 }) {
   return (
-    <GlassModal open={open} onClose={onClose} title="Seleccionar Tipo de Serie">
+    <ExpandSheet open={open} onClose={onClose} title="Seleccionar Tipo de Serie">
       <div className="flex flex-col gap-2">
         {SET_TYPES.map((type) => {
           const meta = SET_TYPE_META[type];
@@ -47,6 +47,6 @@ export function SetTypeModal({
           );
         })}
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

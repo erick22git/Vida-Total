@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Search, Trash2, Pencil, Wallet, Plus } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassInput } from "@/components/glass/glass-input";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassButton } from "@/components/glass/glass-button";
 import {
   useFinanceStore,
@@ -229,7 +229,7 @@ export default function TransaccionesPage() {
         <Plus size={26} color="#fff" />
       </motion.button>
 
-      <GlassModal open={creating} onClose={() => setCreating(false)} title="Nuevo movimiento">
+      <ExpandSheet open={creating} onClose={() => setCreating(false)} title="Nuevo movimiento">
         <TransactionForm
           onSave={(patch) => {
             addTransaction({
@@ -242,9 +242,9 @@ export default function TransaccionesPage() {
             setCreating(false);
           }}
         />
-      </GlassModal>
+      </ExpandSheet>
 
-      <GlassModal open={!!editing} onClose={() => setEditing(null)} title="Editar transacción">
+      <ExpandSheet open={!!editing} onClose={() => setEditing(null)} title="Editar transacción">
         {editing && (
           <TransactionForm
             transaction={editing}
@@ -254,7 +254,7 @@ export default function TransaccionesPage() {
             }}
           />
         )}
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

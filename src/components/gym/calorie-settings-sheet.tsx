@@ -11,7 +11,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, TrendingUp, Check } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GAUGES } from "@/lib/3d/gauge-registry";
@@ -222,7 +222,7 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
             </div>
           </div>
 
-          <GlassModal open={goalModalOpen} onClose={() => setGoalModalOpen(false)} title="Configuración de calorías">
+          <ExpandSheet open={goalModalOpen} onClose={() => setGoalModalOpen(false)} title="Configuración de calorías">
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => {
@@ -252,9 +252,9 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
                 Guardar
               </GlassButton>
             </div>
-          </GlassModal>
+          </ExpandSheet>
 
-          <GlassModal open={reviewOpen} onClose={() => setReviewOpen(false)} title="Revisar sugerencia">
+          <ExpandSheet open={reviewOpen} onClose={() => setReviewOpen(false)} title="Revisar sugerencia">
             {!sugerencia ? (
               <div className="flex flex-col gap-3">
                 <p className="text-sm text-white/70">
@@ -344,9 +344,9 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
               )}
               <p className="text-[10px] text-white/35">Valores de referencia generales (DRI, 2005), no consejo médico. No cambia tus registros de agua.</p>
             </div>
-          </GlassModal>
+          </ExpandSheet>
 
-          <GlassModal open={macroModalOpen} onClose={() => setMacroModalOpen(false)} title="Configurar macros">
+          <ExpandSheet open={macroModalOpen} onClose={() => setMacroModalOpen(false)} title="Configurar macros">
             <div className="flex flex-col gap-3">
               <LabeledInput label="Proteína (g)" value={proteinInput} onChange={setProteinInput} />
               <LabeledInput label="Carbohidratos (g)" value={carbsInput} onChange={setCarbsInput} />
@@ -368,7 +368,7 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
                 Guardar
               </GlassButton>
             </div>
-          </GlassModal>
+          </ExpandSheet>
         </motion.div>
       )}
     </AnimatePresence>

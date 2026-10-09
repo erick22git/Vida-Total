@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Camera } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
 import { CATEGORY_LABELS, CATEGORY_ORDER, COLOR_SWATCHES, SEASON_LABELS } from "@/lib/outfit-utils";
@@ -61,7 +61,7 @@ export function ClothingFormModal({
   }
 
   return (
-    <GlassModal open={open} onClose={onClose} title={item ? "Editar prenda" : "Nueva prenda"}>
+    <ExpandSheet open={open} onClose={onClose} title={item ? "Editar prenda" : "Nueva prenda"}>
       <div className="flex flex-col gap-4">
         <div className="flex justify-center">
           <button
@@ -163,6 +163,6 @@ export function ClothingFormModal({
           {item ? "Guardar cambios" : "Agregar prenda"}
         </GlassButton>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

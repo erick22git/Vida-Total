@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassButton } from "@/components/glass/glass-button";
 
 export function ConfirmModal({
@@ -24,7 +24,7 @@ export function ConfirmModal({
   loading?: boolean;
 }) {
   return (
-    <GlassModal open={open} onClose={onClose} title={title}>
+    <ExpandSheet open={open} onClose={onClose} title={title}>
       <div className="flex flex-col gap-5">
         <div className="flex items-start gap-3">
           {danger && <AlertTriangle size={18} className="text-amber-300 shrink-0 mt-0.5" />}
@@ -45,6 +45,6 @@ export function ConfirmModal({
           </GlassButton>
         </div>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

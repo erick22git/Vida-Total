@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Check } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
 import { useGymStore } from "@/lib/store/gymStore";
@@ -49,7 +49,7 @@ export function EditPlanModal({
   }
 
   return (
-    <GlassModal open={open} onClose={onClose} title="Editar plan">
+    <ExpandSheet open={open} onClose={onClose} title="Editar plan">
       <div className="flex flex-col gap-5 pb-2">
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">Nombre</span>
@@ -127,6 +127,6 @@ export function EditPlanModal({
           Guardar cambios
         </GlassButton>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

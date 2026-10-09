@@ -16,7 +16,7 @@ import { differenceInCalendarDays, format } from "date-fns";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassInput } from "@/components/glass/glass-input";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { usePazMentalStore, todayISO } from "@/lib/store/pazMentalStore";
 
 const MOOD_EMOJIS = ["😞", "😕", "😐", "🙂", "😄"] as const;
@@ -255,7 +255,7 @@ export default function DiarioPage() {
         </div>
       )}
 
-      <GlassModal open={modalOpen} onClose={() => setModalOpen(false)} title="Nueva entrada">
+      <ExpandSheet open={modalOpen} onClose={() => setModalOpen(false)} title="Nueva entrada">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs text-white/50">Título</label>
@@ -300,7 +300,7 @@ export default function DiarioPage() {
             Guardar entrada
           </GlassButton>
         </div>
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

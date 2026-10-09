@@ -13,7 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Plus, RotateCw, SlidersHorizontal } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { RankBody3D, type RankBodyHandle } from "@/components/gym/rank-body-3d";
 import { MuscleGroupIcon } from "@/components/gym/muscle-group-icon";
 import { RankIcon } from "@/components/gym/rank-icon";
@@ -277,7 +277,7 @@ export default function RangoPage() {
         </nav>
       </footer>
 
-      <GlassModal open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Ajustes de rango">
+      <ExpandSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Ajustes de rango">
         <div className="flex flex-col gap-3 text-sm">
           <Link
             href="/gym/entrenamiento/configurar-perfil?volver=/gym/entrenamiento/rango"
@@ -299,7 +299,7 @@ export default function RangoPage() {
             <p>El cuerpo 3D es el modelo masculino (el femenino está pendiente).</p>
           </div>
         </div>
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { HelpCircle } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { effectiveWeight, peakWeight } from "@/lib/gym-utils";
 import type { WorkoutSession } from "@/lib/types";
 
@@ -139,12 +139,12 @@ export function ExerciseSummaryTab({
         </div>
       </div>
 
-      <GlassModal open={howToOpen} onClose={() => setHowToOpen(false)} title="Cómo registrar el peso">
+      <ExpandSheet open={howToOpen} onClose={() => setHowToOpen(false)} title="Cómo registrar el peso">
         <p className="text-sm text-white/70 leading-relaxed">
           Registra siempre el peso total que mueves, incluyendo el peso de la barra u otros implementos. Para
           ejercicios con peso corporal, registra solo el peso adicional (lastre) si lo usas.
         </p>
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

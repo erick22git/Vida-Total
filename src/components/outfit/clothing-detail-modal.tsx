@@ -1,7 +1,7 @@
 "use client";
 
 import { Pencil, Trash2 } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassBadge } from "@/components/glass/glass-badge";
 import { CATEGORY_ICONS, CATEGORY_LABELS, SEASON_LABELS } from "@/lib/outfit-utils";
@@ -26,7 +26,7 @@ export function ClothingDetailModal({
     item.cost != null && item.timesWorn > 0 ? item.cost / item.timesWorn : undefined;
 
   return (
-    <GlassModal open={open} onClose={onClose} title={item.name}>
+    <ExpandSheet open={open} onClose={onClose} title={item.name}>
       <div className="flex flex-col gap-4">
         <div
           className="w-full aspect-square rounded-2xl overflow-hidden flex items-center justify-center"
@@ -83,6 +83,6 @@ export function ClothingDetailModal({
           </GlassButton>
         </div>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

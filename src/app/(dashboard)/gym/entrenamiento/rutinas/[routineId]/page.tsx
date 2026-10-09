@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
 import { useGymStore } from "@/lib/store/gymStore";
@@ -189,7 +189,7 @@ export default function RoutineDetailPage({
         <Play size={18} /> Empezar Entrenamiento
       </GlassButton>
 
-      <GlassModal open={renameOpen} onClose={() => setRenameOpen(false)} title="Cambiar nombre">
+      <ExpandSheet open={renameOpen} onClose={() => setRenameOpen(false)} title="Cambiar nombre">
         <div className="flex flex-col gap-4">
           <GlassInput value={newName} onChange={(e) => setNewName(e.target.value)} autoFocus />
           <GlassButton
@@ -203,9 +203,9 @@ export default function RoutineDetailPage({
             Guardar
           </GlassButton>
         </div>
-      </GlassModal>
+      </ExpandSheet>
 
-      <GlassModal
+      <ExpandSheet
         open={replacingExerciseId !== null}
         onClose={() => setReplacingExerciseId(null)}
         title="Sustituir ejercicio"
@@ -215,7 +215,7 @@ export default function RoutineDetailPage({
             if (replacingExerciseId) replaceExerciseInRoutine(replacingExerciseId, ex.id);
           }}
         />
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

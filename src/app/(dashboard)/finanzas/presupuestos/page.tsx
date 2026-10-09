@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Plus, ListChecks } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import {
@@ -119,7 +119,7 @@ export default function PresupuestosPage() {
         <Plus size={26} color="#fff" />
       </motion.button>
 
-      <GlassModal open={modalOpen} onClose={() => setModalOpen(false)} title="Nuevo presupuesto">
+      <ExpandSheet open={modalOpen} onClose={() => setModalOpen(false)} title="Nuevo presupuesto">
         <div className="flex flex-col gap-4">
           {availableCategories.length === 0 ? (
             <p className="text-sm text-white/45">
@@ -161,7 +161,7 @@ export default function PresupuestosPage() {
             </>
           )}
         </div>
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

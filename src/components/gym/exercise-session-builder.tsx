@@ -23,7 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
 import { RoutineSetTable } from "@/components/gym/routine-set-table";
@@ -513,7 +513,7 @@ export function ExerciseSessionBuilder({
         </>
       )}
 
-      <GlassModal open={addPickerOpen} onClose={() => setAddPickerOpen(false)} title={addButtonLabel}>
+      <ExpandSheet open={addPickerOpen} onClose={() => setAddPickerOpen(false)} title={addButtonLabel}>
         <ExercisePicker
           multiple
           onConfirmSelection={(exs) => {
@@ -525,9 +525,9 @@ export function ExerciseSessionBuilder({
             setAddPickerOpen(false);
           }}
         />
-      </GlassModal>
+      </ExpandSheet>
 
-      <GlassModal open={ladderOpen} onClose={() => setLadderOpen(false)} title="Escalera de reps">
+      <ExpandSheet open={ladderOpen} onClose={() => setLadderOpen(false)} title="Escalera de reps">
         <div className="flex flex-col gap-4">
           <p className="text-xs text-white/50">
             Las reps del ejercicio elegido suben ronda a ronda. Ej.: inicio 1, sube 1, tope 8 da 8 rondas con 1, 2, 3 ... 8
@@ -569,13 +569,13 @@ export function ExerciseSessionBuilder({
             Aplicar escalera
           </button>
         </div>
-      </GlassModal>
+      </ExpandSheet>
 
-      <GlassModal open={replacePickerOpen} onClose={() => setReplacePickerOpen(false)} title="Reemplazar ejercicio">
+      <ExpandSheet open={replacePickerOpen} onClose={() => setReplacePickerOpen(false)} title="Reemplazar ejercicio">
         <ExercisePicker onSelect={(ex) => replaceActive(ex.id)} />
-      </GlassModal>
+      </ExpandSheet>
 
-      <GlassModal open={groupPickerOpen} onClose={() => setGroupPickerOpen(false)} title="Agrupar ejercicios">
+      <ExpandSheet open={groupPickerOpen} onClose={() => setGroupPickerOpen(false)} title="Agrupar ejercicios">
         <div className="flex flex-col gap-4">
           <p className="text-xs text-white/50">
             Elige con cuáles de este día hará superserie {activeExercise?.nombre} — se hacen uno tras otro, serie por
@@ -620,7 +620,7 @@ export function ExerciseSessionBuilder({
             Agrupar {groupSelection.length > 0 ? `(${groupSelection.length + 1})` : ""}
           </button>
         </div>
-      </GlassModal>
+      </ExpandSheet>
 
       {active && (
         <RestDurationModal

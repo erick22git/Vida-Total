@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Dumbbell, type LucideIcon, icons } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 
 export interface FilterOption {
   value: string;
@@ -31,7 +31,7 @@ export function FilterModal({
   const allSelected = selected.length === 0;
 
   return (
-    <GlassModal open={open} onClose={onClose} title={title}>
+    <ExpandSheet open={open} onClose={onClose} title={title}>
       <div className="flex flex-col gap-1.5">
         <Row
           label={allLabel}
@@ -54,7 +54,7 @@ export function FilterModal({
           );
         })}
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { useGymStore } from "@/lib/store/gymStore";
 import { applyDrinkOverride, DRINK_CATEGORIES, POPULAR_DRINKS, type DrinkOption } from "@/lib/data/drinks";
 import { cn } from "@/lib/utils";
@@ -50,7 +50,7 @@ export function DrinkSettingsModal({
   const hiddenDrinkIds = useGymStore((s) => s.hiddenDrinkIds);
 
   return (
-    <GlassModal open={open} onClose={onClose} title="Bebidas">
+    <ExpandSheet open={open} onClose={onClose} title="Bebidas">
       <div className="flex flex-col gap-6 pb-2">
         <p className="text-xs text-white/45 -mt-1">Toca una bebida para editarla.</p>
 
@@ -90,6 +90,6 @@ export function DrinkSettingsModal({
           </div>
         ))}
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
 import { MUSCLE_GROUPS, EQUIPMENT_LIST } from "@/lib/data/gym-meta";
@@ -52,7 +52,7 @@ export function CreateExerciseModal({
   }
 
   return (
-    <GlassModal open={open} onClose={onClose} title="Crear Ejercicio">
+    <ExpandSheet open={open} onClose={onClose} title="Crear Ejercicio">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-center w-full aspect-video rounded-2xl bg-white/[0.05] border border-dashed border-white/15 text-white/35 text-sm">
           Imagen opcional
@@ -141,6 +141,6 @@ export function CreateExerciseModal({
           Crear ejercicio
         </GlassButton>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

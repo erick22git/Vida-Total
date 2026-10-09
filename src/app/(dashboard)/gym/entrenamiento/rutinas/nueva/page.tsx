@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { GlassButton } from "@/components/glass/glass-button";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { ExercisePicker } from "@/components/gym/exercise-picker";
 import { ExerciseSessionBuilder } from "@/components/gym/exercise-session-builder";
@@ -67,7 +67,7 @@ export default function NewRoutinePage() {
 
       <ExerciseSessionBuilder draft={draft} onDraftChange={setDraft} />
 
-      <GlassModal open={nameModalOpen} onClose={() => setNameModalOpen(false)} title="Guardar rutina">
+      <ExpandSheet open={nameModalOpen} onClose={() => setNameModalOpen(false)} title="Guardar rutina">
         <div className="flex flex-col gap-4">
           <GlassInput
             value={routineName}
@@ -79,7 +79,7 @@ export default function NewRoutinePage() {
             Guardar rutina
           </GlassButton>
         </div>
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

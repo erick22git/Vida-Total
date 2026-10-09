@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Pencil, EyeOff, Eye } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassInput } from "@/components/glass/glass-input";
 import { useGymStore } from "@/lib/store/gymStore";
@@ -94,7 +94,7 @@ export function DrinkEditModal({
   const oculta = hiddenDrinkIds.includes(drink.id);
 
   return (
-    <GlassModal open={open} onClose={onClose} title="Editar bebida">
+    <ExpandSheet open={open} onClose={onClose} title="Editar bebida">
       <div className="flex flex-col gap-6 pb-2">
         <div className="flex flex-col items-center gap-2 pt-1">
           <span className="text-5xl leading-none">{drink.emoji}</span>
@@ -206,6 +206,6 @@ export function DrinkEditModal({
           {oculta ? "Mostrar bebida" : "Ocultar bebida"}
         </GlassButton>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

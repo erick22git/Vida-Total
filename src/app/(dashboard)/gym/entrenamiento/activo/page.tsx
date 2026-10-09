@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { SessionSetRow } from "@/components/gym/session-set-row";
 import { SessionExerciseCarousel } from "@/components/gym/session-exercise-carousel";
@@ -367,7 +367,7 @@ export default function ActiveWorkoutPage() {
         <RestBar key="rest-bar" />
       </AnimatePresence>
 
-      <GlassModal open={pickerOpen} onClose={() => setPickerOpen(false)} title="Cambiar ejercicio">
+      <ExpandSheet open={pickerOpen} onClose={() => setPickerOpen(false)} title="Cambiar ejercicio">
         <ExercisePicker
           activeExerciseId={currentLog.exerciseId}
           onSelect={(ex) => {
@@ -375,9 +375,9 @@ export default function ActiveWorkoutPage() {
             setPickerOpen(false);
           }}
         />
-      </GlassModal>
+      </ExpandSheet>
 
-      <GlassModal open={addPickerOpen} onClose={() => setAddPickerOpen(false)} title="Agregar ejercicios">
+      <ExpandSheet open={addPickerOpen} onClose={() => setAddPickerOpen(false)} title="Agregar ejercicios">
         <ExercisePicker
           multiple
           onConfirmSelection={(exs) => {
@@ -389,7 +389,7 @@ export default function ActiveWorkoutPage() {
             setAddPickerOpen(false);
           }}
         />
-      </GlassModal>
+      </ExpandSheet>
 
       <SetTypeModal
         open={dropsetTypeOpen}
@@ -407,7 +407,7 @@ export default function ActiveWorkoutPage() {
         }}
       />
 
-      <GlassModal
+      <ExpandSheet
         open={confirmAction !== null}
         onClose={() => setConfirmAction(null)}
         title={confirmAction === "discard" ? "Descartar entrenamiento" : "Sacar ejercicio de hoy"}
@@ -441,16 +441,16 @@ export default function ActiveWorkoutPage() {
             </button>
           </div>
         </div>
-      </GlassModal>
+      </ExpandSheet>
 
-      <GlassModal open={aiComingSoonOpen} onClose={() => setAiComingSoonOpen(false)} title="Escáner de técnica IA">
+      <ExpandSheet open={aiComingSoonOpen} onClose={() => setAiComingSoonOpen(false)} title="Escáner de técnica IA">
         <p className="text-sm text-white/60">
           Estamos preparando el escáner de movimiento con la cámara para revisar tu técnica desde distintos
           ángulos. Todavía no está disponible — pronto vas a poder activarlo desde acá.
         </p>
-      </GlassModal>
+      </ExpandSheet>
 
-      <GlassModal open={notesOpen} onClose={() => setNotesOpen(false)} title="Nota del ejercicio">
+      <ExpandSheet open={notesOpen} onClose={() => setNotesOpen(false)} title="Nota del ejercicio">
         <div className="flex flex-col gap-4">
           <GlassInput
             placeholder="Agregar una nota..."
@@ -462,7 +462,7 @@ export default function ActiveWorkoutPage() {
             Guardar
           </GlassButton>
         </div>
-      </GlassModal>
+      </ExpandSheet>
 
       <RestDurationModal
         open={restConfigOpen}

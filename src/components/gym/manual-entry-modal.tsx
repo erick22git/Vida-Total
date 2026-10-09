@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
 import { useGymStore } from "@/lib/store/gymStore";
@@ -57,7 +57,7 @@ export function ManualEntryModal({
   }
 
   return (
-    <GlassModal open={open} onClose={onClose} title="Ingreso Manual Rápido">
+    <ExpandSheet open={open} onClose={onClose} title="Ingreso Manual Rápido">
       <div className="flex flex-col gap-3">
         <GlassInput placeholder="Nombre (opcional)" value={nombre} onChange={(e) => setNombre(e.target.value)} />
         <GlassInput
@@ -113,6 +113,6 @@ export function ManualEntryModal({
           Agregar a {MEAL_LABELS[meal]}
         </GlassButton>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

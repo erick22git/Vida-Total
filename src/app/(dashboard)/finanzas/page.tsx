@@ -19,7 +19,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassBadge } from "@/components/glass/glass-badge";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import {
   useFinanceStore,
@@ -263,7 +263,7 @@ export default function FinanzasHubPage() {
         <Plus size={26} color="#fff" />
       </motion.button>
 
-      <GlassModal open={modalOpen} onClose={() => setModalOpen(false)} title="Registrar movimiento">
+      <ExpandSheet open={modalOpen} onClose={() => setModalOpen(false)} title="Registrar movimiento">
         <div className="flex flex-col gap-4">
           <div className="flex gap-2">
             {(["gasto", "ingreso"] as TransactionType[]).map((t) => (
@@ -332,7 +332,7 @@ export default function FinanzasHubPage() {
             Guardar movimiento
           </GlassButton>
         </div>
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

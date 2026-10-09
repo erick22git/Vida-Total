@@ -15,7 +15,7 @@ import {
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassInput } from "@/components/glass/glass-input";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { usePazMentalStore } from "@/lib/store/pazMentalStore";
 import { differenceInCalendarDays, format } from "date-fns";
 
@@ -239,7 +239,7 @@ export default function IraPage() {
         )}
       </GlassCard>
 
-      <GlassModal open={modalOpen} onClose={() => setModalOpen(false)} title="Registrar episodio">
+      <ExpandSheet open={modalOpen} onClose={() => setModalOpen(false)} title="Registrar episodio">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs text-white/50">Detonante</label>
@@ -281,7 +281,7 @@ export default function IraPage() {
             Guardar episodio
           </GlassButton>
         </div>
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

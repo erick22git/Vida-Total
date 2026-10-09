@@ -4,7 +4,7 @@ import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { GlassButton } from "@/components/glass/glass-button";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { ExercisePicker } from "@/components/gym/exercise-picker";
 import { ExerciseSessionBuilder } from "@/components/gym/exercise-session-builder";
 import { useGymStore } from "@/lib/store/gymStore";
@@ -67,7 +67,7 @@ export default function EditRoutinePage({
         <ExerciseSessionBuilder draft={draft} onDraftChange={setDraft} />
       )}
 
-      <GlassModal open={emptyPickerOpen} onClose={() => setEmptyPickerOpen(false)} title="Agregar ejercicios">
+      <ExpandSheet open={emptyPickerOpen} onClose={() => setEmptyPickerOpen(false)} title="Agregar ejercicios">
         <ExercisePicker
           multiple
           onConfirmSelection={(exs) => {
@@ -79,7 +79,7 @@ export default function EditRoutinePage({
             setEmptyPickerOpen(false);
           }}
         />
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassInput } from "@/components/glass/glass-input";
 import type { Profile } from "@/lib/types/profile";
@@ -32,7 +32,7 @@ export function EditAccessDatesModal({
   }
 
   return (
-    <GlassModal open={open} onClose={onClose} title="Editar vigencia de acceso">
+    <ExpandSheet open={open} onClose={onClose} title="Editar vigencia de acceso">
       <div className="flex flex-col gap-4">
         <p className="text-xs text-white/45">
           Define el rango de fechas en que <span className="text-white/70">{profile.email}</span> tiene acceso a la
@@ -68,6 +68,6 @@ export function EditAccessDatesModal({
           </GlassButton>
         </div>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }

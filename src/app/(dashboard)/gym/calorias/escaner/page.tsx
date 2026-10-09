@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Camera as CameraIcon, Plus, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
 import { FoodSectionHeader, FOOD_SECTION_BG } from "@/components/gym/food-section-header";
 import { GlassButton } from "@/components/glass/glass-button";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { useGymStore } from "@/lib/store/gymStore";
 import type { MealType } from "@/lib/types";
 import type { AnalyzedFoodItem } from "@/app/api/food/analyze/route";
@@ -494,7 +494,7 @@ function EscanerContent() {
         </div>
       </div>
 
-      <GlassModal
+      <ExpandSheet
         open={analyzeError !== null}
         onClose={() => setAnalyzeError(null)}
         title={
@@ -556,7 +556,7 @@ function EscanerContent() {
             )}
           </div>
         </div>
-      </GlassModal>
+      </ExpandSheet>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import { GlassModal } from "@/components/glass/glass-modal";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { FoodPhoto } from "@/components/gym/food-photo";
 import { VerifiedBadge } from "@/components/gym/verified-badge";
@@ -49,7 +49,7 @@ export function RecipeIngredientPicker({
   }
 
   return (
-    <GlassModal open={open} onClose={onClose} title="Agregar ingrediente">
+    <ExpandSheet open={open} onClose={onClose} title="Agregar ingrediente">
       <div className="flex flex-col gap-3">
         <GlassInput icon={<Search size={16} />} placeholder="Buscar alimento..." value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck={false} enterKeyHint="search" autoFocus />
         <div className="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1">
@@ -74,6 +74,6 @@ export function RecipeIngredientPicker({
           {results.length === 0 && <p className="text-sm text-white/40 text-center py-6">Sin resultados.</p>}
         </div>
       </div>
-    </GlassModal>
+    </ExpandSheet>
   );
 }
