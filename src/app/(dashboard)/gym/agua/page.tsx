@@ -125,7 +125,7 @@ export default function AguaPage() {
                 glassRef.current?.pour();
               }}
               aria-label={`Agregar ${ml} ml`}
-              className="relative rounded-full aspect-square flex flex-col items-center justify-center w-16 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+              className="relative rounded-2xl flex flex-col items-center justify-center w-16 h-16 cursor-pointer transition-transform hover:scale-105 active:scale-95"
               style={{
                 background: "radial-gradient(circle at 50% 30%, rgb(30,30,30) 0%, rgb(13,13,13) 55%, rgb(5,5,5) 100%)",
                 boxShadow: "inset 0 2px 5px rgba(255,255,255,0.1), inset 0 -14px 26px rgba(0,0,0,0.85), 0 10px 26px rgba(0,0,0,0.55)",
@@ -138,7 +138,11 @@ export default function AguaPage() {
         </div>
         <button
           onClick={() => setAddDrinkOpen(true)}
-          className="flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white bg-white/[0.06] hover:bg-white/[0.1] glass-specular-ring transition-colors cursor-pointer"
+          className="relative flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white cursor-pointer transition-transform hover:scale-105 active:scale-95"
+          style={{
+            background: "radial-gradient(circle at 50% 30%, rgb(30,30,30) 0%, rgb(13,13,13) 55%, rgb(5,5,5) 100%)",
+            boxShadow: "inset 0 2px 5px rgba(255,255,255,0.1), inset 0 -14px 26px rgba(0,0,0,0.85), 0 10px 26px rgba(0,0,0,0.55)",
+          }}
         >
           <Plus size={16} /> Añadir una bebida
         </button>
