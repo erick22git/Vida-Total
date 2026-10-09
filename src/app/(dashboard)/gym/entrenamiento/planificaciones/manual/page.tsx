@@ -14,6 +14,7 @@ import { dominantMuscleGroup, newRoutineExercises } from "@/lib/gym-utils";
 import { PLAN_LIBRARY_CATEGORIES } from "@/lib/data/plan-library";
 import { MUSCLE_GROUPS } from "@/lib/data/gym-meta";
 import { cn } from "@/lib/utils";
+import { notify } from "@/lib/notify/use-notify";
 import type { RoutineExercise, WeeklyPlanDay, MuscleGroup } from "@/lib/types";
 
 const DAYS = [
@@ -58,7 +59,6 @@ export default function ManualPlanCreatorPage() {
   const [dayMuscleOverride, setDayMuscleOverride] = useState<(MuscleGroup | null)[]>(DAYS.map(() => null));
   const [editingDay, setEditingDay] = useState<number | null>(null);
   const [dayClipboard, setDayClipboard] = useState<DayClipboard | null>(readDayClipboard);
-  const [toast, setToast] = useState<string | null>(null);
   const [nombre, setNombre] = useState("Mi Plan Personalizado");
   const [categoria, setCategoria] = useState(PLAN_LIBRARY_CATEGORIES[0]);
   const [nuevaCategoria, setNuevaCategoria] = useState(false);
@@ -89,8 +89,7 @@ export default function ManualPlanCreatorPage() {
   }
 
   function flashToast(msg: string) {
-    setToast(msg);
-    window.setTimeout(() => setToast(null), 1800);
+    notify({ type: "reminder", priority: "low", title: msg });
   }
 
   function copyDayDraft(i: number) {
@@ -148,11 +147,6 @@ export default function ManualPlanCreatorPage() {
     const canPaste = !!dayClipboard?.ejercicios && dayClipboard.ejercicios.length > 0;
     return (
       <div className="flex flex-col gap-5 pb-8">
-        {toast && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-full px-4 py-2 text-xs font-medium text-white bg-black/80 border border-white/15">
-            {toast}
-          </div>
-        )}
         <header className="flex items-center justify-between gap-3 pt-2">
           <div className="flex items-center gap-3 min-w-0">
             <button onClick={() => setEditingDay(null)} className="text-white/50 hover:text-white transition-colors cursor-pointer shrink-0">

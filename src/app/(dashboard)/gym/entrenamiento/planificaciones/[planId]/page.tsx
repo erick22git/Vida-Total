@@ -11,6 +11,7 @@ import { useGymStore } from "@/lib/store/gymStore";
 import { dominantMuscleGroup, newRoutineExercises } from "@/lib/gym-utils";
 import { MUSCLE_GROUPS } from "@/lib/data/gym-meta";
 import { cn } from "@/lib/utils";
+import { notify } from "@/lib/notify/use-notify";
 import type { RoutineExercise, MuscleGroup, WeeklyPlanDay } from "@/lib/types";
 
 const DAY_LABELS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
@@ -50,11 +51,9 @@ export default function PlanDetailPage({
   const setActivePlan = useGymStore((s) => s.setActivePlan);
   const applyPlanToWeek = useGymStore((s) => s.applyPlanToWeek);
   const [dayClipboard, setDayClipboard] = useState<DayClipboard | null>(readDayClipboard);
-  const [toast, setToast] = useState<string | null>(null);
 
   function flashToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 1800);
+    notify({ type: "reminder", priority: "low", title: msg });
   }
 
   const plan = plans.find((p) => p.id === planId);
@@ -275,11 +274,6 @@ export default function PlanDetailPage({
 
   return (
     <div className="flex flex-col gap-6 pb-8">
-      {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-full px-4 py-2 text-xs font-medium text-white bg-black/80 border border-white/15">
-          {toast}
-        </div>
-      )}
       <header className="flex items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-3 min-w-0">
           <button onClick={() => router.back()} className="text-white/50 hover:text-white transition-colors cursor-pointer shrink-0">

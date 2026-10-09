@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Plus } from "lucide-react";
 import { format } from "date-fns";
@@ -14,6 +14,9 @@ import { totalsByDrink } from "@/lib/gym/water-stats";
 import { waterState } from "@/lib/gym/water-state";
 import { useGymStore, useTodayWaterEntries } from "@/lib/store/gymStore";
 import { playEvent } from "@/lib/sound/sound-manager";
+import { notify } from "@/lib/notify/use-notify";
+
+const WATER_CELEBRATED_KEY = "vt-agua-celebrada";
 
 /** Chorro y salpicón del vaso: duración/volumen proporcionales a los ml, con tope en los 1,25 s que
  * dura la animación del chorro (`POUR_DUR` en `lib/3d/water-glass.ts`) para no sonar más que el vaso. */
@@ -72,6 +75,26 @@ export default function AguaPage() {
     return new Set([...byDay].filter(([, ml]) => ml >= waterGoalMl).map(([k]) => k));
   }, [waterEntries, waterGoalMl]);
   const todayISO = format(new Date(), "yyyy-MM-dd");
+
+  // Meta de agua cumplida: aviso "goal" una sola vez por día (no hay celebración de confeti para
+  // agua, a diferencia de calorías — la notificación es el único aviso que tiene hoy).
+  useEffect(() => {
+    if (!water.reached) return;
+    let last: string | null = null;
+    try {
+      last = localStorage.getItem(WATER_CELEBRATED_KEY);
+    } catch {
+      /* sin almacenamiento: puede repetirse en otra sesión */
+    }
+    if (last === todayISO) return;
+    try {
+      localStorage.setItem(WATER_CELEBRATED_KEY, todayISO);
+    } catch {
+      /* ignorar */
+    }
+    notify({ type: "goal", priority: "low", title: "Meta de agua cumplida", message: `${totalMl} / ${waterGoalMl} ml hoy. ¡Buen trabajo!` });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [water.reached, todayISO]);
 
   return (
     // Pantalla fija (sin scroll propio): deslizar hacia arriba / rueda hacia abajo lleva a Estadísticas.

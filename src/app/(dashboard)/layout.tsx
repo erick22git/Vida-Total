@@ -13,6 +13,7 @@ import { HabitSourceBridge } from "@/components/habitos/habit-source-bridge";
 import { AgentFab } from "@/components/agente/agent-fab";
 import { AgentInboxApplier } from "@/components/agente/agent-inbox-applier";
 import { AgentNotificationBanner } from "@/components/agente/agent-notification-banner";
+import { DynamicIsland } from "@/components/shared/dynamic-island";
 import { createClient } from "@/lib/supabase/server";
 import { getAccountNotice, type Profile } from "@/lib/types/profile";
 
@@ -105,6 +106,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         <AgentFab />
         <AgentInboxApplier userId={user.id} />
         <AgentNotificationBanner userId={user.id} />
+        <DynamicIsland />
       </div>
     </ProfileProvider>
   );

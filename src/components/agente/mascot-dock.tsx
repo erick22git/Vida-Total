@@ -18,6 +18,7 @@ import { useGymStore } from "@/lib/store/gymStore";
 import { useMascotUi, type DockTab } from "@/lib/store/mascotUiStore";
 import { usePreferencesStore } from "@/lib/store/preferencesStore";
 import { unlockSoundManager } from "@/lib/sound/sound-manager";
+import { notify } from "@/lib/notify/use-notify";
 
 /** Estado de ánimo de la mascota según lo que pasa. */
 export function useMascotMood(): { mood: MascotMood; status: string } {
@@ -53,11 +54,9 @@ export function MascotDock() {
   const { mood, status } = useMascotMood();
   const agent = useActiveAgent();
   const [plusOpen, setPlusOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
 
   const flash = (m: string) => {
-    setToast(m);
-    setTimeout(() => setToast(null), 2000);
+    notify({ type: "reminder", priority: "low", title: m });
   };
 
   // «+»: creación rápida. Cada opción es un toque tuyo (no una orden del agente): el agua se aplica directo; el resto deja el texto listo en el chat.
@@ -173,12 +172,6 @@ export function MascotDock() {
                   ))}
                 </div>
               )}
-              {toast && (
-                <p className="mx-3 mt-1.5 text-center text-[12px] font-bold rounded-full py-1.5" style={{ background: CHIP }} role="status">
-                  {toast}
-                </p>
-              )}
-
               {expanded && tab !== "home" && tab !== "history" && <AgentPicker />}
 
               {!expanded && tab === "home" && (

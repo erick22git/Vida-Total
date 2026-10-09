@@ -18,6 +18,7 @@ import { useGymStore } from "@/lib/store/gymStore";
 import { mergeFoods } from "@/lib/food-utils";
 import { buildUsageMap, resolveFood } from "@/lib/nutrition/food-resolver";
 import { useKeyboardInset } from "@/lib/ui/use-keyboard-inset";
+import { notify } from "@/lib/notify/use-notify";
 import type { Food, MealType } from "@/lib/types";
 
 type Tab = "base" | "favoritos" | "creados" | "verificados";
@@ -42,19 +43,14 @@ function BuscarNuevoContent() {
   const targetMeal = (searchParams.get("meal") as MealType | null) ?? "desayuno";
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<Tab>("base");
-  const [toast, setToast] = useState<string | null>(null);
 
-  // Volver de "Agregar" trae `?agregado=1`: muestra el aviso y limpia la URL, para no repetirlo si
-  // se recarga o se vuelve a entrar con el botón atrás.
+  // Volver de "Agregar" trae `?agregado=1`: muestra el aviso (Isla Dinámica) y limpia la URL, para
+  // no repetirlo si se recarga o se vuelve a entrar con el botón atrás.
   useEffect(() => {
     if (searchParams.get("agregado") !== "1") return;
-    const show = setTimeout(() => setToast("Alimento agregado"), 0);
-    const hide = setTimeout(() => setToast(null), 1800);
+    const show = setTimeout(() => notify({ type: "agent-result", priority: "low", title: "Alimento agregado" }), 0);
     router.replace(`/gym/calorias/buscar-nuevo?meal=${targetMeal}`);
-    return () => {
-      clearTimeout(show);
-      clearTimeout(hide);
-    };
+    return () => clearTimeout(show);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -89,11 +85,6 @@ function BuscarNuevoContent() {
       className="fixed inset-x-0 z-[45] text-white overflow-hidden"
       style={{ top: "var(--vv-top, 0px)", height: "var(--vv-h, 100dvh)", background: "var(--app-bg)" }}
     >
-      {toast && (
-        <div className="fixed inset-x-0 top-[max(env(safe-area-inset-top),14px)] z-50 flex justify-center px-4 pointer-events-none">
-          <span className="rounded-full px-4 py-2 text-xs font-medium bg-white text-black shadow-lg">{toast}</span>
-        </div>
-      )}
       <div className={`flex flex-col h-full max-w-md w-full mx-auto px-4 pb-[max(env(safe-area-inset-bottom),12px)] ${keyboardOpen ? "gap-2" : "gap-4"}`}>
         <FoodSectionHeader current="buscar" />
 

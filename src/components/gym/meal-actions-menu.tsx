@@ -20,6 +20,7 @@ import { buildRecipeFromLogged, findRecipeByName, updatePatchFromLogged } from "
 import type { LoggedFood, MealType, Recipe } from "@/lib/types";
 import { MEAL_LABELS } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { notify } from "@/lib/notify/use-notify";
 
 export function MenuItem({
   icon,
@@ -94,11 +95,9 @@ export function MealActionsMenu({
   const [recipeName, setRecipeName] = useState("");
   const [recipeConflict, setRecipeConflict] = useState<Recipe | null>(null);
   const resolverIdx = useMemo(() => getResolverIndex(mergeFoods(customFoods), recipes), [customFoods, recipes]);
-  const [toast, setToast] = useState<string | null>(null);
 
   function flashToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 1800);
+    notify({ type: "reminder", priority: "low", title: msg });
   }
 
   return (
@@ -334,8 +333,6 @@ export function MealActionsMenu({
           </div>
         </div>
       )}
-
-      {toast && <p className="text-[11px] text-white/80 text-center">{toast}</p>}
     </>
   );
 }
