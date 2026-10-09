@@ -16,7 +16,8 @@ import { useGymStore, useTodayWaterEntries } from "@/lib/store/gymStore";
 
 const QUICK_ADDS = [150, 250, 500];
 const SWIPE_Y = 60;
-const STATS_HREF = "/gym/agua/estadisticas";
+// Stack vertical: vaso (acá) → Fecha (año, % por día) → Por bebida/Tendencia.
+const NEXT_HREF = "/gym/agua/fecha";
 
 /** Mezcla los colores de las bebidas de hoy (ponderados por ml) para teñir el agua del vaso. */
 function blendColor(parts: { color: string; ml: number }[]): string {
@@ -91,14 +92,14 @@ export default function AguaPage() {
           if (!st) return;
           const dx = e.clientX - st.x;
           const dy = e.clientY - st.y;
-          if (dy < -SWIPE_Y && Math.abs(dy) > Math.abs(dx) * 1.4) router.push(STATS_HREF);
+          if (dy < -SWIPE_Y && Math.abs(dy) > Math.abs(dx) * 1.4) router.push(NEXT_HREF);
         }}
         onPointerCancel={() => (start.current = null)}
         onWheel={(e) => {
           if (wheelLock.current || e.deltaY < 30) return;
           wheelLock.current = true;
           setTimeout(() => (wheelLock.current = false), 800);
-          router.push(STATS_HREF);
+          router.push(NEXT_HREF);
         }}
       >
         {!glassFailed ? (
@@ -115,7 +116,7 @@ export default function AguaPage() {
         <p className="text-sm text-white/60">
           {totalMl} / {waterGoalMl} ml · {Math.round(water.fraction * 100)} %
         </p>
-        <div className="flex gap-3">
+        <div className="flex gap-4">
           {QUICK_ADDS.map((ml) => (
             <button
               key={ml}
@@ -123,9 +124,15 @@ export default function AguaPage() {
                 addWater(ml);
                 glassRef.current?.pour();
               }}
-              className="rounded-2xl px-4 py-2.5 text-sm font-medium text-white cursor-pointer transition-transform hover:scale-105 bg-white/[0.08] hover:bg-white/[0.14] glass-specular-ring"
+              aria-label={`Agregar ${ml} ml`}
+              className="relative rounded-full aspect-square flex flex-col items-center justify-center w-16 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+              style={{
+                background: "radial-gradient(circle at 50% 30%, rgb(30,30,30) 0%, rgb(13,13,13) 55%, rgb(5,5,5) 100%)",
+                boxShadow: "inset 0 2px 5px rgba(255,255,255,0.1), inset 0 -14px 26px rgba(0,0,0,0.85), 0 10px 26px rgba(0,0,0,0.55)",
+              }}
             >
-              +{ml}ml
+              <span className="text-base font-bold leading-none text-white/85">{ml}</span>
+              <span className="text-[9px] leading-none text-white/40 mt-1">ml</span>
             </button>
           ))}
         </div>
@@ -138,7 +145,7 @@ export default function AguaPage() {
       </main>
 
       <div className="pb-[max(env(safe-area-inset-bottom),28px)] min-h-[104px] shrink-0">
-        <WeekStrip doneKeys={goalDays} todayISO={todayISO} viewIndex={0} viewCount={2} />
+        <WeekStrip doneKeys={goalDays} todayISO={todayISO} viewIndex={0} viewCount={3} />
       </div>
 
       <AddDrinkModal
