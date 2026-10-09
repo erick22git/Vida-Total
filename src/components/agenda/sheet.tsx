@@ -1,8 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Ellipsis, X } from "lucide-react";
+import { playEvent } from "@/lib/sound/sound-manager";
 
 export const SURFACE = "#1c1c1e";
 export const CARD = "#2b2b2e";
@@ -37,6 +39,13 @@ interface SheetProps {
 
 /** Hoja inferior de la Agenda: sobre el contenido, con fondo atenuado. Se cierra con la X o tocando afuera. */
 export function Sheet({ open, onClose, title, onMore, children, z = 70, maxHeight = "86%" }: SheetProps) {
+  const wasOpen = useRef(open);
+  useEffect(() => {
+    if (open && !wasOpen.current) void playEvent("modal-open");
+    else if (!open && wasOpen.current) void playEvent("modal-close");
+    wasOpen.current = open;
+  }, [open]);
+
   return (
     <AnimatePresence>
       {open && (

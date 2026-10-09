@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { progressEvents } from "@/lib/progress/event-bus";
 import { celebrationDue } from "@/lib/gym/calorie-state";
+import { playEvent } from "@/lib/sound/sound-manager";
 
 const KEY = "vt-kcal-celebrated";
 const SHOW_MS = 3200;
@@ -89,6 +90,7 @@ export function CalorieGoalCelebration() {
         /* sin almacenamiento: puede repetirse en otra sesión, no dentro de esta pantalla */
       }
       setInfo({ value: Number(e.meta?.value ?? 0), goal: Number(e.meta?.goal ?? 0) });
+      void playEvent("goal-reached");
     });
   }, []);
 

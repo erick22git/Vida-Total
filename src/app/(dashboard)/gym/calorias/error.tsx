@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { playEvent } from "@/lib/sound/sound-manager";
 
 /**
  * Red de seguridad de Calorías: si una pantalla de esta sección lanza un error en el navegador, en vez de quedar en
@@ -10,6 +11,7 @@ import { useEffect } from "react";
 export default function CaloriasError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     console.error("[calorias] error de pantalla:", error.name, error.digest ?? "sin-digest");
+    void playEvent("error");
   }, [error]);
 
   return (

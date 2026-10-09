@@ -2,8 +2,9 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { playEvent } from "@/lib/sound/sound-manager";
 
 export interface GlassModalProps {
   open: boolean;
@@ -15,6 +16,13 @@ export interface GlassModalProps {
 }
 
 export function GlassModal({ open, onClose, title, headerStart, children }: GlassModalProps) {
+  const wasOpen = useRef(open);
+  useEffect(() => {
+    if (open && !wasOpen.current) void playEvent("modal-open");
+    else if (!open && wasOpen.current) void playEvent("modal-close");
+    wasOpen.current = open;
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {

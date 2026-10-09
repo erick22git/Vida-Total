@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useAnimationEvent } from "@/lib/animations/use-animation-engine";
 import { playSound, unlockAudio } from "@/lib/sound/sound-engine";
+import { playEvent, unlockSoundManager } from "@/lib/sound/sound-manager";
 import { haptic } from "@/lib/haptics/haptic";
 
 /**
@@ -15,7 +16,10 @@ export function useHabitFeedback() {
   useEffect(() => {
     // iOS solo desbloquea el audio al SOLTAR el dedo (touchend/click), no al
     // apoyarlo — por eso se escuchan varios eventos y no solo pointerdown.
-    const unlock = () => unlockAudio();
+    const unlock = () => {
+      unlockAudio();
+      unlockSoundManager();
+    };
     const events = ["pointerdown", "pointerup", "touchend", "click"] as const;
     events.forEach((e) => window.addEventListener(e, unlock, { passive: true }));
     return () => events.forEach((e) => window.removeEventListener(e, unlock));
@@ -24,7 +28,7 @@ export function useHabitFeedback() {
   useAnimationEvent((e) => {
     switch (e.type) {
       case "check.press-start":
-        playSound("press");
+        void playEvent("button-tap");
         haptic("light");
         break;
       case "habit.progress":
@@ -32,11 +36,11 @@ export function useHabitFeedback() {
         haptic("medium");
         break;
       case "habit.completed":
-        playSound("complete");
+        void playEvent("task-complete");
         haptic("success");
         break;
       case "scene.unlocked": // siguiente figura desbloqueada
-        playSound("milestone");
+        void playEvent("milestone");
         haptic("success");
         break;
       case "scene.completed": // la figura quedó terminada (lo emite la vista FIGURA al celebrar): feedback de hito grande
@@ -46,7 +50,7 @@ export function useHabitFeedback() {
         break;
       case "habit.milestone":
       case "streak.milestone":
-        playSound("milestone");
+        void playEvent("milestone");
         haptic("milestone");
         break;
       case "habit.swipeNext":

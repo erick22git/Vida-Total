@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { AnimatePresence, motion, type PanInfo } from "framer-motion";
 import { MONO_FONT } from "@/lib/ui/mono-font";
+import { playEvent } from "@/lib/sound/sound-manager";
 
 /**
  * Carrusel horizontal por swipe: la mecánica que ya usaba Hábitos para navegar entre hábitos (extraída sin cambiarle el
@@ -43,6 +44,7 @@ export function useSwipeCarousel({
       if (next < 0 || next >= length || next === index) return;
       const dir: 1 | -1 = next > index ? 1 : -1;
       setDirection(dir);
+      void playEvent("carousel-change");
       onIndexChange(next, dir);
     },
     [index, length, onIndexChange],

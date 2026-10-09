@@ -119,6 +119,80 @@ export function playSound(name: SoundName): void {
   }
 }
 
+// Agua (PROVISIONAL — ver docs/sound/README.md): no se encontró un archivo CC0 de agua cayendo/salpicón,
+// así que esto sigue sintetizado con un buffer de ruido filtrado en vez de una grabación real.
+let noiseBuffer: AudioBuffer | null = null;
+function getNoiseBuffer(c: AudioContext): AudioBuffer {
+  if (noiseBuffer && noiseBuffer.sampleRate === c.sampleRate) return noiseBuffer;
+  const length = c.sampleRate; // 1 s de ruido blanco — se reproduce en loop para pours más largos
+  const buf = c.createBuffer(1, length, c.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+  noiseBuffer = buf;
+  return buf;
+}
+
+/** Chorro de agua cayendo: dura `durationMs` (pensado para ser proporcional a los ml servidos) y
+ * sube/baja de volumen al principio/final para no "cortar" de golpe. */
+export function playWaterPour(durationMs: number, volumeScale = 1): void {
+  if (!enabled()) return;
+  try {
+    const c = getContext();
+    if (!c) return;
+    if (c.state === "suspended") c.resume().catch(() => {});
+    const dur = Math.max(0.15, Math.min(2.5, durationMs / 1000));
+    const src = c.createBufferSource();
+    src.buffer = getNoiseBuffer(c);
+    src.loop = true;
+    const bandpass = c.createBiquadFilter();
+    bandpass.type = "bandpass";
+    bandpass.frequency.value = 1100;
+    bandpass.Q.value = 0.7;
+    const g = c.createGain();
+    const peak = 0.05 * Math.min(1.4, Math.max(0.2, volumeScale));
+    const attack = Math.min(0.08, dur * 0.25);
+    const release = Math.min(0.12, dur * 0.3);
+    g.gain.setValueAtTime(0, c.currentTime);
+    g.gain.linearRampToValueAtTime(peak, c.currentTime + attack);
+    g.gain.setValueAtTime(peak, c.currentTime + dur - release);
+    g.gain.linearRampToValueAtTime(0.0001, c.currentTime + dur);
+    src.connect(bandpass);
+    bandpass.connect(g);
+    g.connect(c.destination);
+    src.start();
+    src.stop(c.currentTime + dur + 0.05);
+  } catch {
+    // sin audio disponible — silencioso a propósito
+  }
+}
+
+/** Salpicón corto, para cuando el nivel del vaso llega a la marca servida. */
+export function playWaterSplash(volumeScale = 1): void {
+  if (!enabled()) return;
+  try {
+    const c = getContext();
+    if (!c) return;
+    if (c.state === "suspended") c.resume().catch(() => {});
+    const src = c.createBufferSource();
+    src.buffer = getNoiseBuffer(c);
+    const hp = c.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 1800;
+    const g = c.createGain();
+    const peak = 0.09 * Math.min(1.4, Math.max(0.2, volumeScale));
+    g.gain.setValueAtTime(peak, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.18);
+    src.connect(hp);
+    hp.connect(g);
+    g.connect(c.destination);
+    src.start();
+    src.stop(c.currentTime + 0.2);
+    tone(c, { freq: 1800, glideTo: 900, at: c.currentTime, dur: 0.1, gain: 0.03 * volumeScale });
+  } catch {
+    // sin audio disponible — silencioso a propósito
+  }
+}
+
 /**
  * Sonido continuo mientras se mantiene presionado: un tono muy suave cuyo
  * tono sube con el progreso (0..1). Devuelve `update` y `stop`. Si el audio

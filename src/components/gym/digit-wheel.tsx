@@ -13,6 +13,8 @@
  *     `onStep`; quien la usa decide cuánto vale cada paso.
  */
 import { useRef, useState } from "react";
+import { playEvent } from "@/lib/sound/sound-manager";
+import { haptic } from "@/lib/haptics/haptic";
 import styles from "./digit-wheel.module.css";
 
 export function DigitWheel({
@@ -49,6 +51,8 @@ export function DigitWheel({
 
   function applyWholeSteps(steps: number) {
     if (steps === 0) return;
+    void playEvent("picker-step");
+    haptic("light");
     if (wrap) {
       setSpin((s) => s + steps);
       onStep?.(steps);

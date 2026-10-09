@@ -47,6 +47,7 @@ import { MEAL_LABELS } from "@/lib/types";
 import type { CookedState, Food, MealType } from "@/lib/types";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { buildInfoPages, formatInfoValue, rowsThatFit } from "@/lib/nutrition/info-pages";
+import { playEvent } from "@/lib/sound/sound-manager";
 
 const RECIPE_DRAFT_KEY = "vt-recipe-draft";
 
@@ -291,6 +292,7 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
       router.push("/gym/calorias");
     } else {
       addLoggedFood(buildPayload());
+      void playEvent("add-item");
       // Vuelve al buscador (no a la home) para poder seguir agregando alimentos a esta comida sin
       // tener que volver a entrar a buscar; el aviso de "agregado" lo muestra el buscador.
       router.push(`/gym/calorias/buscar-nuevo?meal=${meal}&agregado=1`);

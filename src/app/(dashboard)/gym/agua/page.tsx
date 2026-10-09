@@ -13,6 +13,15 @@ import { AddDrinkModal } from "@/components/gym/add-drink-modal";
 import { totalsByDrink } from "@/lib/gym/water-stats";
 import { waterState } from "@/lib/gym/water-state";
 import { useGymStore, useTodayWaterEntries } from "@/lib/store/gymStore";
+import { playEvent } from "@/lib/sound/sound-manager";
+
+/** Chorro y salpicón del vaso: duración/volumen proporcionales a los ml, con tope en los 1,25 s que
+ * dura la animación del chorro (`POUR_DUR` en `lib/3d/water-glass.ts`) para no sonar más que el vaso. */
+function pourSoundFor(ml: number) {
+  const durationMs = Math.max(300, Math.min(1250, ml * 2.5));
+  const volumeScale = Math.max(0.6, Math.min(1.3, 0.6 + (ml / 500) * 0.7));
+  return { durationMs, volumeScale };
+}
 
 const QUICK_ADDS = [150, 250, 500];
 const SWIPE_Y = 60;
@@ -123,6 +132,10 @@ export default function AguaPage() {
               onClick={() => {
                 addWater(ml);
                 glassRef.current?.pour();
+                void playEvent("button-tap");
+                const { durationMs, volumeScale } = pourSoundFor(ml);
+                void playEvent("water-pour", { durationMs, volumeScale });
+                setTimeout(() => void playEvent("water-splash", { volumeScale }), 140);
               }}
               aria-label={`Agregar ${ml} ml`}
               className="relative rounded-2xl flex flex-col items-center justify-center w-16 h-16 cursor-pointer transition-transform hover:scale-105 active:scale-95"
@@ -137,7 +150,10 @@ export default function AguaPage() {
           ))}
         </div>
         <button
-          onClick={() => setAddDrinkOpen(true)}
+          onClick={() => {
+            setAddDrinkOpen(true);
+            void playEvent("button-tap");
+          }}
           className="relative flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-medium text-white/80 hover:text-white cursor-pointer transition-transform hover:scale-105 active:scale-95"
           style={{
             background: "radial-gradient(circle at 50% 30%, rgb(30,30,30) 0%, rgb(13,13,13) 55%, rgb(5,5,5) 100%)",
@@ -155,7 +171,13 @@ export default function AguaPage() {
       <AddDrinkModal
         open={addDrinkOpen}
         onClose={() => setAddDrinkOpen(false)}
-        onAdded={() => window.setTimeout(() => glassRef.current?.pour(), 250)}
+        onAdded={() =>
+          window.setTimeout(() => {
+            glassRef.current?.pour();
+            void playEvent("water-pour", { durationMs: 700, volumeScale: 1 });
+            setTimeout(() => void playEvent("water-splash", { volumeScale: 1 }), 140);
+          }, 250)
+        }
       />
     </div>
   );

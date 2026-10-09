@@ -17,6 +17,7 @@ import { useActiveAgent } from "@/lib/store/agentSend";
 import { useGymStore } from "@/lib/store/gymStore";
 import { useMascotUi, type DockTab } from "@/lib/store/mascotUiStore";
 import { usePreferencesStore } from "@/lib/store/preferencesStore";
+import { unlockSoundManager } from "@/lib/sound/sound-manager";
 
 /** Estado de ánimo de la mascota según lo que pasa. */
 export function useMascotMood(): { mood: MascotMood; status: string } {
@@ -139,7 +140,16 @@ export function MascotDock() {
                   >
                     <Settings2 size={19} />
                   </button>
-                  <button aria-label={sound ? "Silenciar" : "Activar sonido"} aria-pressed={sound} onClick={() => setSound(!sound)} className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer text-white/55">
+                  <button
+                    aria-label={sound ? "Silenciar" : "Activar sonido"}
+                    aria-pressed={sound}
+                    onClick={() => {
+                      const next = !sound;
+                      setSound(next);
+                      if (next) unlockSoundManager();
+                    }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer text-white/55"
+                  >
                     {sound ? <Volume2 size={19} /> : <VolumeX size={19} />}
                   </button>
                 </div>

@@ -22,7 +22,9 @@ interface PreferencesState {
 export const usePreferencesStore = create<PreferencesState>()(
   persist(
     (set) => ({
-      soundEnabled: true,
+      // Apagado por defecto: el sonido realista (archivos reales) recién se carga la primera vez
+      // que el usuario lo prende — ver `src/lib/sound/sound-manager.ts`.
+      soundEnabled: false,
       reduceMotion: "system",
       setSoundEnabled: (v) => set({ soundEnabled: v }),
       setReduceMotion: (v) => set({ reduceMotion: v }),

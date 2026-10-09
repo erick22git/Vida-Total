@@ -1,0 +1,182 @@
+{
+  "events": {
+    "button-tap": {
+      "files": [
+        "button-tap-1",
+        "button-tap-2",
+        "button-tap-3"
+      ],
+      "volume": 0.22,
+      "pitchVariance": 0.05,
+      "source": "Kenney UI Audio - click1/2/3"
+    },
+    "picker-step": {
+      "files": [
+        "picker-step-1",
+        "picker-step-2",
+        "picker-step-3"
+      ],
+      "volume": 0.25,
+      "pitchVariance": 0.05,
+      "source": "Kenney Interface Sounds - tick_001/002/004"
+    },
+    "carousel-change": {
+      "files": [
+        "carousel-change-1",
+        "carousel-change-2",
+        "carousel-change-3"
+      ],
+      "volume": 0.3,
+      "pitchVariance": 0.05,
+      "source": "Kenney Interface Sounds - select_001/002/003"
+    },
+    "scroll-snap": {
+      "files": [
+        "scroll-snap-1"
+      ],
+      "volume": 0.18,
+      "pitchVariance": 0.05,
+      "source": "Kenney Interface Sounds - select_004"
+    },
+    "screen-enter": {
+      "files": [
+        "screen-enter-1",
+        "screen-enter-2",
+        "screen-enter-3"
+      ],
+      "volume": 0.3,
+      "pitchVariance": 0.05,
+      "source": "Kenney Interface Sounds - open_001/002/003"
+    },
+    "task-complete": {
+      "files": [
+        "task-complete-1",
+        "task-complete-2",
+        "task-complete-3"
+      ],
+      "volume": 0.45,
+      "pitchVariance": 0.05,
+      "source": "Kenney Interface Sounds - confirmation_001/002/003"
+    },
+    "milestone": {
+      "files": [
+        "milestone-1"
+      ],
+      "volume": 0.75,
+      "pitchVariance": 0.03,
+      "source": "Kenney Interface Sounds - bong_001"
+    },
+    "add-item": {
+      "files": [
+        "add-item-1",
+        "add-item-2",
+        "add-item-3"
+      ],
+      "volume": 0.4,
+      "pitchVariance": 0.05,
+      "source": "Kenney Interface Sounds - drop_001/002/003"
+    },
+    "modal-close": {
+      "files": [
+        "modal-close-1",
+        "modal-close-2",
+        "modal-close-3"
+      ],
+      "volume": 0.35,
+      "pitchVariance": 0.05,
+      "source": "Kenney Interface Sounds - close_001/002/003"
+    },
+    "notification-expand": {
+      "files": [
+        "notification-expand-1",
+        "notification-expand-2",
+        "notification-expand-3"
+      ],
+      "volume": 0.35,
+      "pitchVariance": 0.05,
+      "source": "Kenney Interface Sounds - maximize_001/002/003"
+    },
+    "notification-collapse": {
+      "files": [
+        "notification-collapse-1",
+        "notification-collapse-2",
+        "notification-collapse-3"
+      ],
+      "volume": 0.35,
+      "pitchVariance": 0.05,
+      "source": "Kenney Interface Sounds - minimize_001/002/003"
+    },
+    "permission-prompt": {
+      "files": [
+        "permission-prompt-1",
+        "permission-prompt-2",
+        "permission-prompt-3"
+      ],
+      "volume": 0.4,
+      "pitchVariance": 0.04,
+      "source": "Kenney Interface Sounds - question_001/002/003"
+    },
+    "error": {
+      "files": [
+        "error-1",
+        "error-2",
+        "error-3"
+      ],
+      "volume": 0.4,
+      "pitchVariance": 0.04,
+      "source": "Kenney Interface Sounds - error_001/003/005"
+    },
+    "modal-open": {
+      "files": [
+        "screen-enter-1",
+        "screen-enter-2",
+        "screen-enter-3"
+      ],
+      "volume": 0.3,
+      "pitchVariance": 0.05,
+      "source": "Kenney Interface Sounds - open_001/002/003 (alias de screen-enter)"
+    },
+    "notification-appear": {
+      "files": [
+        "screen-enter-1",
+        "screen-enter-2",
+        "screen-enter-3"
+      ],
+      "volume": 0.3,
+      "pitchVariance": 0.05,
+      "source": "Kenney Interface Sounds - open_001/002/003 (alias de screen-enter)"
+    },
+    "notification-dismiss": {
+      "files": [
+        "modal-close-1",
+        "modal-close-2",
+        "modal-close-3"
+      ],
+      "volume": 0.35,
+      "pitchVariance": 0.05,
+      "source": "Kenney Interface Sounds - close_001/002/003 (alias de modal-close)"
+    },
+    "goal-reached": {
+      "files": [
+        "milestone-1"
+      ],
+      "volume": 0.75,
+      "pitchVariance": 0.03,
+      "source": "Kenney Interface Sounds - bong_001 (alias de milestone)"
+    },
+    "water-pour": {
+      "files": [],
+      "volume": 0.5,
+      "pitchVariance": 0,
+      "synth": "provisional",
+      "source": "PROVISIONAL: sintetizado (sound-engine.ts), sin archivo CC0 real todavia"
+    },
+    "water-splash": {
+      "files": [],
+      "volume": 0.5,
+      "pitchVariance": 0,
+      "synth": "provisional",
+      "source": "PROVISIONAL: sintetizado (sound-engine.ts), sin archivo CC0 real todavia"
+    }
+  }
+}
