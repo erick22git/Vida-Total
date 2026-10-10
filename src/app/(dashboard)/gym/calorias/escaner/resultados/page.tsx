@@ -12,7 +12,7 @@
  * Al confirmar se guarda con la MISMA acción que el resto (`addLoggedFood`) y se vuelve a la home: si todo fue a una
  * sola comida, se abre ahí mismo con `?justAdded=`.
  */
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Minus, Plus, Sparkles, Check, X } from "lucide-react";
 import { FOOD_SECTION_BG } from "@/components/gym/food-section-header";
@@ -34,6 +34,7 @@ import { MEAL_LABELS } from "@/lib/types";
 import type { MealType } from "@/lib/types";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import type { AnalyzedFoodItem } from "@/app/api/food/analyze/route";
+import { notify } from "@/lib/notify/use-notify";
 
 const RESULTS_KEY = "vt-scan-results";
 
@@ -100,6 +101,10 @@ function EscanerResultadosContent() {
   const mealParam = searchParams.get("meal") as MealType | null;
   const [meal, setMeal] = useState<MealType>(() => (mealParam && MEAL_OPTIONS.includes(mealParam) ? mealParam : "desayuno"));
   const [saving, setSaving] = useState(false);
+  // Guarda contra doble/triple toque: a diferencia de `saving` (estado de React, tarda un render en
+  // reflejarse en el `disabled` del botón) esto se lee de inmediato en el mismo clic, así ningún
+  // segundo toque rápido alcanza a volver a disparar `confirmAll` antes de que React repinte.
+  const confirmedRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -160,21 +165,37 @@ function EscanerResultadosContent() {
   }
 
   function confirmAll() {
-    if (items.length === 0 || saving) return;
+    if (items.length === 0 || confirmedRef.current) return;
+    confirmedRef.current = true;
     setSaving(true);
-    commitDraftItems(
-      items.map((it) => ({ ...it.draft, meal })),
-      { addLoggedFood, addCustomFood },
-      () => ({ photoUrl: photo, source: "escaner-ia" as const }),
-    );
     try {
-      sessionStorage.removeItem(RESULTS_KEY);
-    } catch {
-      // ignore
+      const { saved, failed } = commitDraftItems(
+        items.map((it) => ({ ...it.draft, meal })),
+        { addLoggedFood, addCustomFood },
+        () => ({ photoUrl: photo, source: "escaner-ia" as const }),
+      );
+      try {
+        sessionStorage.removeItem(RESULTS_KEY);
+      } catch {
+        // ignore
+      }
+      if (saved === 0) {
+        // Nada se pudo guardar: no tiene sentido volver a la cámara como si hubiera ido bien —
+        // se deja la pantalla como estaba para que el usuario pueda reintentar o ajustar.
+        notify({ type: "error", priority: "medium", title: "No se pudo agregar ningún alimento", message: "Revisá la lista e intentá de nuevo." });
+        confirmedRef.current = false;
+        setSaving(false);
+        return;
+      }
+      // Vuelve a la cámara (no a la home) para poder seguir fotografiando más platos sin tener que
+      // volver a entrar al escáner; el aviso de "agregado" lo muestra el propio escáner (Isla Dinámica).
+      router.push(`/gym/calorias/escaner?meal=${meal}&agregado=${saved}${failed > 0 ? `&fallidos=${failed}` : ""}`);
+    } catch (err) {
+      console.error("[resultados] confirmAll falló", err);
+      notify({ type: "error", priority: "medium", title: "No se pudo guardar", message: "Ocurrió un problema al agregar. Intentá de nuevo." });
+      confirmedRef.current = false;
+      setSaving(false);
     }
-    // Todos los alimentos de este escaneo van a la MISMA comida (el selector de abajo es único, no
-    // por ítem) — así que siempre hay un solo círculo para revelar, como agregar por búsqueda.
-    router.push(`/gym/calorias?justAdded=${meal}`);
   }
 
   if (loaded && items.length === 0 && !photo) {
@@ -319,9 +340,18 @@ function EscanerResultadosContent() {
           <button
             disabled={items.length === 0 || saving}
             onClick={confirmAll}
-            className="w-full flex items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold cursor-pointer disabled:opacity-30 bg-white text-black"
+            className="w-full flex items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold cursor-pointer disabled:opacity-60 bg-white text-black"
           >
-            <Check size={16} /> Confirmar y agregar todo
+            {saving ? (
+              <>
+                <span className="w-4 h-4 rounded-full border-2 border-black/20 border-t-black animate-spin" />
+                Guardando…
+              </>
+            ) : (
+              <>
+                <Check size={16} /> Confirmar y agregar todo
+              </>
+            )}
           </button>
         </div>
       </div>

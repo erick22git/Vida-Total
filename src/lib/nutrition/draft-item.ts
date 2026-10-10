@@ -107,49 +107,62 @@ export function commitDraftItems(
   items: DraftItem[],
   deps: { addLoggedFood: AddLoggedFood; addCustomFood: AddCustomFood },
   extra?: (it: DraftItem) => Partial<Omit<LoggedFood, "id" | "timestamp">>,
-): void {
+): { saved: number; failed: number } {
+  let saved = 0;
+  let failed = 0;
+  // Cada ítem se guarda en su propio try/catch: si uno falla (dato inesperado de la IA, etc.) los
+  // demás igual se guardan — antes un error a mitad de la lista cortaba el `for` y solo quedaban
+  // guardados los ítems anteriores a ese, sin ningún aviso (parecía que "solo se guardó 1 de 5").
   for (const it of items) {
-    const gr = r1(it.gramos);
-    const more = extra?.(it) ?? {};
-    if (it.tipo === "receta" && it.ingredientesBase) {
-      const f = it.base.gramos > 0 ? it.gramos / it.base.gramos : 0;
-      for (const ing of it.ingredientesBase) {
-        deps.addLoggedFood({
-          foodId: ing.foodId,
-          nombre: ing.nombre,
-          calorias: Math.round(ing.calorias * f),
-          proteina: r1(ing.proteina * f),
-          carbos: r1(ing.carbos * f),
-          grasas: r1(ing.grasas * f),
-          meal: it.meal,
-          gramos: r1(ing.gramos * f),
-          porcionNombre: `${r1(ing.gramos * f)} g`,
-          recipeId: it.recipeId,
-          ...more,
-        });
+    try {
+      const gr = r1(it.gramos);
+      const more = extra?.(it) ?? {};
+      if (it.tipo === "receta" && it.ingredientesBase) {
+        const f = it.base.gramos > 0 ? it.gramos / it.base.gramos : 0;
+        for (const ing of it.ingredientesBase) {
+          deps.addLoggedFood({
+            foodId: ing.foodId,
+            nombre: ing.nombre,
+            calorias: Math.round(ing.calorias * f),
+            proteina: r1(ing.proteina * f),
+            carbos: r1(ing.carbos * f),
+            grasas: r1(ing.grasas * f),
+            meal: it.meal,
+            gramos: r1(ing.gramos * f),
+            porcionNombre: `${r1(ing.gramos * f)} g`,
+            recipeId: it.recipeId,
+            ...more,
+          });
+        }
+        saved++;
+        continue;
       }
-      continue;
-    }
-    let foodId = it.foodId;
-    if (it.tipo === "nuevo") {
-      const placeholder = deps.addCustomFood({
-        nombre: it.nombre, categoria: "Otros", porcion: "1 unidad", calorias: 0, proteina: 0, carbos: 0, grasas: 0, configurado: false,
+      let foodId = it.foodId;
+      if (it.tipo === "nuevo") {
+        const placeholder = deps.addCustomFood({
+          nombre: it.nombre, categoria: "Otros", porcion: "1 unidad", calorias: 0, proteina: 0, carbos: 0, grasas: 0, configurado: false,
+        });
+        foodId = placeholder.id;
+      }
+      const m = liveMacros(it);
+      deps.addLoggedFood({
+        foodId: foodId ?? `scan-${it.id}`,
+        nombre: it.nombre,
+        calorias: Math.round(m.calorias),
+        proteina: r1(m.proteina),
+        carbos: r1(m.carbos),
+        grasas: r1(m.grasas),
+        meal: it.meal,
+        gramos: gr,
+        porcionNombre: `${gr} g`,
+        cookedState: it.cookedState,
+        ...more,
       });
-      foodId = placeholder.id;
+      saved++;
+    } catch (err) {
+      console.error("[commitDraftItems] no se pudo guardar un ítem", it, err);
+      failed++;
     }
-    const m = liveMacros(it);
-    deps.addLoggedFood({
-      foodId: foodId ?? `scan-${it.id}`,
-      nombre: it.nombre,
-      calorias: Math.round(m.calorias),
-      proteina: r1(m.proteina),
-      carbos: r1(m.carbos),
-      grasas: r1(m.grasas),
-      meal: it.meal,
-      gramos: gr,
-      porcionNombre: `${gr} g`,
-      cookedState: it.cookedState,
-      ...more,
-    });
   }
+  return { saved, failed };
 }

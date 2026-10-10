@@ -2,11 +2,12 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Camera as CameraIcon, Plus, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Camera as CameraIcon, Images, Minus, Plus, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
 import { FoodSectionHeader, FOOD_SECTION_BG } from "@/components/gym/food-section-header";
 import { GlassButton } from "@/components/glass/glass-button";
 import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { useGymStore } from "@/lib/store/gymStore";
+import { notify } from "@/lib/notify/use-notify";
 import type { MealType } from "@/lib/types";
 import type { AnalyzedFoodItem } from "@/app/api/food/analyze/route";
 
@@ -50,6 +51,7 @@ function EscanerContent() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const readerRef = useRef<import("@zxing/library").BrowserMultiFormatReader | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const [mode, setMode] = useState<Mode>("foto");
   const prevModeRef = useRef<Mode>("foto");
@@ -57,6 +59,14 @@ function EscanerContent() {
   const [status, setStatus] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [torch, setTorch] = useState(false);
+
+  // Zoom: se intenta primero el zoom óptico/real de la cámara (`MediaTrackConstraints.zoom`, lo
+  // soportan la mayoría de Android; iOS/desktop no), guardando sus límites reales. Donde no haya
+  // soporte de hardware, se cae a un zoom digital (CSS `scale` sobre el <video>, ya recortado por
+  // `object-cover`) — funciona en cualquier navegador aunque sin mejorar el detalle real.
+  const [zoom, setZoom] = useState(1);
+  const [zoomCaps, setZoomCaps] = useState<{ min: number; max: number; step: number } | null>(null);
+  const pinchRef = useRef<{ startDist: number; startZoom: number } | null>(null);
 
   // Modo Foto: análisis con IA de visión (Groq).
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
@@ -86,11 +96,35 @@ function EscanerContent() {
         await videoRef.current.play().catch(() => {});
       }
       setPermissionState("granted");
+      setZoom(1);
+      const track = stream.getVideoTracks()[0];
+      const caps = track?.getCapabilities?.() as (MediaTrackCapabilities & { zoom?: { min: number; max: number; step: number } }) | undefined;
+      const z = caps?.zoom as unknown as { min: number; max: number; step: number } | undefined;
+      setZoomCaps(z && z.max > z.min ? { min: z.min, max: z.max, step: z.step || 0.1 } : null);
     } catch (err) {
       console.warn("[escaner] camera error", err);
       setPermissionState("denied");
     }
   }, []);
+
+  /** Aplica el nuevo nivel de zoom: óptico vía el track si el dispositivo lo soporta, si no digital
+   * (CSS) sobre el propio <video>. `next` siempre es el valor "lógico" (1 = sin zoom). */
+  const applyZoom = useCallback(
+    (next: number) => {
+      const clamped = zoomCaps ? Math.max(zoomCaps.min, Math.min(zoomCaps.max, next)) : Math.max(1, Math.min(4, next));
+      setZoom(clamped);
+      if (zoomCaps) {
+        const track = streamRef.current?.getVideoTracks()[0];
+        track?.applyConstraints({ advanced: [{ zoom: clamped }] } as unknown as MediaTrackConstraints).catch(() => {});
+      }
+    },
+    [zoomCaps],
+  );
+
+  function pinchDistance(touches: React.TouchList | TouchList) {
+    const [a, b] = [touches[0], touches[1]];
+    return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+  }
 
   const handleBarcodeDetected = useCallback(
     async (barcode: string) => {
@@ -139,6 +173,28 @@ function EscanerContent() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- camera permission must be requested once on mount
     startCamera();
     return () => stopCamera();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Volver de "Resultados" tras confirmar el escaneo trae `?agregado=N` (y `?fallidos=M` si alguno
+  // falló): muestra el aviso (Isla Dinámica) y limpia la URL, igual que hace el buscador.
+  useEffect(() => {
+    const agregado = searchParams.get("agregado");
+    if (!agregado) return;
+    const n = Number(agregado) || 0;
+    const fallidos = Number(searchParams.get("fallidos") ?? 0) || 0;
+    const show = setTimeout(
+      () =>
+        notify({
+          type: "agent-result",
+          priority: "low",
+          title: n === 1 ? "Alimento agregado" : `${n} alimentos agregados`,
+          message: fallidos > 0 ? `${fallidos} no se pudieron guardar.` : undefined,
+        }),
+      0,
+    );
+    router.replace(`/gym/calorias/escaner?meal=${meal}`);
+    return () => clearTimeout(show);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -304,6 +360,38 @@ function EscanerContent() {
     analyzePhoto(capturedPhoto);
   }
 
+  /** Foto elegida de la galería (en vez de la cámara): mismo recorte/tope de tamaño que `capturePhoto`
+   * (vía canvas), para que pese igual de poco al enviarla a analizar. */
+  function onPickFromGallery(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const scale = Math.min(1, MAX_PHOTO_SIDE / Math.max(img.width, img.height));
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+        persistPhotoForFallback(dataUrl);
+        stopCamera();
+        setCapturedPhoto(dataUrl);
+        analyzePhoto(dataUrl);
+      };
+      img.onerror = () => setAnalyzeError("unknown");
+      img.src = reader.result;
+    };
+    reader.onerror = () => setAnalyzeError("unknown");
+    reader.readAsDataURL(file);
+  }
+
   const round = {
     background: "linear-gradient(#383838, #262626)",
     boxShadow: "inset 0 2px 3px rgba(255,255,255,0.10), inset 0 -2px 4px rgba(0,0,0,0.5), 0 4px 10px rgba(0,0,0,0.6)",
@@ -335,6 +423,13 @@ function EscanerContent() {
             >
               A
             </button>
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onPickFromGallery}
+            />
           </div>
           <div
             className="flex-1 rounded-xl flex items-center justify-center"
@@ -365,7 +460,25 @@ function EscanerContent() {
         </div>
 
         {/* Visor */}
-        <div className="relative flex-1 min-h-0 w-full rounded-2xl overflow-hidden bg-black flex items-center justify-center">
+        <div
+          className="relative flex-1 min-h-0 w-full rounded-2xl overflow-hidden bg-black flex items-center justify-center"
+          // Pinch con dos dedos para acercar/alejar — eventos touch nativos, no los pointer de más
+          // abajo (esos solo miran UN puntero, para el swipe hacia Estadísticas).
+          onTouchStart={(e) => {
+            if (mode !== "foto" || capturedPhoto || e.touches.length !== 2) return;
+            pinchRef.current = { startDist: pinchDistance(e.touches), startZoom: zoom };
+          }}
+          onTouchMove={(e) => {
+            if (!pinchRef.current || e.touches.length !== 2) return;
+            e.preventDefault();
+            const { startDist, startZoom } = pinchRef.current;
+            if (startDist <= 0) return;
+            applyZoom(startZoom * (pinchDistance(e.touches) / startDist));
+          }}
+          onTouchEnd={(e) => {
+            if (e.touches.length < 2) pinchRef.current = null;
+          }}
+        >
           {permissionState === "denied" ? (
             <div className="flex flex-col items-center gap-3 text-center px-6">
               <CameraIcon size={32} className="text-white/40" />
@@ -416,6 +529,10 @@ function EscanerContent() {
                 playsInline
                 muted
                 autoPlay
+                // Sin zoom óptico (`zoomCaps` null, la mayoría de iOS/desktop) el zoom es digital:
+                // un `scale()` sobre el propio video, ya recortado por `object-cover`. Con zoom óptico
+                // real el track ya entrega el encuadre acercado, así que acá se deja en 1 siempre.
+                style={{ transform: zoomCaps ? undefined : `scale(${zoom})`, transformOrigin: "center" }}
                 // Respaldo: si `play()` fue interrumpido en `startCamera()`
                 // (p.ej. llamado antes de que el video tuviera metadata lista,
                 // algo común en iOS Safari) reintenta apenas la metadata está
@@ -461,12 +578,23 @@ function EscanerContent() {
         {/* Controles de abajo: contador/miniatura, obturador y rueda */}
         <div className="flex items-center justify-between gap-3 h-[104px] shrink-0">
           <div className="flex flex-col gap-2 shrink-0">
-            <div
-              className="w-11 h-11 rounded-lg flex items-center justify-center text-lg font-bold"
-              style={{ background: "#151515", boxShadow: "inset 0 2px 6px rgba(0,0,0,0.7)" }}
-            >
-              {mode === "foto" ? 1 : 2}
-            </div>
+            {mode === "foto" && !capturedPhoto ? (
+              <button
+                onClick={() => galleryInputRef.current?.click()}
+                aria-label="Elegir foto de la galería"
+                className="w-11 h-11 rounded-lg flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+                style={{ background: "#151515", boxShadow: "inset 0 2px 6px rgba(0,0,0,0.7)" }}
+              >
+                <Images size={18} />
+              </button>
+            ) : (
+              <div
+                className="w-11 h-11 rounded-lg flex items-center justify-center text-lg font-bold"
+                style={{ background: "#151515", boxShadow: "inset 0 2px 6px rgba(0,0,0,0.7)" }}
+              >
+                {mode === "foto" ? 1 : 2}
+              </div>
+            )}
             <div className="w-11 h-11 rounded-full overflow-hidden" style={{ background: "#151515", boxShadow: "inset 0 2px 6px rgba(0,0,0,0.7)" }}>
               {capturedPhoto && (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -483,14 +611,37 @@ function EscanerContent() {
           >
             <Plus size={44} strokeWidth={2.2} />
           </button>
-          <div
-            className="w-14 h-24 rounded-xl shrink-0"
-            style={{
-              background: "repeating-linear-gradient(0deg, #141414 0px, #141414 3px, #303030 3px, #303030 8px)",
-              boxShadow: "inset 0 3px 8px rgba(0,0,0,0.7), 0 3px 10px rgba(0,0,0,0.5)",
-            }}
-            aria-hidden
-          />
+          {mode === "foto" && !capturedPhoto && permissionState === "granted" ? (
+            <div
+              className="w-14 h-24 rounded-xl shrink-0 flex flex-col"
+              style={{ background: "#141414", boxShadow: "inset 0 3px 8px rgba(0,0,0,0.7), 0 3px 10px rgba(0,0,0,0.5)" }}
+            >
+              <button
+                onClick={() => applyZoom(zoom + (zoomCaps?.step ?? 0.25))}
+                aria-label="Acercar"
+                className="flex-1 flex items-center justify-center cursor-pointer active:scale-95 transition-transform text-white/80"
+              >
+                <Plus size={16} />
+              </button>
+              <span className="text-[10px] text-center text-white/50 tabular-nums py-0.5">{zoom.toFixed(1)}×</span>
+              <button
+                onClick={() => applyZoom(zoom - (zoomCaps?.step ?? 0.25))}
+                aria-label="Alejar"
+                className="flex-1 flex items-center justify-center cursor-pointer active:scale-95 transition-transform text-white/80"
+              >
+                <Minus size={16} />
+              </button>
+            </div>
+          ) : (
+            <div
+              className="w-14 h-24 rounded-xl shrink-0"
+              style={{
+                background: "repeating-linear-gradient(0deg, #141414 0px, #141414 3px, #303030 3px, #303030 8px)",
+                boxShadow: "inset 0 3px 8px rgba(0,0,0,0.7), 0 3px 10px rgba(0,0,0,0.5)",
+              }}
+              aria-hidden
+            />
+          )}
         </div>
       </div>
 

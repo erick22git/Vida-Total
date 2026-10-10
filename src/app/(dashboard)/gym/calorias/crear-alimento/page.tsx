@@ -27,6 +27,7 @@ import { FOOD_CATEGORIES } from "@/lib/types";
 import type { CookedState, NutritionProfile } from "@/lib/types";
 import { MICRONUTRIENT_LABELS, mergeFoods, nutritionChanged } from "@/lib/food-utils";
 import { validateNutritionProfile } from "@/lib/nutrition/food-validation";
+import { resizeImageFile } from "@/lib/ui/resize-image";
 import { VerifiedBadge } from "@/components/gym/verified-badge";
 import { categoryEmoji } from "@/lib/food-category-emoji";
 import { MONO_FONT } from "@/lib/ui/mono-font";
@@ -332,10 +333,18 @@ function CrearAlimentoWizard() {
 
   function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setPhoto(typeof reader.result === "string" ? reader.result : null);
-    reader.readAsDataURL(file);
+    // Se achica antes de guardar: una foto de la galería sin tocar puede pesar varios MB en base64 y
+    // terminar llenando la cuota de localStorage (ver resize-image.ts) — con el resto de las fotos
+    // guardadas, eso es lo que hacía que una verificación con foto "se perdiera" al volver a entrar.
+    resizeImageFile(file)
+      .then(setPhoto)
+      .catch((err) => {
+        console.warn("[crear-alimento] no se pudo procesar la foto", err);
+        setNotice("No se pudo procesar esa foto. Probá con otra.");
+        setTimeout(() => setNotice(null), 2500);
+      });
   }
 
   function handleContinue() {
