@@ -291,6 +291,21 @@ export interface ExerciseRank {
   kind: "kg" | "reps";
   /** Qué hace falta para el siguiente nivel (null si ya es el máximo). */
   next: { label: string; value: number; missing: number } | null;
+  /** true si este rango sale de una corrección manual (calculadora → "Reemplazar en el rango") en vez
+   * de la mejor serie del historial — ver `RankOverride`. */
+  overridden?: boolean;
+}
+
+/** Corrección manual de un ejercicio: pisa la mejor serie del historial (`bestPerformance`) para ESE
+ * ejercicio sin borrar ni tocar ninguna serie registrada — pensado para cuando una marca mal anotada
+ * (p. ej. un peso tipeado de más) infla el rango y el usuario prefiere decir "en realidad es este" en
+ * vez de tener que encontrar y corregir la serie exacta en su historial. Opt-in: la calculadora de
+ * rango SOLO la crea si el usuario toca "Reemplazar en el rango" — nunca automáticamente. */
+export interface RankOverride {
+  peso: number;
+  reps: number;
+  value: number;
+  setAt: number;
 }
 
 export interface BodyInfo {
@@ -312,13 +327,20 @@ export function rankFromValue(res: ResolvedStandard, value: number, body: BodyIn
   return { rank, next };
 }
 
-export function rankExercise(exerciseId: string, sessions: WorkoutSession[], body: BodyInfo): ExerciseRank | null {
+export function rankExercise(
+  exerciseId: string,
+  sessions: WorkoutSession[],
+  body: BodyInfo,
+  override?: RankOverride | null,
+): ExerciseRank | null {
   const res = standardForExercise(exerciseId);
   if (!res) return null;
-  const perf = bestPerformance(exerciseId, sessions, res.standard.kind);
+  const perf: Performance | null = override
+    ? { peso: override.peso, reps: override.reps, value: override.value, capped: false }
+    : bestPerformance(exerciseId, sessions, res.standard.kind);
   if (!perf || !(perf.value > 0)) return null;
   const { rank, next } = rankFromValue(res, perf.value, body);
-  return { exerciseId, rank, estimated: res.estimated, performance: perf, kind: res.standard.kind, next };
+  return { exerciseId, rank, estimated: res.estimated, performance: perf, kind: res.standard.kind, next, overridden: !!override };
 }
 
 /** Peso a poner en la barra para alcanzar un 1RM objetivo haciendo `reps` repeticiones (inversa de Epley). */
@@ -358,12 +380,15 @@ export function computeRankProfile(input: {
   body: BodyInfo;
   /** Ejercicios que el usuario sacó del rango global (siguen teniendo su rango, pero no suman a músculo/grupo/general). */
   excluded?: string[];
+  /** Correcciones manuales por ejercicio — ver `RankOverride`. */
+  overrides?: Record<string, RankOverride>;
 }): RankProfile {
   const { exercises, sessions, body } = input;
   const excluded = new Set(input.excluded ?? []);
+  const overrides = input.overrides ?? {};
   const byExercise: Record<string, ExerciseRank> = {};
   for (const ex of exercises) {
-    const r = rankExercise(ex.id, sessions, body);
+    const r = rankExercise(ex.id, sessions, body, overrides[ex.id]);
     if (r) byExercise[ex.id] = r;
   }
 

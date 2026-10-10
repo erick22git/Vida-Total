@@ -10,7 +10,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Search, X, AlertTriangle } from "lucide-react";
+import { ChevronLeft, Search, X, AlertTriangle, Check } from "lucide-react";
 import { RankIcon } from "@/components/gym/rank-icon";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { useBodyInfo } from "@/lib/gym/use-rank";
@@ -52,6 +52,9 @@ export default function CalculadoraRangoPage() {
   const { body, missing } = useBodyInfo();
   const gymProfile = useGymStore((s) => s.gymProfile);
   const updateGymProfileFields = useGymStore((s) => s.updateGymProfileFields);
+  const rankOverrides = useGymStore((s) => s.rankOverrides);
+  const setRankOverride = useGymStore((s) => s.setRankOverride);
+  const clearRankOverride = useGymStore((s) => s.clearRankOverride);
 
   const [query, setQuery] = useState("");
   const [exerciseId, setExerciseId] = useState<string | null>(null);
@@ -272,7 +275,34 @@ export default function CalculadoraRangoPage() {
                 {resolved?.estimated && (
                   <p className="text-[11px] text-white/40">Este ejercicio no tiene tabla propia: se estima a partir de «{resolved.standard.name}». Es orientativo.</p>
                 )}
-                <p className="text-[11px] text-white/35">Esto es una simulación: no se guarda ninguna marca.</p>
+                <p className="text-[11px] text-white/35">
+                  Esto es una simulación: no se guarda ninguna marca. Si tu rango real de este ejercicio quedó mal (por
+                  ejemplo, anotaste un peso equivocado en algún entrenamiento), puedes reemplazarlo por este cálculo sin
+                  borrar ni tocar nada de tu historial — es opcional, solo pasa si lo tocas abajo.
+                </p>
+                {exerciseId && rankOverrides[exerciseId] ? (
+                  <div className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3" style={{ background: "#22c55e1a", border: "1px solid #22c55e44" }}>
+                    <span className="flex items-center gap-2 text-xs font-medium text-emerald-300">
+                      <Check size={14} /> Ya reemplazaste el rango con este cálculo
+                    </span>
+                    <button
+                      onClick={() => clearRankOverride(exerciseId)}
+                      className="text-xs font-semibold text-white/50 hover:text-white cursor-pointer shrink-0"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() =>
+                      exerciseId &&
+                      setRankOverride(exerciseId, { peso: isKg ? pesoNum : 0, reps: repsNum, value: result.value, setAt: Date.now() })
+                    }
+                    className="w-full rounded-full py-3 text-sm font-semibold cursor-pointer border border-white/20 text-white/85 hover:bg-white/5 transition-colors"
+                  >
+                    Reemplazar en el rango
+                  </button>
+                )}
                 <button onClick={() => router.back()} className="w-full rounded-full py-3.5 text-sm font-semibold cursor-pointer bg-white text-black">
                   Listo
                 </button>

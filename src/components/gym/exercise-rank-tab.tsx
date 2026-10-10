@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ToggleLeft, ToggleRight, ArrowUp, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ToggleLeft, ToggleRight, ArrowUp, AlertTriangle, Pencil } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { RankIcon } from "@/components/gym/rank-icon";
 import { RANK_TIER_DEFS, type RankTierDef } from "@/lib/gym/rank-config";
@@ -15,6 +15,7 @@ const fmt = (n: number) => (Math.round(n * 10) / 10).toString();
 export function ExerciseRankTab({ exerciseId }: { exerciseId: string }) {
   const excluded = useGymStore((s) => s.excludedFromGlobalRank);
   const toggleGlobal = useGymStore((s) => s.toggleExerciseGlobalRank);
+  const clearRankOverride = useGymStore((s) => s.clearRankOverride);
   const { profile, missing } = useRankProfile();
 
   const [view, setView] = useState<"detail" | "pyramid">("detail");
@@ -98,6 +99,17 @@ export function ExerciseRankTab({ exerciseId }: { exerciseId: string }) {
           Ver pirámide completa
         </button>
       </GlassCard>
+
+      {result.overridden && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-xs" style={{ background: "#a855f71a", color: "#d8b4fe" }}>
+          <span className="flex items-center gap-2">
+            <Pencil size={13} /> Reemplazado a mano desde la calculadora
+          </span>
+          <button onClick={() => clearRankOverride(exerciseId)} className="font-semibold text-white/70 hover:text-white cursor-pointer shrink-0">
+            Quitar
+          </button>
+        </div>
+      )}
 
       {perf.capped && (
         <div className="flex items-start gap-2 rounded-2xl px-3.5 py-2.5 text-xs" style={{ background: "#f59e0b1f", color: "#fbbf24" }}>

@@ -40,18 +40,22 @@ export function useRankProfile(): { profile: RankProfile | null; missing: ("sexo
   const exercises = useAllExercises();
   const sessions = useGymStore((s) => s.sessions);
   const excluded = useGymStore((s) => s.excludedFromGlobalRank);
+  const overrides = useGymStore((s) => s.rankOverrides);
   const { body, missing } = useBodyInfo();
   const profile = useMemo(() => {
     if (!body) return null;
-    const key = `${body.sexo}|${body.pesoKg}|${exercises.length}|${excluded.join(",")}`;
+    const overridesKey = Object.entries(overrides)
+      .map(([id, o]) => `${id}:${o.value}:${o.setAt}`)
+      .join(",");
+    const key = `${body.sexo}|${body.pesoKg}|${exercises.length}|${excluded.join(",")}|${overridesKey}`;
     const perSessions = profileCache.get(sessions) ?? new Map<string, RankProfile>();
     profileCache.set(sessions, perSessions);
     const hit = perSessions.get(key);
     if (hit) return hit;
-    const p = computeRankProfile({ exercises, sessions, body, excluded });
+    const p = computeRankProfile({ exercises, sessions, body, excluded, overrides });
     perSessions.set(key, p);
     return p;
-  }, [exercises, sessions, excluded, body]);
+  }, [exercises, sessions, excluded, overrides, body]);
   return { profile, missing, body };
 }
 

@@ -4,6 +4,7 @@ import { userScopedLocalStorage } from "./scoped-storage";
 import { useMemo } from "react";
 import { isSameDay, differenceInCalendarDays, startOfDay } from "date-fns";
 import { localDayKey, daysDiff, toLocalDayKey } from "@/lib/gym/kegel-dates";
+import type { RankOverride } from "@/lib/gym/rank-engine";
 import type {
   Exercise,
   Food,
@@ -310,6 +311,11 @@ export interface GymState {
   // ---------- Rank preferences ----------
   excludedFromGlobalRank: string[];
   toggleExerciseGlobalRank: (exerciseId: string) => void;
+  /** Correcciones manuales de rango por ejercicio (ver `RankOverride` en rank-engine.ts) — solo las crea
+   * la calculadora de rango cuando el usuario toca "Reemplazar en el rango", nunca automáticamente. */
+  rankOverrides: Record<string, RankOverride>;
+  setRankOverride: (exerciseId: string, override: RankOverride) => void;
+  clearRankOverride: (exerciseId: string) => void;
 
   // ---------- Custom exercises ----------
   customExercises: Exercise[];
@@ -762,10 +768,13 @@ export const useGymStore = create<GymState>()(
             ejercicios: exerciseIds.map<WorkoutExerciseLog>((exerciseId) => ({
               exerciseId,
               restSeconds: 90,
+              // `peso`/`reps` en 0 (no 10): así `SessionSetRow` muestra atenuado el peso/reps de la
+              // última vez que se hizo este ejercicio (o de la serie anterior de hoy) en vez de un
+              // "10" fijo que no significa nada — ver `pesoRef`/`repsRef` en activo/page.tsx.
               sets: [
-                { id: uid(), peso: 0, reps: 10, completado: false, fallo: false, tipo: "normal" },
-                { id: uid(), peso: 0, reps: 10, completado: false, fallo: false, tipo: "normal" },
-                { id: uid(), peso: 0, reps: 10, completado: false, fallo: false, tipo: "normal" },
+                { id: uid(), peso: 0, reps: 0, completado: false, fallo: false, tipo: "normal" },
+                { id: uid(), peso: 0, reps: 0, completado: false, fallo: false, tipo: "normal" },
+                { id: uid(), peso: 0, reps: 0, completado: false, fallo: false, tipo: "normal" },
               ],
             })),
             completado: false,
@@ -800,6 +809,7 @@ export const useGymStore = create<GymState>()(
                 tipo: s.tipo,
                 soloReps: rex.soloReps,
                 pesosDescendentes: s.pesosDescendentes,
+                repsDescendentes: s.repsDescendentes,
               })),
             })),
             completado: false,
@@ -888,7 +898,7 @@ export const useGymStore = create<GymState>()(
                         {
                           id: uid(),
                           peso: ex.sets[ex.sets.length - 1]?.peso ?? 0,
-                          reps: ex.sets[ex.sets.length - 1]?.reps ?? 10,
+                          reps: ex.sets[ex.sets.length - 1]?.reps ?? 0,
                           completado: false,
                           fallo: false,
                           tipo: "normal" as const,
@@ -1192,6 +1202,15 @@ export const useGymStore = create<GymState>()(
             ? state.excludedFromGlobalRank.filter((id) => id !== exerciseId)
             : [...state.excludedFromGlobalRank, exerciseId],
         })),
+      rankOverrides: {},
+      setRankOverride: (exerciseId, override) =>
+        set((state) => ({ rankOverrides: { ...state.rankOverrides, [exerciseId]: override } })),
+      clearRankOverride: (exerciseId) =>
+        set((state) => {
+          const next = { ...state.rankOverrides };
+          delete next[exerciseId];
+          return { rankOverrides: next };
+        }),
 
       // Custom exercises
       customExercises: [],

@@ -1,13 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Check } from "lucide-react";
+import { Plus, Trash2, Check, X } from "lucide-react";
 import type { RoutineSetPlan, SetType } from "@/lib/types";
 import { SET_TYPE_META } from "@/components/gym/set-type";
 import { SetTypeModal } from "@/components/gym/set-type-modal";
-import { DropsetWeightsModal } from "@/components/gym/dropset-weights-modal";
 import { useGymStore } from "@/lib/store/gymStore";
-import { previaLabelFor } from "@/lib/gym-utils";
+import { previaLabelFor, DROP_REPS_REF, refDropWeight } from "@/lib/gym-utils";
+
+const PURPLE = "#a855f7";
+
+/** Bajadas de un dropset planeado, sin la serie principal (que usa `peso`/`reps`) — igual criterio
+ * que `dropsOf` en gym-utils.ts, pero para `RoutineSetPlan` en vez de `WorkoutSet` en vivo. */
+function dropsOfPlan(s: RoutineSetPlan): { peso: number; reps: number }[] {
+  const weights = (s.pesosDescendentes ?? []).slice(1);
+  return weights.map((peso, k) => ({ peso, reps: s.repsDescendentes?.[k] ?? 0 }));
+}
 
 export function RoutineSetTable({
   sets,
@@ -25,7 +33,6 @@ export function RoutineSetTable({
   onSetChecked?: () => void;
 }) {
   const [typeModalIndex, setTypeModalIndex] = useState<number | null>(null);
-  const [dropsetModalIndex, setDropsetModalIndex] = useState<number | null>(null);
   // Local-only "confirmed in plan" state per row — this is a planning screen,
   // not a live session, so completion here is just a visual affordance
   // (matching `activo`'s checkmark) and isn't persisted with the routine.
@@ -38,6 +45,10 @@ export function RoutineSetTable({
 
   function updateSet(i: number, patch: Partial<RoutineSetPlan>) {
     onChange(sets.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+  }
+
+  function writeDrops(i: number, next: { peso: number; reps: number }[]) {
+    updateSet(i, { pesosDescendentes: [sets[i].peso, ...next.map((d) => d.peso)], repsDescendentes: next.map((d) => d.reps) });
   }
 
   function removeSet(i: number) {
@@ -54,7 +65,7 @@ export function RoutineSetTable({
 
   function addSet() {
     const last = sets[sets.length - 1];
-    onChange([...sets, { peso: last?.peso ?? 0, reps: last?.reps ?? 10, tipo: "normal" }]);
+    onChange([...sets, { peso: last?.peso ?? 0, reps: last?.reps ?? 0, tipo: "normal" }]);
   }
 
   function toggleChecked(i: number) {
@@ -85,33 +96,31 @@ export function RoutineSetTable({
         const previaLabel = previaLabelFor(lastLog?.sets[i], soloReps);
         const isChecked = checked.has(i);
         const isDropset = s.tipo === "descendente";
+        const drops = isDropset ? dropsOfPlan(s) : [];
+        const dropWeightRefs: number[] = [];
+        drops.reduce((prev, d) => {
+          const ref = refDropWeight(prev);
+          dropWeightRefs.push(ref);
+          return d.peso || ref;
+        }, s.peso);
         return (
-          <div
-            key={i}
-            className="grid grid-cols-[auto_auto_1fr_1fr_auto_auto] gap-2 items-center rounded-xl px-2 py-2 transition-colors"
-            style={{
-              background: isChecked ? "#3b82f61f" : "rgba(255,255,255,0.04)",
-              border: `1px solid ${isChecked ? "#3b82f666" : "rgba(255,255,255,0.08)"}`,
-            }}
-          >
-            <button
-              onClick={() => setTypeModalIndex(i)}
-              className="flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold shrink-0 cursor-pointer mx-auto"
-              style={{ background: `${meta.color}26`, color: meta.color, border: `1px solid ${meta.color}55` }}
+          <div key={i} className="flex flex-col gap-1">
+            <div
+              className="grid grid-cols-[auto_auto_1fr_1fr_auto_auto] gap-2 items-center rounded-xl px-2 py-2 transition-colors"
+              style={{
+                background: isChecked ? "#3b82f61f" : "rgba(255,255,255,0.04)",
+                border: `1px solid ${isChecked ? "#3b82f666" : "rgba(255,255,255,0.08)"}`,
+              }}
             >
-              {s.tipo === "normal" ? i + 1 : meta.short}
-            </button>
-            <span className="w-12 text-center text-[11px] text-white/35 tabular-nums">{previaLabel}</span>
-            {!soloReps &&
-              (isDropset ? (
-                <button
-                  onClick={() => setDropsetModalIndex(i)}
-                  className="w-full rounded-lg bg-white/[0.05] glass-specular-ring py-1.5 text-[11px] font-semibold text-white text-center cursor-pointer truncate px-1"
-                  title="Pesos de cada bajada del dropset"
-                >
-                  {s.pesosDescendentes && s.pesosDescendentes.length > 0 ? s.pesosDescendentes.join(" · ") : "Configurar"}
-                </button>
-              ) : (
+              <button
+                onClick={() => setTypeModalIndex(i)}
+                className="flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold shrink-0 cursor-pointer mx-auto"
+                style={{ background: `${meta.color}26`, color: meta.color, border: `1px solid ${meta.color}55` }}
+              >
+                {s.tipo === "normal" || isDropset ? i + 1 : meta.short}
+              </button>
+              <span className="w-12 text-center text-[11px] text-white/35 tabular-nums">{previaLabel}</span>
+              {!soloReps && (
                 <input
                   type="number"
                   value={s.peso || ""}
@@ -119,52 +128,94 @@ export function RoutineSetTable({
                   onChange={(e) => updateSet(i, { peso: parseFloat(e.target.value) || 0 })}
                   className="w-full rounded-lg bg-white/[0.05] glass-specular-ring px-2 py-1.5 text-base text-white text-center outline-none"
                 />
-              ))}
-            <input
-              type="number"
-              value={s.reps || ""}
-              placeholder="0"
-              onChange={(e) => updateSet(i, { reps: parseInt(e.target.value) || 0 })}
-              className={`w-full rounded-lg bg-white/[0.05] glass-specular-ring px-2 py-1.5 text-base text-white text-center outline-none ${soloReps ? "col-span-2" : ""}`}
-            />
-            <button
-              onClick={() => removeSet(i)}
-              className="flex items-center justify-center w-7 h-7 rounded-lg text-white/30 hover:text-red-400 cursor-pointer mx-auto"
-            >
-              <Trash2 size={14} />
-            </button>
-            <button
-              onClick={() => toggleChecked(i)}
-              className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0 transition-colors cursor-pointer mx-auto"
-              style={{
-                background: isChecked ? "#3b82f6" : "rgba(255,255,255,0.06)",
-                border: `1px solid ${isChecked ? "#3b82f6" : "rgba(255,255,255,0.15)"}`,
-              }}
-            >
-              <Check size={16} className={isChecked ? "text-white" : "text-white/30"} />
-            </button>
-            {typeModalIndex === i && (
-              <SetTypeModal
-                open
-                onClose={() => setTypeModalIndex(null)}
-                value={s.tipo}
-                onSelect={(tipo) => {
-                  updateSet(i, { tipo });
-                  // El dropset queda "activado" de verdad recién cuando se
-                  // configuran las bajadas — por eso elegir el tipo acá
-                  // encadena directo a ese modal, en vez de dejarlo
-                  // marcado sin ninguna bajada cargada.
-                  if (tipo === "descendente") setDropsetModalIndex(i);
+              )}
+              <input
+                type="number"
+                value={s.reps || ""}
+                placeholder="0"
+                onChange={(e) => updateSet(i, { reps: parseInt(e.target.value) || 0 })}
+                className={`w-full rounded-lg bg-white/[0.05] glass-specular-ring px-2 py-1.5 text-base text-white text-center outline-none ${soloReps ? "col-span-2" : ""}`}
+              />
+              <button
+                onClick={() => removeSet(i)}
+                className="flex items-center justify-center w-7 h-7 rounded-lg text-white/30 hover:text-red-400 cursor-pointer mx-auto"
+              >
+                <Trash2 size={14} />
+              </button>
+              <button
+                onClick={() => toggleChecked(i)}
+                className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0 transition-colors cursor-pointer mx-auto"
+                style={{
+                  background: isChecked ? "#3b82f6" : "rgba(255,255,255,0.06)",
+                  border: `1px solid ${isChecked ? "#3b82f6" : "rgba(255,255,255,0.15)"}`,
                 }}
-              />
-            )}
-            {dropsetModalIndex === i && (
-              <DropsetWeightsModal
-                open
-                onClose={() => setDropsetModalIndex(null)}
-                initialWeights={s.pesosDescendentes ?? []}
-                onSave={(weights) => updateSet(i, { pesosDescendentes: weights, peso: weights[0] ?? 0 })}
-              />
+              >
+                <Check size={16} className={isChecked ? "text-white" : "text-white/30"} />
+              </button>
+              {typeModalIndex === i && (
+                <SetTypeModal
+                  open
+                  onClose={() => setTypeModalIndex(null)}
+                  value={s.tipo}
+                  onSelect={(tipo) => {
+                    // Al convertir en dropset arranca con UNA bajada vacía debajo de la serie
+                    // principal (mismo criterio que la sesión en vivo, ver `initialDropsetPatch`) —
+                    // ya no abre ningún modal aparte.
+                    updateSet(i, tipo === "descendente" ? { tipo, pesosDescendentes: [s.peso, 0], repsDescendentes: [0] } : { tipo });
+                    setTypeModalIndex(null);
+                  }}
+                />
+              )}
+            </div>
+
+            {isDropset && (
+              <>
+                {drops.map((d, k) => (
+                  <div
+                    key={k}
+                    className="grid grid-cols-[auto_auto_1fr_1fr_auto_auto] gap-2 items-center rounded-xl px-2 py-1.5 ml-3"
+                    style={{ background: `${PURPLE}12`, border: `1px solid ${PURPLE}33` }}
+                  >
+                    <span className="w-8 text-center text-[10px] font-bold" style={{ color: PURPLE }}>
+                      ↳ {k + 1}
+                    </span>
+                    <span className="w-12" />
+                    {!soloReps ? (
+                      <input
+                        type="number"
+                        value={d.peso || ""}
+                        placeholder={String(dropWeightRefs[k] || 0)}
+                        onChange={(e) => writeDrops(i, drops.map((x, idx) => (idx === k ? { ...x, peso: parseFloat(e.target.value) || 0 } : x)))}
+                        className="w-full rounded-lg bg-white/[0.05] glass-specular-ring px-2 py-1 text-sm text-white text-center outline-none"
+                      />
+                    ) : (
+                      <span className="text-center text-xs text-white/25">—</span>
+                    )}
+                    <input
+                      type="number"
+                      value={d.reps || ""}
+                      placeholder={String(DROP_REPS_REF)}
+                      onChange={(e) => writeDrops(i, drops.map((x, idx) => (idx === k ? { ...x, reps: parseInt(e.target.value) || 0 } : x)))}
+                      className="w-full rounded-lg bg-white/[0.05] glass-specular-ring px-2 py-1 text-sm text-white text-center outline-none"
+                    />
+                    <button
+                      onClick={() => writeDrops(i, drops.filter((_, idx) => idx !== k))}
+                      aria-label="Quitar bajada"
+                      className="w-7 h-7 flex items-center justify-center text-white/35 hover:text-white cursor-pointer mx-auto"
+                    >
+                      <X size={14} />
+                    </button>
+                    <span className="w-9" />
+                  </div>
+                ))}
+                <button
+                  onClick={() => writeDrops(i, [...drops, { peso: 0, reps: 0 }])}
+                  className="ml-10 self-start flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold cursor-pointer"
+                  style={{ color: PURPLE, background: `${PURPLE}14` }}
+                >
+                  <Plus size={12} /> bajada
+                </button>
+              </>
             )}
           </div>
         );

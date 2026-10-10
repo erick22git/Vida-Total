@@ -464,6 +464,8 @@ export interface RoutineSetPlan {
    * no solo durante la sesión en vivo. Se copia tal cual a `WorkoutSet`
    * cuando el plan arranca una sesión (ver `startWorkoutFromRoutine`). */
   pesosDescendentes?: number[];
+  /** Igual que `WorkoutSet.repsDescendentes` — reps planeadas de cada bajada del dropset. */
+  repsDescendentes?: number[];
 }
 
 export interface RoutineExercise {

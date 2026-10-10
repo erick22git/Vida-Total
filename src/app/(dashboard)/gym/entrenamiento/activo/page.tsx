@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -64,6 +64,21 @@ export default function ActiveWorkoutPage() {
   const [dropsetTypeOpen, setDropsetTypeOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"remove" | "discard" | null>(null);
   const [aiComingSoonOpen, setAiComingSoonOpen] = useState(false);
+
+  // Al completar la última serie pendiente de todo el entrenamiento, pasa solo a la pantalla de
+  // confirmar/terminar — antes había que acordarse de tocar "Terminar" a mano. El ref evita que se
+  // dispare de nuevo si el usuario vuelve atrás y destilda una serie (quedaría re-completo otra vez).
+  const autoFinishedRef = useRef(false);
+  useEffect(() => {
+    if (!activeSession) return;
+    const total = activeSession.ejercicios.reduce((sum, e) => sum + e.sets.filter((s) => s.tipo !== "calentamiento").length, 0);
+    const done = activeSession.ejercicios.reduce((sum, e) => sum + e.sets.filter((s) => s.tipo !== "calentamiento" && s.completado).length, 0);
+    if (total > 0 && done === total && !autoFinishedRef.current) {
+      autoFinishedRef.current = true;
+      const id = setTimeout(() => router.push("/gym/entrenamiento/activo/resumen"), 500);
+      return () => clearTimeout(id);
+    }
+  }, [activeSession, router]);
 
   if (!activeSession) {
     return (

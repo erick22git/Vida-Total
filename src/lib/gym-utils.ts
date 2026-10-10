@@ -11,16 +11,20 @@ export function effectiveWeight(set: WorkoutSet): number {
   return set.peso;
 }
 
-/** Ejercicios nuevos de rutina con 3 series de 10. Si `agrupar` es true, todos comparten un mismo
- * `grupo` (bloque/superserie): se hacen serie por serie, uno tras otro, y se descansa al terminar la ronda. */
+/** Ejercicios nuevos de rutina con 3 series. `peso`/`reps` en 0 (no un "10" fijo): así, al arrancar un
+ * entrenamiento desde esta rutina sin haber tocado nada, la serie se llena con lo que se hizo la última
+ * vez que se entrenó ese ejercicio (o la serie anterior de hoy) en vez de un número que no significa
+ * nada — mismo criterio para peso y repeticiones (ver `pesoRef`/`repsRef` en activo/page.tsx). Si
+ * `agrupar` es true, todos comparten un mismo `grupo` (bloque/superserie): se hacen serie por serie,
+ * uno tras otro, y se descansa al terminar la ronda. */
 export function newRoutineExercises(ids: string[], agrupar = false): RoutineExercise[] {
   const grupo = agrupar && ids.length >= 2 ? crypto.randomUUID() : undefined;
   return ids.map<RoutineExercise>((exerciseId) => ({
     exerciseId,
     sets: [
-      { peso: 0, reps: 10, tipo: "normal" },
-      { peso: 0, reps: 10, tipo: "normal" },
-      { peso: 0, reps: 10, tipo: "normal" },
+      { peso: 0, reps: 0, tipo: "normal" },
+      { peso: 0, reps: 0, tipo: "normal" },
+      { peso: 0, reps: 0, tipo: "normal" },
     ],
     ...(grupo ? { grupo } : {}),
   }));
