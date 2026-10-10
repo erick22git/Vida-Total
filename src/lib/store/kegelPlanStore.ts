@@ -1,8 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { userScopedLocalStorage } from "./scoped-storage";
-import { KEGEL_SESSIONS } from "@/lib/gym/kegel-plan";
-import { localDayKey } from "@/lib/gym/kegel-dates";
+import { KEGEL_SESSION_IDS } from "@/lib/gym/kegel-plan";
 
 /** Sesiones de Kegel cumplidas por día (dayKey "yyyy-MM-dd" → ids). Solo local; el resumen (racha/nivel) sigue en `gymStore`. */
 interface KegelPlanState {
@@ -32,11 +31,11 @@ export const useKegelPlanStore = create<KegelPlanState>()(
   ),
 );
 
-/** Días con las cinco sesiones cumplidas. */
+/** Días con las tres sesiones cumplidas. */
 export function fullyDoneDays(completed: Record<string, string[]>): Set<string> {
   const out = new Set<string>();
   for (const [day, ids] of Object.entries(completed)) {
-    if (KEGEL_SESSIONS.every((s) => ids.includes(s.id))) out.add(day);
+    if (KEGEL_SESSION_IDS.every((id) => ids.includes(id))) out.add(day);
   }
   return out;
 }

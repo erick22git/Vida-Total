@@ -8,7 +8,6 @@
  *  - Sonido on/off (usa preferencesStore)
  *  - Vibración on/off (usa kegelSettingsStore) + aviso si no compatible
  *  - Cuenta atrás toggle
- *  - Parámetros del plan: reps, squeeze, relax (con límites NHS/NICE)
  *  - Resetear plan (borra progreso del plan local)
  */
 import { useRef } from "react";
@@ -20,7 +19,6 @@ import { usePreferencesStore } from "@/lib/store/preferencesStore";
 import { useKegelSettingsStore } from "@/lib/store/kegelSettingsStore";
 import { useKegelPlanStore } from "@/lib/store/kegelPlanStore";
 import { isHapticSupported } from "@/lib/haptics/haptic";
-import { KEGEL_LIMITS } from "@/lib/gym/kegel-plan";
 import { useState } from "react";
 
 function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: boolean) => void; label: string }) {
@@ -46,67 +44,6 @@ function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: bool
   );
 }
 
-function Stepper({
-  label,
-  value,
-  defaultValue,
-  min,
-  max,
-  step,
-  unit,
-  onChange,
-}: {
-  label: string;
-  value: number | null;
-  defaultValue: number;
-  min: number;
-  max: number;
-  step: number;
-  unit: string;
-  onChange: (v: number | null) => void;
-}) {
-  const current = value ?? defaultValue;
-
-  function adjust(delta: number) {
-    const next = Math.min(max, Math.max(min, current + delta));
-    onChange(next === defaultValue ? null : next);
-  }
-
-  return (
-    <div className="flex items-center justify-between py-3 border-b border-white/10">
-      <div className="flex flex-col">
-        <span className="text-[15px]">{label}</span>
-        {value !== null && (
-          <span className="text-[11px]" style={{ color: "#888" }}>modificado</span>
-        )}
-      </div>
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => adjust(-step)}
-          disabled={current <= min}
-          aria-label={`Reducir ${label}`}
-          className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-[20px] font-light disabled:opacity-30"
-          style={{ background: "#2a2a2d" }}
-        >
-          −
-        </button>
-        <span className="text-[16px] font-bold tabular-nums w-[52px] text-center" style={MONO_FONT}>
-          {current}{unit}
-        </span>
-        <button
-          onClick={() => adjust(step)}
-          disabled={current >= max}
-          aria-label={`Aumentar ${label}`}
-          className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-[20px] font-light disabled:opacity-30"
-          style={{ background: "#2a2a2d" }}
-        >
-          +
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export function KegelSettingsSheet() {
   const [open, setOpen] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -118,9 +55,6 @@ export function KegelSettingsSheet() {
   const {
     vibrationEnabled, setVibrationEnabled,
     countdownEnabled, setCountdownEnabled,
-    repsOverride, setRepsOverride,
-    squeezeOverride, setSqueezeOverride,
-    relaxOverride, setRelaxOverride,
   } = useKegelSettingsStore();
 
   const resetCompleted = useKegelPlanStore((s) => s.resetCompleted);
@@ -198,44 +132,6 @@ export function KegelSettingsSheet() {
                   </p>
                 )}
                 <Toggle value={countdownEnabled} onChange={setCountdownEnabled} label="Cuenta atrás (3 seg)" />
-
-                {/* Sección: Plan */}
-                <p className="text-[11px] uppercase tracking-widest mb-1 pt-5" style={{ ...MONO_FONT, color: "#888" }}>
-                  Plan personalizado
-                </p>
-                <p className="text-[12px] pb-2" style={{ color: "#888" }}>
-                  Los cambios se aplican a partir de la próxima sesión. Límites basados en NHS/NICE.
-                </p>
-                <Stepper
-                  label="Repeticiones / serie"
-                  value={repsOverride}
-                  defaultValue={10}
-                  min={KEGEL_LIMITS.minRepsPerSet}
-                  max={KEGEL_LIMITS.maxRepsPerSet}
-                  step={1}
-                  unit=" reps"
-                  onChange={setRepsOverride}
-                />
-                <Stepper
-                  label="Apretar (seg)"
-                  value={squeezeOverride}
-                  defaultValue={3}
-                  min={KEGEL_LIMITS.minHoldSec}
-                  max={KEGEL_LIMITS.maxHoldSec}
-                  step={1}
-                  unit="s"
-                  onChange={setSqueezeOverride}
-                />
-                <Stepper
-                  label="Soltar (seg)"
-                  value={relaxOverride}
-                  defaultValue={3}
-                  min={KEGEL_LIMITS.minRelaxSec}
-                  max={KEGEL_LIMITS.maxHoldSec * 2}
-                  step={1}
-                  unit="s"
-                  onChange={setRelaxOverride}
-                />
 
                 {/* Sección: Reiniciar */}
                 <p className="text-[11px] uppercase tracking-widest mb-1 pt-5" style={{ ...MONO_FONT, color: "#888" }}>

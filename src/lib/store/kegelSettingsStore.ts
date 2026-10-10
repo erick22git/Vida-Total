@@ -7,26 +7,20 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { userScopedLocalStorage } from "./scoped-storage";
-import { KEGEL_LIMITS } from "@/lib/gym/kegel-plan";
 
 export interface KegelSettings {
   /** Vibración activa (complementa soundEnabled del preferencesStore). */
   vibrationEnabled: boolean;
   /** Cuenta atrás antes de cada fase activa. */
   countdownEnabled: boolean;
-  /** Override de reps por serie para el plan (null = usa el valor por defecto del plan). */
-  repsOverride: number | null;
-  /** Override de squeeze en segundos (null = usa el valor por defecto). */
-  squeezeOverride: number | null;
-  /** Override de relax en segundos (null = usa el valor por defecto). */
-  relaxOverride: number | null;
+  /** Volumen (0–1) de los tonos de contraer/relajar DENTRO de una sesión — además del interruptor
+   * general de sonido (preferencesStore) y del volumen físico del dispositivo. */
+  kegelVolume: number;
 
   // acciones
   setVibrationEnabled: (v: boolean) => void;
   setCountdownEnabled: (v: boolean) => void;
-  setRepsOverride: (v: number | null) => void;
-  setSqueezeOverride: (v: number | null) => void;
-  setRelaxOverride: (v: number | null) => void;
+  setKegelVolume: (v: number) => void;
 }
 
 export const useKegelSettingsStore = create<KegelSettings>()(
@@ -34,24 +28,11 @@ export const useKegelSettingsStore = create<KegelSettings>()(
     (set) => ({
       vibrationEnabled: true,
       countdownEnabled: true,
-      repsOverride: null,
-      squeezeOverride: null,
-      relaxOverride: null,
+      kegelVolume: 1,
 
       setVibrationEnabled: (v) => set({ vibrationEnabled: v }),
       setCountdownEnabled: (v) => set({ countdownEnabled: v }),
-      setRepsOverride: (v) => {
-        const clamped = v === null ? null : Math.min(KEGEL_LIMITS.maxRepsPerSet, Math.max(KEGEL_LIMITS.minRepsPerSet, v));
-        set({ repsOverride: clamped });
-      },
-      setSqueezeOverride: (v) => {
-        const clamped = v === null ? null : Math.min(KEGEL_LIMITS.maxHoldSec, Math.max(KEGEL_LIMITS.minHoldSec, v));
-        set({ squeezeOverride: clamped });
-      },
-      setRelaxOverride: (v) => {
-        const clamped = v === null ? null : Math.min(KEGEL_LIMITS.maxHoldSec * 2, Math.max(KEGEL_LIMITS.minRelaxSec, v));
-        set({ relaxOverride: clamped });
-      },
+      setKegelVolume: (v) => set({ kegelVolume: Math.min(1, Math.max(0, v)) }),
     }),
     {
       name: "vida-total-kegel-settings",

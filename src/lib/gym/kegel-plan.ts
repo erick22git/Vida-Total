@@ -1,107 +1,99 @@
 /**
- * Plan de Kegel — modelo parametrizado con series, repeticiones y tiempos.
+ * Plan de Kegel — 3 sesiones por día ("Sesión 1/2/3"), cada una de 9 series
+ * de dos patrones de contracción, apuntando a ~4 min por sesión:
  *
- * Fuentes de referencia para límites de seguridad:
+ *  - CONTRAE Y SOSTÉN: una contracción sostenida — aprieta 8 s, relaja 6 s
+ *    (dentro del máximo de 10 s de sostén que recomienda NHS/Squeezy).
+ *  - CONTRAE Y RELAJA: apretones rápidos — aprieta 1 s, relaja 1 s, 15 veces
+ *    seguidas (serie "rápida", igual criterio NHS de alternar lento/rápido).
+ *
+ * Fuentes de referencia (límites de seguridad que respetan los números de arriba):
  *  - NHS: "Pelvic floor exercises" (nhs.uk/conditions/urinary-incontinence/
- *    treatment/pelvic-floor-exercises/): 8-12 contracciones × 3 sets/día,
- *    sostener 8-10s, descanso igual al tiempo de contracción.
- *  - NICE CG171 (2013, actualizado 2019): mínimo 3 meses, al menos 3 series/día,
- *    8 contracciones máximas por serie.
- *  - App Squeezy (NHS endorsada): sostener máx 10s, relajar igual tiempo,
- *    10 reps/serie, 3-4 series, 3 sesiones/día.
+ *    treatment/pelvic-floor-exercises/): sostener 8-10 s, descanso similar.
+ *  - NICE CG171 (2013, actualizado 2019): mínimo 3 meses, varias series/día.
+ *  - App Squeezy (NHS endorsada): sostener máx 10 s, 3-4 series, 3 sesiones/día.
  *
- * Límites de seguridad codificados como constantes:
+ * El CONTENIDO de cada sesión (qué orden traen las 9 series) cambia cada día
+ * — determinista por fecha (mismo resultado toda la jornada, distinto al día
+ * siguiente) — pero el id/título "Sesión 1/2/3" es siempre el mismo, para que
+ * el progreso guardado (`kegelPlanStore`) no dependa del contenido del día.
  */
-export const KEGEL_LIMITS = {
-  maxHoldSec: 10,       // Sostener máx 10 s (NHS/Squeezy)
-  maxRepsPerSet: 10,    // Máx 10 reps/serie (Squeezy)
-  maxSets: 6,           // Máx 6 series/sesión (margen amplio pero razonable)
-  maxSessionsPerDay: 6, // Máx 6 sesiones/día (evitar sobreentrenamiento)
-  minHoldSec: 1,
-  minRelaxSec: 1,
-  minRepsPerSet: 1,
-  minSets: 1,
-  minSessionsPerDay: 1,
-} as const;
+
+import { localDayKey } from "./kegel-dates";
 
 // ─────────────────────────────────────────────────────────
-// Tipos de ejercicio
+// Series: los dos patrones de contracción
 // ─────────────────────────────────────────────────────────
 
-/** Tipo de contracción muscular. */
-export type ExerciseType =
-  | "rapid"      // Apretones rápidos: contraer y soltar de inmediato (1s)
-  | "slow"       // Apretones lentos: mantener y soltar
-  | "endurance"; // Resistencia: mantener más tiempo
+export type KegelSeriesKind = "sosten" | "relaja";
 
-/** Descripción legible por el usuario de cada tipo. */
-export const EXERCISE_TYPE_LABEL: Record<ExerciseType, string> = {
-  rapid: "Rápido",
-  slow: "Sostenido",
-  endurance: "Resistencia",
+export const SERIES_LABEL: Record<KegelSeriesKind, string> = {
+  sosten: "Contrae y sostén",
+  relaja: "Contrae y relaja",
 };
 
-/** Descripción de las fases de UI para el anillo y la onda. */
-export interface KegelPhase {
-  label: string;
-  seconds: number;
-  amp: number; // 0–1, qué tan arriba va la onda
+/** Antes de relajar: lo que antes decía "SUELTA" ahora depende del patrón. */
+export const RELAX_LABEL: Record<KegelSeriesKind, string> = {
+  sosten: "SOSTÉN",
+  relaja: "RELAJA",
+};
+
+export interface KegelSeriesStep {
+  kind: KegelSeriesKind;
+  /** Repeticiones aprieta/relaja dentro de esta serie (1 para "sostén", 15 para "relaja"). */
+  reps: number;
+  squeezeSeconds: number;
+  relaxSeconds: number;
+}
+
+export const SOSTEN_STEP: KegelSeriesStep = { kind: "sosten", reps: 1, squeezeSeconds: 8, relaxSeconds: 6 };
+export const RELAJA_STEP: KegelSeriesStep = { kind: "relaja", reps: 15, squeezeSeconds: 1, relaxSeconds: 1 };
+
+/** Descanso entre series (no después de la última) — ajustado para que las 9 series ronden los 4 min. */
+export const REST_BETWEEN_SERIES_SEC = 8;
+
+export function seriesDurationSec(s: KegelSeriesStep): number {
+  return (s.squeezeSeconds + s.relaxSeconds) * s.reps;
+}
+
+function sessionDurationSec(series: KegelSeriesStep[]): number {
+  const active = series.reduce((sum, s) => sum + seriesDurationSec(s), 0);
+  return active + REST_BETWEEN_SERIES_SEC * Math.max(0, series.length - 1);
 }
 
 // ─────────────────────────────────────────────────────────
-// Definición de ejercicio dentro de una sesión
+// Sesión
 // ─────────────────────────────────────────────────────────
 
-export interface KegelExerciseDef {
-  type: ExerciseType;
-  reps: number;             // repeticiones por serie (1–10)
-  squeezeSeconds: number;   // tiempo de contracción (1–10 s)
-  relaxSeconds: number;     // tiempo de relajación (1–10 s)
-  sets: number;             // series (1–6)
-  restBetweenSetsSec: number; // descanso entre series (seg)
-}
-
-// ─────────────────────────────────────────────────────────
-// Definición de sesión
-// ─────────────────────────────────────────────────────────
-
-export type KegelSessionKind = "libro" | "pesa" | "loto";
+export const KEGEL_SESSION_IDS = ["sesion-1", "sesion-2", "sesion-3"] as const;
+export type KegelSessionId = (typeof KEGEL_SESSION_IDS)[number];
 
 export interface KegelSessionDef {
-  id: string;
+  /** Fijo — nunca cambia, es lo que guarda `kegelPlanStore`. */
+  id: KegelSessionId;
+  /** Fijo — "Sesión 1" / "Sesión 2" / "Sesión 3". */
   title: string;
-  icon: KegelSessionKind;
-  exercises: KegelExerciseDef[];
-  /** Duración total estimada en segundos (precalculada). */
+  /** Las 9 series, en orden — esto SÍ cambia de un día a otro. */
+  series: KegelSeriesStep[];
   durationSec: number;
-  /** Fases para la onda / anillo (generadas a partir de exercises). */
-  phases: KegelPhase[];
 }
 
 // ─────────────────────────────────────────────────────────
-// Progresión por nivel
+// Progresión por nivel (sin cambios de lógica, solo movido de lugar)
 // ─────────────────────────────────────────────────────────
 
 /**
  * Fórmula de nivel: basada en DÍAS CUMPLIDOS (constancia), no en sesiones brutas.
- *
- * Decisión: avanzar de nivel requiere haber cumplido la meta diaria un número
- * creciente de días acumulados. Esto premia la constancia a largo plazo y no
- * se engaña haciendo 6 sesiones en un día.
- *
- * Tabla de días cumplidos para subir al nivel N (umbral acumulado):
+ * Tabla de días cumplidos acumulados para subir al nivel N:
  *   Nivel 1 → 2  : 7 días  (1 semana de práctica)
  *   Nivel 2 → 3  : 21 días
  *   Nivel 3 → 4  : 42 días
- *   Nivel 4 → 5  : 70 días
- *   ...etc.
- *
+ *   Nivel 4 → 5  : 70 días  ...etc.
  * Subir de nivel es una SUGERENCIA visible, no automático — el usuario acepta.
  */
 export const LEVEL_DAY_THRESHOLDS = [0, 7, 21, 42, 70, 105, 147, 196, 252, 315] as const;
 export const MAX_KEGEL_LEVEL = 10;
 
-/** Nivel SUGERIDO (no aplicado) dado un número de días cumplidos acumulados. */
 export function suggestedLevel(doneDays: number): number {
   let level = 1;
   for (let i = 1; i < LEVEL_DAY_THRESHOLDS.length; i++) {
@@ -112,77 +104,84 @@ export function suggestedLevel(doneDays: number): number {
 }
 
 // ─────────────────────────────────────────────────────────
-// Construcción de fases desde ejercicios
+// Las 3 "formas" de armar las 9 series — a cuál Sesión N le toca cada una,
+// y la variante de la forma "tríos", cambian cada día (ver buildDailySessions).
 // ─────────────────────────────────────────────────────────
 
-function phaseFromExercise(ex: KegelExerciseDef): KegelPhase[] {
-  const contractLabel =
-    ex.type === "rapid" ? "CONTRAE" : ex.type === "slow" ? "SOSTÉN" : "SOSTÉN";
-  const phases: KegelPhase[] = [
-    { label: contractLabel, seconds: ex.squeezeSeconds, amp: 1 },
-    { label: "SUELTA", seconds: ex.relaxSeconds, amp: 0.15 },
-  ];
-  return phases;
+/** 3 series de "relaja" y luego 6 de "sostén", en dos bloques. */
+function shapeBlock(): KegelSeriesStep[] {
+  return [RELAJA_STEP, RELAJA_STEP, RELAJA_STEP, SOSTEN_STEP, SOSTEN_STEP, SOSTEN_STEP, SOSTEN_STEP, SOSTEN_STEP, SOSTEN_STEP];
 }
 
-function calcDuration(exercises: KegelExerciseDef[]): number {
-  return exercises.reduce((total, ex) => {
-    const perRep = ex.squeezeSeconds + ex.relaxSeconds;
-    const perSet = perRep * ex.reps;
-    const allSets = perSet * ex.sets + ex.restBetweenSetsSec * Math.max(0, ex.sets - 1);
-    return total + allSets;
-  }, 0);
+/** Intercalado parejo (6 sostén : 3 relaja) repartido a lo largo de las 9 series. */
+function shapeAlternating(): KegelSeriesStep[] {
+  const out: KegelSeriesStep[] = [];
+  let sosten = 0;
+  let relaja = 0;
+  for (let i = 0; i < 9; i++) {
+    // En cada paso se elige el patrón cuya cuota (6 o 3 de 9) está más lejos de cumplirse todavía.
+    const wantSosten = (sosten + 1) / 6 <= (relaja + 1) / 3;
+    if (wantSosten) {
+      out.push(SOSTEN_STEP);
+      sosten++;
+    } else {
+      out.push(RELAJA_STEP);
+      relaja++;
+    }
+  }
+  return out;
 }
 
-function primaryPhases(exercises: KegelExerciseDef[]): KegelPhase[] {
-  if (exercises.length === 0) return [];
-  return phaseFromExercise(exercises[0]);
+/** Tríos repetidos 3 veces: 2 de un patrón + 1 del otro — cuál patrón es "el de 2" cambia por día. */
+function shapeTriples(doubledKind: KegelSeriesKind): KegelSeriesStep[] {
+  const doubled = doubledKind === "sosten" ? SOSTEN_STEP : RELAJA_STEP;
+  const single = doubledKind === "sosten" ? RELAJA_STEP : SOSTEN_STEP;
+  const group = [doubled, doubled, single];
+  return [...group, ...group, ...group];
 }
 
 // ─────────────────────────────────────────────────────────
-// Las 5 sesiones del plan inicial (nivel 1)
-// IDs conservados para retrocompatibilidad con datos guardados.
+// PRNG determinista por día (sin dependencias: mulberry32 + hash FNV-ish)
 // ─────────────────────────────────────────────────────────
 
-const L1_RAPID: KegelExerciseDef = { type: "rapid", reps: 10, squeezeSeconds: 1, relaxSeconds: 1, sets: 3, restBetweenSetsSec: 10 };
-const L1_SLOW: KegelExerciseDef = { type: "slow", reps: 5, squeezeSeconds: 3, relaxSeconds: 3, sets: 3, restBetweenSetsSec: 10 };
-const L1_ENDURANCE: KegelExerciseDef = { type: "endurance", reps: 3, squeezeSeconds: 5, relaxSeconds: 5, sets: 3, restBetweenSetsSec: 15 };
-const L1_COMBO: KegelExerciseDef = { type: "slow", reps: 8, squeezeSeconds: 5, relaxSeconds: 5, sets: 3, restBetweenSetsSec: 15 };
-
-function makeDef(
-  id: string, title: string, icon: KegelSessionKind, exercises: KegelExerciseDef[],
-): KegelSessionDef {
-  return { id, title, icon, exercises, durationSec: calcDuration(exercises), phases: primaryPhases(exercises) };
+function hashStr(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return h >>> 0;
 }
 
-export const KEGEL_SESSIONS: KegelSessionDef[] = [
-  makeDef("sesion-1", "Sesión 1", "libro", [L1_RAPID]),
-  makeDef("sesion-2", "Sesión 2", "libro", [L1_SLOW]),
-  makeDef("sesion-3", "Sesión 3", "libro", [L1_RAPID, L1_SLOW]),
-  makeDef("ejercicios", "5 Ejercicios", "pesa", [L1_ENDURANCE, L1_COMBO]),
-  makeDef("respiracion", "4-7-8 Respiración", "loto", [
-    {
-      type: "slow",
-      reps: 5,
-      squeezeSeconds: 4,
-      relaxSeconds: 8,
-      sets: 3,
-      restBetweenSetsSec: 7,
-    },
-  ]),
-];
-
-// ─────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────
-
-export function formatDuration(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  if (m === 0) return `${s} sec`;
-  return s === 0 ? `${m} min` : `${m} min ${s} sec`;
+function mulberry32(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
-export function getKegelSession(id: string): KegelSessionDef | undefined {
-  return KEGEL_SESSIONS.find((s) => s.id === id);
+function seededShuffle<T>(arr: T[], rng: () => number): T[] {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** Arma las 3 sesiones del día `dayKey` ("yyyy-MM-dd", ver `localDayKey`). Determinista: mismo día → mismo resultado. */
+export function buildDailySessions(dayKey: string): KegelSessionDef[] {
+  const rng = mulberry32(hashStr(dayKey));
+  const doubledKind: KegelSeriesKind = rng() < 0.5 ? "sosten" : "relaja";
+  const shapes = seededShuffle([shapeBlock(), shapeAlternating(), shapeTriples(doubledKind)], rng);
+  return KEGEL_SESSION_IDS.map((id, i) => {
+    const series = shapes[i];
+    return { id, title: `Sesión ${i + 1}`, series, durationSec: sessionDurationSec(series) };
+  });
+}
+
+export function getKegelSession(id: string, dayKey: string = localDayKey()): KegelSessionDef | undefined {
+  if (!(KEGEL_SESSION_IDS as readonly string[]).includes(id)) return undefined;
+  return buildDailySessions(dayKey).find((s) => s.id === id);
 }

@@ -56,14 +56,18 @@ interface ToneOpts {
   glideTo?: number;
 }
 
+/** Escala temporal del volumen para la PRÓXIMA llamada a `playSound` — ver su propio comentario. */
+let pendingVolumeScale = 1;
+
 function tone(c: AudioContext, o: ToneOpts) {
   const osc = c.createOscillator();
   const g = c.createGain();
   osc.type = o.type ?? "sine";
   osc.frequency.setValueAtTime(o.freq, o.at);
   if (o.glideTo) osc.frequency.exponentialRampToValueAtTime(o.glideTo, o.at + o.dur);
+  const gain = o.gain * pendingVolumeScale;
   g.gain.setValueAtTime(0, o.at);
-  g.gain.linearRampToValueAtTime(o.gain, o.at + 0.012);
+  g.gain.linearRampToValueAtTime(gain, o.at + 0.012);
   g.gain.exponentialRampToValueAtTime(0.0001, o.at + o.dur);
   osc.connect(g);
   g.connect(c.destination);
@@ -107,15 +111,20 @@ const RECIPES: Record<SoundName, (c: AudioContext, t: number) => void> = {
   },
 };
 
-export function playSound(name: SoundName): void {
-  if (!enabled()) return;
+/** `volumeScale` (0–1, default 1) escala el volumen de ESTE sonido por encima del interruptor general
+ * — lo usa el deslizador de volumen de la sesión de Kegel; el resto de los llamados lo deja en 1. */
+export function playSound(name: SoundName, volumeScale = 1): void {
+  if (!enabled() || volumeScale <= 0) return;
   try {
     const c = getContext();
     if (!c) return;
     if (c.state === "suspended") c.resume().catch(() => {});
+    pendingVolumeScale = volumeScale;
     RECIPES[name](c, c.currentTime);
   } catch {
     // Bloqueado por el navegador — silencioso a propósito.
+  } finally {
+    pendingVolumeScale = 1;
   }
 }
 

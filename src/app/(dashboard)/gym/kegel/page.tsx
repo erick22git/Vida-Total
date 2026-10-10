@@ -2,26 +2,32 @@
 
 /**
  * Kegel — tres vistas deslizables en vertical:
- *   0 = "El Plan Personal de Hoy" (5 sesiones + franja 7 días)
+ *   0 = botón grande de "hoy" (sesión siguiente, o el check fijo si ya están las 3) + franja 7 días
  *   1 = año (conos dorados por cada día cumplido)
  *   2 = progreso (racha, récord, nivel, cuadrícula semanas)
  */
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, Check, ChevronLeft, Clock, Dumbbell, Flower2, Info } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { KegelSettingsSheet } from "@/components/gym/kegel-settings-sheet";
 import { KegelProgressView } from "@/components/gym/kegel-progress-view";
+import { HabitOrb } from "@/components/habitos/habit-orb";
+import { BigCheck } from "@/components/habitos/big-check";
 import { localDayKey } from "@/lib/gym/kegel-dates";
 import { WeekStrip } from "@/components/shared/week-strip";
 import { CalorieYearView } from "@/components/gym/calorie-year-view";
 import { MONO_FONT } from "@/lib/ui/mono-font";
-import { KEGEL_SESSIONS, formatDuration, type KegelSessionKind } from "@/lib/gym/kegel-plan";
+import { KEGEL_SESSION_IDS } from "@/lib/gym/kegel-plan";
 import { fullyDoneDays, useKegelPlanStore } from "@/lib/store/kegelPlanStore";
 import { useGymStore } from "@/lib/store/gymStore";
+import { playEvent } from "@/lib/sound/sound-manager";
+import { haptic } from "@/lib/haptics/haptic";
 
 const VIEW_COUNT = 3;
 const SWIPE_Y = 60;
+/** Cuánto se queda el check "festejando" antes de revelar el siguiente número (o quedarse fijo). */
+const CELEBRATE_MS = 1100;
 
 const slideY = {
   enter: (dir: number) => ({ y: dir * 70, opacity: 0 }),
@@ -32,15 +38,17 @@ const slideY = {
 const NOISE =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.07'/></svg>\")";
 
-function SessionIcon({ kind }: { kind: KegelSessionKind }) {
-  const props = { size: 22, strokeWidth: 2.4, fill: "#fff", color: "#fff" };
-  if (kind === "pesa") return <Dumbbell {...props} />;
-  if (kind === "loto") return <Flower2 {...props} fill="none" />;
-  return <BookOpen {...props} />;
+export default function KegelPage() {
+  return (
+    <Suspense fallback={null}>
+      <KegelPageContent />
+    </Suspense>
+  );
 }
 
-export default function KegelPage() {
+function KegelPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const completed = useKegelPlanStore((s) => s.completed);
   const streak = useGymStore((s) => s.kegelStreak);
 
@@ -52,6 +60,26 @@ export default function KegelPage() {
   const todayISO = localDayKey();
   const doneToday = completed[todayISO] ?? [];
   const doneDays = fullyDoneDays(completed);
+
+  // Próxima sesión a hacer hoy (0, 1 o 2) — si ya están las tres, no hay próxima.
+  const nextIndex = KEGEL_SESSION_IDS.findIndex((id) => !doneToday.includes(id));
+  const allDone = nextIndex === -1;
+
+  // Volver de una sesión recién completada trae `?done=sesion-N`: festeja (check + sonido, igual que
+  // al completar un hábito) y after un momento revela el botón ya con el siguiente número — o el
+  // check fijo si esa era la tercera. `doneToday`/`nextIndex` de arriba YA reflejan el cambio (el
+  // motor de la sesión llama a `markCompleted` antes de volver), así que no hace falta más estado.
+  const justDoneId = searchParams.get("done");
+  const [celebrating, setCelebrating] = useState(() => !!justDoneId);
+  useEffect(() => {
+    if (!justDoneId) return;
+    void playEvent("task-complete");
+    haptic("success");
+    router.replace("/gym/kegel");
+    const t = setTimeout(() => setCelebrating(false), CELEBRATE_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function goView(next: number) {
     if (next < 0 || next >= VIEW_COUNT || next === view) return;
@@ -72,7 +100,7 @@ export default function KegelPage() {
   return (
     <div
       className="fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden"
-      style={view === 0 ? { backgroundColor: "#000" } : { backgroundColor: "#0d0d0d", backgroundImage: NOISE }}
+      style={view === 0 ? { background: "var(--app-bg)" } : { backgroundColor: "#0d0d0d", backgroundImage: NOISE }}
     >
       <header className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),10px)] h-[calc(3.25rem+max(env(safe-area-inset-top),10px))] shrink-0">
         <button
@@ -126,50 +154,29 @@ export default function KegelPage() {
           >
             {view === 0 ? (
               <div className="w-full h-full flex flex-col">
-                <div className="flex-1 min-h-0 overflow-hidden px-5 pt-2">
-                  <h2 className="text-[26px] font-bold tracking-tight leading-tight mb-5">El Plan Personal de Hoy</h2>
-                  <ol className="relative">
-                    <span
-                      className="absolute left-[27px] top-[-14px] bottom-[26px] w-[2px]"
-                      style={{ background: "rgba(255,255,255,0.35)" }}
-                      aria-hidden
-                    />
-                    {KEGEL_SESSIONS.map((s) => {
-                      const done = doneToday.includes(s.id);
-                      return (
-                        <li key={s.id} className="relative mb-6 last:mb-0">
-                          <button
-                            onClick={() => router.push(`/gym/kegel/sesion/${s.id}`)}
-                            className="flex items-center gap-5 w-full text-left cursor-pointer active:opacity-70"
-                          >
-                            <span
-                              className="relative w-[56px] h-[56px] rounded-full flex items-center justify-center shrink-0"
-                              style={{
-                                background: "#0a0a0a",
-                                border: "2px solid rgba(255,255,255,0.4)",
-                                boxShadow: "inset 0 1px 2px rgba(255,255,255,0.12)",
-                              }}
-                            >
-                              {done ? (
-                                <span className="w-[38px] h-[38px] rounded-full bg-white flex items-center justify-center">
-                                  <Check size={22} strokeWidth={3.2} color="#000" />
-                                </span>
-                              ) : (
-                                <SessionIcon kind={s.icon} />
-                              )}
-                            </span>
-                            <span className="flex flex-col gap-1.5">
-                              <span className="text-[24px] font-bold tracking-tight leading-none">{s.title}</span>
-                              <span className="flex items-center gap-2 text-[17px] leading-none" style={{ color: "#aab4c8" }}>
-                                <Clock size={19} fill="#fff" color="#000" strokeWidth={2.4} />
-                                {formatDuration(s.durationSec)}
-                              </span>
-                            </span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ol>
+                <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-4 px-5">
+                  <button
+                    onClick={() => {
+                      if (celebrating || allDone) return;
+                      router.push(`/gym/kegel/sesion/${KEGEL_SESSION_IDS[nextIndex]}`);
+                    }}
+                    disabled={allDone}
+                    aria-label={allDone ? "Plan de hoy terminado" : `Empezar Sesión ${nextIndex + 1}`}
+                    className="relative w-[58vw] max-w-[260px] cursor-pointer active:scale-95 transition-transform disabled:cursor-default"
+                  >
+                    <HabitOrb done={celebrating || allDone}>
+                      {celebrating || allDone ? (
+                        <BigCheck size={110} />
+                      ) : (
+                        <span className="text-[72px] font-extrabold leading-none tabular-nums">{nextIndex + 1}</span>
+                      )}
+                    </HabitOrb>
+                  </button>
+                  {!celebrating && (
+                    <p className="text-[13px] uppercase tracking-[0.14em]" style={{ ...MONO_FONT, color: "#aab4c8" }}>
+                      {allDone ? "Plan de hoy terminado" : `Sesión ${nextIndex + 1}`}
+                    </p>
+                  )}
                 </div>
 
                 <div className="pb-[max(env(safe-area-inset-bottom),28px)] min-h-[104px] shrink-0">

@@ -4,12 +4,12 @@
  * - Basado en timestamps (Date.now()), no en conteo de ticks de setInterval.
  *   Al volver desde segundo plano, `tick(now)` recalcula el estado correcto.
  * - La UI solo LEE el estado del motor; toda la lógica de tiempo vive aquí.
- * - Fases por ejercicio: prepare → squeeze → relax → (rest si hay más sets)
- *   → siguiente set/ejercicio → done.
+ * - Fases: prepare → (squeeze → relax) × reps de la serie → rest (si hay más
+ *   series) → siguiente serie → ... → done.
  * - Salir a medias: guarda `partial=true`. No cuenta para racha/nivel.
  */
 
-import type { KegelExerciseDef, KegelSessionDef } from "./kegel-plan";
+import { REST_BETWEEN_SERIES_SEC, type KegelSessionDef } from "./kegel-plan";
 
 // ─────────────────────────────────────────────────────────
 // Fases visibles
@@ -26,8 +26,8 @@ export type EnginePhase =
 export const PHASE_LABEL: Record<EnginePhase, string> = {
   idle: "LISTO",
   prepare: "PREPARA",
-  squeeze: "APRIETA",
-  relax: "SUELTA",
+  squeeze: "CONTRAE",
+  relax: "RELAJA",
   rest: "DESCANSA",
   done: "TERMINADO",
 };
@@ -49,11 +49,9 @@ export const PREPARE_SEC = 3;
 
 export interface EngineState {
   phase: EnginePhase;
-  /** Índice dentro de `exercises` de la sesión. */
-  exerciseIndex: number;
-  /** Serie actual (0-indexed). */
-  setIndex: number;
-  /** Repetición actual dentro del set (0-indexed). */
+  /** Índice de la serie actual dentro de `def.series` (0–8). */
+  seriesIndex: number;
+  /** Repetición actual dentro de la serie (0-indexed). */
   repIndex: number;
   /** Segundos transcurridos en la FASE actual. */
   phaseElapsed: number;
@@ -67,6 +65,9 @@ export interface EngineState {
   startedAt: number;
   /** Segundos acumulados de ejercicio real (sin pausas, sin prepare/rest). */
   activeSeconds: number;
+  /** Segundos transcurridos de TODA la sesión (prepare+rest incluidos) — para el progreso 0–1 sin
+   * tener que leer refs durante el render (ver `useKegelEngine`). */
+  totalElapsed: number;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -76,30 +77,23 @@ export interface EngineState {
 interface Step {
   phase: EnginePhase;
   duration: number;
-  exerciseIndex: number;
-  setIndex: number;
+  seriesIndex: number;
   repIndex: number;
 }
 
 export function buildSteps(def: KegelSessionDef): Step[] {
   const steps: Step[] = [];
   // Cuenta atrás inicial
-  steps.push({ phase: "prepare", duration: PREPARE_SEC, exerciseIndex: 0, setIndex: 0, repIndex: 0 });
+  steps.push({ phase: "prepare", duration: PREPARE_SEC, seriesIndex: 0, repIndex: 0 });
 
-  for (let ei = 0; ei < def.exercises.length; ei++) {
-    const ex = def.exercises[ei];
-    for (let si = 0; si < ex.sets; si++) {
-      for (let ri = 0; ri < ex.reps; ri++) {
-        steps.push({ phase: "squeeze", duration: ex.squeezeSeconds, exerciseIndex: ei, setIndex: si, repIndex: ri });
-        steps.push({ phase: "relax",   duration: ex.relaxSeconds,   exerciseIndex: ei, setIndex: si, repIndex: ri });
-      }
-      // Descanso entre series (no después de la última)
-      const isLastSet = si === ex.sets - 1;
-      const isLastExercise = ei === def.exercises.length - 1;
-      if (!isLastSet || !isLastExercise) {
-        steps.push({ phase: "rest", duration: ex.restBetweenSetsSec, exerciseIndex: ei, setIndex: si, repIndex: ex.reps - 1 });
-      }
+  for (let si = 0; si < def.series.length; si++) {
+    const s = def.series[si];
+    for (let ri = 0; ri < s.reps; ri++) {
+      steps.push({ phase: "squeeze", duration: s.squeezeSeconds, seriesIndex: si, repIndex: ri });
+      steps.push({ phase: "relax", duration: s.relaxSeconds, seriesIndex: si, repIndex: ri });
     }
+    const isLast = si === def.series.length - 1;
+    if (!isLast) steps.push({ phase: "rest", duration: REST_BETWEEN_SERIES_SEC, seriesIndex: si, repIndex: s.reps - 1 });
   }
   return steps;
 }
@@ -109,15 +103,15 @@ export function buildSteps(def: KegelSessionDef): Step[] {
 // ─────────────────────────────────────────────────────────
 
 export function stateFromElapsed(steps: Step[], totalElapsed: number): EngineState {
-  let remaining = Math.max(0, totalElapsed);
+  const clampedElapsed = Math.max(0, totalElapsed);
+  let remaining = clampedElapsed;
 
   for (let i = 0; i < steps.length; i++) {
     const s = steps[i];
     if (remaining < s.duration) {
       return {
         phase: s.phase,
-        exerciseIndex: s.exerciseIndex,
-        setIndex: s.setIndex,
+        seriesIndex: s.seriesIndex,
         repIndex: s.repIndex,
         phaseElapsed: remaining,
         phaseDuration: s.duration,
@@ -125,6 +119,7 @@ export function stateFromElapsed(steps: Step[], totalElapsed: number): EngineSta
         partial: false,
         startedAt: 0,
         activeSeconds: calcActiveSeconds(steps, i, remaining),
+        totalElapsed: clampedElapsed,
       };
     }
     remaining -= s.duration;
@@ -132,10 +127,10 @@ export function stateFromElapsed(steps: Step[], totalElapsed: number): EngineSta
 
   // Terminado
   const last = steps[steps.length - 1];
+  const fullDuration = steps.reduce((a, s) => a + s.duration, 0);
   return {
     phase: "done",
-    exerciseIndex: last?.exerciseIndex ?? 0,
-    setIndex: last?.setIndex ?? 0,
+    seriesIndex: last?.seriesIndex ?? 0,
     repIndex: last?.repIndex ?? 0,
     phaseElapsed: 0,
     phaseDuration: 0,
@@ -143,6 +138,7 @@ export function stateFromElapsed(steps: Step[], totalElapsed: number): EngineSta
     partial: false,
     startedAt: 0,
     activeSeconds: calcActiveSeconds(steps, steps.length, 0),
+    totalElapsed: fullDuration,
   };
 }
 
@@ -181,16 +177,29 @@ export interface EngineHandle {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useKegelEngine(def: KegelSessionDef): EngineHandle {
-  const steps = useRef(buildSteps(def));
-  const totalDuration = useRef(steps.current.reduce((a, s) => a + s.duration, 0));
+  // Todo lo que depende de `Date.now()`/de otro ref se calcula UNA vez acá (el inicializador perezoso
+  // de useState es el único lugar donde React permite trabajo "impuro" de una sola vez) — los
+  // `useRef` de abajo solo copian esos valores ya calculados, nunca leen `.current` de otro ref ni
+  // llaman `Date.now()` directamente, así nada de esto se evalúa "durante el render".
+  const [init] = useState(() => {
+    const builtSteps = buildSteps(def);
+    return {
+      steps: builtSteps,
+      totalDuration: builtSteps.reduce((a, s) => a + s.duration, 0),
+      startedAt: Date.now(),
+    };
+  });
 
-  const startedAt = useRef<number>(Date.now());
+  const steps = useRef(init.steps);
+  const totalDuration = init.totalDuration;
+
+  const startedAt = useRef<number>(init.startedAt);
   const pausedAt = useRef<number | null>(null);
   const pausedElapsed = useRef<number>(0); // acumulado antes de esta pausa
 
   const [state, setState] = useState<EngineState>(() => ({
-    ...stateFromElapsed(steps.current, 0),
-    startedAt: startedAt.current,
+    ...stateFromElapsed(init.steps, 0),
+    startedAt: init.startedAt,
   }));
 
   const tick = useCallback((now: number) => {
@@ -233,7 +242,8 @@ export function useKegelEngine(def: KegelSessionDef): EngineHandle {
     return () => clearInterval(id);
   }, [tick]);
 
-  const progress = Math.min(1, (pausedElapsed.current + (Date.now() - startedAt.current) / 1000) / totalDuration.current);
+  // Derivado del `state` ya calculado por el tick (no lee refs ni `Date.now()` durante el render).
+  const progress = totalDuration > 0 ? Math.min(1, state.totalElapsed / totalDuration) : 0;
 
   return {
     state,
@@ -241,7 +251,7 @@ export function useKegelEngine(def: KegelSessionDef): EngineHandle {
     pause,
     resume,
     exit,
-    totalDuration: totalDuration.current,
+    totalDuration,
     progress,
   };
 }
