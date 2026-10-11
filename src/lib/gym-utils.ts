@@ -100,6 +100,53 @@ export function initialDropsetPatch(set: WorkoutSet): Partial<WorkoutSet> {
   return { pesosDescendentes: [set.peso, 0], repsDescendentes: [0] };
 }
 
+/** Referencias (peso y reps) de cada bajada de un dropset, para mostrarlas atenuadas y commitearlas
+ * al tildar: primero se usa la MISMA bajada ya anotada en la serie anterior de esta sesión (si la
+ * serie anterior también era dropset), si no la hay, la misma bajada la última vez que se hizo este
+ * ejercicio; si tampoco hay ninguna, se calcula con la fórmula de siempre (~20% menos que la bajada
+ * anterior para el peso, `DROP_REPS_REF` para las reps). `count` son cuántas referencias calcular —
+ * al menos las bajadas actuales, para poder ofrecer una de más si se agrega otra con "+ bajada". */
+export function dropRefsFor(
+  count: number,
+  mainPesoRef: number,
+  prevSeriesDrops?: { peso: number; reps: number }[],
+  lastSessionDrops?: { peso: number; reps: number }[],
+): { peso: number; reps: number }[] {
+  const refs: { peso: number; reps: number }[] = [];
+  let prevPeso = mainPesoRef;
+  for (let k = 0; k < count; k++) {
+    const peso = prevSeriesDrops?.[k]?.peso || lastSessionDrops?.[k]?.peso || refDropWeight(prevPeso);
+    const reps = prevSeriesDrops?.[k]?.reps || lastSessionDrops?.[k]?.reps || DROP_REPS_REF;
+    refs.push({ peso, reps });
+    prevPeso = peso;
+  }
+  return refs;
+}
+
+/** A partir de una sesión terminada, reconstruye los ejercicios como quedarían guardados en una
+ * rutina — para "guardar estos cambios en la rutina" al terminar un entrenamiento que venía de una:
+ * incluye ejercicios agregados en la sesión (`agregadoEnSesion`) y cualquier cambio de tipo, peso,
+ * reps o dropset hecho durante el entrenamiento, así la próxima vez que se arranque desde esa rutina
+ * ya viene con esa configuración. */
+export function routineExercisesFromSession(session: WorkoutSession): RoutineExercise[] {
+  return session.ejercicios.map((ex) => ({
+    exerciseId: ex.exerciseId,
+    nota: ex.nota,
+    soloReps: ex.sets[0]?.soloReps,
+    restSeconds: ex.restSeconds,
+    grupo: ex.grupo,
+    soloInicio: ex.soloInicio,
+    serieUnica: ex.serieUnica,
+    sets: ex.sets.map((s) => ({
+      peso: s.peso,
+      reps: s.reps,
+      tipo: s.tipo ?? "normal",
+      pesosDescendentes: s.pesosDescendentes,
+      repsDescendentes: s.repsDescendentes,
+    })),
+  }));
+}
+
 /** Texto "Previa" (peso x reps, o la secuencia de bajadas si era dropset)
  * para mostrar al lado de una serie: con cuánto la hiciste la última vez.
  * Compartido entre RoutineSetTable (planificando) y SessionSetRow (sesión

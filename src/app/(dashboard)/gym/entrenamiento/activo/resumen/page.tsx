@@ -9,7 +9,7 @@ import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassInput } from "@/components/glass/glass-input";
 import { useGymStore } from "@/lib/store/gymStore";
-import { effectiveWeight } from "@/lib/gym-utils";
+import { effectiveWeight, routineExercisesFromSession } from "@/lib/gym-utils";
 
 export default function WorkoutSummaryPage() {
   const router = useRouter();
@@ -18,6 +18,7 @@ export default function WorkoutSummaryPage() {
   const finishWorkout = useGymStore((s) => s.finishWorkout);
   const cancelWorkout = useGymStore((s) => s.cancelWorkout);
   const incrementRoutineCompleted = useGymStore((s) => s.incrementRoutineCompleted);
+  const updateRoutine = useGymStore((s) => s.updateRoutine);
 
   const [nombre, setNombre] = useState(activeSession?.nombre ?? "Entrenamiento");
   const [descripcion, setDescripcion] = useState("");
@@ -48,6 +49,12 @@ export default function WorkoutSummaryPage() {
   );
 
   function handleFinish() {
+    // Si el entrenamiento venía de una rutina y el usuario quiere repetir la configuración (series,
+    // tipo, dropset, ejercicios agregados) las próximas veces, se guarda ANTES de terminar — después
+    // `finishWorkout` vacía `activeSession` y ya no habría de dónde leerlo.
+    if (activeSession?.routineId && updateRoutineValues) {
+      updateRoutine(activeSession.routineId, { ejercicios: routineExercisesFromSession(activeSession) });
+    }
     finishWorkout({ nombre: nombre.trim() || "Entrenamiento" });
     if (activeSession?.routineId) incrementRoutineCompleted(activeSession.routineId);
     router.push("/gym/entrenamiento/activo/racha");
@@ -87,17 +94,24 @@ export default function WorkoutSummaryPage() {
         onChange={(e) => setDescripcion(e.target.value)}
       />
 
-      <button
-        onClick={() => setUpdateRoutineValues((v) => !v)}
-        className="flex items-center justify-between rounded-2xl px-4 py-3 bg-white/[0.04] glass-specular-ring cursor-pointer"
-      >
-        <span className="text-sm text-white/80">Actualizar valores de la rutina</span>
-        {updateRoutineValues ? (
-          <ToggleRight size={26} className="text-[var(--gym-2)]" />
-        ) : (
-          <ToggleLeft size={26} className="text-white/30" />
-        )}
-      </button>
+      {activeSession?.routineId && (
+        <button
+          onClick={() => setUpdateRoutineValues((v) => !v)}
+          className="flex items-center justify-between rounded-2xl px-4 py-3 bg-white/[0.04] glass-specular-ring cursor-pointer"
+        >
+          <div className="flex flex-col items-start text-left">
+            <span className="text-sm text-white/80">Actualizar valores de la rutina</span>
+            <span className="text-[11px] text-white/40">
+              Repite esta configuración (series, pesos, dropset, ejercicios agregados) la próxima vez que entrenes este día.
+            </span>
+          </div>
+          {updateRoutineValues ? (
+            <ToggleRight size={26} className="text-[var(--gym-2)] shrink-0" />
+          ) : (
+            <ToggleLeft size={26} className="text-white/30 shrink-0" />
+          )}
+        </button>
+      )}
 
       <GlassButton accentColor="var(--gym-2)" size="lg" onClick={handleFinish}>
         Terminar entrenamiento

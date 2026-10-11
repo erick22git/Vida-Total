@@ -28,7 +28,7 @@ import { SessionTimer } from "@/components/gym/session-timer";
 import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
 import { SetTypeModal } from "@/components/gym/set-type-modal";
 import { useGymStore } from "@/lib/store/gymStore";
-import { blockRoundCount, initialDropsetPatch, nextAfterSet, previaLabelFor } from "@/lib/gym-utils";
+import { blockRoundCount, dropsOf, initialDropsetPatch, nextAfterSet, previaLabelFor } from "@/lib/gym-utils";
 import { unlockAudio } from "@/lib/sound/sound-engine";
 import { RankIcon } from "@/components/gym/rank-icon";
 import { useRankProfile } from "@/lib/gym/use-rank";
@@ -334,6 +334,10 @@ export default function ActiveWorkoutPage() {
                       previa={previaLabelFor(memberLast?.sets[r], memberSoloReps)}
                       pesoRef={(r > 0 ? ex.sets[r - 1].peso : 0) || memberLast?.sets[r]?.peso || undefined}
                       repsRef={(r > 0 ? ex.sets[r - 1].reps : 0) || memberLast?.sets[r]?.reps || undefined}
+                      dropRefs={{
+                        prevSeries: r > 0 && ex.sets[r - 1].tipo === "descendente" ? dropsOf(ex.sets[r - 1]) : undefined,
+                        lastSession: memberLast?.sets[r]?.tipo === "descendente" ? dropsOf(memberLast.sets[r]) : undefined,
+                      }}
                       restSeconds={ex.restSeconds ?? 90}
                       onChange={(patch) => handleSetChange(logIdx, set.id, patch)}
                       onDelete={ex.sets.length > 1 ? () => removeSet(ex.exerciseId, set.id) : undefined}
@@ -362,6 +366,10 @@ export default function ActiveWorkoutPage() {
             previa={previaLabelFor(lastLog?.sets[i], soloReps)}
             pesoRef={(i > 0 ? currentLog.sets[i - 1].peso : 0) || lastLog?.sets[i]?.peso || undefined}
             repsRef={(i > 0 ? currentLog.sets[i - 1].reps : 0) || lastLog?.sets[i]?.reps || undefined}
+            dropRefs={{
+              prevSeries: i > 0 && currentLog.sets[i - 1].tipo === "descendente" ? dropsOf(currentLog.sets[i - 1]) : undefined,
+              lastSession: lastLog?.sets[i]?.tipo === "descendente" ? dropsOf(lastLog.sets[i]) : undefined,
+            }}
             restSeconds={restSeconds}
             onChange={(patch) => handleSetChange(activeExerciseIndex, set.id, patch)}
             onDelete={currentLog.sets.length > 1 ? () => removeSet(currentLog.exerciseId, set.id) : undefined}

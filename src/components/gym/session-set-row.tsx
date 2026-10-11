@@ -7,7 +7,7 @@ import type { WorkoutSet } from "@/lib/types";
 import { SET_TYPE_META } from "@/components/gym/set-type";
 import { SetTypeModal } from "@/components/gym/set-type-modal";
 import { NumericKeypad } from "@/components/gym/numeric-keypad";
-import { dropsOf, initialDropsetPatch, DROP_REPS_REF, refDropWeight, isFixed, withFixed } from "@/lib/gym-utils";
+import { dropsOf, initialDropsetPatch, dropRefsFor, isFixed, withFixed } from "@/lib/gym-utils";
 
 function formatSeconds(sec: number): string {
   const mm = Math.floor(sec / 60);
@@ -40,6 +40,7 @@ export function SessionSetRow({
   restSeconds,
   pesoRef,
   repsRef,
+  dropRefs,
   onDelete,
 }: {
   index: number;
@@ -61,6 +62,9 @@ export function SessionSetRow({
   pesoRef?: number;
   /** Repeticiones de referencia, igual que `pesoRef`. */
   repsRef?: number;
+  /** Bajadas (peso y reps) de la MISMA serie la última vez que se hizo este ejercicio, y de la
+   * serie anterior de hoy si ya se anotó como dropset — usadas como referencia de cada bajada. */
+  dropRefs?: { prevSeries?: { peso: number; reps: number }[]; lastSession?: { peso: number; reps: number }[] };
   /** Si se pasa, deslizar la serie hacia un lado la elimina. */
   onDelete?: () => void;
 }) {
@@ -80,20 +84,26 @@ export function SessionSetRow({
   const repsFixed = isFixed(set, "reps");
   const pesoEf = set.peso || (pesoFixed ? 0 : pesoRef || 0);
   const repsEf = set.reps || (repsFixed ? 0 : repsRef || 0);
-  const drops = isDropset
+  const savedDrops = isDropset
     ? dropsOf(set).map((d, k) => ({ ...d, pesoFixed: isFixed(set, `dp${k}`), repsFixed: isFixed(set, `dr${k}`) }))
     : [];
+  // Si esta serie ya es dropset pero todavía no tiene bajadas anotadas (p.ej. recién empezada o
+  // copiada de una rutina vieja), se "ven" igual las bajadas de la última vez que se hizo este
+  // ejercicio — así no hace falta tocar "+ bajada" para que aparezcan.
+  const historyDropCount = Math.max(dropRefs?.prevSeries?.length ?? 0, dropRefs?.lastSession?.length ?? 0);
+  const drops =
+    isDropset && savedDrops.length === 0 && historyDropCount > 0
+      ? Array.from({ length: historyDropCount }, () => ({ peso: 0, reps: 0, pesoFixed: false, repsFixed: false }))
+      : savedDrops;
 
-  // Pesos de referencia de cada bajada: cada una parte de la anterior (o del peso principal).
-  const dropWeightRefs: number[] = [];
-  drops.reduce((prev, d) => {
-    const ref = refDropWeight(prev);
-    dropWeightRefs.push(ref);
-    return d.peso || (d.pesoFixed ? 0 : ref);
-  }, pesoEf);
+  // Referencia de cada bajada: lo mismo anotado en la serie anterior de hoy, si no lo que se hizo
+  // la última vez que se entrenó este ejercicio, si no, la fórmula de siempre (~20% menos).
+  const dropRefList = dropRefsFor(drops.length, pesoEf, dropRefs?.prevSeries, dropRefs?.lastSession);
+  const dropWeightRefs = dropRefList.map((r) => r.peso);
+  const dropRepsRefs = dropRefList.map((r) => r.reps);
 
   type DropDraft = { peso: number; reps: number; pesoFixed: boolean; repsFixed: boolean };
-  function writeDrops(next: DropDraft[], mainPeso = set.peso) {
+  function writeDrops(next: DropDraft[], mainPeso = pesoEf) {
     const base = (set.fijados ?? []).filter((k) => !/^d[pr]\d+$/.test(k));
     const flags = next.flatMap((d, k) => [...(d.pesoFixed ? [`dp${k}`] : []), ...(d.repsFixed ? [`dr${k}`] : [])]);
     onChange({
@@ -113,7 +123,7 @@ export function SessionSetRow({
     if (isDropset) {
       const committed = drops.map((d, k) => ({
         peso: d.peso || (d.pesoFixed ? 0 : dropWeightRefs[k] || 0),
-        reps: d.reps || (d.repsFixed ? 0 : DROP_REPS_REF),
+        reps: d.reps || (d.repsFixed ? 0 : dropRepsRefs[k] || 0),
       }));
       patch.pesosDescendentes = [patch.peso ?? 0, ...committed.map((d) => d.peso)];
       patch.repsDescendentes = committed.map((d) => d.reps);
@@ -210,6 +220,7 @@ export function SessionSetRow({
               pesoFixed={d.pesoFixed}
               repsFixed={d.repsFixed}
               pesoRef={dropWeightRefs[k]}
+              repsRef={dropRepsRefs[k]}
               soloReps={soloReps}
               completado={set.completado}
               onPeso={(v, explicit) =>
@@ -278,6 +289,7 @@ function DropRow({
   pesoFixed,
   repsFixed,
   pesoRef,
+  repsRef,
   soloReps,
   completado,
   onPeso,
@@ -290,6 +302,7 @@ function DropRow({
   pesoFixed: boolean;
   repsFixed: boolean;
   pesoRef: number;
+  repsRef: number;
   soloReps?: boolean;
   completado: boolean;
   onPeso: (v: number, explicit: boolean) => void;
@@ -315,7 +328,7 @@ function DropRow({
         <span className="text-center text-xs text-white/25">—</span>
       )}
       <button onClick={() => setRepsOpen(true)} className={`${VALUE_CELL} py-1 text-xs font-semibold`}>
-        <ValueText value={reps} reference={DROP_REPS_REF} fixed={repsFixed} />
+        <ValueText value={reps} reference={repsRef} fixed={repsFixed} />
       </button>
       <span className="w-9" />
       {completado ? (
@@ -343,7 +356,7 @@ function DropRow({
         initialValue={reps}
         step={1}
         accentColor="var(--gym-2)"
-        banner={`Repeticiones de esta bajada. Si no escribís nada, se usan ${DROP_REPS_REF}; escribí 0 si no hiciste ninguna.`}
+        banner={`Repeticiones de esta bajada. Si no escribís nada, se usa la de referencia (${repsRef}); escribí 0 si no hiciste ninguna.`}
         onNext={onReps}
       />
     </div>

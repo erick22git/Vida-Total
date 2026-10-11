@@ -842,10 +842,11 @@ export const useGymStore = create<GymState>()(
               exerciseId: id,
               agregadoEnSesion: true,
               ...(grupo ? { grupo } : {}),
+              // `reps` en 0, no 10: mismo criterio que `startWorkout` — ver comentario ahí.
               sets: [
-                { id: uid(), peso: 0, reps: 10, completado: false, fallo: false, tipo: "normal" as const },
-                { id: uid(), peso: 0, reps: 10, completado: false, fallo: false, tipo: "normal" as const },
-                { id: uid(), peso: 0, reps: 10, completado: false, fallo: false, tipo: "normal" as const },
+                { id: uid(), peso: 0, reps: 0, completado: false, fallo: false, tipo: "normal" as const },
+                { id: uid(), peso: 0, reps: 0, completado: false, fallo: false, tipo: "normal" as const },
+                { id: uid(), peso: 0, reps: 0, completado: false, fallo: false, tipo: "normal" as const },
               ],
             }));
           if (nuevos.length === 0) return state;
