@@ -62,8 +62,11 @@ profesional de salud."*
 Fase 0 de este trabajo encontró que el ajuste adaptativo de meta calórica (estilo MacroFactor/Carbon Diet
 Coach) **ya está implementado completo**: lógica en `src/lib/gym/calorie-adaptive.ts`
 (`evaluateAdaptiveCalories`) y UI con Aceptar/Descartar en `src/components/gym/calorie-settings-sheet.tsx`
-(Ajustes de Calorías). La pantalla del nutriólogo (Fase 4) **reutiliza ese resultado tal cual** como una
-de sus intervenciones — no se reimplementó ninguna lógica de TDEE/peso en este motor.
+(Ajustes de Calorías). La Fase 2 de este trabajo agrega solo un envoltorio de una función,
+`calorieGoalIntervention` en `nutrition-care-engine.ts`: toma el `AdaptiveCalorieResult` ya calculado y
+decide si corresponde mostrarlo como una intervención más del nutriólogo (cuando `status === "suggestion"`),
+sin tocar ni duplicar el cálculo de TDEE real. La pantalla del nutriólogo (Fase 4) llama a
+`evaluateAdaptiveCalories` igual que ya hace Ajustes de Calorías y le pasa el resultado a esta función.
 
 **Sobre relacionar el gasto real de entrenamiento con el TDEE** (pedido en la Fase 2 de este trabajo): no
 existe ningún módulo de calorías quemadas por entrenamiento en la app (sin MET ni estimación equivalente

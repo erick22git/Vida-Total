@@ -1,7 +1,8 @@
 // Pruebas del motor del nutriólogo virtual (Nutrition Care Process: evaluación, diagnóstico PES,
 // intervención, monitoreo). Ejecutar: node tools/3d/verify/run_ts.mjs tools/nutrition/nutrition_care_engine_test.ts
-import { evaluate, diagnose, buildIntervention, monitor, RECOMMENDED_WINDOW_DAYS } from "../../src/lib/nutrition/nutrition-care-engine";
+import { evaluate, diagnose, buildIntervention, monitor, calorieGoalIntervention, RECOMMENDED_WINDOW_DAYS } from "../../src/lib/nutrition/nutrition-care-engine";
 import { getNutrientTargets } from "../../src/lib/nutrition/nutrient-targets";
+import type { AdaptiveCalorieResult } from "../../src/lib/gym/calorie-adaptive";
 import type { LoggedFood, WeightEntry } from "../../src/lib/types";
 
 let fails = 0;
@@ -141,6 +142,31 @@ function foodAt(daysAgo: number, overrides: Partial<LoggedFood> = {}): LoggedFoo
   ok(monitor(diag, 60).status === "mejoro", "subir la ingesta de un nutriente bajo cuenta como mejoró");
   ok(monitor(diag, 21).status === "igual", "cambio dentro de la tolerancia cuenta como igual");
   ok(monitor(diag, 5).status === "empeoro", "bajar aún más la ingesta de un nutriente ya bajo cuenta como empeoró");
+}
+
+// --- Fase 2: intervención de meta calórica (reusa evaluateAdaptiveCalories, no la reimplementa) ---
+{
+  const baseAdaptive: AdaptiveCalorieResult = {
+    status: "insufficient_data",
+    windowDays: 14,
+    weighInsPerWeek: 1,
+    logDaysPerWeek: 2,
+    mensaje: "faltan datos",
+  };
+  ok(calorieGoalIntervention(baseAdaptive) === null, "sin datos suficientes: no hay intervención de meta calórica");
+
+  const onTrack: AdaptiveCalorieResult = { ...baseAdaptive, status: "on_track", mensaje: "bien calibrada" };
+  ok(calorieGoalIntervention(onTrack) === null, "meta ya calibrada: no hay intervención que ofrecer");
+
+  const suggestion: AdaptiveCalorieResult = {
+    ...baseAdaptive,
+    status: "suggestion",
+    suggestedCalorieGoal: 2200,
+    mensaje: "tu gasto real parece distinto",
+  };
+  const intervention = calorieGoalIntervention(suggestion);
+  ok(intervention?.suggestedCalorieGoal === 2200, "con desviación sostenida: trae la meta sugerida tal cual la calculó calorie-adaptive.ts");
+  ok(intervention?.mensaje === "tu gasto real parece distinto", "reusa el mensaje ya razonado de evaluateAdaptiveCalories, no inventa uno nuevo");
 }
 
 console.log(`${checks - fails}/${checks} OK`);

@@ -11,6 +11,7 @@ import type { LoggedFood, WeightEntry } from "@/lib/types";
 import { activeLoggedFoods } from "@/lib/food-utils";
 import { getNutrientTargets, type TargetProfile } from "./nutrient-targets";
 import { MICRO_REFS } from "./nutrient-reference-data";
+import type { AdaptiveCalorieResult } from "@/lib/gym/calorie-adaptive";
 
 export const MIN_WINDOW_DAYS = 7;
 export const RECOMMENDED_WINDOW_DAYS = 14;
@@ -243,6 +244,22 @@ export function buildIntervention(diagnosis: NutritionDiagnosis, alimentosSugeri
     mensaje: `Para cerrar la brecha de ${diagnosis.nutrientNombre} te faltarían unos ${falta} ${diagnosis.unidad} más por día.`,
     alimentosSugeridosIds,
   };
+}
+
+/** Fase 2: "peso que no avanza" — el nutriólogo NO reimplementa el ajuste adaptativo de calorías (ya
+ * existe completo en `calorie-adaptive.ts`, con su propia UI de Aceptar/Descartar en Ajustes de
+ * Calorías): esta función solo decide si ese resultado se muestra como una intervención más del
+ * nutriólogo, para no duplicar el cálculo de TDEE real en dos lugares. Devuelve `null` cuando no hay
+ * nada que ofrecer (datos insuficientes o la meta ya está bien calibrada) — ver docs/ciencia-nutriologo.md
+ * para por qué no se construyó una estimación de calorías quemadas por entrenamiento aparte. */
+export interface CalorieGoalIntervention {
+  mensaje: string;
+  suggestedCalorieGoal: number;
+}
+
+export function calorieGoalIntervention(adaptive: AdaptiveCalorieResult): CalorieGoalIntervention | null {
+  if (adaptive.status !== "suggestion" || adaptive.suggestedCalorieGoal === undefined) return null;
+  return { mensaje: adaptive.mensaje, suggestedCalorieGoal: adaptive.suggestedCalorieGoal };
 }
 
 // ============================================================================
