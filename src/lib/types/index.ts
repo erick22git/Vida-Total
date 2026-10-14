@@ -543,3 +543,36 @@ export interface ProgressPhoto {
   planId?: string;
   createdAt: number;
 }
+
+/** Perfil avanzado: una medición de composición corporal de báscula de BIOIMPEDANCIA (una entrada por
+ * fecha, nunca se sobrescribe — se agrega una nueva para poder graficar tendencia). Es una ESTIMACIÓN
+ * de la báscula, no un dato de laboratorio (DEXA/calibre): se muestra así en la UI, nunca como medida
+ * exacta. Todos los campos son opcionales porque no toda báscula reporta todo. */
+export interface BodyCompositionEntry {
+  id: string;
+  date: string; // ISO yyyy-MM-dd
+  grasaPct?: number;
+  masaMuscularPct?: number;
+  grasaVisceral?: number; // índice de la báscula, sin unidad estándar entre marcas
+  aguaPct?: number;
+  masaOseaKg?: number;
+  metabolismoBasalKcal?: number;
+  /** Foto para estimar % de grasa a futuro (Fase 5, no implementado): el campo ya guarda la foto,
+   * pero ningún cálculo automático la usa todavía. */
+  photoUrl?: string;
+}
+
+/** Perfil avanzado: perímetros corporales en cm (una entrada por fecha, mismo criterio que
+ * `BodyCompositionEntry` — nunca se sobrescribe el historial). */
+export interface BodyMeasurementEntry {
+  id: string;
+  date: string; // ISO yyyy-MM-dd
+  cuelloCm?: number;
+  pechoCm?: number;
+  cinturaCm?: number;
+  caderaCm?: number;
+  brazoRelajadoCm?: number;
+  brazoContraidoCm?: number;
+  musloCm?: number;
+  pantorrillaCm?: number;
+}

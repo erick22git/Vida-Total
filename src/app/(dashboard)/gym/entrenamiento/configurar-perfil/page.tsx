@@ -391,6 +391,13 @@ function PerfilEntrenamientoContent() {
             >
               Guardar perfil
             </button>
+            <button
+              onClick={() => router.push("/gym/entrenamiento/configurar-perfil/avanzado")}
+              className="w-full rounded-full py-3 text-sm font-medium cursor-pointer"
+              style={{ background: "rgba(255,255,255,0.08)" }}
+            >
+              Avanzado (composición corporal, perímetros)
+            </button>
           </div>
         )}
       </div>

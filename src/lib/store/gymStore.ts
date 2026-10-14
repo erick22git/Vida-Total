@@ -15,6 +15,8 @@ import type {
   MuscleGroup,
   PlanActivation,
   ProgressPhoto,
+  BodyCompositionEntry,
+  BodyMeasurementEntry,
   Recipe,
   Routine,
   RoutineExercise,
@@ -335,6 +337,14 @@ export interface GymState {
    * indicado, asociándola al plan activo en este momento. */
   setProgressPhoto: (monthKey: string, photoUrl: string) => void;
   removeProgressPhoto: (id: string) => void;
+
+  // ---------- Perfil avanzado (composición corporal y perímetros, con historial por fecha) ----------
+  bodyCompositionHistory: BodyCompositionEntry[];
+  addBodyCompositionEntry: (entry: Omit<BodyCompositionEntry, "id">) => void;
+  removeBodyCompositionEntry: (id: string) => void;
+  bodyMeasurementHistory: BodyMeasurementEntry[];
+  addBodyMeasurementEntry: (entry: Omit<BodyMeasurementEntry, "id">) => void;
+  removeBodyMeasurementEntry: (id: string) => void;
 
   // ---------- Streak ----------
   streak: number;
@@ -1273,6 +1283,18 @@ export const useGymStore = create<GymState>()(
         const uidUser = getCurrentUserId();
         if (uidUser) syncDeleteProgressPhoto(id, uidUser);
       },
+
+      // Perfil avanzado — historial local, sin sync remoto todavía (ver supabase/migrations, PROPUESTA sin aplicar).
+      bodyCompositionHistory: [],
+      addBodyCompositionEntry: (entry) =>
+        set((state) => ({ bodyCompositionHistory: [{ ...entry, id: uid() }, ...state.bodyCompositionHistory] })),
+      removeBodyCompositionEntry: (id) =>
+        set((state) => ({ bodyCompositionHistory: state.bodyCompositionHistory.filter((e) => e.id !== id) })),
+      bodyMeasurementHistory: [],
+      addBodyMeasurementEntry: (entry) =>
+        set((state) => ({ bodyMeasurementHistory: [{ ...entry, id: uid() }, ...state.bodyMeasurementHistory] })),
+      removeBodyMeasurementEntry: (id) =>
+        set((state) => ({ bodyMeasurementHistory: state.bodyMeasurementHistory.filter((e) => e.id !== id) })),
 
       // Streak
       streak: 0,
