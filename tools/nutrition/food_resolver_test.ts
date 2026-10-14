@@ -55,7 +55,7 @@ const CASES: [string, string | null][] = [
   ["salmón", "Salmón"], ["atún", "Atún en lata (al agua)"], ["merluza", "Merluza al horno"], ["pescado frito", "Pescado frito"], ["tofu", "Tofu firme"], ["cordero", "Pierna de cordero horneada"], ["pavo", "Pavo molido cocido"],
   ["leche", "Leche entera"], ["leche descremada", "Leche descremada"], ["yogur", "Yogur natural"], ["yogurt griego", "Yogur griego natural"], ["queso", "Queso fresco"], ["queso cottage", "Queso cottage"], ["mozzarella", "Queso mozzarella"],
   ["pan", "Pan blanco"], ["pan integral", "Pan de trigo integral"], ["marraqueta", "Pan Marraqueta"], ["pan con palta", "Pan con palta"], ["tortilla de maíz", "Tortilla de maíz"], ["avena", "Avena"], ["granola", "Granola"],
-  ["brócoli", "Brócoli cocido"], ["espinaca", "Espinaca cocida"], ["lechuga", "Lechuga"], ["tomate", "Tomate"], ["zanahoria", "Zanahoria"], ["pepino", "Pepino"], ["cebolla", "Cebolla"], ["pimiento", "Pimiento rojo"], ["zapallo", "Calabaza / zapallo cocido"], ["vainitas", "Vainitas / judías verdes cocidas"], ["coliflor", "Coliflor cocida"],
+  ["brócoli", "Brócoli"], ["espinaca", "Espinaca"], ["lechuga", "Lechuga"], ["tomate", "Tomate"], ["zanahoria", "Zanahoria"], ["pepino", "Pepino"], ["cebolla", "Cebolla"], ["pimiento", "Pimiento rojo"], ["zapallo", "Calabaza / zapallo cocido"], ["vainitas", "Vainitas / judías verdes cocidas"], ["coliflor", "Coliflor cocida"],
   ["almendras", "Almendras"], ["nueces", "Nueces"], ["maní", "Maní / cacahuate"], ["chía", "Semillas de chía"], ["aceite de oliva", "Aceite de oliva"], ["miel", "Miel de abeja"], ["mermelada", "Mermelada"],
   ["café", "Café negro sin azúcar"], ["café con leche", "Café con leche"], ["gaseosa", "Gaseosa regular"], ["cerveza", "Cerveza"], ["jugo de naranja", "Jugo de naranja natural"], ["whey", "Batido de proteína whey"],
   ["pizza", "Pizza margarita"], ["hamburguesa", "Hamburguesa clásica"], ["lomo saltado", "Lomo saltado"], ["ceviche", "Ceviche de pescado"], ["ají de gallina", "Ají de gallina"], ["helado", "Helado de crema"], ["chocolate", "Chocolate negro (70%)"],
@@ -101,7 +101,7 @@ for (const m of missing) console.log(`  · ${m}`);
   ok(resolveFood("200 g", foods).tipo === "sin_resultado", "solo cantidad → sin resultado");
   ok(resolveFood("xyzqw", foods).tipo === "sin_resultado", "basura → sin resultado");
   ok(resolveFood("platno", foods).chosen?.nombre === "Plátano", "tolerancia a 1 error: platno → Plátano");
-  ok(resolveFood("brocoli", foods).chosen?.nombre === "Brócoli cocido", "sin tildes");
+  ok(resolveFood("brocoli", foods).chosen?.nombre === "Brócoli", "sin tildes");
   ok(resolveFood("ARROZ   Blanco", foods).chosen?.nombre === "Arroz blanco", "mayúsculas y espacios");
   // uso previo desempata entre parecidos
   const queso = resolveFood("queso", foods, [], { usage: buildUsageMap([{ id: "x", foodId: foods.find((f) => f.nombre === "Queso mozzarella")!.id } as never]) });
