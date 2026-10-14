@@ -7,12 +7,14 @@
  */
 import { use, useMemo } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from "lucide-react";
 import { RankIcon } from "@/components/gym/rank-icon";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { useRankProfile } from "@/lib/gym/use-rank";
 import { MUSCLE_LABEL, NO_RANK_COLOR, RANK_GROUPS } from "@/lib/gym/rank-config";
 import { standardForExercise } from "@/lib/gym/rank-engine";
+import { useGymStore } from "@/lib/store/gymStore";
+import { latestMuscleMeasurement, measurementFieldForMuscle } from "@/lib/training/body-composition";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 
 const fmt = (n: number) => (Math.round(n * 10) / 10).toString();
@@ -28,6 +30,12 @@ export default function RangoListaPage({ params }: { params: Promise<{ key: stri
   const title = group ? group.label : (MUSCLE_LABEL[key] ?? "Ejercicios");
   const aggregate = group ? profile?.byGroup[group.key] : profile?.byMuscle[key];
   const rank = aggregate?.rank ?? null;
+
+  // Fase 3: medida de perímetro de este músculo (solo para músculos individuales, no grupos) — ver
+  // docs/ciencia-entrenamiento.md y body-composition.ts. Puramente aditivo al rango existente.
+  const bodyMeasurementHistory = useGymStore((s) => s.bodyMeasurementHistory);
+  const hasMeasurementField = !group && measurementFieldForMuscle(key) !== null;
+  const measurement = hasMeasurementField ? latestMuscleMeasurement(key, bodyMeasurementHistory) : null;
 
   const { ranked, pending, withoutStandard } = useMemo(() => {
     const inScope = allExercises.filter((e) => categories.includes(e.categoria));
@@ -65,6 +73,35 @@ export default function RangoListaPage({ params }: { params: Promise<{ key: stri
           </p>
         </div>
       </div>
+
+      {hasMeasurementField && (
+        <div className="rounded-3xl p-4 flex items-center justify-between gap-3 bg-white/[0.05] border border-white/10">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.1em] text-white/40" style={MONO_FONT}>
+              Perímetro
+            </p>
+            {measurement ? (
+              <p className="text-[11px] text-white/45">Última medición: {measurement.date}</p>
+            ) : (
+              <p className="text-[11px] text-white/45">Sin medir — cargalo en Perfil avanzado</p>
+            )}
+          </div>
+          {measurement && (
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xl font-black tabular-nums">{measurement.valueCm} cm</span>
+              {measurement.deltaCm !== undefined && measurement.deltaCm !== 0 && (
+                <span
+                  className="flex items-center gap-0.5 text-xs font-semibold"
+                  style={{ color: measurement.deltaCm > 0 ? "#22c55e" : "#ef4444" }}
+                >
+                  {measurement.deltaCm > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                  {Math.abs(measurement.deltaCm)} cm
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {missing.length > 0 && (
         <Link
