@@ -27,6 +27,10 @@ import {
   volumeLandmarksFor,
   volumeStatus,
   weeklyMuscleVolume,
+  weeklyMuscleVolumeBreakdown,
+  weeklyFailureLoad,
+  recentTechniqueWarnings,
+  DROPSET_VOLUME_MULTIPLIER,
   VOLUME_COLORS,
   type VolumeStatus,
 } from "@/lib/training/hypertrophy-engine";
@@ -304,7 +308,10 @@ function GraficasCard() {
 
   const weekStart = mondayOf(new Date());
   const volume = weeklyMuscleVolume(sessions, allExercises, weekStart);
+  const breakdown = weeklyMuscleVolumeBreakdown(sessions, allExercises, weekStart);
   const groups = (Object.keys(volume) as MuscleGroup[]).filter((g) => volumeLandmarksFor(g, level) !== null);
+  const failureLoad = weeklyFailureLoad(sessions, weekStart);
+  const techniqueWarnings = recentTechniqueWarnings(sessions);
 
   const recentWeights = [...weightEntries].sort((a, b) => (a.date < b.date ? -1 : 1)).slice(-10);
 
@@ -323,6 +330,7 @@ function GraficasCard() {
               const pct = Math.min(100, (sets / Math.max(landmarks.mrv, 1)) * 100);
               const mevPct = Math.min(100, (landmarks.mev / Math.max(landmarks.mrv, 1)) * 100);
               const mavPct = Math.min(100, (landmarks.mav / Math.max(landmarks.mrv, 1)) * 100);
+              const dropset = breakdown[g]?.dropset ?? 0;
               return (
                 <div key={g} className="flex flex-col gap-1">
                   <div className="flex items-center justify-between text-xs">
@@ -331,6 +339,11 @@ function GraficasCard() {
                       {sets} series · {STATUS_LABEL[status]}
                     </span>
                   </div>
+                  {dropset > 0 && (
+                    <p className="text-[10px] text-white/35">
+                      {breakdown[g]?.normal ?? 0} normales + {dropset} descendente{dropset === 1 ? "" : "s"} (×{DROPSET_VOLUME_MULTIPLIER} c/u en el total)
+                    </p>
+                  )}
                   <div className="relative h-2.5 rounded-full bg-white/[0.08] overflow-hidden">
                     <div className="absolute inset-y-0 left-0 rounded-full transition-all" style={{ width: `${pct}%`, background: VOLUME_COLORS[status] }} />
                     <span className="absolute inset-y-0 w-px bg-white/30" style={{ left: `${mevPct}%` }} />
@@ -357,6 +370,38 @@ function GraficasCard() {
         <SectionTitle>RIR promedio por sesión (recientes)</SectionTitle>
         <RirTrend sessions={sessions} />
       </section>
+
+      <section className="flex flex-col gap-3">
+        <SectionTitle>Series al fallo esta semana</SectionTitle>
+        {failureLoad.totalSets === 0 ? (
+          <p className="text-xs text-white/40">Sin series completadas esta semana todavía.</p>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <p className="text-xs text-white/60">
+              {failureLoad.failureSets} de {failureLoad.totalSets} series ({Math.round(failureLoad.ratio * 100)}%)
+            </p>
+            {failureLoad.highFatigue && (
+              <p className="text-xs rounded-xl px-3 py-2" style={{ background: "#ef44441a", color: "#fca5a5" }}>
+                Muchas series al fallo esta semana — señal de fatiga acumulada alta, considerá adelantar un deload.
+              </p>
+            )}
+          </div>
+        )}
+      </section>
+
+      {techniqueWarnings.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <SectionTitle>Técnica irregular</SectionTitle>
+          {techniqueWarnings.map((w) => {
+            const ex = allExercises.find((e) => e.id === w.exerciseId);
+            return (
+              <p key={w.exerciseId} className="text-xs rounded-xl px-3 py-2 bg-amber-400/10 text-amber-200">
+                <b>{ex?.nombre ?? w.exerciseId}</b> viene con técnica irregular las últimas sesiones ({w.notedSets} notas, ej. &ldquo;{w.lastNote}&rdquo;).
+              </p>
+            );
+          })}
+        </section>
+      )}
     </div>
   );
 }
