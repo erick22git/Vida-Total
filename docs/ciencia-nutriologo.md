@@ -100,3 +100,34 @@ confiable con pocos datos. 12 pruebas (`tools/nutrition/symptom_correlation_test
 Texto fijo obligatorio en la UI (pantalla del nutriólogo, Fase 4): *"Esto es un patrón detectado en tu
 propio registro, no un diagnóstico de alergia o intolerancia. Para confirmar una intolerancia o alergia
 real hace falta un profesional y, si corresponde, pruebas clínicas."*
+
+## La pantalla del nutriólogo (Fase 4)
+
+Ruta propia `src/app/(dashboard)/gym/nutriologo/page.tsx` — **NO** dentro de Calorías. Decisión y por qué:
+el contenido (evaluación + diagnósticos + intervenciones + síntomas + agente) es denso y no entra como una
+sección más sin reformar la pantalla de Calorías, que está explícitamente fuera de los límites de este
+trabajo ("no toques Calorías"). Se llega con un tile nuevo en el hub de Gym
+(`src/app/(dashboard)/gym/page.tsx`, no es un archivo protegido) — cero diffs en ningún archivo de
+Calorías. Mismo patrón visual que el Coach de Entrenamiento: 5 tarjetas con swipe horizontal
+(`swipe-carousel.tsx`), reutilizado tal cual, sin inventar un patrón nuevo:
+
+1. **Resumen** (`evaluate()`): ventana, adherencia de registro, peso de tendencia.
+2. **Diagnósticos** (`diagnose()`), en lenguaje claro, con un disclosure **"¿Por qué?"** por diagnóstico
+   que muestra la etiología y los signos exactos (el conteo real de días) — así el "¿por qué me dijiste
+   esto?" del enunciado se responde con el dato real que lo generó, sin construir un chat nuevo.
+3. **Intervenciones**: alimentos de la propia base que subirían el nutriente (`topFoodsForNutrient`, solo
+   alimentos que ya tienen el dato cargado, nunca inventado) + el ajuste de meta calórica si corresponde
+   (`calorieGoalIntervention`), ambos con Aceptar/Descartar — nunca cambian algo solos.
+4. **Síntomas**: registrar uno nuevo (comida reciente + tipo) y ver los patrones ya detectados
+   (`correlateAllSymptoms`), con el disclaimer de arriba.
+5. **Agente**: `Mascot` con el nuevo traje `"nutriologo"` (agregado a `Costume` en `agents.ts` y a
+   `mascot.tsx` — un ícono simple de estetoscopio, mismo criterio que los demás trajes) mostrando el
+   diagnóstico más relevante como si el agente lo dijera, con el mismo disclaimer médico. **Decisión**: no
+   se creó un `AgentDef` de chat nuevo ni se reutilizó el agente "nutricion" existente (que ya usa el
+   traje "chef" para registrar comida — cambiarle el traje habría afectado esa pantalla, fuera de los
+   límites de este trabajo). Se siguió el mismo precedente que el Coach de Entrenamiento: una Mascota
+   estática con un mensaje compuesto por datos reales, no un chat en vivo nuevo.
+
+Verificado en vivo (harness de mock-supabase, datos sembrados) en 375×812, 390×844 y 430×932: las 5
+tarjetas renderizan sin errores de consola, el diagnóstico de vitamina C y el patrón de síntomas salen
+con el formato "X de Y" pedido en el enunciado.

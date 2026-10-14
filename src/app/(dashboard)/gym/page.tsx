@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Flame, Droplets, Dumbbell, Sparkles } from "lucide-react";
+import { Flame, Droplets, Dumbbell, Sparkles, Stethoscope } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { CalorieArcMini } from "@/components/gym/calorie-arc-visual";
@@ -136,6 +136,23 @@ export default function GymHubPage() {
               </div>
             </div>
             <WeeklyTrainingRow sessions={sessions} />
+          </GlassCard>
+        </Link>
+
+        {/* Nutriólogo */}
+        <Link href="/gym/nutriologo">
+          <GlassCard
+            padding="sm"
+            glow
+            accentColor="#5ac8fa"
+            className="flex flex-col gap-2 h-full justify-center"
+            style={{ background: "var(--glass-bg-dark)" }}
+          >
+            <div className="flex items-center gap-2">
+              <Stethoscope size={18} className="text-white" />
+              <p className="text-sm text-white/55">Nutriólogo</p>
+            </div>
+            <p className="text-xs text-white/40">Evaluación y patrones de tu registro</p>
           </GlassCard>
         </Link>
 

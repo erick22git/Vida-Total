@@ -7,7 +7,7 @@
 import type { ToolLevel } from "./types";
 
 export type AgentId = "general" | "nutricion" | "entrenamiento" | "organizacion" | "recordatorios";
-export type Costume = "none" | "chef" | "sport" | "glasses" | "bell";
+export type Costume = "none" | "chef" | "sport" | "glasses" | "bell" | "nutriologo";
 
 export interface AgentDef {
   id: AgentId;

@@ -69,6 +69,12 @@ export function Mascot({ mood = "idle", size = 120, still = false, costume = "no
           <circle cx="99" cy="14" r="2.4" fill={accent} />
         </g>
       )}
+      {costume === "nutriologo" && (
+        <g fill="none" stroke={accent} strokeWidth="2.6" strokeLinecap="round">
+          <path d="M40 14 v10 a8 8 0 0 0 16 0 v-10" />
+          <circle cx="59" cy="30" r="3.4" fill={accent} stroke="none" />
+        </g>
+      )}
       {/* ojos */}
       {eyes === "open" && (
         <g transform={`translate(${look} 0)`}>
