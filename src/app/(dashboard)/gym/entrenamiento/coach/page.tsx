@@ -333,10 +333,10 @@ function Sparkline({ values, unit }: { values: number[]; unit: string }) {
       </svg>
       <div className="flex justify-between text-[10px] text-white/40 tabular-nums pt-1">
         <span>
-          {min} {unit}
+          {Math.round(min * 10) / 10} {unit}
         </span>
         <span>
-          {max} {unit}
+          {Math.round(max * 10) / 10} {unit}
         </span>
       </div>
     </div>
