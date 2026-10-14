@@ -6,7 +6,7 @@ import { ArrowLeft, BookOpen, Check, Clock, Plus, X } from "lucide-react";
 import { FoodSectionHeader, FOOD_SECTION_BG } from "@/components/gym/food-section-header";
 import { GlassCard } from "@/components/glass/glass-card";
 import { FoodChip, GramsInput } from "@/components/gym/food-draft-ui";
-import { VerifiedBadge } from "@/components/gym/verified-badge";
+import { VerifiedBadge, BarcodeSourceBadge } from "@/components/gym/verified-badge";
 import { useGymStore } from "@/lib/store/gymStore";
 import { mergeFoods } from "@/lib/food-utils";
 import {
@@ -272,8 +272,9 @@ function MealCaptureBlock({
               >
                 {c.kind === "receta" ? <BookOpen size={14} className="text-white/50 shrink-0" /> : <Clock size={14} className="text-white/40 shrink-0" />}
                 <span className="text-sm text-white/90 truncate min-w-0">{c.nombre}</span>
-                <VerifiedBadge item={c.food ?? c.recipe} size={13} className="mr-auto" />
-                <span className="text-xs text-white/40 shrink-0">{c.kind === "receta" ? "Receta" : c.food ? `${Math.round(c.food.calorias)} kcal` : ""}</span>
+                <VerifiedBadge item={c.food ?? c.recipe} size={13} />
+                {c.food?.barcode && <BarcodeSourceBadge size={13} />}
+                <span className="text-xs text-white/40 shrink-0 ml-auto">{c.kind === "receta" ? "Receta" : c.food ? `${Math.round(c.food.calorias)} kcal` : ""}</span>
               </button>
             ))}
             <button onClick={addNuevo} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-white/[0.08] cursor-pointer">

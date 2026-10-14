@@ -1,7 +1,8 @@
-import { BadgeCheck } from "lucide-react";
+import { BadgeCheck, Sparkles, Barcode } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const GREEN = "#34d399";
+const AMBER = "#f59e0b";
 
 /**
  * Check verde de "Verificado" — el ÚNICO componente que lo dibuja, en todo Calorías y Recetas.
@@ -45,6 +46,45 @@ export function VerifiedBadge({
     >
       <BadgeCheck size={size} aria-hidden />
       {label && <span className="text-[11px]">Verificado</span>}
+    </span>
+  );
+}
+
+/**
+ * Ícono (sin texto) para un registro detectado por IA a partir de una foto — mismo estilo que
+ * `VerifiedBadge`, con el morado/violeta que ya usa el resto de la app para "detectado por IA"
+ * (ver escaner/resultados). Lee `LoggedFood.source === "escaner-ia"`: nunca se infiere de otra cosa.
+ */
+export function IaSourceBadge({ size = 14, className }: { size?: number; className?: string }) {
+  return (
+    <span
+      className={cn("inline-flex items-center shrink-0", className)}
+      style={{ color: "var(--gym)" }}
+      role="img"
+      aria-label="Detectado con IA a partir de una foto"
+      title="Detectado con IA a partir de una foto"
+    >
+      <Sparkles size={size} aria-hidden />
+    </span>
+  );
+}
+
+/**
+ * Ícono (sin texto) para un alimento creado escaneando un código de barras (OpenFoodFacts) — datos
+ * de etiqueta de fabricante, no de laboratorio: menor confiabilidad que Foundation/SR Legacy, nunca
+ * se marca `verificado: true` automáticamente. Lee `Food.barcode`: solo lo tienen los alimentos
+ * creados desde el Escáner > Código.
+ */
+export function BarcodeSourceBadge({ size = 14, className }: { size?: number; className?: string }) {
+  return (
+    <span
+      className={cn("inline-flex items-center shrink-0", className)}
+      style={{ color: AMBER }}
+      role="img"
+      aria-label="Datos de etiqueta de fabricante (escaneado por código de barras)"
+      title="Datos de etiqueta de fabricante (escaneado por código de barras)"
+    >
+      <Barcode size={size} aria-hidden />
     </span>
   );
 }

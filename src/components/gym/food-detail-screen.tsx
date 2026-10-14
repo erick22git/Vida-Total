@@ -23,7 +23,7 @@ import Link from "next/link";
 import { isSameDay, startOfDay } from "date-fns";
 import { ChevronLeft, MoreVertical, Share2, Sparkles, Circle, CheckCircle2, Plus, Copy, Trash2 } from "lucide-react";
 import { CaloriasSkeleton } from "@/components/gym/calorias-skeleton";
-import { VerifiedBadge } from "@/components/gym/verified-badge";
+import { VerifiedBadge, IaSourceBadge, BarcodeSourceBadge } from "@/components/gym/verified-badge";
 import { FoodPhoto } from "@/components/gym/food-photo";
 import { DigitWheel } from "@/components/gym/digit-wheel";
 import { CantidadCounter } from "@/components/gym/cantidad-counter";
@@ -520,7 +520,11 @@ function FoodDetailContent({ id, mode }: { id: string; mode: "agregar" | "editar
               <span className="rounded-full border border-white/25 px-5 py-2 text-xs uppercase tracking-[0.1em] text-white/85" style={MONO_FONT}>
                 {food.nombre}
               </span>
-              <VerifiedBadge item={food} label />
+              <div className="flex items-center gap-2">
+                <VerifiedBadge item={food} label />
+                {currentEntry?.source === "escaner-ia" && <IaSourceBadge />}
+                {food.barcode && <BarcodeSourceBadge />}
+              </div>
             </div>
         </SwipeCarouselStage>
 
