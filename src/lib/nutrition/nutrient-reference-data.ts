@@ -37,7 +37,12 @@ export const MICRO_REFS: MicroRef[] = [
   { id: "vitaminaA", nombre: "Vitamina A", unidad: "mcg", tipo: "RDA", hombre: all(900), mujer: all(700), ul: [2800, 3000, 3000, 3000, 3000], nota: "mcg RAE; el UL es de vitamina A preformada" },
   { id: "vitaminaB1", nombre: "Vitamina B1", unidad: "mg", tipo: "RDA", hombre: all(1.2), mujer: [1.0, 1.1, 1.1, 1.1, 1.1], ul: null },
   { id: "vitaminaB2", nombre: "Vitamina B2", unidad: "mg", tipo: "RDA", hombre: all(1.3), mujer: [1.0, 1.1, 1.1, 1.1, 1.1], ul: null },
-  { id: "vitaminaB3", nombre: "Vitamina B3", unidad: "mg", tipo: "RDA", hombre: all(16), mujer: all(14), ul: [30, 35, 35, 35, 35], nota: "mg NE (equivalentes de niacina); el UL es de suplementos y alimentos fortificados" },
+  // Meta en mg NE (niacina preformada + triptófano/60 de la proteína, National Academies/Health
+  // Canada), pero el dato cargado por alimento es niacina preformada (lo único que USDA reporta de
+  // forma consistente, nutrient 406). La comparación subestima el aporte real, más en alimentos con
+  // proteína — no hay una meta oficial separada "solo preformada" para comparar en su lugar. Ver
+  // docs/ciencia-nutricion.md (2026-10-13).
+  { id: "vitaminaB3", nombre: "Vitamina B3", unidad: "mg", tipo: "RDA", hombre: all(16), mujer: all(14), ul: [30, 35, 35, 35, 35], nota: "mg NE (equivalentes de niacina): niacina preformada + triptófano/60; el dato cargado es solo preformada, así que la comparación subestima el aporte real. El UL es de suplementos y alimentos fortificados" },
   { id: "vitaminaB5", nombre: "Vitamina B5", unidad: "mg", tipo: "AI", hombre: all(5), mujer: all(5), ul: null },
   { id: "vitaminaB6", nombre: "Vitamina B6", unidad: "mg", tipo: "RDA", hombre: [1.3, 1.3, 1.3, 1.7, 1.7], mujer: [1.2, 1.3, 1.3, 1.5, 1.5], ul: [80, 100, 100, 100, 100] },
   { id: "vitaminaB12", nombre: "Vitamina B12", unidad: "mcg", tipo: "RDA", hombre: all(2.4), mujer: all(2.4), ul: null, nota: "mayores de 50: cubrirla sobre todo con alimentos fortificados o suplementos" },

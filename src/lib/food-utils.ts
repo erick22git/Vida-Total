@@ -152,7 +152,13 @@ export const MICRONUTRIENT_LABELS: Record<string, { label: string; unit: string;
   vitaminaK: { label: "Vitamina K", unit: "mcg", group: "vitamina" },
   vitaminaB1: { label: "Vitamina B1 (Tiamina)", unit: "mg", group: "vitamina" },
   vitaminaB2: { label: "Vitamina B2 (Riboflavina)", unit: "mg", group: "vitamina" },
-  vitaminaB3: { label: "Vitamina B3 (Niacina)", unit: "mg", group: "vitamina" },
+  // "Preformada" porque esto es lo que trae USDA (nutrient 406, "Niacin") y lo que se carga acá:
+  // niacina tal cual, SIN el aporte de triptófano de la proteína del alimento. La meta de la DRI con
+  // la que se compara está en equivalentes de niacina (mg NE = niacina + triptófano/60) — ver
+  // docs/ciencia-nutricion.md. Comparar este dato contra esa meta subestima el aporte real de
+  // cualquier alimento con proteína; no se corrige acá porque USDA no reporta triptófano en la
+  // mayoría de los alimentos de esta base (solo en los que tienen perfil de aminoácidos completo).
+  vitaminaB3: { label: "Vitamina B3 (Niacina, mg preformada)", unit: "mg", group: "vitamina" },
   vitaminaB5: { label: "Vitamina B5 (Ác. Pantoténico)", unit: "mg", group: "vitamina" },
   vitaminaB6: { label: "Vitamina B6", unit: "mg", group: "vitamina" },
   vitaminaB12: { label: "Vitamina B12", unit: "mcg", group: "vitamina" },
