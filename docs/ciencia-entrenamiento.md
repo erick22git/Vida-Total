@@ -79,6 +79,37 @@ No hay una norma única de "a tal RIR promedio, subí X kg" — es una decisión
 - **Deload** (vuelve a MV, aproximado acá como MEV ya que la tabla no tiene MV separado para todos los grupos) cuando: el volumen de la semana alcanza o supera el MRV del grupo, **o** se detecta meseta.
 - **Meseta**: el 1RM estimado (Epley) de un ejercicio no sube en **3 sesiones consecutivas** de ese ejercicio (umbral propio, no de una fuente — documentado como tal en el código).
 
+## Tipo de serie real y su efecto en el motor (sesión de "tipo de serie")
+
+**Dropset y volumen semanal** (`DROPSET_VOLUME_MULTIPLIER = 1.5` en `hypertrophy-engine.ts`): no encontré
+una cifra exacta de Israetel/RP ni de Schoenfeld para cuánto "vale" un dropset en el conteo de volumen.
+Lo que sí hay: la revisión sistemática de Brookbush Institute sobre dropsets
+([brookbushinstitute.com/articles/drop-sets-comprehensive-systematic-review-and-training-recommendations](https://brookbushinstitute.com/articles/drop-sets-comprehensive-systematic-review-and-training-recommendations),
+consultado 2026-10-14) describe el estímulo de un dropset como equivalente a **~2-3 series
+convencionales**, pero señala que convencionalmente se cuenta como **una sola serie** porque no hay
+descanso entre bajadas. Dos meta-análisis con volumen equiparado — Coleman et al. 2022 (co-autor
+Schoenfeld) y Sødal et al. 2023 — encontraron hipertrofia similar entre dropsets y series tradicionales
+cuando el volumen total se iguala, lo que sugiere que contar cada bajada como una serie completa aparte
+inflaría el volumen sin evidencia que lo respalde. **1.5 es un punto medio razonado** entre "cuenta como
+1" (la convención más conservadora, sin descanso entre bajadas) y "cuenta como 2-3" (el estímulo
+observado) — **no es un número de la literatura**, es la decisión de este proyecto ante la falta de una
+cifra exacta.
+
+**Series al fallo y autorregulación** (`HIGH_FAILURE_RATIO_THRESHOLD = 0.4` en `weeklyFailureLoad`):
+convención propia, sin una cifra de la literatura para este umbral específico. La idea general — que
+demasiadas series al fallo acumulan más fatiga de la que compensa el estímulo extra — está bien
+establecida en la literatura de autorregulación (de ahí viene el uso de RIR en primer lugar, Helms et
+al. 2016, ya citado arriba), pero el corte exacto de "40% de las series de la semana" es una decisión de
+este proyecto, no una cifra publicada. El Coach usa esto para sugerir adelantar el deload además de
+(no en vez de) la detección de meseta por 1RM estancado, que tarda varias sesiones en notarse.
+
+**Notas de "mala técnica"** (`TECHNIQUE_WARNING_MIN_NOTES = 2` en `recentTechniqueWarnings`): convención
+propia — 2 o más notas en las últimas 5 sesiones de ESE ejercicio (no de cualquier sesión) cuentan como
+"técnica irregular" y generan un aviso en el Coach. Es un conteo preparado a propósito para conectarse
+con la visión por cámara cuando se implemente (`docs/roadmap/vision-entrenador.md`) — ese roadmap ya
+señala que la detección automática de errores de forma es lo que más impacto tendría, y este conteo
+manual es el mismo dato, solo que anotado a mano por ahora.
+
 ## Qué queda fuera (no implementado, documentado para revisión futura)
 
 - Landmarks de Abductores/Aductores: no hay fuente — el motor no inventa un número, reporta "sin referencia".

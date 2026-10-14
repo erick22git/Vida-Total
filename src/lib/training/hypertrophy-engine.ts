@@ -130,10 +130,26 @@ function secondaryToGroup(raw: string): MuscleGroup | null {
   }
 }
 
-/** Series completadas (no solo registradas) de un ejercicio dentro de un log de sesión. Un dropset
- * (`tipo === "descendente"`) con N bajadas cuenta como 1 sola serie, igual que el resto de la app. */
-function completedSets(log: { sets: WorkoutSet[] }): number {
-  return log.sets.filter((s) => s.completado).length;
+/** Convención razonada, NO un número de la literatura: no encontré una cifra exacta de Israetel/RP ni
+ * de Schoenfeld para cuánto "vale" un dropset en volumen semanal. Lo que sí hay: la revisión sistemática
+ * de Brookbush Institute sobre drop sets (brookbushinstitute.com/articles/drop-sets-comprehensive-
+ * systematic-review-and-training-recommendations, consultado 2026-10-14) describe el estímulo de un
+ * dropset como equivalente a ~2-3 series convencionales, pero señala que convencionalmente se cuenta
+ * como UNA serie porque no hay descanso entre bajadas; y dos meta-análisis con volumen equiparado
+ * (Coleman et al. 2022, co-autor Schoenfeld; Sødal et al. 2023) encontraron hipertrofia similar entre
+ * dropsets y series tradicionales cuando el volumen total se iguala — lo que sugiere NO contar cada
+ * bajada como una serie completa aparte (eso infla el volumen sin evidencia que lo respalde). 1.5 es un
+ * punto medio razonado entre "cuenta como 1" (la convención más conservadora) y "cuenta como 2-3" (el
+ * estímulo observado) — ver docs/ciencia-entrenamiento.md. */
+export const DROPSET_VOLUME_MULTIPLIER = 1.5;
+
+/** Series completadas (no solo registradas) de un ejercicio dentro de un log de sesión, en "series
+ * equivalentes" para volumen: un dropset (`tipo === "descendente"`) pesa `DROPSET_VOLUME_MULTIPLIER`
+ * en vez de 1, por el estímulo extra de sus bajadas — ver la nota de la convención arriba. */
+function weightedCompletedSets(log: { sets: WorkoutSet[] }): number {
+  return log.sets
+    .filter((s) => s.completado)
+    .reduce((sum, s) => sum + (s.tipo === "descendente" ? DROPSET_VOLUME_MULTIPLIER : 1), 0);
 }
 
 /** Volumen semanal real (series fraccionadas) por grupo muscular, contando solo series completadas de
@@ -159,7 +175,7 @@ export function weeklyMuscleVolume(
     for (const log of session.ejercicios) {
       const ex = exercises.find((e) => e.id === log.exerciseId);
       if (!ex) continue;
-      const sets = completedSets(log);
+      const sets = weightedCompletedSets(log);
       if (sets === 0) continue;
       points.set(ex.categoria, (points.get(ex.categoria) ?? 0) + sets * DIRECT_WEIGHT);
       const secondaries = new Set(ex.musculosSecundarios.map(secondaryToGroup).filter((g): g is MuscleGroup => !!g && g !== ex.categoria));
@@ -167,6 +183,119 @@ export function weeklyMuscleVolume(
     }
   }
   return Object.fromEntries(points);
+}
+
+/** Igual que `weeklyMuscleVolume`, pero separa cuánto del volumen DIRECTO de cada músculo viene de
+ * series normales vs. series descendentes — para mostrarlo aparte en el Coach (Fase 4), no solo el
+ * total ya mezclado. Solo cuenta volumen directo (no indirecto/secundario): el desglose normal/
+ * descendente de un músculo que solo recibe estímulo indirecto de un ejercicio no tendría mucho
+ * sentido mostrar aparte. */
+export function weeklyMuscleVolumeBreakdown(
+  sessions: WorkoutSession[],
+  exercises: Exercise[],
+  weekStartISO: string,
+): Partial<Record<MuscleGroup, { normal: number; dropset: number }>> {
+  const endDate = new Date(weekStartISO + "T00:00:00Z");
+  endDate.setUTCDate(endDate.getUTCDate() + 7);
+  const endISO = endDate.toISOString().slice(0, 10);
+
+  const points = new Map<MuscleGroup, { normal: number; dropset: number }>();
+  for (const session of sessions) {
+    const key = session.date.slice(0, 10);
+    if (key < weekStartISO || key >= endISO) continue;
+    for (const log of session.ejercicios) {
+      const ex = exercises.find((e) => e.id === log.exerciseId);
+      if (!ex) continue;
+      const normal = log.sets.filter((s) => s.completado && s.tipo !== "descendente").length;
+      const dropset = log.sets.filter((s) => s.completado && s.tipo === "descendente").length;
+      if (normal === 0 && dropset === 0) continue;
+      const entry = points.get(ex.categoria) ?? { normal: 0, dropset: 0 };
+      entry.normal += normal;
+      entry.dropset += dropset;
+      points.set(ex.categoria, entry);
+    }
+  }
+  return Object.fromEntries(points);
+}
+
+/** Convención propia, sin una cifra de la literatura: si el 40% o más de las series completadas de la
+ * semana fueron explícitamente al fallo (`tipo === "fallo"`), es señal de fatiga acumulada alta — el
+ * Coach debería sugerir adelantar el deload en vez de esperar solo a que el 1RM se estanque
+ * (`plateauDetected`), que tarda varias sesiones en notarse. Ver docs/ciencia-entrenamiento.md. */
+export const HIGH_FAILURE_RATIO_THRESHOLD = 0.4;
+
+export interface WeeklyFailureLoad {
+  failureSets: number;
+  totalSets: number;
+  /** `0` si no hubo ninguna serie completada esta semana (nunca se divide por cero). */
+  ratio: number;
+  /** true = ratio >= `HIGH_FAILURE_RATIO_THRESHOLD`: suficientes series al fallo como para sugerir
+   * adelantar el deload. */
+  highFatigue: boolean;
+}
+
+export function weeklyFailureLoad(sessions: WorkoutSession[], weekStartISO: string): WeeklyFailureLoad {
+  const endDate = new Date(weekStartISO + "T00:00:00Z");
+  endDate.setUTCDate(endDate.getUTCDate() + 7);
+  const endISO = endDate.toISOString().slice(0, 10);
+
+  let failureSets = 0;
+  let totalSets = 0;
+  for (const session of sessions) {
+    const key = session.date.slice(0, 10);
+    if (key < weekStartISO || key >= endISO) continue;
+    for (const log of session.ejercicios) {
+      for (const s of log.sets) {
+        if (!s.completado) continue;
+        totalSets++;
+        if (s.tipo === "fallo") failureSets++;
+      }
+    }
+  }
+  const ratio = totalSets > 0 ? failureSets / totalSets : 0;
+  return { failureSets, totalSets, ratio, highFatigue: ratio >= HIGH_FAILURE_RATIO_THRESHOLD };
+}
+
+/** Convención propia: 2 o más notas de "mala técnica" en las últimas `lookbackSessions` sesiones donde
+ * se hizo ESE ejercicio cuenta como "técnica irregular" — un aviso para el Coach (Fase 3/4), nunca un
+ * bloqueo. Es justo el dato que más va a importar cuando llegue la cámara (ver
+ * docs/roadmap/vision-entrenador.md): esto deja el conteo ya preparado para conectarse ahí después,
+ * sin implementar nada de visión ahora. */
+export const TECHNIQUE_WARNING_MIN_NOTES = 2;
+
+export interface TechniqueWarning {
+  exerciseId: string;
+  /** Cuántas series de ese ejercicio en la ventana tienen una nota no vacía. */
+  notedSets: number;
+  /** El texto de la nota más reciente (para mostrar como ejemplo en el aviso). */
+  lastNote: string;
+}
+
+/** Ejercicios con 2+ notas en las sesiones más recientes (ordenadas por fecha, de más nueva a más
+ * vieja) donde se registró ese ejercicio — no por sesiones en general, porque un ejercicio que se hace
+ * una vez cada 2 semanas no debería "perder" su historial de notas por sesiones de otros ejercicios de
+ * por medio. */
+export function recentTechniqueWarnings(sessions: WorkoutSession[], lookbackSessions = 5): TechniqueWarning[] {
+  const sorted = [...sessions].sort((a, b) => (a.date < b.date ? 1 : -1)); // más nueva primero
+  const byExercise = new Map<string, { notedSets: number; lastNote: string; sessionsSeen: number }>();
+
+  for (const session of sorted) {
+    for (const log of session.ejercicios) {
+      const notedInLog = log.sets.filter((s) => s.completado && s.notas && s.notas.trim() !== "");
+      const entry = byExercise.get(log.exerciseId) ?? { notedSets: 0, lastNote: "", sessionsSeen: 0 };
+      if (entry.sessionsSeen >= lookbackSessions) continue; // ya se contaron suficientes sesiones de este ejercicio
+      entry.sessionsSeen += 1;
+      if (notedInLog.length > 0) {
+        entry.notedSets += notedInLog.length;
+        if (!entry.lastNote) entry.lastNote = notedInLog[notedInLog.length - 1].notas!;
+      }
+      byExercise.set(log.exerciseId, entry);
+    }
+  }
+
+  return [...byExercise.entries()]
+    .filter(([, v]) => v.notedSets >= TECHNIQUE_WARNING_MIN_NOTES)
+    .map(([exerciseId, v]) => ({ exerciseId, notedSets: v.notedSets, lastNote: v.lastNote }));
 }
 
 // ============================================================================

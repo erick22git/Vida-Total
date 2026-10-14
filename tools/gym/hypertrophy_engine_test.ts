@@ -7,9 +7,15 @@ import {
   volumeLandmarksFor,
   volumeStatus,
   weeklyMuscleVolume,
+  weeklyMuscleVolumeBreakdown,
+  weeklyFailureLoad,
+  recentTechniqueWarnings,
   weightSuggestion,
+  DROPSET_VOLUME_MULTIPLIER,
+  HIGH_FAILURE_RATIO_THRESHOLD,
+  TECHNIQUE_WARNING_MIN_NOTES,
 } from "../../src/lib/training/hypertrophy-engine";
-import type { Exercise, WorkoutSession } from "../../src/lib/types";
+import type { Exercise, WorkoutSession, WorkoutSet } from "../../src/lib/types";
 
 let fails = 0;
 let checks = 0;
@@ -105,6 +111,75 @@ ok(eq(mesocycleWeekTarget(landmarks, 5, false), { phase: "acumulacion", targetSe
 ok(eq(mesocycleWeekTarget(landmarks, 11, false), { phase: "acumulacion", targetSets: 15 }), "tope en MAV, no sigue subiendo solo (raw 16 > mav 15, aun < mrv 22)");
 ok(mesocycleWeekTarget(landmarks, 17, false).phase === "deload", "semana que llegaría a MRV o más -> deload");
 ok(mesocycleWeekTarget(landmarks, 2, true).phase === "deload", "meseta detectada -> deload aunque sea temprano en el mesociclo");
+
+// ---- Fase 3: dropset pesa más que una serie normal en el volumen semanal ----
+{
+  ok(DROPSET_VOLUME_MULTIPLIER === 1.5, "convención documentada: dropset vale 1.5 series");
+  function setOf(tipo?: WorkoutSet["tipo"], notas?: string): WorkoutSet {
+    return { id: `s${Math.random()}`, peso: 50, reps: 10, completado: true, fallo: false, tipo, notas };
+  }
+  const sessionDrop: WorkoutSession = {
+    id: "sd1",
+    date: "2026-10-12",
+    grupoMuscular: "Pecho",
+    completado: true,
+    ejercicios: [{ exerciseId: "press-banca", sets: [setOf("normal"), setOf("normal"), setOf("descendente")] }],
+  };
+  const vol = weeklyMuscleVolume([sessionDrop], exercises, "2026-10-12");
+  ok(Math.abs((vol.Pecho ?? 0) - (2 + DROPSET_VOLUME_MULTIPLIER)) < 0.001, `2 series normales + 1 dropset = 2 + ${DROPSET_VOLUME_MULTIPLIER} series equivalentes (dio ${vol.Pecho})`);
+
+  const breakdown = weeklyMuscleVolumeBreakdown([sessionDrop], exercises, "2026-10-12");
+  ok(breakdown.Pecho?.normal === 2 && breakdown.Pecho?.dropset === 1, `desglose separa normal (2) de dropset (1): ${JSON.stringify(breakdown.Pecho)}`);
+}
+
+// ---- Fase 3: series al fallo -> señal de fatiga alta ----
+{
+  function setFallo(tipo: WorkoutSet["tipo"]): WorkoutSet {
+    return { id: `f${Math.random()}`, peso: 50, reps: 10, completado: true, fallo: false, tipo };
+  }
+  // 5 series, 2 al fallo = 40% exacto = el umbral.
+  const sessionFatigue: WorkoutSession = {
+    id: "sf1",
+    date: "2026-10-12",
+    grupoMuscular: "Pecho",
+    completado: true,
+    ejercicios: [{ exerciseId: "press-banca", sets: [setFallo("fallo"), setFallo("fallo"), setFallo("normal"), setFallo("normal"), setFallo("normal")] }],
+  };
+  const load = weeklyFailureLoad([sessionFatigue], "2026-10-12");
+  ok(load.failureSets === 2 && load.totalSets === 5, "cuenta 2 series al fallo de 5 totales");
+  ok(Math.abs(load.ratio - 0.4) < 0.001, "ratio exacto 0.4 (2/5)");
+  ok(load.highFatigue === true, `0.4 >= umbral ${HIGH_FAILURE_RATIO_THRESHOLD} -> highFatigue=true`);
+
+  const sessionLight: WorkoutSession = {
+    id: "sl1",
+    date: "2026-10-12",
+    grupoMuscular: "Pecho",
+    completado: true,
+    ejercicios: [{ exerciseId: "press-banca", sets: [setFallo("fallo"), setFallo("normal"), setFallo("normal"), setFallo("normal"), setFallo("normal")] }],
+  };
+  ok(weeklyFailureLoad([sessionLight], "2026-10-12").highFatigue === false, "1/5 = 0.2, por debajo del umbral -> highFatigue=false");
+
+  ok(weeklyFailureLoad([], "2026-10-12").ratio === 0, "sin series completadas esta semana: ratio=0, nunca división por cero");
+}
+
+// ---- Fase 3: notas de "mala técnica" acumuladas por ejercicio ----
+{
+  function setNota(notas?: string): WorkoutSet {
+    return { id: `n${Math.random()}`, peso: 50, reps: 10, completado: true, fallo: false, notas };
+  }
+  const sessionsNotas: WorkoutSession[] = [
+    { id: "n1", date: "2026-10-12", grupoMuscular: "Pecho", completado: true, ejercicios: [{ exerciseId: "press-banca", sets: [setNota("Mala técnica")] }] },
+    { id: "n2", date: "2026-10-10", grupoMuscular: "Pecho", completado: true, ejercicios: [{ exerciseId: "press-banca", sets: [setNota("Mala técnica")] }] },
+    { id: "n3", date: "2026-10-08", grupoMuscular: "Pecho", completado: true, ejercicios: [{ exerciseId: "press-banca", sets: [setNota()] }] },
+    { id: "n4", date: "2026-10-12", grupoMuscular: "Biceps", completado: true, ejercicios: [{ exerciseId: "curl-biceps", sets: [setNota("Molestia en el codo")] }] },
+  ];
+  const warnings = recentTechniqueWarnings(sessionsNotas);
+  ok(TECHNIQUE_WARNING_MIN_NOTES === 2, "convención documentada: 2+ notas para avisar");
+  const pressBanca = warnings.find((w) => w.exerciseId === "press-banca");
+  ok(!!pressBanca && pressBanca.notedSets === 2, `press-banca tiene 2 notas en sesiones recientes -> aviso (${JSON.stringify(pressBanca)})`);
+  ok(warnings.find((w) => w.exerciseId === "curl-biceps") === undefined, "curl-biceps tiene solo 1 nota -> todavía no amerita aviso");
+  ok(pressBanca?.lastNote === "Mala técnica", "trae el texto de la nota para mostrar como ejemplo");
+}
 
 console.log(checks - fails, "/", checks, "OK");
 if (fails > 0) {
