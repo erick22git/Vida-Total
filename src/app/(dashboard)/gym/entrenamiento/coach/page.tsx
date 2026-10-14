@@ -88,9 +88,20 @@ export default function CoachPage() {
           </h1>
           <span className="w-10 h-10" />
         </div>
-        <div className="flex items-center justify-center gap-2.5 h-5" aria-hidden>
-          {[0, 1, 2, 3].map((i) => (
-            <span key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: i === 3 ? "#fff" : "rgba(255,255,255,0.3)" }} />
+        <div className="flex items-center justify-center gap-2.5 h-5">
+          {/* Tappables, mismo criterio que Rango: el swipe vertical no es confiable en todos los
+              dispositivos, así que cada punto también navega. */}
+          {(["/gym/entrenamiento", "/gym/entrenamiento?view=1", "/gym/entrenamiento/rango", null] as const).map((href, i) => (
+            <button
+              key={i}
+              type="button"
+              aria-label={i === 3 ? "Ya estás en Coach" : `Ir a ${["Hoy", "Año", "Rango", "Coach"][i]}`}
+              disabled={href === null}
+              onClick={() => href && router.push(href)}
+              className="p-1 -m-1 cursor-pointer disabled:cursor-default"
+            >
+              <span className="block w-1.5 h-1.5 rounded-full" style={{ background: i === 3 ? "#fff" : "rgba(255,255,255,0.3)" }} />
+            </button>
           ))}
         </div>
       </header>

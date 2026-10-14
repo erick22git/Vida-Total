@@ -4,7 +4,7 @@
  * Pantalla principal de Calorías — rediseño "estilo Not Boring", con fotos de referencia ya
  * confirmadas por el usuario. Mecánica calcada de `/habitos/habito` (ver ese archivo): el swipe
  * HORIZONTAL cambia de comida (desayuno/almuerzo/...), el swipe VERTICAL cambia de VISTA — acá hay
- * 3, igual que en Hábitos:
+ * 3 vistas LOCALES (`VIEW_COUNT`), más una 4ta que es su propia ruta (`TOTAL_SCREENS`):
  *   0 = círculo de la comida actual + franja de los últimos 7 días (sin racha: se sacó de acá).
  *   1 = detalle de nutrientes del día: número + gráfico elegido (`CalorieGaugeDisplay`, sin tarjeta,
  *       directo sobre el fondo) y, debajo, las 4 categorías de nutrientes (`NutrientCategoryTabs`,
@@ -12,6 +12,9 @@
  *   2 = calendario de racha del año (`CalorieYearView`) — cada día se colorea según el largo de la
  *       racha a la que pertenece: aislado = dorado, racha de 2-6 días = rojo, racha de 7+ = verde.
  *       Es la ÚNICA pantalla de racha (no hay página aparte, sería repetir lo mismo dos veces).
+ *   3 = Nutriólogo (`/gym/nutriologo`, ruta propia — mismo criterio que Rango/Coach en Entrenamiento):
+ *       seguir bajando desde la vista 2 navega ahí; volver desde Nutriólogo vuelve con `?view=2`
+ *       para reabrir directo en la racha, no en el día 0.
  * Las vistas 1 y 2 son del DÍA (no cambian al swipear entre comidas), así que solo la vista 0 vive
  * dentro del carrusel horizontal de comidas.
  *
@@ -39,7 +42,11 @@ import { MONO_FONT } from "@/lib/ui/mono-font";
 import { SwipeCarouselDots, SwipeCarouselStage, swipeSlide, useSwipeCarousel } from "@/components/shared/swipe-carousel";
 
 const MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
-const VIEW_COUNT = 3; // 0 = comida, 1 = nutrientes, 2 = racha (año)
+const VIEW_COUNT = 3; // 0 = comida, 1 = nutrientes, 2 = racha (año) — vistas DENTRO de esta página.
+/** Total de pantallas de la cadena de swipe vertical, para los puntos (comida/nutrientes/año/Nutriólogo)
+ * — mismo criterio que `TOTAL_SCREENS` de Entrenamiento: `VIEW_COUNT` sigue siendo 3 a propósito (son
+ * las vistas locales de esta página), la 4ta vive en /gym/nutriologo, su propia ruta. */
+const TOTAL_SCREENS = 4;
 const SWIPE_Y = 60;
 
 // Cambio de vista (vertical): la nueva sube/baja desde el borde — igual que en Hábitos.
@@ -64,7 +71,7 @@ export function MealHomeScreen() {
   const loggedStreak = useMemo(() => computeLoggedDaysStreak(allLoggedFoods), [allLoggedFoods]);
   const loggedDays = useMemo(() => loggedDayKeys(allLoggedFoods), [allLoggedFoods]);
 
-  const [view, setView] = useState(0);
+  const [view, setView] = useState(() => (searchParams.get("view") === "2" ? 2 : 0));
   const [index, setIndex] = useState(() => MEALS.indexOf(mealForTime()));
   const { direction, goTo, onDragEnd } = useSwipeCarousel({
     index,
@@ -192,7 +199,11 @@ export function MealHomeScreen() {
   }, []);
 
   function goView(next: number) {
-    if (next < 0 || next >= VIEW_COUNT || next === view) return;
+    if (next < 0 || next === view) return;
+    if (next >= VIEW_COUNT) {
+      router.push("/gym/nutriologo");
+      return;
+    }
     setViewDir(next > view ? 1 : -1);
     setView(next);
   }
@@ -341,7 +352,7 @@ export function MealHomeScreen() {
                         }}
                         todayISO={todayISO}
                         viewIndex={0}
-                        viewCount={VIEW_COUNT}
+                        viewCount={TOTAL_SCREENS}
                       />
                   </div>
                 </div>
@@ -356,7 +367,7 @@ export function MealHomeScreen() {
                 todayISO={todayISO}
                 streakCurrent={loggedStreak.current}
                 viewIndex={2}
-                viewCount={VIEW_COUNT}
+                viewCount={TOTAL_SCREENS}
               />
             )}
           </motion.div>

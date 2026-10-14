@@ -1,14 +1,17 @@
 "use client";
 
 /**
- * Nutriólogo virtual (Fase 4): pantalla propia, NO dentro de Calorías — se decidió así para no tocar
- * ningún archivo de Calorías (fuera de los límites de este trabajo) y porque el contenido (diagnóstico
- * de patrones de ingesta + síntomas) es denso y no entra como una sección más de esa pantalla sin
- * forzarla. Mismo patrón visual que el Coach de Entrenamiento: 5 tarjetas con swipe horizontal
- * (`swipe-carousel.tsx`), todo leyendo de los motores puros `nutrition-care-engine.ts` y
- * `symptom-correlation.ts` — esta pantalla solo muestra y arma Aceptar/Descartar, nunca decide sola.
+ * Nutriólogo virtual: 4ta pantalla de la cadena de swipe vertical de Calorías (comida → nutrientes →
+ * año → Nutriólogo), ruta propia `/gym/nutriologo` — mismo criterio que Rango/Coach en Entrenamiento
+ * (cada vista de la cadena que no es un simple panel vive en su propia página en vez de inflar un solo
+ * archivo). Se llega deslizando hacia abajo desde la vista de racha (año) de Calorías, o con el botón de
+ * volver de acá, que regresa directo a esa vista (`/gym/calorias?view=2`). Mismo patrón visual que el
+ * Coach de Entrenamiento: 5 tarjetas con swipe horizontal (`swipe-carousel.tsx`), todo leyendo de los
+ * motores puros `nutrition-care-engine.ts` y `symptom-correlation.ts` — esta pantalla solo muestra y
+ * arma Aceptar/Descartar, nunca decide sola.
  */
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Check, X as XIcon, ChevronDown } from "lucide-react";
 import { useGymStore } from "@/lib/store/gymStore";
@@ -53,18 +56,34 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
+const VOLVER_A_CALORIAS = "/gym/calorias?view=2";
+
 export default function NutriologoPage() {
+  const router = useRouter();
   const [card, setCard] = useState(0);
   const CARD_COUNT = 5;
   const { direction, goTo, onDragEnd } = useSwipeCarousel({ index: card, length: CARD_COUNT, onIndexChange: setCard });
 
+  // Última pantalla de la cadena de Calorías: solo se vuelve hacia abajo (a la racha/año), no hay nada
+  // después. Mismo mecanismo pointerDown/pointerUp que Coach en Entrenamiento.
+  const startY = useRef<number | null>(null);
+  function onPointerUp(e: React.PointerEvent) {
+    const dy = e.clientY - (startY.current ?? e.clientY);
+    startY.current = null;
+    if (dy > 70) router.push(VOLVER_A_CALORIAS);
+  }
+
   return (
-    <div className="app-bg fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden">
+    <div
+      className="app-bg fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden"
+      onPointerDown={(e) => (startY.current = e.clientY)}
+      onPointerUp={onPointerUp}
+    >
       <header className="shrink-0 px-5 pt-[max(env(safe-area-inset-top),10px)]">
         <div className="flex items-center h-11">
           <Link
-            href="/gym"
-            aria-label="Volver"
+            href={VOLVER_A_CALORIAS}
+            aria-label="Volver a Calorías"
             className="w-10 h-10 -ml-1 rounded-full flex items-center justify-center bg-black/70 active:scale-95 transition-transform"
           >
             <ChevronLeft size={22} strokeWidth={2.6} />

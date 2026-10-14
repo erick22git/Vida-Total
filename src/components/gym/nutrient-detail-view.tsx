@@ -50,7 +50,7 @@ export function NutrientDetailView({
         carbsGoal={carbsGoal}
         fatGoal={fatGoal}
         viewIndex={1}
-        viewCount={3}
+        viewCount={4}
       />
     </div>
   );

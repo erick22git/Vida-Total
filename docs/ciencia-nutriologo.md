@@ -101,15 +101,18 @@ Texto fijo obligatorio en la UI (pantalla del nutriólogo, Fase 4): *"Esto es un
 propio registro, no un diagnóstico de alergia o intolerancia. Para confirmar una intolerancia o alergia
 real hace falta un profesional y, si corresponde, pruebas clínicas."*
 
-## La pantalla del nutriólogo (Fase 4)
+## La pantalla del nutriólogo (Fase 4, movida a Calorías después)
 
-Ruta propia `src/app/(dashboard)/gym/nutriologo/page.tsx` — **NO** dentro de Calorías. Decisión y por qué:
-el contenido (evaluación + diagnósticos + intervenciones + síntomas + agente) es denso y no entra como una
-sección más sin reformar la pantalla de Calorías, que está explícitamente fuera de los límites de este
-trabajo ("no toques Calorías"). Se llega con un tile nuevo en el hub de Gym
-(`src/app/(dashboard)/gym/page.tsx`, no es un archivo protegido) — cero diffs en ningún archivo de
-Calorías. Mismo patrón visual que el Coach de Entrenamiento: 5 tarjetas con swipe horizontal
-(`swipe-carousel.tsx`), reutilizado tal cual, sin inventar un patrón nuevo:
+Ruta propia `src/app/(dashboard)/gym/nutriologo/page.tsx`, pero **dentro de la cadena de swipe vertical
+de Calorías** (comida → nutrientes → año → **Nutriólogo**), no un tile aparte en el hub de Gym. Se llegó
+a diseñarla primero como pantalla independiente con su propio tile en Gym (para no tocar ningún archivo
+de Calorías dentro de los límites originales de este trabajo); el usuario pidió explícitamente moverla
+para que fuera la 4ta sección de Calorías, debajo de la fecha, igual que Rango/Coach son la 3ra y 4ta
+sección de Entrenamiento — se movió así: `meal-home-screen.tsx` ahora navega a `/gym/nutriologo` al
+seguir bajando desde la vista de racha (año), y el botón de volver de Nutriólogo regresa con
+`?view=2` para reabrir ahí mismo, no en el día. El tile del hub de Gym se sacó. Mismo patrón visual que
+el Coach de Entrenamiento: 5 tarjetas con swipe horizontal (`swipe-carousel.tsx`), reutilizado tal cual,
+sin inventar un patrón nuevo:
 
 1. **Resumen** (`evaluate()`): ventana, adherencia de registro, peso de tendencia.
 2. **Diagnósticos** (`diagnose()`), en lenguaje claro, con un disclosure **"¿Por qué?"** por diagnóstico

@@ -144,10 +144,21 @@ export default function RangoPage() {
             <SlidersHorizontal size={24} />
           </button>
         </div>
-        <div className="flex items-center justify-center gap-2.5 h-5" aria-hidden>
-          {/* Hoy / Año / Rango / Coach — Rango es la posición 2 de 4 en la cadena de swipe vertical. */}
-          {[0, 1, 2, 3].map((i) => (
-            <span key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: i === 2 ? "#fff" : "rgba(255,255,255,0.3)" }} />
+        <div className="flex items-center justify-center gap-2.5 h-5">
+          {/* Hoy / Año / Rango / Coach — Rango es la posición 2 de 4 en la cadena de swipe vertical.
+              Tappables (no solo indicador): el gesto de swipe vertical no es confiable en todos los
+              dispositivos, así que cada punto también navega — mismo destino que el swipe. */}
+          {(["/gym/entrenamiento", "/gym/entrenamiento?view=1", null, "/gym/entrenamiento/coach"] as const).map((href, i) => (
+            <button
+              key={i}
+              type="button"
+              aria-label={i === 2 ? "Ya estás en Rango" : `Ir a ${["Hoy", "Año", "Rango", "Coach"][i]}`}
+              disabled={href === null}
+              onClick={() => href && router.push(href)}
+              className="p-1 -m-1 cursor-pointer disabled:cursor-default"
+            >
+              <span className="block w-1.5 h-1.5 rounded-full" style={{ background: i === 2 ? "#fff" : "rgba(255,255,255,0.3)" }} />
+            </button>
           ))}
         </div>
 
