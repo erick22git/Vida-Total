@@ -79,13 +79,15 @@ sin una fuente de MET por ejercicio ya elegida en este proyecto, y hubiera dupli
 ajuste adaptativo ya captura indirectamente — se documenta acá como decisión para que la revises, no se
 implementó.
 
-## Registro de síntomas y correlación (Fase 3)
+## Registro de síntomas y correlación (Fase 3 — PENDIENTE, no implementado todavía)
 
-Nuevo: `symptomEntries` en el store (ver `gymStore.ts`), un registro simple ligado a una entrada de comida
-ya registrada (`loggedFoodId`), con síntoma de una lista corta + texto libre opcional. La correlación
-(`src/lib/nutrition/symptom-correlation.ts`) es **estadística simple de conteo** (de las veces que se
-reportó un síntoma, en cuántas aparecía cada alimento en las 4 horas previas) — **no es un modelo
-entrenado ni un test de alergia/intolerancia**. Con menos de 5 reportes de un síntoma no se muestra ningún
-patrón todavía (se le pide al usuario seguir registrando). Texto fijo obligatorio en la UI: *"Esto es un
-patrón detectado en tu propio registro, no un diagnóstico de alergia o intolerancia. Para confirmar una
-intolerancia o alergia real hace falta un profesional y, si corresponde, pruebas clínicas."*
+Plan para cuando se retome (después de tu revisión de las Fases 0-1-2): `symptomEntries` en el store (ver
+`gymStore.ts`), un registro simple ligado a una entrada de comida ya registrada (`loggedFoodId`), con
+síntoma de una lista corta + texto libre opcional. La correlación
+(`src/lib/nutrition/symptom-correlation.ts`) sería **estadística simple de conteo** (de las veces que se
+reportó un síntoma, en cuántas aparecía cada alimento en las 4 horas previas) — **no un modelo entrenado
+ni un test de alergia/intolerancia**. Con menos de 5 reportes de un síntoma no se mostraría ningún patrón
+todavía (se le pediría al usuario seguir registrando). Texto fijo obligatorio en la UI cuando se
+implemente: *"Esto es un patrón detectado en tu propio registro, no un diagnóstico de alergia o
+intolerancia. Para confirmar una intolerancia o alergia real hace falta un profesional y, si corresponde,
+pruebas clínicas."*
