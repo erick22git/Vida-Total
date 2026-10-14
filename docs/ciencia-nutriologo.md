@@ -79,15 +79,24 @@ sin una fuente de MET por ejercicio ya elegida en este proyecto, y hubiera dupli
 ajuste adaptativo ya captura indirectamente — se documenta acá como decisión para que la revises, no se
 implementó.
 
-## Registro de síntomas y correlación (Fase 3 — PENDIENTE, no implementado todavía)
+## Registro de síntomas y correlación (Fase 3)
 
-Plan para cuando se retome (después de tu revisión de las Fases 0-1-2): `symptomEntries` en el store (ver
-`gymStore.ts`), un registro simple ligado a una entrada de comida ya registrada (`loggedFoodId`), con
-síntoma de una lista corta + texto libre opcional. La correlación
-(`src/lib/nutrition/symptom-correlation.ts`) sería **estadística simple de conteo** (de las veces que se
-reportó un síntoma, en cuántas aparecía cada alimento en las 4 horas previas) — **no un modelo entrenado
-ni un test de alergia/intolerancia**. Con menos de 5 reportes de un síntoma no se mostraría ningún patrón
-todavía (se le pediría al usuario seguir registrando). Texto fijo obligatorio en la UI cuando se
-implemente: *"Esto es un patrón detectado en tu propio registro, no un diagnóstico de alergia o
-intolerancia. Para confirmar una intolerancia o alergia real hace falta un profesional y, si corresponde,
-pruebas clínicas."*
+`symptomEntries` en el store (`gymStore.ts`): un registro simple ligado a una entrada de comida ya
+registrada (`loggedFoodId`), con síntoma de una lista corta (`SymptomKind` en `src/lib/types/index.ts`:
+hinchazón, dolor de estómago, fatiga, dolor de cabeza, "otro" con texto libre) y su propio `timestamp` (el
+momento en que se REPORTÓ el síntoma, no el de la comida).
+
+La correlación (`src/lib/nutrition/symptom-correlation.ts`, `correlateSymptom`/`correlateAllSymptoms`) es
+**estadística simple de conteo**, no un modelo entrenado ni un test de alergia/intolerancia: de las veces
+que se reportó un síntoma dado, cuenta en cuántas aparecía cada alimento dentro de las
+**`CORRELATION_WINDOW_HOURS` = 4 horas previas al reporte** (convención propia — no hay una fuente clínica
+de cuánto tarda cada síntoma en aparecer tras comer algo, varía mucho por persona y por síntoma; se
+documenta así, no como un intervalo médico). Un alimento comido varias veces antes del mismo reporte
+cuenta una sola vez (lo que importa es en cuántos reportes distintos apareció). Con menos de
+**`MIN_SYMPTOM_OCCURRENCES` = 5** reportes de ese síntoma, `datosSuficientes` es `false` y no se muestra
+ningún alimento todavía — se le pide al usuario seguir registrando en vez de mostrar un patrón poco
+confiable con pocos datos. 12 pruebas (`tools/nutrition/symptom_correlation_test.ts`).
+
+Texto fijo obligatorio en la UI (pantalla del nutriólogo, Fase 4): *"Esto es un patrón detectado en tu
+propio registro, no un diagnóstico de alergia o intolerancia. Para confirmar una intolerancia o alergia
+real hace falta un profesional y, si corresponde, pruebas clínicas."*

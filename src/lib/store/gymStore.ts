@@ -17,6 +17,7 @@ import type {
   ProgressPhoto,
   BodyCompositionEntry,
   BodyMeasurementEntry,
+  SymptomEntry,
   Recipe,
   Routine,
   RoutineExercise,
@@ -345,6 +346,11 @@ export interface GymState {
   bodyMeasurementHistory: BodyMeasurementEntry[];
   addBodyMeasurementEntry: (entry: Omit<BodyMeasurementEntry, "id">) => void;
   removeBodyMeasurementEntry: (id: string) => void;
+
+  // ---------- Nutriólogo: registro de síntomas ("este alimento me hace mal", Fase 3) ----------
+  symptomEntries: SymptomEntry[];
+  addSymptomEntry: (entry: Omit<SymptomEntry, "id">) => void;
+  removeSymptomEntry: (id: string) => void;
 
   // ---------- Streak ----------
   streak: number;
@@ -1295,6 +1301,12 @@ export const useGymStore = create<GymState>()(
         set((state) => ({ bodyMeasurementHistory: [{ ...entry, id: uid() }, ...state.bodyMeasurementHistory] })),
       removeBodyMeasurementEntry: (id) =>
         set((state) => ({ bodyMeasurementHistory: state.bodyMeasurementHistory.filter((e) => e.id !== id) })),
+
+      symptomEntries: [],
+      addSymptomEntry: (entry) =>
+        set((state) => ({ symptomEntries: [{ ...entry, id: uid() }, ...state.symptomEntries] })),
+      removeSymptomEntry: (id) =>
+        set((state) => ({ symptomEntries: state.symptomEntries.filter((e) => e.id !== id) })),
 
       // Streak
       streak: 0,

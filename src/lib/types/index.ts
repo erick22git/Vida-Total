@@ -576,3 +576,22 @@ export interface BodyMeasurementEntry {
   musloCm?: number;
   pantorrillaCm?: number;
 }
+
+/** Lista corta cerrada (más "otro" con texto libre) — ver `src/lib/nutrition/symptom-correlation.ts`.
+ * No es una lista clínica: son las categorías que el usuario puede elegir rápido al registrar. */
+export type SymptomKind = "hinchazon" | "dolor_estomago" | "fatiga" | "dolor_cabeza" | "otro";
+
+/** Nutriólogo (Fase 3): "este alimento me hace mal" — el usuario anota cómo se sintió, ligado a una
+ * entrada de comida YA registrada (`loggedFoodId`). Es un registro, no un diagnóstico: la correlación
+ * contra alimentos se calcula aparte en `symptom-correlation.ts`, nunca acá. */
+export interface SymptomEntry {
+  id: string;
+  /** `LoggedFood.id` de la comida con la que el usuario asoció el síntoma. */
+  loggedFoodId: string;
+  kind: SymptomKind;
+  /** Obligatorio solo si `kind === "otro"`. */
+  notaLibre?: string;
+  /** Momento en que se registró el síntoma (Date.now()), no el de la comida — sirve para calcular la
+   * ventana de horas entre comer y sentirse mal. */
+  timestamp: number;
+}
