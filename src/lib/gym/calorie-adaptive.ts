@@ -31,10 +31,18 @@ function dayKey(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function daysAgo(from: Date, n: number): Date {
+/** "yyyy-MM-dd" (UTC) que es `n` días antes de `from` — aritmética en UTC (`setUTCDate`), nunca en hora
+ * local ni comparando objetos `Date` en milisegundos: eso dejaba el día MÁS VIEJO de la ventana afuera
+ * por una carrera de milisegundos entre el dato de prueba y el `new Date()` interno de esta función, y
+ * además mezclaba un `new Date("yyyy-MM-dd")` (que el motor de JS interpreta en UTC medianoche) contra
+ * límites de semana calculados en hora LOCAL — dos fuentes de corrimiento de huso horario distintas,
+ * encontradas con una prueba real (no mockeada): `tools/nutrition/window_real_dates_test.ts`. Con
+ * comparación de STRINGS "yyyy-MM-dd" el orden lexicográfico ES el orden cronológico, sin ambigüedad —
+ * mismo criterio ya usado en `hypertrophy-engine.ts` y `nutrition-care-engine.ts`. */
+function dayKeyNDaysBefore(from: Date, n: number): string {
   const d = new Date(from);
-  d.setDate(d.getDate() - n);
-  return d;
+  d.setUTCDate(d.getUTCDate() - n);
+  return dayKey(d);
 }
 
 /** Promedio de peso por día (si hubo más de una pesada el mismo día). */
@@ -90,14 +98,19 @@ export interface AdaptiveCalorieResult {
  */
 export function evaluateAdaptiveCalories(input: AdaptiveCalorieInput): AdaptiveCalorieResult {
   const today = input.today ?? new Date();
-  const windowStart = daysAgo(today, WINDOW_DAYS - 1); // incluye hoy => WINDOW_DAYS días
+  const todayKey = dayKey(today);
+  const windowStartKey = dayKeyNDaysBefore(today, WINDOW_DAYS - 1); // incluye hoy => WINDOW_DAYS días
 
   const weightByDay = dailyWeightAverages(
-    input.weightEntries.filter((w) => new Date(w.date) >= windowStart && new Date(w.date) <= today),
+    input.weightEntries.filter((w) => {
+      const k = dayKey(new Date(w.date));
+      return k >= windowStartKey && k <= todayKey;
+    }),
   );
-  const activeFoods = activeLoggedFoods(input.loggedFoods).filter(
-    (f) => new Date(f.timestamp) >= windowStart && new Date(f.timestamp) <= today,
-  );
+  const activeFoods = activeLoggedFoods(input.loggedFoods).filter((f) => {
+    const k = dayKey(new Date(f.timestamp));
+    return k >= windowStartKey && k <= todayKey;
+  });
   const logDaysSet = new Set(activeFoods.map((f) => dayKey(new Date(f.timestamp))));
 
   const weighInsPerWeek = (weightByDay.size / WINDOW_DAYS) * 7;
@@ -106,17 +119,16 @@ export function evaluateAdaptiveCalories(input: AdaptiveCalorieInput): AdaptiveC
   // Semana 1 (días más viejos) vs semana 2 (días más nuevos) del período — comparar sus
   // promedios da el "peso de tendencia" al inicio y al final, mucho menos ruidoso que
   // comparar dos pesadas puntuales.
-  const week1Start = windowStart;
-  const week1End = daysAgo(today, 7);
-  const week2Start = daysAgo(today, 6);
-  const week2End = today;
+  const week1StartKey = windowStartKey;
+  const week1EndKey = dayKeyNDaysBefore(today, 7);
+  const week2StartKey = dayKeyNDaysBefore(today, 6);
+  const week2EndKey = todayKey;
 
   const week1Weights: number[] = [];
   const week2Weights: number[] = [];
   for (const [key, kg] of weightByDay) {
-    const d = new Date(key);
-    if (d >= week1Start && d <= week1End) week1Weights.push(kg);
-    else if (d >= week2Start && d <= week2End) week2Weights.push(kg);
+    if (key >= week1StartKey && key <= week1EndKey) week1Weights.push(kg);
+    else if (key >= week2StartKey && key <= week2EndKey) week2Weights.push(kg);
   }
   const trendStart = average(week1Weights);
   const trendEnd = average(week2Weights);

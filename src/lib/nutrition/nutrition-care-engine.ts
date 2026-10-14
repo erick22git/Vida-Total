@@ -24,10 +24,18 @@ function dayKey(ts: number): string {
   return new Date(ts).toISOString().slice(0, 10);
 }
 
-function daysAgo(from: Date, n: number): Date {
+/** "yyyy-MM-dd" (UTC) que es `n` días antes de `from` — aritmética en UTC (`setUTCDate`), nunca en hora
+ * local: usar `setDate` local y comparar contra objetos `Date` en milisegundos (como hacía antes esta
+ * función) dejaba el día MÁS VIEJO de la ventana afuera por una carrera de milisegundos entre el
+ * momento en que se arma el dato de prueba y el momento en que `evaluate()` llama a `new Date()` — un
+ * registro de exactamente "hace `windowDays-1` días" podía quedar excluido por unos pocos ms, de forma
+ * no determinística (detectado con una prueba real, no mockeada: `tools/nutrition/window_real_dates_test.ts`).
+ * Con comparación de STRINGS "yyyy-MM-dd" el orden lexicográfico ES el orden cronológico, sin esa
+ * ambigüedad de milisegundos ni de huso horario — mismo criterio ya usado en `hypertrophy-engine.ts`. */
+function dayKeyNDaysBefore(from: Date, n: number): string {
   const d = new Date(from);
-  d.setDate(d.getDate() - n);
-  return d;
+  d.setUTCDate(d.getUTCDate() - n);
+  return dayKey(d.getTime());
 }
 
 // ============================================================================
@@ -75,11 +83,12 @@ export interface EvaluationResult {
 export function evaluate(input: EvaluationInput): EvaluationResult {
   const today = input.today ?? new Date();
   const windowDays = input.windowDays ?? RECOMMENDED_WINDOW_DAYS;
-  const windowStart = daysAgo(today, windowDays - 1);
+  const todayKey = dayKey(today.getTime());
+  const windowStartKey = dayKeyNDaysBefore(today, windowDays - 1);
 
   const foods = activeLoggedFoods(input.loggedFoods).filter((f) => {
-    const d = new Date(f.timestamp);
-    return d >= windowStart && d <= today;
+    const k = dayKey(f.timestamp);
+    return k >= windowStartKey && k <= todayKey;
   });
 
   const byDay = new Map<string, LoggedFood[]>();
@@ -116,9 +125,8 @@ export function evaluate(input: EvaluationInput): EvaluationResult {
 
   const weightByDay = new Map<string, number[]>();
   for (const w of input.weightEntries) {
-    const d = new Date(w.date);
-    if (d < windowStart || d > today) continue;
-    const k = dayKey(d.getTime());
+    const k = dayKey(new Date(w.date).getTime());
+    if (k < windowStartKey || k > todayKey) continue;
     if (!weightByDay.has(k)) weightByDay.set(k, []);
     weightByDay.get(k)!.push(w.kg);
   }
