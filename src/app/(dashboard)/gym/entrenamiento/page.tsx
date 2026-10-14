@@ -84,18 +84,10 @@ function EntrenamientoContent() {
   const plans = useGymStore((s) => s.plans);
   const activePlanId = useGymStore((s) => s.activePlanId);
   const activePlan = activePlanId ? plans.find((p) => p.id === activePlanId) : undefined;
-  const onboardingCompleted = useGymStore((s) => s.onboardingCompleted);
   const startWorkout = useGymStore((s) => s.startWorkout);
   const startWorkoutFromRoutine = useGymStore((s) => s.startWorkoutFromRoutine);
   const cancelWorkout = useGymStore((s) => s.cancelWorkout);
   const allExercises = useAllExercises();
-
-  // Alguien totalmente nuevo (sin plan, sin rutinas propias, nunca entrenó)
-  // pasa primero por el formulario inicial en vez de ver el panel vacío.
-  const isTotallyNew = !onboardingCompleted && plans.length === 0 && routines.length === 0 && sessions.length === 0;
-  useEffect(() => {
-    if (isTotallyNew) router.replace("/gym/entrenamiento/onboarding");
-  }, [isTotallyNew, router]);
 
   // `activeSession` no expiraba nunca: un entrenamiento sin terminar de OTRO día seguía ofreciendo
   // "continuar" con ejercicios viejos en vez del plan de hoy.
@@ -184,9 +176,6 @@ function EntrenamientoContent() {
     if (!activeSession) startTodaysPlan();
     router.push("/gym/entrenamiento/activo");
   }
-
-  // El useEffect de arriba ya redirige — esto solo evita un parpadeo del panel vacío.
-  if (isTotallyNew) return null;
 
   const canStart = isToday && !isRestDay;
 
