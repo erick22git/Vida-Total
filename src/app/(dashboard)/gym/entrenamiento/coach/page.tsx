@@ -87,7 +87,7 @@ export default function CoachPage() {
 
   return (
     <div
-      className="app-bg fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden"
+      className="app-bg fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden touch-none"
       onPointerDown={(e) => (startY.current = e.clientY)}
       onPointerUp={onPointerUp}
       onWheel={(e) => {

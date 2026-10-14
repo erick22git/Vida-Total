@@ -111,7 +111,7 @@ export default function RangoPage() {
 
   return (
     <div
-      className="app-bg fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden"
+      className="app-bg fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden touch-none"
       onPointerDown={(e) => {
         start.current = (e.target as HTMLElement).closest("[data-rank-canvas]") ? null : { x: e.clientX, y: e.clientY };
       }}
