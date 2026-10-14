@@ -161,10 +161,19 @@ export function SessionSetRow({
       >
         <button
           onClick={() => setTypeModalOpen(true)}
-          className="flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold shrink-0 cursor-pointer"
+          className="relative flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold shrink-0 cursor-pointer"
           style={{ background: `${meta.color}26`, color: meta.color, border: `1px solid ${meta.color}55` }}
         >
           {(set.tipo ?? "normal") === "normal" || isDropset ? (normalNumber ?? index + 1) : meta.short}
+          {/* Punto rojo: esta serie tiene una nota (ej. "mala técnica") — solo indicador, el texto se ve
+              al tocar y abrir el selector de tipo. */}
+          {set.notas && (
+            <span
+              className="absolute -top-1 -right-1 w-2 h-2 rounded-full"
+              style={{ background: "#ef4444", boxShadow: "0 0 0 1.5px #0d0d0d" }}
+              aria-label="Tiene una nota"
+            />
+          )}
         </button>
 
         <span className="w-12 text-center text-[11px] text-white/35 tabular-nums">{previa ?? "-"}</span>
@@ -249,6 +258,8 @@ export function SessionSetRow({
         onClose={() => setTypeModalOpen(false)}
         value={set.tipo ?? "normal"}
         onSelect={(tipo) => onChange(tipo === "descendente" ? { tipo, ...initialDropsetPatch(set) } : { tipo })}
+        notas={set.notas}
+        onNotasChange={(notas) => onChange({ notas: notas || undefined })}
       />
       <NumericKeypad
         open={kgKeypadOpen}

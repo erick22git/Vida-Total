@@ -412,6 +412,10 @@ export interface WorkoutSet {
    * `fijados` (mismo criterio que el resto de los campos de esta interfaz) para no confundirlo con
    * "todavía sin anotar". */
   rir?: number;
+  /** Nota corta opcional sobre esta serie (ej. "mala técnica", molestia puntual). Texto libre — el
+   * chip rápido "Mala técnica" de la UI solo prellena este texto, no es un campo booleano aparte.
+   * Alimenta el conteo de técnica irregular por ejercicio en `hypertrophy-engine.ts` (Fase 3). */
+  notas?: string;
 }
 
 export interface WorkoutExerciseLog {
