@@ -114,7 +114,11 @@ export default function RangoPage() {
         const dx = e.clientX - st.x;
         const dy = e.clientY - st.y;
         if (Math.abs(dx) > SWIPE_X && Math.abs(dx) > Math.abs(dy) * 1.4) goTo(page + (dx < 0 ? 1 : -1));
-        else if (dy > SWIPE_Y && Math.abs(dy) > Math.abs(dx) * 1.4) router.push("/gym/entrenamiento?view=1");
+        else if (Math.abs(dy) > SWIPE_Y && Math.abs(dy) > Math.abs(dx) * 1.4) {
+          // Abajo -> Año (vista anterior de la cadena); arriba -> Coach (vista siguiente, Fase 4).
+          if (dy > 0) router.push("/gym/entrenamiento?view=1");
+          else router.push("/gym/entrenamiento/coach");
+        }
       }}
       onPointerCancel={() => (start.current = null)}
     >
@@ -141,7 +145,8 @@ export default function RangoPage() {
           </button>
         </div>
         <div className="flex items-center justify-center gap-2.5 h-5" aria-hidden>
-          {[0, 1, 2].map((i) => (
+          {/* Hoy / Año / Rango / Coach — Rango es la posición 2 de 4 en la cadena de swipe vertical. */}
+          {[0, 1, 2, 3].map((i) => (
             <span key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: i === 2 ? "#fff" : "rgba(255,255,255,0.3)" }} />
           ))}
         </div>

@@ -143,14 +143,19 @@ export function weeklyMuscleVolume(
   exercises: Exercise[],
   weekStartISO: string,
 ): Partial<Record<MuscleGroup, number>> {
-  const start = new Date(weekStartISO + "T00:00:00");
-  const end = new Date(start);
-  end.setDate(end.getDate() + 7);
+  // Comparación por STRING de fecha (yyyy-MM-dd), no por `Date`: `session.date` es un ISO completo
+  // en la app real (`new Date().toISOString()`, con hora en UTC) y los primeros 10 caracteres ya son
+  // la fecha calendario en UTC — comparar objetos `Date` acá metía corrimientos de huso horario entre
+  // la hora local de la máquina y el UTC de `toISOString()` que podían excluir sesiones reales de la
+  // ventana. Con strings "yyyy-MM-dd" el orden lexicográfico ES el orden cronológico, sin ambigüedad.
+  const endDate = new Date(weekStartISO + "T00:00:00Z");
+  endDate.setUTCDate(endDate.getUTCDate() + 7);
+  const endISO = endDate.toISOString().slice(0, 10);
 
   const points = new Map<MuscleGroup, number>();
   for (const session of sessions) {
-    const d = new Date(session.date + "T00:00:00");
-    if (d < start || d >= end) continue;
+    const key = session.date.slice(0, 10);
+    if (key < weekStartISO || key >= endISO) continue;
     for (const log of session.ejercicios) {
       const ex = exercises.find((e) => e.id === log.exerciseId);
       if (!ex) continue;

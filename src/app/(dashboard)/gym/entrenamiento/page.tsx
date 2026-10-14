@@ -32,6 +32,11 @@ import { MONO_FONT } from "@/lib/ui/mono-font";
 import type { MuscleGroup, RoutineExercise } from "@/lib/types";
 
 const VIEW_COUNT = 3;
+/** Total de pantallas en la cadena de swipe vertical (Hoy/Año/Rango/Coach) — solo para los puntitos
+ * indicadores de WeekStrip/CalorieYearView. `VIEW_COUNT` (arriba) sigue siendo 3 a propósito: es el
+ * umbral de "la última vista EN ESTA PÁGINA navega afuera", y Rango sigue siendo esa salida aunque
+ * ahora haya una 4ta pantalla (Coach) después de Rango. */
+const TOTAL_SCREENS = 4;
 const SWIPE_Y = 60;
 const RANGO_HREF = "/gym/entrenamiento/rango";
 
@@ -318,7 +323,7 @@ function EntrenamientoContent() {
                     selectedDate={selectedDate}
                     onSelectDate={setSelectedDate}
                     viewIndex={0}
-                    viewCount={VIEW_COUNT}
+                    viewCount={TOTAL_SCREENS}
                   />
                 </div>
               </div>
@@ -329,7 +334,7 @@ function EntrenamientoContent() {
                 todayISO={todayISO}
                 streakCurrent={streak}
                 viewIndex={1}
-                viewCount={VIEW_COUNT}
+                viewCount={TOTAL_SCREENS}
               />
             )}
           </motion.div>
