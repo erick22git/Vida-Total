@@ -294,10 +294,17 @@ export default function CalculadoraRangoPage() {
                   </div>
                 ) : (
                   <button
-                    onClick={() =>
-                      exerciseId &&
-                      setRankOverride(exerciseId, { peso: isKg ? pesoNum : 0, reps: repsNum, value: result.value, setAt: Date.now() })
-                    }
+                    onClick={() => {
+                      if (!exerciseId) return;
+                      // Un solo toque reemplazaba el rango al instante — fácil de tocar sin querer
+                      // mientras se está "probando" un peso, y ese reemplazo queda hasta que alguien
+                      // vuelve acá a quitarlo a mano. Un toque extra de confirmación evita ese accidente.
+                      const ok = confirm(
+                        `Vas a reemplazar el rango REAL de "${exercise?.nombre}" por este cálculo (${fmt(pesoNum || 0)} kg × ${repsNum} reps) en toda la app, hasta que lo quites acá. Tu historial de entrenamientos no se borra ni se toca — solo deja de mostrarse para este ejercicio.`,
+                      );
+                      if (!ok) return;
+                      setRankOverride(exerciseId, { peso: isKg ? pesoNum : 0, reps: repsNum, value: result.value, setAt: Date.now() });
+                    }}
                     className="w-full rounded-full py-3 text-sm font-semibold cursor-pointer border border-white/20 text-white/85 hover:bg-white/5 transition-colors"
                   >
                     Reemplazar en el rango

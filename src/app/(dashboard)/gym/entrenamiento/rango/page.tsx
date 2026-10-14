@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Plus, RotateCw, SlidersHorizontal } from "lucide-react";
 import { ExpandSheet } from "@/components/shared/expand-sheet";
+import { ChainDots } from "@/components/gym/chain-dots";
 import { RankBody3D, type RankBodyHandle } from "@/components/gym/rank-body-3d";
 import { MuscleGroupIcon } from "@/components/gym/muscle-group-icon";
 import { RankIcon } from "@/components/gym/rank-icon";
@@ -161,24 +162,6 @@ export default function RangoPage() {
             <SlidersHorizontal size={24} />
           </button>
         </div>
-        <div className="flex items-center justify-center gap-2.5 h-5">
-          {/* Hoy / Año / Rango / Coach — Rango es la posición 2 de 4 en la cadena de swipe vertical.
-              Tappables (no solo indicador): el gesto de swipe vertical no es confiable en todos los
-              dispositivos, así que cada punto también navega — mismo destino que el swipe. */}
-          {(["/gym/entrenamiento", "/gym/entrenamiento?view=1", null, "/gym/entrenamiento/coach"] as const).map((href, i) => (
-            <button
-              key={i}
-              type="button"
-              aria-label={i === 2 ? "Ya estás en Rango" : `Ir a ${["Hoy", "Año", "Rango", "Coach"][i]}`}
-              disabled={href === null}
-              onClick={() => href && router.push(href)}
-              className="p-1 -m-1 cursor-pointer disabled:cursor-default"
-            >
-              <span className="block w-1.5 h-1.5 rounded-full" style={{ background: i === 2 ? "#fff" : "rgba(255,255,255,0.3)" }} />
-            </button>
-          ))}
-        </div>
-
         {/* Etiqueta del rango de la página: ícono + texto (no depende solo del color) */}
         <div className="flex flex-col items-center gap-0.5 pt-1.5 h-[64px]">
           <AnimatePresence mode="wait" initial={false}>
@@ -207,6 +190,7 @@ export default function RangoPage() {
 
       {/* Escenario: el cuerpo ocupa casi todo el alto restante */}
       <main className="relative flex-1 min-h-0">
+        <ChainDots current={2} />
         {webglFailed ? (
           <GroupList rankOf={rankOf} onOpen={(key) => router.push(`/gym/entrenamiento/rango/${key}`)} />
         ) : (

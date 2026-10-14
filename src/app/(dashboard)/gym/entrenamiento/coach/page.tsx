@@ -30,7 +30,8 @@ import {
   VOLUME_COLORS,
   type VolumeStatus,
 } from "@/lib/training/hypertrophy-engine";
-import { useSwipeCarousel, SwipeCarouselStage, SwipeCarouselDots } from "@/components/shared/swipe-carousel";
+import { useSwipeCarousel, SwipeCarouselStage } from "@/components/shared/swipe-carousel";
+import { ChainDots } from "@/components/gym/chain-dots";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import type { MuscleGroup, WorkoutSession } from "@/lib/types";
 
@@ -55,6 +56,8 @@ const STATUS_LABEL: Record<VolumeStatus, string> = {
   excedido: "Excedido",
 };
 
+const CARD_LABELS = ["Coach por voz", "Rutina de hoy", "Gráficas", "Progreso general"] as const;
+
 export default function CoachPage() {
   const router = useRouter();
   const [card, setCard] = useState(0);
@@ -68,16 +71,19 @@ export default function CoachPage() {
     if (dy > 70) router.push("/gym/entrenamiento/rango");
   }
 
-  // Teclado y rueda del mouse: esta es la última pantalla de la cadena, así que solo "volver" (sin
-  // gesto táctil no había forma de hacerlo desde acá — mismo motivo que en Rango).
+  // Teclado y rueda del mouse: izquierda/derecha cambian de tarjeta (horizontal, dentro de esta
+  // pantalla); arriba vuelve a Rango (esta es la última de la cadena vertical, sin gesto táctil no
+  // había forma de hacerlo desde acá — mismo motivo que en Rango).
   const wheelLock = useRef(false);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowUp") router.push("/gym/entrenamiento/rango");
+      else if (e.key === "ArrowRight") goTo(card + 1);
+      else if (e.key === "ArrowLeft") goTo(card - 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [router]);
+  }, [router, goTo, card]);
 
   return (
     <div
@@ -105,25 +111,13 @@ export default function CoachPage() {
           </h1>
           <span className="w-10 h-10" />
         </div>
-        <div className="flex items-center justify-center gap-2.5 h-5">
-          {/* Tappables, mismo criterio que Rango: el swipe vertical no es confiable en todos los
-              dispositivos, así que cada punto también navega. */}
-          {(["/gym/entrenamiento", "/gym/entrenamiento?view=1", "/gym/entrenamiento/rango", null] as const).map((href, i) => (
-            <button
-              key={i}
-              type="button"
-              aria-label={i === 3 ? "Ya estás en Coach" : `Ir a ${["Hoy", "Año", "Rango", "Coach"][i]}`}
-              disabled={href === null}
-              onClick={() => href && router.push(href)}
-              className="p-1 -m-1 cursor-pointer disabled:cursor-default"
-            >
-              <span className="block w-1.5 h-1.5 rounded-full" style={{ background: i === 3 ? "#fff" : "rgba(255,255,255,0.3)" }} />
-            </button>
-          ))}
-        </div>
+        <p className="text-center text-xs tabular-nums text-white/40 pt-1" style={MONO_FONT}>
+          {card + 1}/{CARD_COUNT}
+        </p>
       </header>
 
       <main className="relative flex-1 min-h-0">
+        <ChainDots current={3} />
         <SwipeCarouselStage itemKey={card} direction={direction} length={CARD_COUNT} onDragEnd={onDragEnd} className="absolute inset-0 overflow-y-auto no-scrollbar px-5 pb-8 pt-2">
           {card === 0 && <CoachVozCard />}
           {card === 1 && <RutinaCard />}
@@ -132,8 +126,28 @@ export default function CoachPage() {
         </SwipeCarouselStage>
       </main>
 
-      <div className="shrink-0 pb-[max(env(safe-area-inset-bottom),14px)] pt-2">
-        <SwipeCarouselDots length={CARD_COUNT} index={card} onSelect={goTo} />
+      <div className="shrink-0 pb-[max(env(safe-area-inset-bottom),14px)] pt-2 flex items-center justify-center gap-3">
+        <button
+          type="button"
+          aria-label="Tarjeta anterior"
+          disabled={card === 0}
+          onClick={() => goTo(card - 1)}
+          className="w-8 h-8 flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-default"
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <p className="text-sm font-medium text-white/80 min-w-[150px] text-center" style={MONO_FONT}>
+          {CARD_LABELS[card]}
+        </p>
+        <button
+          type="button"
+          aria-label="Tarjeta siguiente"
+          disabled={card === CARD_COUNT - 1}
+          onClick={() => goTo(card + 1)}
+          className="w-8 h-8 flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-default"
+        >
+          <ChevronRight size={18} />
+        </button>
       </div>
     </div>
   );
