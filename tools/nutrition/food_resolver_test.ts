@@ -59,9 +59,12 @@ const CASES: [string, string | null][] = [
   ["almendras", "Almendras"], ["nueces", "Nueces"], ["maní", "Maní / cacahuate"], ["chía", "Semillas de chía"], ["aceite de oliva", "Aceite de oliva"], ["miel", "Miel de abeja"], ["mermelada", "Mermelada"],
   ["café", "Café negro sin azúcar"], ["café con leche", "Café con leche"], ["gaseosa", "Gaseosa regular"], ["cerveza", "Cerveza"], ["jugo de naranja", "Jugo de naranja natural"], ["whey", "Batido de proteína whey"],
   ["pizza", "Pizza margarita"], ["hamburguesa", "Hamburguesa clásica"], ["lomo saltado", "Lomo saltado"], ["ceviche", "Ceviche de pescado"], ["ají de gallina", "Ají de gallina"], ["helado", "Helado de crema"], ["chocolate", "Chocolate negro (70%)"],
-  // La base todavía NO tiene estos alimentos (se reportan; no se amplía la base en esta fase):
-  ["mantequilla", null], ["azúcar", null], ["sal", null], ["jamón", null], ["tocino", null], ["salchicha", null], ["atún en aceite", null], ["pollo frito kfc", null],
-  ["arándanos", null], ["kiwi", null], ["durazno", null], ["limón", null], ["cereal de caja", null], ["leche de soya", null], ["gaseosa light", null], ["vino", null],
+  // Fase 2 (expansión masiva): estos 16 términos no resolvían antes de la importación de alimentos
+  // vía USDA — ahora sí, con el alimento real agregado a la base (ver reporte-expansion-alimentos.md).
+  ["mantequilla", "Mantequilla"], ["azúcar", "Azúcar blanca"], ["sal", "Sal"], ["jamón", "Jamón cocido"], ["tocino", "Tocino"], ["salchicha", "Salchicha / hot dog"], ["atún en aceite", "Atún en aceite"],
+  ["arándanos", "Arándanos"], ["kiwi", "Kiwi"], ["durazno", "Durazno / melocotón"], ["limón", "Limón"], ["cereal de caja", "Cereal de caja (hojuelas de maíz)"], ["leche de soya", "Leche de soya"], ["gaseosa light", "Gaseosa light / zero"], ["vino", "Vino tinto"],
+  // "pollo frito kfc" sigue sin match real a propósito: es una marca/plato de restaurante específico, no un alimento genérico — se reporta, no se inventa.
+  ["pollo frito kfc", null],
 ];
 
 const missing: string[] = [];
@@ -108,7 +111,7 @@ for (const m of missing) console.log(`  · ${m}`);
   ok(resolveFood("arroz", [placeholder, ...foods]).chosen?.nombre === "Arroz blanco", "un 'sin configurar' no le gana a la base");
 }
 
-ok(resolveFood("mantequilla", foods).confidence === "baja", "una palabra que solo coincide por prefijo no es confianza alta/media");
+ok(resolveFood("mantec", foods).confidence === "baja", "una palabra que solo coincide por prefijo no es confianza alta/media");
 ok(resolveFood("pescado", foods).confidence === "baja", "pescado → solo sugerencia (confianza baja)");
 
 // búsqueda mientras se escribe (última palabra incompleta)
