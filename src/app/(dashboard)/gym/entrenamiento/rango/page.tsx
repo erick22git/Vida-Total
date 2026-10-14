@@ -49,6 +49,7 @@ export default function RangoPage() {
   const [webglFailed, setWebglFailed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const start = useRef<{ x: number; y: number } | null>(null);
+  const wheelLock = useRef(false);
 
   const group = RANK_GROUPS[page];
   const focusRegions = page === 0 ? null : group.categories;
@@ -76,15 +77,21 @@ export default function RangoPage() {
     });
   }, []);
 
-  // flechas del teclado
+  // Flechas del teclado: izquierda/derecha cambian de grupo muscular (horizontal, dentro de esta
+  // pantalla); arriba/abajo navegan la cadena vertical de Entrenamiento (Hoy/Año/Rango/Coach), igual
+  // que en las otras pantallas de esa cadena — antes esta pantalla no tenía atajo de teclado ni rueda
+  // del mouse para esa dirección, así que en un navegador de escritorio (mouse/teclado, sin gestos
+  // táctiles) no había forma de bajar a Coach ni subir a Año desde acá.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") goTo(page + 1);
       else if (e.key === "ArrowLeft") goTo(page - 1);
+      else if (e.key === "ArrowDown") router.push("/gym/entrenamiento/coach");
+      else if (e.key === "ArrowUp") router.push("/gym/entrenamiento?view=1");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [page, goTo]);
+  }, [page, goTo, router]);
 
   const onPick = useCallback(
     (region: string | null) => {
@@ -121,6 +128,16 @@ export default function RangoPage() {
         }
       }}
       onPointerCancel={() => (start.current = null)}
+      onWheel={(e) => {
+        // Rueda del mouse / trackpad: mismo criterio que entrenamiento/page.tsx y meal-home-screen.tsx
+        // (scrollear hacia abajo avanza, hacia arriba retrocede) — sin esto, en escritorio (sin gestos
+        // táctiles) no había forma de bajar a Coach ni subir a Año desde acá.
+        if (wheelLock.current || Math.abs(e.deltaY) < 30) return;
+        wheelLock.current = true;
+        setTimeout(() => (wheelLock.current = false), 500);
+        if (e.deltaY > 0) router.push("/gym/entrenamiento/coach");
+        else router.push("/gym/entrenamiento?view=1");
+      }}
     >
       {/* Cabecera: volver, título, ajustes y los 3 puntos de las vistas de Entrenamiento */}
       <header className="shrink-0 px-5 pt-[max(env(safe-area-inset-top),10px)]">

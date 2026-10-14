@@ -11,7 +11,7 @@
  * pantalla NO inventa un "semana N de M" global — ver docs/ciencia-entrenamiento.md y el reporte de
  * la Fase 4 para esa decisión.
  */
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Check, X as XIcon } from "lucide-react";
@@ -68,11 +68,28 @@ export default function CoachPage() {
     if (dy > 70) router.push("/gym/entrenamiento/rango");
   }
 
+  // Teclado y rueda del mouse: esta es la última pantalla de la cadena, así que solo "volver" (sin
+  // gesto táctil no había forma de hacerlo desde acá — mismo motivo que en Rango).
+  const wheelLock = useRef(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowUp") router.push("/gym/entrenamiento/rango");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [router]);
+
   return (
     <div
       className="app-bg fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden"
       onPointerDown={(e) => (startY.current = e.clientY)}
       onPointerUp={onPointerUp}
+      onWheel={(e) => {
+        if (wheelLock.current || Math.abs(e.deltaY) < 30) return;
+        wheelLock.current = true;
+        setTimeout(() => (wheelLock.current = false), 500);
+        if (e.deltaY < 0) router.push("/gym/entrenamiento/rango");
+      }}
     >
       <header className="shrink-0 px-5 pt-[max(env(safe-area-inset-top),10px)]">
         <div className="flex items-center h-11">
