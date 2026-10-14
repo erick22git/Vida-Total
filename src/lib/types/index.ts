@@ -406,6 +406,12 @@ export interface WorkoutSet {
    * que se marcó completa la serie anterior y esta). `undefined` en la
    * primera serie del ejercicio, donde no hay descanso previo que medir. */
   descansoTomado?: number;
+  /** RIR (reps in reserve) que el usuario reportó al completar la serie: cuántas repeticiones más
+   * sentía que podía hacer (0 = al fallo, 5+ = muy lejos del fallo). Alimenta `hypertrophy-engine.ts`
+   * para sugerir subir/mantener/bajar peso la próxima sesión. `0` real se marca con `"rir0"` en
+   * `fijados` (mismo criterio que el resto de los campos de esta interfaz) para no confundirlo con
+   * "todavía sin anotar". */
+  rir?: number;
 }
 
 export interface WorkoutExerciseLog {
