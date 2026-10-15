@@ -34,12 +34,18 @@ export const CAMERA_EXERCISE_CONFIGS: Record<CameraExerciseId, CameraExerciseCon
     // Lockout casi recto al final del levantamiento.
     extendedThreshold: 165,
     // Flexión de rodilla ≈103–108° en el setup del peso muerto convencional — Schellenberg et al.
-    // 2013 (PMC3878967, roadmap 2.1.3), la fuente más sólida de las cuatro investigadas.
+    // 2013 (PMC3878967, roadmap 2.1.3), la fuente más sólida de las cuatro investigadas. Sirve
+    // para marcar los extremos del movimiento y CONTAR la repetición.
     flexedThreshold: 108,
     // El peso muerto arranca agachado sosteniendo la barra — se cuenta la repetición al volver a
     // esa posición (bajar la barra), convención estándar de conteo en sala de pesas.
     startExtreme: "flexed",
-    hasFormValidation: true,
+    // false a propósito, aunque haya una fuente citada arriba: Schellenberg describe un rango
+    // TÍPICO durante el levantamiento, no un criterio de "forma correcta/incorrecta" — a
+    // diferencia de la sentadilla (donde "profundidad alcanzada o no" es un criterio binario bien
+    // establecido), no hay una forma honesta de convertir ese número en rojo/verde sin prometer
+    // más precisión de la que la fuente da (roadmap 2.1.3, sección "overlay-segments.ts").
+    hasFormValidation: false,
   },
   press_banca: {
     joint: "elbow",

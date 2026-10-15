@@ -4,6 +4,7 @@ import {
   angleAtVertex,
   kneeAngle,
   hipAngle,
+  kneeAngleWithSide,
   pickMoreVisibleSide,
   POSE_LANDMARK_INDEX,
   type Landmark,
@@ -67,6 +68,14 @@ function deepSquatSkeleton(): PoseLandmarks {
 {
   const angle = kneeAngle(deepSquatSkeleton(), "right");
   ok(!Number.isNaN(angle) && angle < 100, `sentadilla profunda simulada da ángulo de rodilla flexionado (<100°, dio ${angle})`);
+}
+
+// --- kneeAngleWithSide: devuelve el lado elegido, no solo el ángulo ---
+{
+  const skeleton = standingSkeleton();
+  const { angle, side } = kneeAngleWithSide(skeleton);
+  close(angle, 180, 0.01, "kneeAngleWithSide: mismo ángulo que kneeAngle");
+  ok(side === "right", "kneeAngleWithSide: devuelve el lado más visible (derecho) elegido");
 }
 
 console.log(`\n${checks - fails}/${checks} checks OK`);

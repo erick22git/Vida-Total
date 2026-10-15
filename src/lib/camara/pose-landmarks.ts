@@ -108,3 +108,16 @@ export function elbowAngle(landmarks: PoseLandmarks, side?: Side): number {
   const [shoulderIdx, elbowIdx, wristIdx] = ELBOW_JOINTS[s];
   return angleAtVertex(landmarks[shoulderIdx], landmarks[elbowIdx], landmarks[wristIdx]);
 }
+
+/** Igual que `kneeAngle`, pero además devuelve qué lado terminó usando — lo necesita el overlay
+ * (Fase C) para saber qué segmentos del esqueleto resaltar. */
+export function kneeAngleWithSide(landmarks: PoseLandmarks, side?: Side): { angle: number; side: Side } {
+  const s = side ?? pickMoreVisibleSide(landmarks, KNEE_JOINTS);
+  return { angle: kneeAngle(landmarks, s), side: s };
+}
+
+/** Igual que `elbowAngle`, pero además devuelve qué lado terminó usando. */
+export function elbowAngleWithSide(landmarks: PoseLandmarks, side?: Side): { angle: number; side: Side } {
+  const s = side ?? pickMoreVisibleSide(landmarks, ELBOW_JOINTS);
+  return { angle: elbowAngle(landmarks, s), side: s };
+}
