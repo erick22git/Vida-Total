@@ -16,7 +16,7 @@
  */
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Maximize2, Minimize2, Plus, Minus, RotateCcw, AlertTriangle, Check } from "lucide-react";
+import { ArrowLeft, Maximize2, Minimize2, Plus, Minus, RotateCcw, AlertTriangle, Check, Volume2, VolumeX } from "lucide-react";
 import { GlassButton } from "@/components/glass/glass-button";
 import { useCameraCalibrationStore } from "@/lib/store/cameraCalibrationStore";
 import { deviceFingerprint, shouldRecalibrate, type DeviceCalibrationResult } from "@/lib/camara/device-calibration";
@@ -28,7 +28,11 @@ import { initGuardedRepCounter, stepGuardedRepCounter, MIN_REP_INTERVAL_MS } fro
 import { CAMERA_EXERCISE_CONFIGS, type CameraExerciseId } from "@/lib/camara/exercise-configs";
 import { formVerdict, segmentVerdicts, SKELETON_SEGMENTS, type FormVerdict } from "@/lib/camara/overlay-segments";
 import { nextShallowRepStreak, shouldSuggestTechniqueNote } from "@/lib/camara/technique-tracker";
+import { bodyLineWidthScale } from "@/lib/camara/body-scale";
+import { decideVoiceCue, voiceCuePhrase } from "@/lib/camara/voice-feedback";
+import { speak } from "@/lib/camara/voice-speak";
 import { MALA_TECNICA } from "@/components/gym/set-type-modal";
+import { useGymStore } from "@/lib/store/gymStore";
 
 const ORIENTATION_LABEL: Record<Orientation, string> = {
   profile: "Vista: de costado",
@@ -111,6 +115,16 @@ function CamaraEntrenadorContent() {
   const [techniqueSuggestion, setTechniqueSuggestion] = useState(false);
   const [techniqueNoteWanted, setTechniqueNoteWanted] = useState(false);
 
+  // Corrección por voz en tiempo real (roadmap sección 3.5): anuncia el número de cada repetición
+  // contada y avisa "más profundo" en el borde en que una sentadilla se corta antes de llegar a la
+  // profundidad citada. El usuario puede silenciarla en cualquier momento.
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const voiceEnabledRef = useRef(voiceEnabled);
+  const prevVerdictRef = useRef<FormVerdict>("neutral");
+  useEffect(() => {
+    voiceEnabledRef.current = voiceEnabled;
+  }, [voiceEnabled]);
+
   const [zoom, setZoom] = useState(1);
   const [zoomCaps, setZoomCaps] = useState<{ min: number; max: number; step: number } | null>(null);
   const pinchRef = useRef<{ startDist: number; startZoom: number } | null>(null);
@@ -119,6 +133,15 @@ function CamaraEntrenadorContent() {
   const calibration = useCameraCalibrationStore((s) => s.calibration);
   const setCalibration = useCameraCalibrationStore((s) => s.setCalibration);
 
+  // Mejora visual: el esqueleto se dibuja más grueso o más fino según la altura/peso que el
+  // usuario ya tiene en su perfil de entrenamiento — no un grosor de línea fijo para todos.
+  const gymProfile = useGymStore((s) => s.gymProfile);
+  const lineScale = bodyLineWidthScale(gymProfile?.alturaCm, gymProfile?.pesoKg);
+  const lineScaleRef = useRef(lineScale);
+  useEffect(() => {
+    lineScaleRef.current = lineScale;
+  }, [lineScale]);
+
   const selectExercise = useCallback((id: CameraExerciseId) => {
     exerciseIdRef.current = id;
     repStateRef.current = initGuardedRepCounter(CAMERA_EXERCISE_CONFIGS[id]);
@@ -126,6 +149,7 @@ function CamaraEntrenadorContent() {
     setLockedSideDisplay(null);
     smoothedAngleRef.current = null;
     shallowStreakRef.current = 0;
+    prevVerdictRef.current = "neutral";
     setTechniqueSuggestion(false);
     setTechniqueNoteWanted(false);
     setExerciseId(id);
@@ -137,6 +161,7 @@ function CamaraEntrenadorContent() {
     runningRef.current = false;
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     if (repFlashTimeoutRef.current) clearTimeout(repFlashTimeoutRef.current);
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     trackRef.current = null;
@@ -177,24 +202,41 @@ function CamaraEntrenadorContent() {
       const toPx = (i: number) => ({ x: landmarks[i].x * canvas.width, y: landmarks[i].y * canvas.height });
       const visible = (i: number) => (landmarks[i]?.visibility ?? 1) > 0.4;
 
+      // Grosor base proporcional a la resolución del video (para que se vea bien tanto en 640px
+      // como si la cámara se degradó a 320px) y escalado por `lineScale` (altura/peso del
+      // perfil) — "cápsulas" gruesas con contorno, no líneas finas de 1px ("palitos").
+      const baseWidth = Math.max(6, canvas.width * 0.018) * lineScaleRef.current;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
       for (const [a, b] of SKELETON_SEGMENTS) {
         if (!visible(a) || !visible(b)) continue;
-        const color = segments?.get(`${a}-${b}`) ?? "neutral";
+        const color = (segments?.get(`${a}-${b}`) ?? "neutral") as FormVerdict;
+        const width = color === "neutral" ? baseWidth : baseWidth * 1.35;
         const pa = toPx(a);
         const pb = toPx(b);
-        ctx.strokeStyle = VERDICT_COLOR[color as FormVerdict];
-        ctx.lineWidth = color === "neutral" ? 3 : 5;
+        // Contorno oscuro primero, el color encima — le da volumen de "extremidad" en vez de una
+        // línea plana sobre el video.
+        ctx.strokeStyle = "rgba(0,0,0,0.5)";
+        ctx.lineWidth = width + 4;
+        ctx.beginPath();
+        ctx.moveTo(pa.x, pa.y);
+        ctx.lineTo(pb.x, pb.y);
+        ctx.stroke();
+        ctx.strokeStyle = VERDICT_COLOR[color];
+        ctx.lineWidth = width;
         ctx.beginPath();
         ctx.moveTo(pa.x, pa.y);
         ctx.lineTo(pb.x, pb.y);
         ctx.stroke();
       }
       ctx.fillStyle = "rgba(255,255,255,0.9)";
+      const jointRadius = Math.max(4, baseWidth * 0.45);
       for (let i = 0; i < landmarks.length; i++) {
         if (!visible(i)) continue;
         const p = toPx(i);
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, jointRadius, 0, Math.PI * 2);
         ctx.fill();
       }
     },
@@ -222,51 +264,58 @@ function CamaraEntrenadorContent() {
             setOrientation(currentOrientation);
           }
 
-          if (currentOrientation === "unknown") {
-            // Sin suficiente confianza para decidir perfil/frente: se dibuja el esqueleto (neutral)
-            // para que el usuario vea que lo detecta, pero NO se avanza el conteo — mejor avisar
-            // que adivinar y contar mal (roadmap sección 3.6).
-            drawFrame(landmarks, null);
-          } else {
-            const { angle: rawAngle, trackedSide } =
-              config.joint === "knee"
-                ? kneeAngleOriented(landmarks, currentOrientation, lockedSideRef.current)
-                : elbowAngleOriented(landmarks, currentOrientation, lockedSideRef.current);
-            // De perfil, el lado se fija UNA sola vez por serie (la primera vez que hay una lectura
-            // de perfil) — nunca se vuelve a recalcular frame a frame, que era la causa real del
-            // "parpadeo" y el sobre-conteo.
-            if (currentOrientation === "profile" && lockedSideRef.current === null && trackedSide !== "both") {
-              lockedSideRef.current = trackedSide;
-              setLockedSideDisplay(trackedSide);
+          // "unknown" ya NO frena el conteo (ver roadmap sección 3.6 — la primera versión de este
+          // arreglo lo hacía, y en la prueba real eso tapó la mayoría de las reps: 20 hechas, solo
+          // 4 contadas, porque la cámara pasaba "unknown" seguido y el conteo se quedaba pausado).
+          // "unknown"/"profile" sin lado fijado todavía caen en el mismo camino: elegir el lado más
+          // visible en ESTE frame — el suavizado + el mínimo de tiempo entre reps ya amortiguan el
+          // ruido de ese camino, así que no hace falta bloquear nada. El aviso de orientación queda
+          // como indicación para acomodar la cámara, nunca como bloqueo.
+          const { angle: rawAngle, trackedSide } =
+            config.joint === "knee"
+              ? kneeAngleOriented(landmarks, currentOrientation, lockedSideRef.current)
+              : elbowAngleOriented(landmarks, currentOrientation, lockedSideRef.current);
+          // De perfil, el lado se fija UNA sola vez por serie (la primera vez que hay una lectura
+          // de perfil con confianza) — nunca se vuelve a recalcular frame a frame, que era la causa
+          // real del "parpadeo" y el sobre-conteo original.
+          if (currentOrientation === "profile" && lockedSideRef.current === null && trackedSide !== "both") {
+            lockedSideRef.current = trackedSide;
+            setLockedSideDisplay(trackedSide);
+          }
+
+          const smoothed = smoothAngle(smoothedAngleRef.current, rawAngle, ANGLE_SMOOTHING_ALPHA);
+          smoothedAngleRef.current = smoothed;
+
+          const prevState = repStateRef.current;
+          const nextState = stepGuardedRepCounter(prevState, smoothed, config, now, MIN_REP_INTERVAL_MS);
+          const changed = nextState.core.reps !== prevState.core.reps || nextState.core.phase !== prevState.core.phase;
+          repStateRef.current = nextState;
+          const v = formVerdict(nextState.core, config);
+          const segments = segmentVerdicts(trackedSide, config.joint, v);
+          drawFrame(landmarks, segments);
+
+          if (nextState.core.reps > prevState.core.reps) {
+            setRepFlash(true);
+            if (repFlashTimeoutRef.current) clearTimeout(repFlashTimeoutRef.current);
+            repFlashTimeoutRef.current = setTimeout(() => setRepFlash(false), 350);
+          }
+
+          if (changed) {
+            setReps(nextState.core.reps);
+            setVerdict(v);
+
+            if (voiceEnabledRef.current) {
+              const cue = decideVoiceCue(prevState.core, nextState.core, config, prevVerdictRef.current, v);
+              const phrase = voiceCuePhrase(cue);
+              if (phrase) speak(phrase);
             }
+            prevVerdictRef.current = v;
 
-            const smoothed = smoothAngle(smoothedAngleRef.current, rawAngle, ANGLE_SMOOTHING_ALPHA);
-            smoothedAngleRef.current = smoothed;
-
-            const prevState = repStateRef.current;
-            const nextState = stepGuardedRepCounter(prevState, smoothed, config, now, MIN_REP_INTERVAL_MS);
-            const changed = nextState.core.reps !== prevState.core.reps || nextState.core.phase !== prevState.core.phase;
-            repStateRef.current = nextState;
-            const v = formVerdict(nextState.core, config);
-            const segments = segmentVerdicts(trackedSide, config.joint, v);
-            drawFrame(landmarks, segments);
-
-            if (nextState.core.reps > prevState.core.reps) {
-              setRepFlash(true);
-              if (repFlashTimeoutRef.current) clearTimeout(repFlashTimeoutRef.current);
-              repFlashTimeoutRef.current = setTimeout(() => setRepFlash(false), 350);
-            }
-
-            if (changed) {
-              setReps(nextState.core.reps);
-              setVerdict(v);
-
-              const streak = nextShallowRepStreak(prevState.core, nextState.core, config, shallowStreakRef.current);
-              shallowStreakRef.current = streak;
-              if (shouldSuggestTechniqueNote(streak)) {
-                shallowStreakRef.current = 0;
-                setTechniqueSuggestion(true);
-              }
+            const streak = nextShallowRepStreak(prevState.core, nextState.core, config, shallowStreakRef.current);
+            shallowStreakRef.current = streak;
+            if (shouldSuggestTechniqueNote(streak)) {
+              shallowStreakRef.current = 0;
+              setTechniqueSuggestion(true);
             }
           }
         } else {
@@ -432,13 +481,23 @@ function CamaraEntrenadorContent() {
             ))}
           </div>
         )}
-        <button
-          onClick={toggleFullscreen}
-          aria-label="Pantalla completa"
-          className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
-        >
-          {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setVoiceEnabled((v) => !v)}
+            aria-label={voiceEnabled ? "Silenciar la voz" : "Activar la voz"}
+            aria-pressed={voiceEnabled}
+            className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+          >
+            {voiceEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          </button>
+          <button
+            onClick={toggleFullscreen}
+            aria-label="Pantalla completa"
+            className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+          >
+            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </button>
+        </div>
       </div>
 
       {/* Estados no "ready" */}

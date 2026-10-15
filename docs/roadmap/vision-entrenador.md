@@ -513,22 +513,32 @@ de menor costo de implementación y mayor valor percibido inmediato.
 
 ### 3.6 Qué hacer con todo esto — orden recomendado
 
-1. **Arreglar el conteo de reps (sección 3.1) — IMPLEMENTADO.** `pose-landmarks.ts` agrega
-   `detectOrientation` (perfil vs. frente, por la `z` de hombros/caderas, sin modelo nuevo) y
-   `kneeAngleOriented`/`elbowAngleOriented`: de perfil fija el lado una sola vez por serie (nunca
-   más recalculado cada frame, que era la causa real del parpadeo), de frente promedia ambos
-   lados en vez de parpadear entre ellos. `angle-smoother.ts` suaviza el ángulo con un promedio
-   móvil exponencial antes de usarlo. `rep-counter-guard.ts` exige un mínimo de 500ms entre
-   repeticiones contadas. Si la orientación no se puede determinar con confianza razonable, la
-   pantalla avisa ("Ubicá la cámara de costado para mejor precisión") en vez de adivinar y contar
-   mal, y no avanza el conteo hasta que se resuelva. Hay también un indicador en vivo de qué
-   orientación detectó la app, y el contador de reps ahora pasa de blanco a negro (el mismo par de
-   colores que usa el resto de la app para "completado") exactamente cuando se cuenta una
-   repetición válida — antes usaba un verde suelto. 94/94 tests acumulados del módulo cámara.
-2. **Voz en tiempo real (sección 3.5)** — mismo nivel de esfuerzo bajo, construye sobre datos que ya
-   calculamos, sin modelo nuevo.
-3. **Esqueleto "de extremidades" (cápsulas gruesas en vez de líneas, sección 3.3)** — cambio de
-   dibujo, esfuerzo medio, mejora visual pero no de precisión — dejar claro en la UI que es estético.
+1. **Arreglar el conteo de reps (sección 3.1) — IMPLEMENTADO, con una corrección propia.**
+   `pose-landmarks.ts` agrega `detectOrientation` (perfil vs. frente, por la `z` de hombros/caderas,
+   sin modelo nuevo) y `kneeAngleOriented`/`elbowAngleOriented`: de perfil fija el lado una sola vez
+   por serie, de frente promedia ambos lados en vez de parpadear entre ellos. `angle-smoother.ts`
+   suaviza el ángulo con un promedio móvil exponencial. `rep-counter-guard.ts` exige un mínimo de
+   500ms entre repeticiones contadas. **Primera versión real en celular: 20 repeticiones hechas,
+   solo 4 contadas** — "unknown" (orientación sin confianza suficiente) frenaba el conteo por
+   completo, y en una prueba real eso pasa seguido (ángulos de cámara que no son ni perfil ni
+   frente puros). Corregido: "unknown" ya NO bloquea, cae al mismo camino de "elegir el lado más
+   visible en este frame" que ya existía antes de este arreglo — el suavizado + el mínimo de
+   tiempo entre reps alcanzan para amortiguar ese camino sin necesitar el bloqueo. El aviso de
+   orientación en pantalla queda como indicación para acomodar la cámara, nunca como condición para
+   contar. También, pedido en la misma vuelta: el esqueleto ahora se dibuja grueso con contorno
+   ("cápsulas", no líneas finas — sección 3.3 adelantada) y escalado por `alturaCm`/`pesoKg` del
+   perfil de entrenamiento (`body-scale.ts`) — más grueso en un cuerpo más grande, más fino en uno
+   más chico, acotado para no verse absurdo en valores atípicos. El contador pasa de blanco a negro
+   al contar una repetición válida (mismo par que "completado" en el resto de la app). 101/101 tests
+   acumulados del módulo cámara.
+2. **Voz en tiempo real (sección 3.5) — IMPLEMENTADO.** `voice-feedback.ts` (puro, decide qué decir
+   y cuándo) + `voice-speak.ts` (el único lugar que toca `speechSynthesis`, Web Speech API nativa
+   del navegador, sin dependencia nueva, 100% local). Anuncia el número en voz alta de cada
+   repetición contada, y en sentadilla avisa "más profundo" en el borde en que una repetición se
+   corta sin llegar a la profundidad citada (nunca mientras se mantiene — solo una vez por borde).
+   Botón de silenciar en la barra superior. 110/110 tests acumulados del módulo cámara.
+3. ~~Esqueleto "de extremidades" (cápsulas gruesas en vez de líneas, sección 3.3)~~ — adelantado al
+   punto 1 de esta lista, ver arriba.
 4. **Segmentación real por partes del cuerpo y seguimiento de barra/mancuerna (secciones 3.3/3.4)**
    — los dos proyectos más grandes, cada uno necesitaría su propia investigación técnica dedicada
    (como se hizo para la Fase 5.0 de este documento) antes de tocar código: para segmentación, buscar
