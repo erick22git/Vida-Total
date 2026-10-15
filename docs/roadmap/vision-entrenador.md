@@ -579,9 +579,17 @@ de menor costo de implementación y mayor valor percibido inmediato.
      (dependencia nueva pesada + riesgo real de no llegar a tiempo real) no se justifica frente al
      beneficio (solo estético, no mejora la detección de técnica). Queda descartada mientras no
      cambie el estado del arte de estos modelos.
-   - **Seguimiento de barra/mancuerna por marcador de color: SÍ es viable técnicamente, con
-     `tracking.js` (liviano) o `OpenCV.js` (más completo, más pesado)** — es visión clásica bien
-     probada, no investigación nueva. Lo único que falta no es técnico: confirmar con el usuario
-     si pedirle un marcador de color pegado a la barra/mancuerna es una experiencia aceptable antes
-     de construirlo. Sin esa confirmación, no se empieza — detectarla sin marcador es un proyecto
-     de entrenamiento de modelo propio, fuera de alcance.
+   - **Seguimiento de barra/mancuerna por marcador de color — IMPLEMENTADO, confirmado por el
+     usuario.** En vez de agregar `tracking.js` (sin tipos, sin mantenimiento desde ~2015) se
+     escribió el algoritmo propio en `marker-tracker.ts` — es visión clásica chica y bien acotada
+     (convertir a HSV, umbral de matiz/saturación/valor, centroide de los píxeles que matchean),
+     cabe en ~100 líneas puras y testeadas, **sin ninguna dependencia nueva**. El usuario toca el
+     marcador una vez en la pantalla (botón de blanco, ícono de diana) para calibrar el color exacto
+     leído del video en ese punto; desde ahí, cada frame se escanea un muestreo de 160×120 del
+     video (independiente de la resolución real, para que sea liviano) y se dibuja la trayectoria
+     reciente (cola de hasta 40 puntos, ~1.5-2s) sobre el esqueleto ya dibujado. Botón para apagarlo
+     (vuelve a modo sin marcador) en cualquier momento. 125/125 tests acumulados del módulo cámara.
+     **Limitación honesta, sin verificar todavía:** correr esto ADEMÁS de Pose Landmarker en el
+     mismo frame puede bajar el fps real en celulares de gama baja — no hay una segunda calibración
+     de rendimiento para esto específicamente (reusa la de la Fase A, que solo midió Pose Landmarker
+     solo); si el usuario nota que se pone lento al activar el marcador, hay que revisarlo.

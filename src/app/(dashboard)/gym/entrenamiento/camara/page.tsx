@@ -16,7 +16,7 @@
  */
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Maximize2, Minimize2, Plus, Minus, RotateCcw, AlertTriangle, Check, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Maximize2, Minimize2, Plus, Minus, RotateCcw, AlertTriangle, Check, Volume2, VolumeX, Target, X as XIcon } from "lucide-react";
 import { GlassButton } from "@/components/glass/glass-button";
 import { useCameraCalibrationStore } from "@/lib/store/cameraCalibrationStore";
 import { deviceFingerprint, shouldRecalibrate, type DeviceCalibrationResult } from "@/lib/camara/device-calibration";
@@ -31,8 +31,19 @@ import { nextShallowRepStreak, shouldSuggestTechniqueNote } from "@/lib/camara/t
 import { bodyLineWidthScale } from "@/lib/camara/body-scale";
 import { decideVoiceCue, voiceCuePhrase } from "@/lib/camara/voice-feedback";
 import { speak } from "@/lib/camara/voice-speak";
+import { findMarker, DEFAULT_MARKER_CONFIG, type RgbColor } from "@/lib/camara/marker-tracker";
 import { MALA_TECNICA } from "@/components/gym/set-type-modal";
 import { useGymStore } from "@/lib/store/gymStore";
+
+/** Cuántas posiciones recientes del marcador se dibujan como "cola" (sección 3.4/3.6 del
+ * roadmap) — a ~20-30fps, ~40 puntos son 1.5-2s de recorrido, suficiente para ver la trayectoria
+ * de la última repetición sin que la pantalla se llene de líneas viejas. */
+const BAR_TRAIL_MAX_POINTS = 40;
+/** Resolución fija y chica para el muestreo del marcador en cada frame — no hace falta la
+ * resolución completa del video para encontrar un bloque de color, y leer menos píxeles por
+ * frame es más liviano (sección 3.4: esto corre ADEMÁS de la detección de pose). */
+const MARKER_SAMPLE_WIDTH = 160;
+const MARKER_SAMPLE_HEIGHT = 120;
 
 const ORIENTATION_LABEL: Record<Orientation, string> = {
   profile: "Vista: de costado",
@@ -125,6 +136,15 @@ function CamaraEntrenadorContent() {
     voiceEnabledRef.current = voiceEnabled;
   }, [voiceEnabled]);
 
+  // Seguimiento de barra/mancuerna por marcador de color (roadmap sección 3.4/3.6, punto 4) —
+  // opcional, el usuario calibra tocando el marcador en la pantalla antes de usarlo. Canvas fuera
+  // del DOM, solo para leer píxeles del video (nunca se muestra).
+  const [calibratingMarker, setCalibratingMarker] = useState(false);
+  const [markerColor, setMarkerColor] = useState<RgbColor | null>(null);
+  const markerColorRef = useRef<RgbColor | null>(null);
+  const markerSampleCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const barTrailRef = useRef<{ x: number; y: number }[]>([]);
+
   const [zoom, setZoom] = useState(1);
   const [zoomCaps, setZoomCaps] = useState<{ min: number; max: number; step: number } | null>(null);
   const pinchRef = useRef<{ startDist: number; startZoom: number } | null>(null);
@@ -150,6 +170,7 @@ function CamaraEntrenadorContent() {
     smoothedAngleRef.current = null;
     shallowStreakRef.current = 0;
     prevVerdictRef.current = "neutral";
+    barTrailRef.current = [];
     setTechniqueSuggestion(false);
     setTechniqueNoteWanted(false);
     setExerciseId(id);
@@ -181,6 +202,42 @@ function CamaraEntrenadorContent() {
   function pinchDistance(touches: React.TouchList | TouchList) {
     const [a, b] = [touches[0], touches[1]];
     return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+  }
+
+  /** Toma el color exacto del punto tocado, leyendo el frame actual del video — un pixel alcanza,
+   * un marcador de verdad ocupa muchos píxeles del mismo color alrededor del punto tocado. */
+  function handleMarkerCalibrationTap(e: React.MouseEvent<HTMLDivElement>) {
+    if (!calibratingMarker) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || video.videoWidth === 0) return;
+    const rect = canvas.getBoundingClientRect();
+    const xRatio = (e.clientX - rect.left) / rect.width;
+    const yRatio = (e.clientY - rect.top) / rect.height;
+    if (xRatio < 0 || xRatio > 1 || yRatio < 0 || yRatio > 1) return;
+
+    const sampleCanvas = document.createElement("canvas");
+    sampleCanvas.width = video.videoWidth;
+    sampleCanvas.height = video.videoHeight;
+    const sctx = sampleCanvas.getContext("2d");
+    if (!sctx) return;
+    sctx.drawImage(video, 0, 0, sampleCanvas.width, sampleCanvas.height);
+    const px = Math.min(Math.round(xRatio * sampleCanvas.width), sampleCanvas.width - 1);
+    const py = Math.min(Math.round(yRatio * sampleCanvas.height), sampleCanvas.height - 1);
+    const pixel = sctx.getImageData(px, py, 1, 1).data;
+    const color: RgbColor = { r: pixel[0], g: pixel[1], b: pixel[2] };
+
+    markerColorRef.current = color;
+    setMarkerColor(color);
+    barTrailRef.current = [];
+    setCalibratingMarker(false);
+  }
+
+  function clearMarker() {
+    markerColorRef.current = null;
+    setMarkerColor(null);
+    barTrailRef.current = [];
+    setCalibratingMarker(false);
   }
 
   const drawFrame = useCallback(
@@ -321,6 +378,55 @@ function CamaraEntrenadorContent() {
         } else {
           drawFrame(undefined, null);
         }
+
+        // Seguimiento de barra/mancuerna por marcador de color (roadmap sección 3.4/3.6, punto 4)
+        // — independiente de si se encontró pose en este frame, corre siempre que hay un color
+        // calibrado. Se dibuja ENCIMA de lo que `drawFrame` ya pintó este mismo frame, no lo pisa.
+        if (markerColorRef.current) {
+          if (!markerSampleCanvasRef.current) {
+            const c = document.createElement("canvas");
+            c.width = MARKER_SAMPLE_WIDTH;
+            c.height = MARKER_SAMPLE_HEIGHT;
+            markerSampleCanvasRef.current = c;
+          }
+          const sampleCanvas = markerSampleCanvasRef.current;
+          const sctx = sampleCanvas.getContext("2d");
+          if (sctx) {
+            sctx.drawImage(video, 0, 0, MARKER_SAMPLE_WIDTH, MARKER_SAMPLE_HEIGHT);
+            const imageData = sctx.getImageData(0, 0, MARKER_SAMPLE_WIDTH, MARKER_SAMPLE_HEIGHT);
+            const pos = findMarker(imageData.data, MARKER_SAMPLE_WIDTH, MARKER_SAMPLE_HEIGHT, {
+              ...DEFAULT_MARKER_CONFIG,
+              targetColor: markerColorRef.current,
+            });
+            if (pos) {
+              const trail = barTrailRef.current;
+              trail.push({ x: pos.xNorm, y: pos.yNorm });
+              if (trail.length > BAR_TRAIL_MAX_POINTS) trail.shift();
+            }
+
+            const overlayCanvas = canvasRef.current;
+            const overlayCtx = overlayCanvas?.getContext("2d");
+            const trail = barTrailRef.current;
+            if (overlayCanvas && overlayCtx && trail.length > 1) {
+              overlayCtx.strokeStyle = "#fbbf24";
+              overlayCtx.lineWidth = 3;
+              overlayCtx.lineCap = "round";
+              overlayCtx.beginPath();
+              trail.forEach((p, i) => {
+                const x = p.x * overlayCanvas.width;
+                const y = p.y * overlayCanvas.height;
+                if (i === 0) overlayCtx.moveTo(x, y);
+                else overlayCtx.lineTo(x, y);
+              });
+              overlayCtx.stroke();
+              const last = trail[trail.length - 1];
+              overlayCtx.fillStyle = "#fbbf24";
+              overlayCtx.beginPath();
+              overlayCtx.arc(last.x * overlayCanvas.width, last.y * overlayCanvas.height, 7, 0, Math.PI * 2);
+              overlayCtx.fill();
+            }
+          }
+        }
       }
       rafRef.current = requestAnimationFrame(tick);
     }
@@ -442,6 +548,7 @@ function CamaraEntrenadorContent() {
         onTouchEnd={(e) => {
           if (e.touches.length < 2) pinchRef.current = null;
         }}
+        onClick={handleMarkerCalibrationTap}
       >
         <video
           ref={videoRef}
@@ -632,6 +739,47 @@ function CamaraEntrenadorContent() {
               <Minus size={16} />
             </button>
           </div>
+
+          {/* Seguimiento de barra/mancuerna por marcador de color (roadmap sección 3.4/3.6, punto
+              4) — opcional: sin calibrar, un toque arranca la calibración; ya calibrado, muestra
+              el color elegido y una cruz para apagarlo. */}
+          <div className="absolute bottom-6 left-4 flex items-center gap-2">
+            <button
+              onClick={() => setCalibratingMarker(true)}
+              aria-label={markerColor ? "Recalibrar el marcador de la barra" : "Calibrar marcador de la barra"}
+              className="w-10 h-10 rounded-full bg-black/55 flex items-center justify-center cursor-pointer active:scale-95"
+            >
+              {markerColor ? (
+                <span
+                  className="w-5 h-5 rounded-full border border-white/50"
+                  style={{ background: `rgb(${markerColor.r},${markerColor.g},${markerColor.b})` }}
+                />
+              ) : (
+                <Target size={16} />
+              )}
+            </button>
+            {markerColor && (
+              <button
+                onClick={clearMarker}
+                aria-label="Apagar el seguimiento de la barra"
+                className="w-7 h-7 rounded-full bg-black/55 flex items-center justify-center cursor-pointer active:scale-95 text-white/70"
+              >
+                <XIcon size={13} />
+              </button>
+            )}
+          </div>
+
+          {calibratingMarker && (
+            <div className="absolute top-32 left-4 right-4 flex items-center justify-between gap-2 bg-black/80 rounded-2xl px-4 py-3">
+              <p className="text-sm text-white">Tocá el marcador de color en la pantalla.</p>
+              <button
+                onClick={() => setCalibratingMarker(false)}
+                className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80 cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>
