@@ -68,6 +68,37 @@ const squat = CAMERA_EXERCISE_CONFIGS.sentadilla;
   ok(state.core.reps === 2, `repetición real posterior, bien espaciada, sí cuenta (dio ${state.core.reps})`);
 }
 
+// --- ventana de arranque: una repetición completa DENTRO de la ventana no cuenta, pero la fase
+//     se respeta igual (no queda "trabado" en un estado inconsistente) ---
+{
+  let state = initGuardedRepCounter(squat);
+  const graceEndAt = 1500;
+  let t = 0;
+  for (const angle of [170, 120, 90, 120, 170]) {
+    state = stepGuardedRepCounter(state, angle, squat, t, 500, graceEndAt);
+    t += 300;
+  }
+  ok(state.core.reps === 0, `repetición completa DENTRO de la ventana de arranque: no cuenta (dio ${state.core.reps})`);
+  ok(state.core.phase === "extended", "la fase sí queda consistente con el ángulo real (parado), aunque no se haya contado");
+
+  // Después de la ventana, una repetición real sí cuenta.
+  for (const angle of [120, 90, 120, 170]) {
+    state = stepGuardedRepCounter(state, angle, squat, t, 500, graceEndAt);
+    t += 300;
+  }
+  ok(state.core.reps === 1, `repetición después de la ventana de arranque: cuenta normal (dio ${state.core.reps})`);
+}
+{
+  // graceEndAt=0 (default): sin ventana de arranque, comportamiento igual que antes de este cambio.
+  let state = initGuardedRepCounter(squat);
+  let t = 0;
+  for (const angle of [170, 120, 90, 120, 170]) {
+    state = stepGuardedRepCounter(state, angle, squat, t, 500);
+    t += 300;
+  }
+  ok(state.core.reps === 1, `sin graceEndAt (default): cuenta como siempre (dio ${state.core.reps})`);
+}
+
 console.log(`\n${checks - fails}/${checks} checks OK`);
 if (fails > 0) {
   console.log(`${fails} FALLARON`);

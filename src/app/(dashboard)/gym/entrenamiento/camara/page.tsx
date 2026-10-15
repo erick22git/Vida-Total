@@ -24,13 +24,13 @@ import { calibrateDevice } from "@/lib/camara/run-calibration";
 import { getPoseLandmarker } from "@/lib/camara/pose-landmarker-singleton";
 import { kneeAngleOriented, elbowAngleOriented, detectOrientation, type Orientation, type Side } from "@/lib/camara/pose-landmarks";
 import { smoothAngle, ANGLE_SMOOTHING_ALPHA } from "@/lib/camara/angle-smoother";
-import { initGuardedRepCounter, stepGuardedRepCounter, MIN_REP_INTERVAL_MS } from "@/lib/camara/rep-counter-guard";
+import { initGuardedRepCounter, stepGuardedRepCounter, MIN_REP_INTERVAL_MS, STARTUP_GRACE_MS } from "@/lib/camara/rep-counter-guard";
 import { CAMERA_EXERCISE_CONFIGS, type CameraExerciseId } from "@/lib/camara/exercise-configs";
 import { formVerdict, segmentVerdicts, SKELETON_SEGMENTS, type FormVerdict } from "@/lib/camara/overlay-segments";
 import { nextShallowRepStreak, shouldSuggestTechniqueNote } from "@/lib/camara/technique-tracker";
 import { bodyLineWidthScale } from "@/lib/camara/body-scale";
 import { decideVoiceCue, voiceCuePhrase } from "@/lib/camara/voice-feedback";
-import { speak } from "@/lib/camara/voice-speak";
+import { speak, unlockVoice } from "@/lib/camara/voice-speak";
 import { findMarker, DEFAULT_MARKER_CONFIG, type RgbColor } from "@/lib/camara/marker-tracker";
 import { MALA_TECNICA } from "@/components/gym/set-type-modal";
 import { useGymStore } from "@/lib/store/gymStore";
@@ -136,6 +136,24 @@ function CamaraEntrenadorContent() {
     voiceEnabledRef.current = voiceEnabled;
   }, [voiceEnabled]);
 
+  // Muchos navegadores de celular exigen que el primer `speak()` de la página ocurra dentro de un
+  // gesto real del usuario, o lo descartan en silencio — por eso no se escuchaba nada. Un solo tap
+  // en cualquier parte de la pantalla alcanza para desbloquearlo antes de que el conteo dispare el
+  // primer aviso automático.
+  useEffect(() => {
+    function unlock() {
+      unlockVoice();
+      window.removeEventListener("pointerdown", unlock);
+    }
+    window.addEventListener("pointerdown", unlock, { once: true });
+    return () => window.removeEventListener("pointerdown", unlock);
+  }, []);
+
+  // Ventana de arranque (roadmap sección 3.6): ninguna repetición cuenta en los primeros
+  // STARTUP_GRACE_MS desde que arranca el loop de detección — evita reps fantasma mientras la
+  // cámara/el usuario todavía se están acomodando.
+  const graceEndAtRef = useRef(0);
+
   // Seguimiento de barra/mancuerna por marcador de color (roadmap sección 3.4/3.6, punto 4) —
   // opcional, el usuario calibra tocando el marcador en la pantalla antes de usarlo. Canvas fuera
   // del DOM, solo para leer píxeles del video (nunca se muestra).
@@ -171,6 +189,7 @@ function CamaraEntrenadorContent() {
     shallowStreakRef.current = 0;
     prevVerdictRef.current = "neutral";
     barTrailRef.current = [];
+    graceEndAtRef.current = performance.now() + STARTUP_GRACE_MS;
     setTechniqueSuggestion(false);
     setTechniqueNoteWanted(false);
     setExerciseId(id);
@@ -305,6 +324,7 @@ function CamaraEntrenadorContent() {
     const video = videoRef.current;
     if (!video) return;
     runningRef.current = true;
+    graceEndAtRef.current = performance.now() + STARTUP_GRACE_MS;
 
     function tick() {
       if (!runningRef.current || !video) return;
@@ -344,7 +364,7 @@ function CamaraEntrenadorContent() {
           smoothedAngleRef.current = smoothed;
 
           const prevState = repStateRef.current;
-          const nextState = stepGuardedRepCounter(prevState, smoothed, config, now, MIN_REP_INTERVAL_MS);
+          const nextState = stepGuardedRepCounter(prevState, smoothed, config, now, MIN_REP_INTERVAL_MS, graceEndAtRef.current);
           const changed = nextState.core.reps !== prevState.core.reps || nextState.core.phase !== prevState.core.phase;
           repStateRef.current = nextState;
           const v = formVerdict(nextState.core, config);

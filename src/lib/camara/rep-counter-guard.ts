@@ -10,6 +10,14 @@ import { initRepCounter, stepRepCounter, type RepCounterConfig, type RepCounterS
  * tarda más que esto en cualquiera de los 4 ejercicios de la primera tanda), no de la literatura. */
 export const MIN_REP_INTERVAL_MS = 500;
 
+/** Cuánto dura la "ventana de arranque" en la que ninguna repetición se cuenta todavía, aunque la
+ * máquina de estados vea un ciclo completo — recién empezando, la cámara/el usuario todavía se
+ * están acomodando, y un ángulo que se confunde en ese momento no debería contarse como una
+ * repetición real (reportado en una prueba real: reps fantasma justo al arrancar). Criterio
+ * propio, no de la literatura — suficiente para que la imagen se asiente, poco para no hacer
+ * esperar al usuario antes de poder contar de verdad. */
+export const STARTUP_GRACE_MS = 1500;
+
 export interface GuardedRepState {
   core: RepCounterState;
   /** `performance.now()` (o el reloj que use el caller) de la última repetición que SÍ se contó —
@@ -33,13 +41,17 @@ export function stepGuardedRepCounter(
   config: RepCounterConfig,
   now: number,
   minIntervalMs: number = MIN_REP_INTERVAL_MS,
+  /** `performance.now()` hasta el cual ninguna repetición cuenta todavía — ver `STARTUP_GRACE_MS`.
+   * `0` (default) desactiva la ventana de arranque (útil en tests que no la necesitan). */
+  graceEndAt: number = 0,
 ): GuardedRepState {
   const nextCore = stepRepCounter(state.core, angle, config);
   if (nextCore.reps <= state.core.reps) {
     return { core: nextCore, lastRepAt: state.lastRepAt };
   }
-  const tooSoon = state.lastRepAt !== null && now - state.lastRepAt < minIntervalMs;
-  if (tooSoon) {
+  const tooSoonAfterLastRep = state.lastRepAt !== null && now - state.lastRepAt < minIntervalMs;
+  const withinStartupGrace = now < graceEndAt;
+  if (tooSoonAfterLastRep || withinStartupGrace) {
     return { core: { ...nextCore, reps: state.core.reps }, lastRepAt: state.lastRepAt };
   }
   return { core: nextCore, lastRepAt: now };
