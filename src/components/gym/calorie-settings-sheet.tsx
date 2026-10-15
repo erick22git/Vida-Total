@@ -87,13 +87,13 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
   const sugerencia = useMemo(() => {
     const completo = !!perfilMetas.sexo && !!perfilMetas.edad && !!perfilMetas.pesoKg;
     if (!completo) return null;
-    const macros = suggestMacros({ ...perfilMetas, kcal: calorieGoal });
+    const macros = suggestMacros({ ...perfilMetas, kcal: calorieGoal, phase: phaseReview.phase });
     return {
       macros,
       piso: reviewCalorieGoal(perfilMetas.sexo, calorieGoal),
       actual: macrosVsMeta(calorieGoal, proteinGoal, carbsGoal, fatGoal),
     };
-  }, [perfilMetas, calorieGoal, proteinGoal, carbsGoal, fatGoal]);
+  }, [perfilMetas, calorieGoal, proteinGoal, carbsGoal, fatGoal, phaseReview.phase]);
   const aguaSug = useMemo(() => getNutrientTargets(perfilMetas).targets.aguaBebidas, [perfilMetas]);
   const [calorieInput, setCalorieInput] = useState(String(calorieGoal));
   const [proteinInput, setProteinInput] = useState(String(proteinGoal));

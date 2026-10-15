@@ -74,6 +74,19 @@ ok(bajo.proteinaG * 4 <= 0.35 * 1200 + 4, "la proteína no pasa del 35 % de la e
 ok(bajo.avisos.length > 0, "avisa si no cabe en el AMDR");
 ok(suggestMacros({ kcal: 2000 }).avisos.length > 0, "sin peso: avisa que es un porcentaje");
 
+// Proteína ubicada según la fase (dentro del mismo rango ISSN 1.4-2.0 g/kg, sin inventar un rango nuevo).
+const base = { sexo: "hombre" as const, edad: 28, pesoKg: 80, kcal: 2500, entrena: true };
+const sinFase = suggestMacros(base);
+const enDeficit = suggestMacros({ ...base, phase: "deficit" });
+const enVolumen = suggestMacros({ ...base, phase: "volumen" });
+const enMantenimiento = suggestMacros({ ...base, phase: "mantenimiento" });
+ok(enDeficit.proteinaG > sinFase.proteinaG, `déficit sube la proteína hacia el extremo alto (sin fase ${sinFase.proteinaG}g, déficit ${enDeficit.proteinaG}g)`);
+ok(enVolumen.proteinaG < sinFase.proteinaG, `volumen baja la proteína hacia el extremo bajo-medio (sin fase ${sinFase.proteinaG}g, volumen ${enVolumen.proteinaG}g)`);
+ok(enMantenimiento.proteinaG === sinFase.proteinaG, "mantenimiento: mismo punto medio que sin fase (sin cambio de comportamiento previo)");
+ok(enDeficit.proteinaG <= enDeficit.proteinaMaxG && enVolumen.proteinaG >= enVolumen.proteinaMinG, "la proteína sesgada por fase nunca se sale del rango min/max ya calculado");
+ok(enDeficit.avisos.some((a) => a.includes("déficit")), "avisa por qué la proteína está en la parte alta en déficit");
+ok(enVolumen.avisos.some((a) => a.includes("volumen")), "avisa por qué se reparte más hacia carbos en volumen");
+
 // Piso calórico y macros guardados.
 ok(reviewCalorieGoal("mujer", 1100).bajoPiso && !reviewCalorieGoal("mujer", 1200).bajoPiso, "piso 1200 mujer");
 ok(reviewCalorieGoal("hombre", 1400).bajoPiso && !reviewCalorieGoal("hombre", 1500).bajoPiso, "piso 1500 hombre");

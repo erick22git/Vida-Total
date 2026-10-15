@@ -150,12 +150,31 @@ export interface MacroSuggestion {
   avisos: string[];
 }
 
+/** Fase de calorías (volumen/mantenimiento/déficit, ver `calorie-periodization.ts`) — para dónde
+ * ubicar la proteína DENTRO del rango ISSN ya existente (1,4-2,0 g/kg), sin agregar un número nuevo:
+ * - Déficit: hacia el extremo alto del rango — Helms et al. 2014 ("evidence-based recommendations for
+ *   natural bodybuilding contest preparation") recomienda proteína más alta durante una restricción
+ *   calórica para ayudar a preservar masa muscular.
+ * - Volumen: hacia el extremo bajo-medio — el meta-análisis de Morton et al. 2018 (Br J Sports Med)
+ *   encontró que más de ~1,6 g/kg no aporta un beneficio adicional claro para la mayoría construyendo
+ *   músculo, lo que deja más margen de energía para carbohidratos (rendimiento/glucógeno en volumen).
+ * - Mantenimiento o sin fase: punto medio del rango, como antes de este cambio.
+ */
+export type MacroPhase = "volumen" | "mantenimiento" | "deficit";
+
+function proteinWeightForPhase(phase: MacroPhase | undefined): number {
+  if (phase === "deficit") return 0.85;
+  if (phase === "volumen") return 0.3;
+  return 0.5;
+}
+
 /**
  * Reparto de macros que SUMA la meta calórica (4 kcal/g proteína y carbos, 9 kcal/g grasa). La proteína sale de g/kg
- * (RDA 0,8 g/kg; si entrena, el punto medio del rango ISSN de 1,4–2,0 g/kg) y no de un porcentaje; la grasa parte del
- * punto medio del AMDR (27,5 %) y los carbos son el resto, ajustando la grasa si los carbos se salen de 45–65 %.
+ * (RDA 0,8 g/kg; si entrena, un punto dentro del rango ISSN de 1,4–2,0 g/kg, ubicado según `phase` — ver
+ * `proteinWeightForPhase`) y no de un porcentaje; la grasa parte del punto medio del AMDR (27,5 %) y los carbos son
+ * el resto, ajustando la grasa si los carbos se salen de 45–65 %.
  */
-export function suggestMacros(p: TargetProfile & { kcal: number }): MacroSuggestion {
+export function suggestMacros(p: TargetProfile & { kcal: number; phase?: MacroPhase }): MacroSuggestion {
   const kcal = p.kcal;
   const avisos: string[] = [];
   const band = bandIndex(p.edad);
@@ -169,7 +188,10 @@ export function suggestMacros(p: TargetProfile & { kcal: number }): MacroSuggest
   if (p.entrena && peso) {
     proteinaMin = ISSN_PROTEINA.minGporKg * peso;
     proteinaMax = Math.min(capProt, ISSN_PROTEINA.maxGporKg * peso);
-    proteina = Math.min(capProt, ((ISSN_PROTEINA.minGporKg + ISSN_PROTEINA.maxGporKg) / 2) * peso);
+    const w = proteinWeightForPhase(p.phase);
+    proteina = Math.min(capProt, (ISSN_PROTEINA.minGporKg + w * (ISSN_PROTEINA.maxGporKg - ISSN_PROTEINA.minGporKg)) * peso);
+    if (p.phase === "deficit") avisos.push("En déficit, la proteína sugerida está en la parte alta de tu rango — ayuda a preservar músculo mientras bajás de peso.");
+    if (p.phase === "volumen") avisos.push("En volumen, con la proteína ya en un buen nivel, el resto se reparte más hacia carbohidratos para rendir mejor en el gimnasio.");
   } else if (peso) {
     proteina = Math.min(capProt, rdaGkg * peso);
   } else {
