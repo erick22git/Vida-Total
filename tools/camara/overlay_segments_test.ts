@@ -60,6 +60,15 @@ ok(formVerdict(state("extending", false), CAMERA_EXERCISE_CONFIGS.curl_biceps) =
   ok(!anyNonNeutral, "ejercicio de codo: ningún segmento se resalta (sin validación de forma para press/curl)");
 }
 
+// --- "both" (cámara de frente, roadmap sección 3.6): resalta las DOS rodillas, no solo una ---
+{
+  const verdicts = segmentVerdicts("both", "knee", "ok");
+  let okCount = 0;
+  for (const v of verdicts.values()) if (v === "ok") okCount++;
+  ok(okCount === 4, `"both": 4 segmentos (las 2 rodillas, 2 cada una) toman el veredicto (dio ${okCount})`);
+  ok(verdicts.get("23-25") === "ok" && verdicts.get("24-26") === "ok", "\"both\" resalta tanto la rodilla izquierda como la derecha");
+}
+
 console.log(`\n${checks - fails}/${checks} checks OK`);
 if (fails > 0) {
   console.log(`${fails} FALLARON`);

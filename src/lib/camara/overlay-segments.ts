@@ -4,7 +4,7 @@
  * esqueleto en este frame. Nunca pinta "todo el esqueleto" en rojo — solo el segmento de la
  * articulación evaluada, y solo para los ejercicios con `hasFormValidation: true`.
  */
-import { POSE_LANDMARK_INDEX, type Side } from "./pose-landmarks";
+import { POSE_LANDMARK_INDEX, type Side, type TrackedSide } from "./pose-landmarks";
 import type { RepCounterState } from "./rep-counter";
 import type { CameraExerciseConfig } from "./exercise-configs";
 
@@ -64,16 +64,21 @@ function segmentKey(a: number, b: number): string {
 }
 
 /** Color por segmento para este frame: todo el esqueleto en neutro salvo los segmentos de la
- * articulación evaluada (hoy, rodilla del lado trackeado), que toman `formResult`. */
+ * articulación evaluada (hoy, rodilla del lado trackeado), que toman `formResult`. `trackedSide`
+ * puede ser "both" (cámara de frente, sección 3.6 del roadmap: se promedian ambos lados en vez de
+ * fijar uno) — ahí se resaltan las dos rodillas, no solo una. */
 export function segmentVerdicts(
-  trackedSide: Side,
+  trackedSide: TrackedSide,
   joint: CameraExerciseConfig["joint"],
   formResult: FormVerdict,
 ): Map<string, FormVerdict> {
   const map = new Map<string, FormVerdict>();
   for (const [a, b] of SKELETON_SEGMENTS) map.set(segmentKey(a, b), "neutral");
   if (joint === "knee") {
-    for (const [a, b] of KNEE_SEGMENTS_BY_SIDE[trackedSide]) map.set(segmentKey(a, b), formResult);
+    const sides: Side[] = trackedSide === "both" ? ["left", "right"] : [trackedSide];
+    for (const s of sides) {
+      for (const [a, b] of KNEE_SEGMENTS_BY_SIDE[s]) map.set(segmentKey(a, b), formResult);
+    }
   }
   // joint === "elbow" (press de banca / curl): sin segmentos resaltados — hasFormValidation es
   // false para ambos, formResult ya viene "neutral" desde el caller en ese caso.

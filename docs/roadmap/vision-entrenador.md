@@ -511,13 +511,20 @@ revisadas (PozeFit, exer, trAIner, TeamFit) usan exactamente este patrón: pose 
 frase corta hablada ("bajá más la cadera", "listo, buena rep"). Es, de las cuatro cosas pedidas, la
 de menor costo de implementación y mayor valor percibido inmediato.
 
-### 3.6 Qué hacer con todo esto — orden recomendado (no implementado todavía, a la espera de tu OK)
+### 3.6 Qué hacer con todo esto — orden recomendado
 
-1. **Arreglar el conteo de reps (sección 3.1) — urgente, bloqueante.** Sin esto el conteo automático
-   no sirve. Fijar el lado elegido al entrar a la serie (no recalcularlo cada frame), suavizar el
-   ángulo (promedio móvil corto), exigir una visibilidad mínima de los landmarks usados, y un tiempo
-   mínimo entre repeticiones contadas (~0.5-0.7s). Esto es una corrección acotada sobre el código que
-   ya existe, no una fase nueva.
+1. **Arreglar el conteo de reps (sección 3.1) — IMPLEMENTADO.** `pose-landmarks.ts` agrega
+   `detectOrientation` (perfil vs. frente, por la `z` de hombros/caderas, sin modelo nuevo) y
+   `kneeAngleOriented`/`elbowAngleOriented`: de perfil fija el lado una sola vez por serie (nunca
+   más recalculado cada frame, que era la causa real del parpadeo), de frente promedia ambos
+   lados en vez de parpadear entre ellos. `angle-smoother.ts` suaviza el ángulo con un promedio
+   móvil exponencial antes de usarlo. `rep-counter-guard.ts` exige un mínimo de 500ms entre
+   repeticiones contadas. Si la orientación no se puede determinar con confianza razonable, la
+   pantalla avisa ("Ubicá la cámara de costado para mejor precisión") en vez de adivinar y contar
+   mal, y no avanza el conteo hasta que se resuelva. Hay también un indicador en vivo de qué
+   orientación detectó la app, y el contador de reps ahora pasa de blanco a negro (el mismo par de
+   colores que usa el resto de la app para "completado") exactamente cuando se cuenta una
+   repetición válida — antes usaba un verde suelto. 94/94 tests acumulados del módulo cámara.
 2. **Voz en tiempo real (sección 3.5)** — mismo nivel de esfuerzo bajo, construye sobre datos que ya
    calculamos, sin modelo nuevo.
 3. **Esqueleto "de extremidades" (cápsulas gruesas en vez de líneas, sección 3.3)** — cambio de

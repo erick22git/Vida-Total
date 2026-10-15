@@ -10,6 +10,10 @@
  * esto mide ángulos articulares desde una sola cámara, no reconstrucción volumétrica real — la
  * coordenada `z` que da MediaPipe es una estimación de profundidad del propio modelo, no una
  * medición estereoscópica, así que no se usa para el ángulo que se le muestra al usuario.
+ *
+ * La coordenada `z` SÍ se usa para otra cosa (sección 3.6 del roadmap): detectar si la cámara está
+ * de perfil o de frente respecto al movimiento (`detectOrientation`), para elegir entre fijar un
+ * lado o promediar ambos — ver el comentario de esa función.
  */
 
 export interface Landmark {
@@ -120,4 +124,96 @@ export function kneeAngleWithSide(landmarks: PoseLandmarks, side?: Side): { angl
 export function elbowAngleWithSide(landmarks: PoseLandmarks, side?: Side): { angle: number; side: Side } {
   const s = side ?? pickMoreVisibleSide(landmarks, ELBOW_JOINTS);
   return { angle: elbowAngle(landmarks, s), side: s };
+}
+
+// --- Orientación de cámara (sección 3.6 del roadmap: arreglo del conteo de reps) ---
+
+export type Orientation = "profile" | "frontal" | "unknown";
+
+/** De perfil, un lado del cuerpo queda mucho más cerca de la cámara que el otro — por eso se puede
+ * detectar sin un modelo nuevo, comparando la `z` (profundidad que ya da MediaPipe) de cada
+ * articulación contra su par del otro lado. Umbral propio (no de la literatura): la diferencia de
+ * profundidad entre hombros/caderas, normalizada por el ancho real entre ellos en la imagen (para
+ * que no dependa de qué tan cerca está la persona de la cámara), tiene que superar esta fracción
+ * para considerarse "de perfil" en vez de ruido normal de la estimación de profundidad. */
+export const PROFILE_Z_RATIO_THRESHOLD = 0.35;
+
+/** Visibilidad mínima para confiar en un landmark al decidir orientación — más estricto que el
+ * elegir-el-lado-más-visible de `pickMoreVisibleSide`, porque acá un landmark poco confiable puede
+ * hacer pasar un "de frente" por "de perfil" (o viceversa), no solo elegir mal un lado. */
+export const MIN_ORIENTATION_VISIBILITY = 0.5;
+
+function xyDistance(a: Landmark, b: Landmark): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+const ORIENTATION_PAIRS: ReadonlyArray<readonly [number, number]> = [
+  [POSE_LANDMARK_INDEX.leftShoulder, POSE_LANDMARK_INDEX.rightShoulder],
+  [POSE_LANDMARK_INDEX.leftHip, POSE_LANDMARK_INDEX.rightHip],
+];
+
+/**
+ * "profile" (de perfil/lateral), "frontal" (de frente a la cámara), o "unknown" si no hay
+ * suficiente señal confiable para decidir — en ese caso el caller debe avisar en pantalla en vez
+ * de adivinar y arriesgarse a contar mal (sección 3.6 del roadmap).
+ */
+export function detectOrientation(landmarks: PoseLandmarks): Orientation {
+  const ratios: number[] = [];
+  for (const [leftIdx, rightIdx] of ORIENTATION_PAIRS) {
+    const left = landmarks[leftIdx];
+    const right = landmarks[rightIdx];
+    if (!left || !right) continue;
+    if ((left.visibility ?? 1) < MIN_ORIENTATION_VISIBILITY || (right.visibility ?? 1) < MIN_ORIENTATION_VISIBILITY) continue;
+    if (left.z === undefined || right.z === undefined) continue;
+    const width = xyDistance(left, right);
+    if (width <= 0) continue;
+    ratios.push(Math.abs(left.z - right.z) / width);
+  }
+  // Si ninguno de los pares (hombros, caderas) dio una lectura confiable, no hay base para decidir.
+  if (ratios.length === 0) return "unknown";
+  const avgRatio = ratios.reduce((sum, r) => sum + r, 0) / ratios.length;
+  if (avgRatio >= PROFILE_Z_RATIO_THRESHOLD) return "profile";
+  // "frontal" solo si TODOS los pares pudieron medirse — si alguno quedó afuera por baja
+  // visibilidad, la lectura es parcial y no alcanza la confianza para decidir "frontal" tampoco.
+  if (ratios.length < ORIENTATION_PAIRS.length) return "unknown";
+  return "frontal";
+}
+
+export type TrackedSide = Side | "both";
+
+function averageDefinedAngles(a: number, b: number): number {
+  const values = [a, b].filter((v) => !Number.isNaN(v));
+  if (values.length === 0) return NaN;
+  return values.reduce((sum, v) => sum + v, 0) / values.length;
+}
+
+/**
+ * Ángulo de rodilla ya resuelto según la orientación detectada: de perfil fija el lado que el
+ * caller ya eligió (`lockedSide`, normalmente una sola vez por serie — ver `detectOrientation`),
+ * de frente promedia ambos lados en vez de "parpadear" entre uno y otro cada frame (la causa real
+ * del sobre-conteo reportado en press de banca, sección 3.1 del roadmap).
+ */
+export function kneeAngleOriented(
+  landmarks: PoseLandmarks,
+  orientation: Orientation,
+  lockedSide: Side | null,
+): { angle: number; trackedSide: TrackedSide } {
+  if (orientation === "frontal") {
+    return { angle: averageDefinedAngles(kneeAngle(landmarks, "left"), kneeAngle(landmarks, "right")), trackedSide: "both" };
+  }
+  const side = lockedSide ?? pickMoreVisibleSide(landmarks, KNEE_JOINTS);
+  return { angle: kneeAngle(landmarks, side), trackedSide: side };
+}
+
+/** Igual que `kneeAngleOriented`, para el ángulo de codo (press de banca, curl). */
+export function elbowAngleOriented(
+  landmarks: PoseLandmarks,
+  orientation: Orientation,
+  lockedSide: Side | null,
+): { angle: number; trackedSide: TrackedSide } {
+  if (orientation === "frontal") {
+    return { angle: averageDefinedAngles(elbowAngle(landmarks, "left"), elbowAngle(landmarks, "right")), trackedSide: "both" };
+  }
+  const side = lockedSide ?? pickMoreVisibleSide(landmarks, ELBOW_JOINTS);
+  return { angle: elbowAngle(landmarks, side), trackedSide: side };
 }

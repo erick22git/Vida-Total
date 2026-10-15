@@ -22,12 +22,19 @@ import { useCameraCalibrationStore } from "@/lib/store/cameraCalibrationStore";
 import { deviceFingerprint, shouldRecalibrate, type DeviceCalibrationResult } from "@/lib/camara/device-calibration";
 import { calibrateDevice } from "@/lib/camara/run-calibration";
 import { getPoseLandmarker } from "@/lib/camara/pose-landmarker-singleton";
-import { kneeAngleWithSide, elbowAngleWithSide } from "@/lib/camara/pose-landmarks";
-import { initRepCounter, stepRepCounter, type RepCounterState } from "@/lib/camara/rep-counter";
+import { kneeAngleOriented, elbowAngleOriented, detectOrientation, type Orientation, type Side } from "@/lib/camara/pose-landmarks";
+import { smoothAngle, ANGLE_SMOOTHING_ALPHA } from "@/lib/camara/angle-smoother";
+import { initGuardedRepCounter, stepGuardedRepCounter, MIN_REP_INTERVAL_MS } from "@/lib/camara/rep-counter-guard";
 import { CAMERA_EXERCISE_CONFIGS, type CameraExerciseId } from "@/lib/camara/exercise-configs";
 import { formVerdict, segmentVerdicts, SKELETON_SEGMENTS, type FormVerdict } from "@/lib/camara/overlay-segments";
 import { nextShallowRepStreak, shouldSuggestTechniqueNote } from "@/lib/camara/technique-tracker";
 import { MALA_TECNICA } from "@/components/gym/set-type-modal";
+
+const ORIENTATION_LABEL: Record<Orientation, string> = {
+  profile: "Vista: de costado",
+  frontal: "Vista: de frente (promediando ambos lados)",
+  unknown: "Ubicá la cámara de costado para mejor precisión",
+};
 
 function isCameraExerciseId(value: string | null): value is CameraExerciseId {
   return !!value && value in CAMERA_EXERCISE_CONFIGS;
@@ -78,7 +85,18 @@ function CamaraEntrenadorContent() {
 
   const [exerciseId, setExerciseId] = useState<CameraExerciseId>(linkedExercise ?? "sentadilla");
   const exerciseIdRef = useRef(exerciseId);
-  const repStateRef = useRef<RepCounterState>(initRepCounter(CAMERA_EXERCISE_CONFIGS[exerciseId]));
+  const repStateRef = useRef(initGuardedRepCounter(CAMERA_EXERCISE_CONFIGS[exerciseId]));
+
+  // Arreglo del conteo de reps (roadmap sección 3.1/3.6): orientación detectada por z (perfil vs.
+  // frente), lado fijado una vez por serie cuando es de perfil, y ángulo suavizado — en vez de
+  // recalcular el lado en cada frame y usar el ángulo crudo, que era la causa real del sobre-conteo.
+  const [orientation, setOrientation] = useState<Orientation>("unknown");
+  const orientationRef = useRef<Orientation>("unknown");
+  const lockedSideRef = useRef<Side | null>(null);
+  const [lockedSideDisplay, setLockedSideDisplay] = useState<Side | null>(null);
+  const smoothedAngleRef = useRef<number | null>(null);
+  const [repFlash, setRepFlash] = useState(false);
+  const repFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [status, setStatus] = useState<Status>("starting");
   const [calibrationInfo, setCalibrationInfo] = useState<DeviceCalibrationResult | null>(null);
@@ -103,7 +121,10 @@ function CamaraEntrenadorContent() {
 
   const selectExercise = useCallback((id: CameraExerciseId) => {
     exerciseIdRef.current = id;
-    repStateRef.current = initRepCounter(CAMERA_EXERCISE_CONFIGS[id]);
+    repStateRef.current = initGuardedRepCounter(CAMERA_EXERCISE_CONFIGS[id]);
+    lockedSideRef.current = null;
+    setLockedSideDisplay(null);
+    smoothedAngleRef.current = null;
     shallowStreakRef.current = 0;
     setTechniqueSuggestion(false);
     setTechniqueNoteWanted(false);
@@ -115,6 +136,7 @@ function CamaraEntrenadorContent() {
   const stopCamera = useCallback(() => {
     runningRef.current = false;
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    if (repFlashTimeoutRef.current) clearTimeout(repFlashTimeoutRef.current);
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     trackRef.current = null;
@@ -194,24 +216,57 @@ function CamaraEntrenadorContent() {
         const config = CAMERA_EXERCISE_CONFIGS[exerciseIdRef.current];
 
         if (landmarks) {
-          const { angle, side } =
-            config.joint === "knee" ? kneeAngleWithSide(landmarks) : elbowAngleWithSide(landmarks);
-          const prevState = repStateRef.current;
-          const nextState = stepRepCounter(prevState, angle, config);
-          const changed = nextState.reps !== prevState.reps || nextState.phase !== prevState.phase;
-          repStateRef.current = nextState;
-          const v = formVerdict(nextState, config);
-          const segments = segmentVerdicts(side, config.joint, v);
-          drawFrame(landmarks, segments);
-          if (changed) {
-            setReps(nextState.reps);
-            setVerdict(v);
+          const currentOrientation = detectOrientation(landmarks);
+          if (currentOrientation !== orientationRef.current) {
+            orientationRef.current = currentOrientation;
+            setOrientation(currentOrientation);
+          }
 
-            const streak = nextShallowRepStreak(prevState, nextState, config, shallowStreakRef.current);
-            shallowStreakRef.current = streak;
-            if (shouldSuggestTechniqueNote(streak)) {
-              shallowStreakRef.current = 0;
-              setTechniqueSuggestion(true);
+          if (currentOrientation === "unknown") {
+            // Sin suficiente confianza para decidir perfil/frente: se dibuja el esqueleto (neutral)
+            // para que el usuario vea que lo detecta, pero NO se avanza el conteo — mejor avisar
+            // que adivinar y contar mal (roadmap sección 3.6).
+            drawFrame(landmarks, null);
+          } else {
+            const { angle: rawAngle, trackedSide } =
+              config.joint === "knee"
+                ? kneeAngleOriented(landmarks, currentOrientation, lockedSideRef.current)
+                : elbowAngleOriented(landmarks, currentOrientation, lockedSideRef.current);
+            // De perfil, el lado se fija UNA sola vez por serie (la primera vez que hay una lectura
+            // de perfil) — nunca se vuelve a recalcular frame a frame, que era la causa real del
+            // "parpadeo" y el sobre-conteo.
+            if (currentOrientation === "profile" && lockedSideRef.current === null && trackedSide !== "both") {
+              lockedSideRef.current = trackedSide;
+              setLockedSideDisplay(trackedSide);
+            }
+
+            const smoothed = smoothAngle(smoothedAngleRef.current, rawAngle, ANGLE_SMOOTHING_ALPHA);
+            smoothedAngleRef.current = smoothed;
+
+            const prevState = repStateRef.current;
+            const nextState = stepGuardedRepCounter(prevState, smoothed, config, now, MIN_REP_INTERVAL_MS);
+            const changed = nextState.core.reps !== prevState.core.reps || nextState.core.phase !== prevState.core.phase;
+            repStateRef.current = nextState;
+            const v = formVerdict(nextState.core, config);
+            const segments = segmentVerdicts(trackedSide, config.joint, v);
+            drawFrame(landmarks, segments);
+
+            if (nextState.core.reps > prevState.core.reps) {
+              setRepFlash(true);
+              if (repFlashTimeoutRef.current) clearTimeout(repFlashTimeoutRef.current);
+              repFlashTimeoutRef.current = setTimeout(() => setRepFlash(false), 350);
+            }
+
+            if (changed) {
+              setReps(nextState.core.reps);
+              setVerdict(v);
+
+              const streak = nextShallowRepStreak(prevState.core, nextState.core, config, shallowStreakRef.current);
+              shallowStreakRef.current = streak;
+              if (shouldSuggestTechniqueNote(streak)) {
+                shallowStreakRef.current = 0;
+                setTechniqueSuggestion(true);
+              }
             }
           }
         } else {
@@ -423,10 +478,24 @@ function CamaraEntrenadorContent() {
       {/* Controles y contador — solo con cámara en vivo activa */}
       {status === "ready" && (
         <>
+          {/* Arreglo del conteo de reps (roadmap sección 3.6): qué orientación detectó la app en
+              vivo, para que el usuario pueda corregir la posición del teléfono ANTES de empezar la
+              serie, no después. */}
+          <div
+            className="absolute top-16 left-1/2 -translate-x-1/2 rounded-full px-3.5 py-1.5 text-xs font-medium whitespace-nowrap"
+            style={{
+              background: orientation === "unknown" ? "rgba(245,158,11,0.25)" : "rgba(0,0,0,0.55)",
+              color: orientation === "unknown" ? "#fbbf24" : "rgba(255,255,255,0.85)",
+            }}
+          >
+            {ORIENTATION_LABEL[orientation]}
+            {orientation === "profile" && lockedSideDisplay && (lockedSideDisplay === "left" ? " (lado izquierdo)" : " (lado derecho)")}
+          </div>
+
           {/* Fase E: aparece solo cuando varias repeticiones SEGUIDAS no llegaron a la
               profundidad citada — nunca por un intento aislado (technique-tracker.ts). */}
           {techniqueSuggestion && (
-            <div className="absolute top-20 left-4 right-4 flex flex-col gap-2 bg-black/80 rounded-2xl p-3.5">
+            <div className="absolute top-32 left-4 right-4 flex flex-col gap-2 bg-black/80 rounded-2xl p-3.5">
               <p className="text-sm text-white">
                 Varias repeticiones no llegaron a la profundidad esperada. ¿Marcar &ldquo;{MALA_TECNICA}&rdquo; en esta serie?
               </p>
@@ -456,6 +525,14 @@ function CamaraEntrenadorContent() {
               {linkedToRealSet ? "Conectado a tu serie — nada se guarda hasta que confirmes" : "Prototipo — no guarda en tu registro todavía"}
             </p>
             <div className="flex items-center gap-3 bg-black/55 rounded-2xl px-5 py-2.5">
+              {/* Blanco por defecto, pasa a negro en el momento exacto que se cuenta una
+                  repetición válida — mismo par de colores que usa el resto de la app para marcar
+                  "completado" (fondo blanco + texto/ícono negro), no un color suelto nuevo. */}
+              <span
+                className="w-7 h-7 rounded-full shrink-0 transition-colors duration-150"
+                style={{ background: repFlash ? "#000" : "#fff", border: "1.5px solid rgba(255,255,255,0.6)" }}
+                aria-hidden
+              />
               <span className="text-3xl font-bold tabular-nums">{reps}</span>
               <span className="text-xs text-white/70">reps detectadas</span>
               {config.hasFormValidation && (
