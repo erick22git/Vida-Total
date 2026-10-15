@@ -21,6 +21,9 @@ export interface ProgressionSetResult {
   reps: number;
   rir?: number;
   fallo?: boolean;
+  /** El selector de tipo de serie es el lugar donde esto se marca en la práctica (`fallo` booleano
+   * nunca se setea desde ninguna pantalla todavía) — se cuenta como fallo cualquiera de los dos. */
+  tipo?: string;
   completado: boolean;
 }
 
@@ -53,7 +56,7 @@ export function suggestNextWeight(input: ProgressionInput): ProgressionSuggestio
   const working = input.lastSets.filter((s) => s.completado);
   const lastWeight = working.length ? working[working.length - 1].peso : 0;
   const rirValues = working.map((s) => s.rir).filter((r): r is number => typeof r === "number");
-  const anyFailure = working.some((s) => s.fallo);
+  const anyFailure = working.some((s) => s.fallo || s.tipo === "fallo");
   const hitTargetReps = working.length > 0 && working.every((s, i) => s.reps >= (input.referenceReps[i] ?? s.reps));
 
   if (working.length === 0 || rirValues.length === 0) {

@@ -57,6 +57,16 @@ function ok(cond: boolean, msg: string) {
   ok(r.suggestedWeightKg === 0, `nunca sugiere peso negativo, se clampa a 0 (dio ${r.suggestedWeightKg})`);
 }
 
+// --- "al fallo" marcado por tipo (como se marca en la práctica, no por el booleano fallo) ---
+{
+  const r = suggestNextWeight({
+    lastSets: [{ peso: 60, reps: 6, rir: 0, tipo: "fallo", completado: true }],
+    referenceReps: [8],
+  });
+  ok(r.anyFailure === true, `tipo "fallo" cuenta como fallo aunque el booleano fallo no esté seteado (dio ${r.anyFailure})`);
+  ok(r.decision === "bajar", `con tipo "fallo" + no llegó a las reps: decide bajar (dio ${r.decision})`);
+}
+
 // --- RIR intermedio: mantener ---
 {
   const r = suggestNextWeight({

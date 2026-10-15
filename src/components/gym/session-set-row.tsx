@@ -260,6 +260,8 @@ export function SessionSetRow({
         onSelect={(tipo) => onChange(tipo === "descendente" ? { tipo, ...initialDropsetPatch(set) } : { tipo })}
         notas={set.notas}
         onNotasChange={(notas) => onChange({ notas: notas || undefined })}
+        rir={set.rir}
+        onRirChange={(rir) => onChange({ rir })}
       />
       <NumericKeypad
         open={kgKeypadOpen}

@@ -11,6 +11,11 @@ import { SET_TYPE_META, SET_TYPES } from "@/components/gym/set-type";
  * vez de duplicar el literal en otro archivo. */
 export const MALA_TECNICA = "Mala técnica";
 
+/** Opciones rápidas de RIR ("reps in reserve", cuánto margen quedó antes del fallo) — autorregulación
+ * con validez publicada (Helms et al. 2016), ya usada por `progressive-overload.ts` para sugerir el
+ * peso de la próxima sesión. `4` representa "4 o más" (mucho margen), no un tope exacto. */
+const RIR_OPTIONS = [0, 1, 2, 3, 4] as const;
+
 export function SetTypeModal({
   open,
   onClose,
@@ -18,6 +23,8 @@ export function SetTypeModal({
   onSelect,
   notas,
   onNotasChange,
+  rir,
+  onRirChange,
 }: {
   open: boolean;
   onClose: () => void;
@@ -26,6 +33,9 @@ export function SetTypeModal({
   /** Nota corta de la serie (Fase 2) — opcional: si no se pasa, no se muestra la sección de notas. */
   notas?: string;
   onNotasChange?: (notas: string) => void;
+  /** RIR de la serie — opcional: si no se pasa, no se muestra el selector. */
+  rir?: number;
+  onRirChange?: (rir: number | undefined) => void;
 }) {
   return (
     <ExpandSheet open={open} onClose={onClose} title="Seleccionar Tipo de Serie">
@@ -58,6 +68,31 @@ export function SetTypeModal({
           );
         })}
       </div>
+
+      {onRirChange && (
+        <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-white/10">
+          <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">RIR (reps que te quedaron en reserva)</span>
+          <div className="flex gap-1.5">
+            {RIR_OPTIONS.map((opt) => {
+              const active = rir === opt;
+              return (
+                <button
+                  key={opt}
+                  onClick={() => onRirChange(active ? undefined : opt)}
+                  className="flex-1 rounded-xl py-2 text-sm font-semibold cursor-pointer transition-colors"
+                  style={{
+                    background: active ? "#fff" : "rgba(255,255,255,0.06)",
+                    color: active ? "#000" : "rgba(255,255,255,0.7)",
+                  }}
+                >
+                  {opt === 4 ? "4+" : opt}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-white/35">0 = al fallo, no podías hacer ni una más. Esto activa la sugerencia de peso del Coach.</p>
+        </div>
+      )}
 
       {onNotasChange && (
         <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-white/10">
