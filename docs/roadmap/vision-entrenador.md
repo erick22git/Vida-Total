@@ -390,3 +390,142 @@ Las 5 fases del plan de arriba quedaron implementadas, cada una en su propio com
   "mala técnica" — sigue sin haber una fuente citable en grados para esos dos (sección 2.1.3).
 - La estimación de rendimiento de arranque (sección 2.1.4, ~12–20 fps) sigue marcada como
   "sin verificar" hasta que la auto-medición real (Fase A) corra en dispositivos de usuarios reales.
+
+## 3. Reporte de la primera prueba real (feedback del usuario) + investigación de "próximo nivel"
+
+Primera prueba en un dispositivo real (press de banca, simulación de 8 repeticiones): **el
+contador marcó 41**. Esto es un bug real, no una limitación teórica — se diagnostica abajo. Además,
+el usuario pidió investigar y reportar (sin implementar todavía) cómo acercarse a lo que hacen
+cámaras comerciales como BodyPark ATOM: esqueleto más realista (no solo "palitos"), segmentación
+del cuerpo por partes (gris/rojo/verde), seguimiento de la barra/mancuerna por separado del cuerpo,
+y corrección por voz en tiempo real.
+
+### 3.1 Diagnóstico del conteo de 41 en vez de 8 — causa real, en el código
+
+Leyendo `src/app/(dashboard)/gym/entrenamiento/camara/page.tsx` (el loop de detección), hay DOS
+causas concretas, no una sola, y las dos son conocidas en la literatura de conteo de reps por pose
+(ver fuentes en 3.4):
+
+1. **El lado (izquierda/derecha) se recalcula en CADA frame**, sin fijarlo (`kneeAngleWithSide` /
+   `elbowAngleWithSide` se llaman sin pasar `side`, así que `pickMoreVisibleSide` decide de nuevo 30
+   veces por segundo). Si la visibilidad de ambos lados es parecida — típico en press de banca
+   acostado mirando a la cámara de frente — el lado elegido puede "parpadear" entre izquierda y
+   derecha de un frame al siguiente. Como el brazo izquierdo y el derecho casi nunca están en el
+   ángulo exacto, cada parpadeo mete un salto brusco en el ángulo medido (ej. de 170° a 90° y de
+   vuelta, sin que el brazo se haya movido de verdad). La máquina de estados ve eso como
+   bajadas/subidas reales y cuenta repeticiones que nunca pasaron.
+2. **No hay ningún suavizado del ángulo ni umbral de confianza antes de usarlo.** El ángulo crudo
+   de MediaPipe, frame por frame, entra directo a `stepRepCounter` — cualquier ruido del modelo de
+   pose (manos borrosas, mala luz, landmark con `visibility` baja) se traduce 1 a 1 en una
+   repetición de más si el ruido alcanza a cruzar el umbral de ida y vuelta.
+3. **No hay un tiempo mínimo entre repeticiones contadas.** Una repetición real de press de banca
+   tarda al menos ~1 segundo; el código de hoy puede contar varias "repeticiones" en una fracción
+   de segundo si el ángulo oscila rápido.
+
+Ninguna de las tres causas es exclusiva de este proyecto — son justo los problemas que describen los
+papers y patentes de conteo de reps por pose que se citan en 3.4, y todos tienen arreglo conocido
+(sección 3.5). **No es necesario rehacer el enfoque de ángulos para arreglarlo** — con suavizado +
+lado fijo + tiempo mínimo entre reps + umbral de confianza, el mismo mecanismo que ya existe debería
+dejar de contar de más. Eso sí lo recomiendo arreglar ya, antes de seguir con cualquier otra fase,
+porque ahora mismo el conteo automático no es usable.
+
+### 3.2 Qué hace realmente un dispositivo como BodyPark ATOM (investigado, no asumido)
+
+Fuentes: [TechRadar — review del ATOM](https://techradar.com/health-fitness/i-went-into-testing-this-portable-ai-powered-personal-trainer-with-a-skeptical-mindset-but-came-out-seriously-impressed-at-its-movement-mapping-technology),
+[WellWorthy](https://wellworthy.com/?p=4209), [The Gadget Flow](https://thegadgetflow.com/product/bodypark-atom-ai-fitness-camera/),
+[Refractor.io](https://refractor.io/fitness/bodypark-atom-ai-portable-fitness-feedback/).
+
+- Es un **dispositivo dedicado** (cámara propia + procesamiento propio, ~$219), no una app corriendo
+  en el navegador — tiene mucho más presupuesto de cómputo que un celular con Chrome/Safari.
+  Trackea **34 puntos del cuerpo** (nosotros usamos los ~12 relevantes de los 33 de MediaPipe Pose —
+  mismo orden de magnitud) con un **96% de precisión reportado por el fabricante** (no un estudio
+  independiente), incluyendo un punto lumbar propio para postura que MediaPipe no da de fábrica.
+- **Conteo de reps + feedback de forma por voz**: sí, confirmado, es su función principal.
+  **No encontré ninguna mención de seguimiento de la barra/mancuerna por separado del cuerpo** en
+  ninguna de las fuentes revisadas — ni en reviews ni en las páginas de producto. Es posible que el
+  usuario esté pensando en una función de otro producto (hay varias cámaras de gimnasio en el
+  mercado) o en marketing que no se detalla en estas fuentes; no lo voy a dar por confirmado sin
+  verlo documentado.
+- **Conclusión:** lo que BodyPark SÍ hace (tracking de keypoints + voz) es, en esencia, lo mismo que
+  ya construimos (Fases A–E) — la diferencia es hardware dedicado y un modelo propio más grande, no
+  un enfoque conceptualmente distinto al de ángulos articulares.
+
+### 3.3 "Que no sean solo palitos, sino algo que simule las extremidades" — qué hay y qué cuesta
+
+Lo que se pidió es, en términos técnicos, **segmentación de partes del cuerpo** (pintar cada región
+de la imagen que pertenece a un brazo, pierna, torso, etc.), no solo puntos y líneas. Investigué qué
+existe hoy:
+
+- **Segmentación binaria (persona vs. fondo)**: el modelo "Selfie Segmentation" de MediaPipe hace
+  esto — separa a la persona del fondo, pero NO distingue brazo de pierna. Pensado para
+  videollamadas, no para esto.
+- **Segmentación multiclase existente**: hay un modelo que separa pelo/cara/cuerpo/ropa — 4-6 clases
+  muy generales, "cuerpo" sigue siendo una sola región (no separa brazo de pierna tampoco).
+  Fuente: [TensorFlow blog — Body Segmentation](https://blog.tensorflow.org/2022/01/body-segmentation.html).
+- **Segmentación por EXTREMIDAD individual (brazo izquierdo vs. derecho, pierna vs. pierna) no
+  encontré ningún modelo preentrenado liviano, listo para correr en navegador, que haga esto.**
+  Existen modelos de segmentación de partes humanas en investigación académica (ej. DensePose,
+  Human Parsing), pero son pesados (pensados para servidor con GPU, no para un celular en el
+  navegador) y no tienen el mismo soporte "listo para usar" que Pose Landmarker.
+- **Alternativa realista, con lo que ya tenemos:** en vez de segmentación real (pintar píxeles),
+  dibujar el esqueleto actual con **líneas MÁS GRUESAS en forma de cápsula** (óvalos entre
+  articulación y articulación, no líneas de 1px) da una sensación visual mucho más parecida a "ver
+  las extremidades" sin necesitar un modelo nuevo ni más cómputo — es un cambio de dibujo en el
+  canvas, no de IA. Esto es coloreado visual, no mejora la PRECISIÓN de la detección (que ya viene
+  de los ángulos, no del dibujo) — hay que ser claro con eso para no prometer más de lo que cambia.
+- **Grupos musculares en verde:** esto YA existe conceptualmente en la app (participación muscular
+  por ejercicio, `muscle-participation.ts`) — se podría, a futuro, resaltar sobre el dibujo del
+  cuerpo qué músculos trabaja el ejercicio activo (dato fijo del ejercicio, no algo que la cámara
+  "vea" en tiempo real) sin necesidad de segmentación tampoco.
+
+### 3.4 Seguimiento de la barra/mancuerna — es un problema DISTINTO al de la pose del cuerpo
+
+Investigué cómo lo hacen apps reales de "bar path"/VBT (velocity-based training):
+
+- **Con marcador (ArUco tag) pegado a la barra o el disco**: proyectos open-source
+  ([Raise The Bar / BarbellTrackingCode](https://github.com/dw2kim/BarbellTrackingCode),
+  [VBT-Barbell-Tracker](https://hackaday.io/project/170185)) usan OpenCV para seguir un marcador
+  conocido y calculan velocidad/trayectoria a partir de cuánto se mueve el marcador en píxeles por
+  frame, calibrado contra el tamaño real del disco (45cm estándar olímpico). Es la opción más
+  confiable y la más simple de construir, pero necesita que el usuario pegue o sostenga un marcador.
+- **Sin marcador, detectando el disco/barra directamente por IA**: apps comerciales como
+  [Metric](https://metric.coach) y RepSpeed dicen detectar la barra automáticamente en más de 60
+  ejercicios sin marcador — pero describen su método como "algoritmo patentado", sin publicar cómo
+  entrenaron el detector. Esto requeriría entrenar (o encontrar) un modelo de detección de objetos
+  específico para discos/barras, con su propio dataset — un proyecto de investigación/entrenamiento
+  de modelo aparte, no algo que MediaPipe Pose resuelva.
+- **Conclusión:** esto es una **segunda pieza de IA completamente separada** de la detección de pose
+  (un detector de objetos, no un estimador de pose), con su propio costo de investigación/datos. No
+  es una extensión natural de lo que ya tenemos — es un proyecto nuevo si se quiere hacer bien, y el
+  camino más realista para empezar sería pedirle al usuario un marcador simple (una pegatina de
+  color sólido conocido, por ejemplo) en vez de intentar detectar la barra "a ojo" sin nada.
+
+### 3.5 Corrección por voz en tiempo real — la mejora más barata de las cuatro
+
+A diferencia de la segmentación y el bar path, esto NO necesita ningún modelo nuevo: ya calculamos
+`formVerdict` (ok/insufficient/neutral) y el conteo de reps en cada frame — lo único que falta es
+convertir esos mismos datos en una frase corta hablada, usando la **Web Speech API
+(`SpeechSynthesisUtterance`)**, nativa del navegador, sin backend ni dependencia nueva, 100% local
+(mismo criterio de privacidad del resto del documento). Varias apps comerciales y de investigación
+revisadas (PozeFit, exer, trAIner, TeamFit) usan exactamente este patrón: pose → ángulo/regla →
+frase corta hablada ("bajá más la cadera", "listo, buena rep"). Es, de las cuatro cosas pedidas, la
+de menor costo de implementación y mayor valor percibido inmediato.
+
+### 3.6 Qué hacer con todo esto — orden recomendado (no implementado todavía, a la espera de tu OK)
+
+1. **Arreglar el conteo de reps (sección 3.1) — urgente, bloqueante.** Sin esto el conteo automático
+   no sirve. Fijar el lado elegido al entrar a la serie (no recalcularlo cada frame), suavizar el
+   ángulo (promedio móvil corto), exigir una visibilidad mínima de los landmarks usados, y un tiempo
+   mínimo entre repeticiones contadas (~0.5-0.7s). Esto es una corrección acotada sobre el código que
+   ya existe, no una fase nueva.
+2. **Voz en tiempo real (sección 3.5)** — mismo nivel de esfuerzo bajo, construye sobre datos que ya
+   calculamos, sin modelo nuevo.
+3. **Esqueleto "de extremidades" (cápsulas gruesas en vez de líneas, sección 3.3)** — cambio de
+   dibujo, esfuerzo medio, mejora visual pero no de precisión — dejar claro en la UI que es estético.
+4. **Segmentación real por partes del cuerpo y seguimiento de barra/mancuerna (secciones 3.3/3.4)**
+   — los dos proyectos más grandes, cada uno necesitaría su propia investigación técnica dedicada
+   (como se hizo para la Fase 5.0 de este documento) antes de tocar código: para segmentación, buscar
+   si ya existe un modelo multiclase de extremidades listo para navegador; para la barra, decidir si
+   se pide un marcador simple al usuario o se intenta un detector sin marcador (mucho más caro de
+   construir bien). Ninguno de los dos es una tarea de un commit — quedan para cuando se decida
+   retomarlos explícitamente, igual que el resto de este roadmap.
