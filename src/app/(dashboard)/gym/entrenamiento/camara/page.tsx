@@ -1,17 +1,22 @@
 "use client";
 
 /**
- * Fase C del roadmap de cámara en vivo (docs/roadmap/vision-entrenador.md). Primera pantalla con
- * algo visible para probar en el teléfono real: video + esqueleto superpuesto (verde/rojo según
- * el ángulo citado en la fuente, sección 2.1.3), zoom y pantalla completa.
+ * Fase C/D del roadmap de cámara en vivo (docs/roadmap/vision-entrenador.md). Video + esqueleto
+ * superpuesto (verde/rojo según el ángulo citado en la fuente, sección 2.1.3), zoom y pantalla
+ * completa.
  *
- * Todavía es un PROTOTIPO: el conteo de repeticiones se muestra en pantalla pero no se guarda en
- * ningún entrenamiento — esa conexión con el registro manual (sugerir y que el usuario confirme,
- * Opción 2 de la sección 2.1.8) es trabajo de la Fase D, no de esta pantalla.
+ * Dos formas de entrar:
+ * - Directo (sin query params): modo prototipo suelto, elegís el ejercicio acá mismo, el conteo se
+ *   muestra pero no se guarda en ningún lado (comportamiento original de la Fase C).
+ * - Desde una serie real (`?exercise=&camSetId=&returnTo=`, hoy solo desde
+ *   /gym/entrenamiento/activo vía el botón "Cámara" — sección 2.1.8, Opción 2): el ejercicio queda
+ *   fijo, aparece una barra para confirmar las reps detectadas, y solo al tocar "Confirmar" se
+ *   vuelve a `returnTo` con el número — la pantalla de origen es quien de verdad escribe el campo
+ *   de reps, esto nunca lo hace por su cuenta.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Maximize2, Minimize2, Plus, Minus, RotateCcw, AlertTriangle } from "lucide-react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft, Maximize2, Minimize2, Plus, Minus, RotateCcw, AlertTriangle, Check } from "lucide-react";
 import { GlassButton } from "@/components/glass/glass-button";
 import { useCameraCalibrationStore } from "@/lib/store/cameraCalibrationStore";
 import { deviceFingerprint, shouldRecalibrate, type DeviceCalibrationResult } from "@/lib/camara/device-calibration";
@@ -21,6 +26,10 @@ import { kneeAngleWithSide, elbowAngleWithSide } from "@/lib/camara/pose-landmar
 import { initRepCounter, stepRepCounter, type RepCounterState } from "@/lib/camara/rep-counter";
 import { CAMERA_EXERCISE_CONFIGS, type CameraExerciseId } from "@/lib/camara/exercise-configs";
 import { formVerdict, segmentVerdicts, SKELETON_SEGMENTS, type FormVerdict } from "@/lib/camara/overlay-segments";
+
+function isCameraExerciseId(value: string | null): value is CameraExerciseId {
+  return !!value && value in CAMERA_EXERCISE_CONFIGS;
+}
 
 type Status = "starting" | "camera_denied" | "calibrating" | "ready" | "fallback_manual";
 
@@ -39,7 +48,24 @@ const VERDICT_COLOR: Record<FormVerdict, string> = {
 };
 
 export default function CamaraEntrenadorPage() {
+  return (
+    <Suspense fallback={null}>
+      <CamaraEntrenadorContent />
+    </Suspense>
+  );
+}
+
+function CamaraEntrenadorContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const exerciseParam = searchParams.get("exercise");
+  const linkedExercise = isCameraExerciseId(exerciseParam) ? exerciseParam : null;
+  const camSetId = searchParams.get("camSetId");
+  const returnTo = searchParams.get("returnTo");
+  // Solo tiene sentido ofrecer "Confirmar" cuando venimos de una serie real con todo lo necesario
+  // para volver y aplicarlo — si falta alguno de los tres, se queda en modo prototipo suelto.
+  const linkedToRealSet = !!linkedExercise && !!camSetId && !!returnTo;
+
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -48,9 +74,9 @@ export default function CamaraEntrenadorPage() {
   const rafRef = useRef<number | null>(null);
   const runningRef = useRef(false);
 
-  const [exerciseId, setExerciseId] = useState<CameraExerciseId>("sentadilla");
+  const [exerciseId, setExerciseId] = useState<CameraExerciseId>(linkedExercise ?? "sentadilla");
   const exerciseIdRef = useRef(exerciseId);
-  const repStateRef = useRef<RepCounterState>(initRepCounter(CAMERA_EXERCISE_CONFIGS.sentadilla));
+  const repStateRef = useRef<RepCounterState>(initRepCounter(CAMERA_EXERCISE_CONFIGS[exerciseId]));
 
   const [status, setStatus] = useState<Status>("starting");
   const [calibrationInfo, setCalibrationInfo] = useState<DeviceCalibrationResult | null>(null);
@@ -260,6 +286,15 @@ export default function CamaraEntrenadorPage() {
     router.back();
   }
 
+  /** El único lugar donde se decide volver con un número — nunca se dispara solo, siempre por este
+   * botón (sección 2.1.8, Opción 2: "la cámara sugiere, el usuario confirma"). */
+  function confirmRepsAndReturn() {
+    if (!returnTo || !camSetId) return;
+    stopCamera();
+    const separator = returnTo.includes("?") ? "&" : "?";
+    router.push(`${returnTo}${separator}camSetId=${camSetId}&camReps=${reps}`);
+  }
+
   const config = CAMERA_EXERCISE_CONFIGS[exerciseId];
 
   return (
@@ -302,18 +337,24 @@ export default function CamaraEntrenadorPage() {
         >
           <ArrowLeft size={18} />
         </button>
-        <div className="flex gap-1.5 bg-black/50 rounded-full p-1">
-          {EXERCISE_ORDER.map((id) => (
-            <button
-              key={id}
-              onClick={() => selectExercise(id)}
-              className="px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors"
-              style={{ background: id === exerciseId ? "var(--gym, #22c55e)" : "transparent", color: id === exerciseId ? "#052e16" : "white" }}
-            >
-              {EXERCISE_LABELS[id]}
-            </button>
-          ))}
-        </div>
+        {linkedExercise ? (
+          // Viene de una serie real: el ejercicio ya quedó decidido allá, no se puede cambiar acá
+          // (cambiarlo rompería la relación con el `camSetId` al que se va a volver).
+          <div className="px-3 py-1.5 rounded-full text-xs font-medium bg-black/50">{EXERCISE_LABELS[exerciseId]}</div>
+        ) : (
+          <div className="flex gap-1.5 bg-black/50 rounded-full p-1">
+            {EXERCISE_ORDER.map((id) => (
+              <button
+                key={id}
+                onClick={() => selectExercise(id)}
+                className="px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors"
+                style={{ background: id === exerciseId ? "var(--gym, #22c55e)" : "transparent", color: id === exerciseId ? "#052e16" : "white" }}
+              >
+                {EXERCISE_LABELS[id]}
+              </button>
+            ))}
+          </div>
+        )}
         <button
           onClick={toggleFullscreen}
           aria-label="Pantalla completa"
@@ -360,8 +401,10 @@ export default function CamaraEntrenadorPage() {
       {/* Controles y contador — solo con cámara en vivo activa */}
       {status === "ready" && (
         <>
-          <div className="absolute bottom-24 left-0 right-0 flex flex-col items-center gap-1">
-            <p className="text-[11px] uppercase tracking-wide text-white/50">Prototipo — no guarda en tu registro todavía</p>
+          <div className="absolute bottom-24 left-0 right-0 flex flex-col items-center gap-2">
+            <p className="text-[11px] uppercase tracking-wide text-white/50">
+              {linkedToRealSet ? "Conectado a tu serie — nada se guarda hasta que confirmes" : "Prototipo — no guarda en tu registro todavía"}
+            </p>
             <div className="flex items-center gap-3 bg-black/55 rounded-2xl px-5 py-2.5">
               <span className="text-3xl font-bold tabular-nums">{reps}</span>
               <span className="text-xs text-white/70">reps detectadas</span>
@@ -374,6 +417,16 @@ export default function CamaraEntrenadorPage() {
                 </span>
               )}
             </div>
+            {linkedToRealSet && (
+              <button
+                onClick={confirmRepsAndReturn}
+                disabled={reps === 0}
+                className="flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-default active:scale-95 transition-transform"
+                style={{ background: "#22c55e", color: "#052e16" }}
+              >
+                <Check size={16} /> Confirmar {reps} {reps === 1 ? "repetición" : "repeticiones"}
+              </button>
+            )}
           </div>
 
           <div className="absolute bottom-6 right-4 flex flex-col items-center bg-black/55 rounded-xl overflow-hidden">

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Dumbbell,
   Plus,
@@ -13,6 +13,7 @@ import {
   Sparkles,
   Trash2,
   Hash,
+  Camera as CameraIcon,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassButton } from "@/components/glass/glass-button";
@@ -28,13 +29,24 @@ import { SessionTimer } from "@/components/gym/session-timer";
 import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
 import { SetTypeModal } from "@/components/gym/set-type-modal";
 import { useGymStore } from "@/lib/store/gymStore";
-import { blockRoundCount, dropsOf, initialDropsetPatch, nextAfterSet, previaLabelFor } from "@/lib/gym-utils";
+import { blockRoundCount, dropsOf, initialDropsetPatch, nextAfterSet, previaLabelFor, withFixed } from "@/lib/gym-utils";
 import { unlockAudio } from "@/lib/sound/sound-engine";
 import { RankIcon } from "@/components/gym/rank-icon";
 import { useRankProfile } from "@/lib/gym/use-rank";
+import { notify } from "@/lib/notify/use-notify";
+import { cameraExerciseIdFor } from "@/lib/camara/exercise-id-map";
 
 export default function ActiveWorkoutPage() {
+  return (
+    <Suspense fallback={null}>
+      <ActiveWorkoutContent />
+    </Suspense>
+  );
+}
+
+function ActiveWorkoutContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const allExercises = useAllExercises();
   const activeSession = useGymStore((s) => s.activeSession);
   const { profile: rankProfile } = useRankProfile();
@@ -80,6 +92,35 @@ export default function ActiveWorkoutPage() {
     }
   }, [activeSession, router]);
 
+  // Fase D del roadmap de cámara en vivo (docs/roadmap/vision-entrenador.md, sección 2.1.8,
+  // Opción 2): vuelve de /gym/entrenamiento/camara con ?camSetId=&camReps= después de que el
+  // usuario YA confirmó el número ahí — acá solo se aplica al campo de reps de esa serie, nunca
+  // se guarda sola sin ese paso de confirmación previo. Mismo patrón de "parámetro de una sola
+  // vez + limpiar la URL" que usa el escáner de comida con `?agregado=`.
+  useEffect(() => {
+    const camReps = searchParams.get("camReps");
+    const camSetId = searchParams.get("camSetId");
+    if (!camReps || !camSetId || !activeSession) return;
+    const repsNum = Number(camReps);
+    if (!Number.isFinite(repsNum) || repsNum < 0) return;
+    const logIndex = activeSession.ejercicios.findIndex((e) => e.sets.some((s) => s.id === camSetId));
+    if (logIndex === -1) {
+      router.replace("/gym/entrenamiento/activo");
+      return;
+    }
+    const log = activeSession.ejercicios[logIndex];
+    const targetSet = log.sets.find((s) => s.id === camSetId)!;
+    updateSet(log.exerciseId, camSetId, { reps: repsNum, fijados: withFixed(targetSet, "reps", true) });
+    notify({
+      type: "agent-result",
+      priority: "low",
+      title: "Repeticiones de la cámara aplicadas",
+      message: `${repsNum} reps cargadas en la serie — revisalas antes de tildarla.`,
+    });
+    router.replace("/gym/entrenamiento/activo");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!activeSession) {
     return (
       <div className="flex flex-col gap-6 items-center text-center py-16">
@@ -97,6 +138,11 @@ export default function ActiveWorkoutPage() {
   const total = ejercicios.length;
   const currentLog = ejercicios[activeExerciseIndex];
   const exercise = allExercises.find((e) => e.id === currentLog.exerciseId);
+  // Fase D del roadmap de cámara en vivo: solo para las variantes "canónicas" mapeadas (sección
+  // 2.1.3) y solo fuera de superserie/bloque — el bloque cambia de ejercicio activo entre rondas
+  // y hoy esto no sigue ese cambio, así que se deja afuera en vez de arriesgar aplicar las reps a
+  // la serie equivocada.
+  const cameraExerciseId = cameraExerciseIdFor(currentLog.exerciseId);
   // Las series de calentamiento no cuentan como series de trabajo (ni en "x/y" ni en el avance).
   const workingSets = currentLog.sets.filter((s) => s.tipo !== "calentamiento");
   const completedSets = workingSets.filter((s) => s.completado).length;
@@ -286,6 +332,19 @@ export default function ActiveWorkoutPage() {
         <PillActionButton icon={StickyNote} title="Notas" onClick={() => setNotesOpen(true)} active={!!currentLog.nota} />
         <PillActionButton icon={Clock} title="Descanso" badge={formatRestDuration(restSeconds)} onClick={() => setRestConfigOpen(true)} />
         <PillActionButton icon={Sparkles} title="IA" onClick={() => setAiComingSoonOpen(true)} />
+        {cameraExerciseId && !isBlock && (
+          <PillActionButton
+            icon={CameraIcon}
+            title="Cámara (beta)"
+            onClick={() => {
+              if (!firstUncheckedSet) return;
+              router.push(
+                `/gym/entrenamiento/camara?exercise=${cameraExerciseId}&camSetId=${firstUncheckedSet.id}&returnTo=${encodeURIComponent("/gym/entrenamiento/activo")}`,
+              );
+            }}
+            className={!firstUncheckedSet ? "opacity-40 pointer-events-none" : ""}
+          />
+        )}
         <PillActionButton
           icon={Trash2}
           title="Eliminar"
