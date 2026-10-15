@@ -26,6 +26,8 @@ import { kneeAngleWithSide, elbowAngleWithSide } from "@/lib/camara/pose-landmar
 import { initRepCounter, stepRepCounter, type RepCounterState } from "@/lib/camara/rep-counter";
 import { CAMERA_EXERCISE_CONFIGS, type CameraExerciseId } from "@/lib/camara/exercise-configs";
 import { formVerdict, segmentVerdicts, SKELETON_SEGMENTS, type FormVerdict } from "@/lib/camara/overlay-segments";
+import { nextShallowRepStreak, shouldSuggestTechniqueNote } from "@/lib/camara/technique-tracker";
+import { MALA_TECNICA } from "@/components/gym/set-type-modal";
 
 function isCameraExerciseId(value: string | null): value is CameraExerciseId {
   return !!value && value in CAMERA_EXERCISE_CONFIGS;
@@ -83,6 +85,14 @@ function CamaraEntrenadorContent() {
   const [reps, setReps] = useState(0);
   const [verdict, setVerdict] = useState<FormVerdict>("neutral");
 
+  // Fase E: racha de repeticiones que no llegaron a la profundidad citada — sugiere la nota "mala
+  // técnica" solo cuando se repite seguido (sección technique-tracker.ts), nunca por un intento
+  // aislado. `techniqueNoteWanted` es la decisión del usuario sobre esa sugerencia, se manda junto
+  // con la confirmación de reps — nunca se escribe sola.
+  const shallowStreakRef = useRef(0);
+  const [techniqueSuggestion, setTechniqueSuggestion] = useState(false);
+  const [techniqueNoteWanted, setTechniqueNoteWanted] = useState(false);
+
   const [zoom, setZoom] = useState(1);
   const [zoomCaps, setZoomCaps] = useState<{ min: number; max: number; step: number } | null>(null);
   const pinchRef = useRef<{ startDist: number; startZoom: number } | null>(null);
@@ -94,6 +104,9 @@ function CamaraEntrenadorContent() {
   const selectExercise = useCallback((id: CameraExerciseId) => {
     exerciseIdRef.current = id;
     repStateRef.current = initRepCounter(CAMERA_EXERCISE_CONFIGS[id]);
+    shallowStreakRef.current = 0;
+    setTechniqueSuggestion(false);
+    setTechniqueNoteWanted(false);
     setExerciseId(id);
     setReps(0);
     setVerdict("neutral");
@@ -183,8 +196,9 @@ function CamaraEntrenadorContent() {
         if (landmarks) {
           const { angle, side } =
             config.joint === "knee" ? kneeAngleWithSide(landmarks) : elbowAngleWithSide(landmarks);
-          const nextState = stepRepCounter(repStateRef.current, angle, config);
-          const changed = nextState.reps !== repStateRef.current.reps || nextState.phase !== repStateRef.current.phase;
+          const prevState = repStateRef.current;
+          const nextState = stepRepCounter(prevState, angle, config);
+          const changed = nextState.reps !== prevState.reps || nextState.phase !== prevState.phase;
           repStateRef.current = nextState;
           const v = formVerdict(nextState, config);
           const segments = segmentVerdicts(side, config.joint, v);
@@ -192,6 +206,13 @@ function CamaraEntrenadorContent() {
           if (changed) {
             setReps(nextState.reps);
             setVerdict(v);
+
+            const streak = nextShallowRepStreak(prevState, nextState, config, shallowStreakRef.current);
+            shallowStreakRef.current = streak;
+            if (shouldSuggestTechniqueNote(streak)) {
+              shallowStreakRef.current = 0;
+              setTechniqueSuggestion(true);
+            }
           }
         } else {
           drawFrame(undefined, null);
@@ -292,7 +313,8 @@ function CamaraEntrenadorContent() {
     if (!returnTo || !camSetId) return;
     stopCamera();
     const separator = returnTo.includes("?") ? "&" : "?";
-    router.push(`${returnTo}${separator}camSetId=${camSetId}&camReps=${reps}`);
+    const notaParam = techniqueNoteWanted ? "&camNota=1" : "";
+    router.push(`${returnTo}${separator}camSetId=${camSetId}&camReps=${reps}${notaParam}`);
   }
 
   const config = CAMERA_EXERCISE_CONFIGS[exerciseId];
@@ -401,6 +423,34 @@ function CamaraEntrenadorContent() {
       {/* Controles y contador — solo con cámara en vivo activa */}
       {status === "ready" && (
         <>
+          {/* Fase E: aparece solo cuando varias repeticiones SEGUIDAS no llegaron a la
+              profundidad citada — nunca por un intento aislado (technique-tracker.ts). */}
+          {techniqueSuggestion && (
+            <div className="absolute top-20 left-4 right-4 flex flex-col gap-2 bg-black/80 rounded-2xl p-3.5">
+              <p className="text-sm text-white">
+                Varias repeticiones no llegaron a la profundidad esperada. ¿Marcar &ldquo;{MALA_TECNICA}&rdquo; en esta serie?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setTechniqueNoteWanted(true);
+                    setTechniqueSuggestion(false);
+                  }}
+                  className="flex-1 rounded-xl py-2 text-sm font-semibold cursor-pointer"
+                  style={{ background: "#ef4444", color: "white" }}
+                >
+                  Marcar
+                </button>
+                <button
+                  onClick={() => setTechniqueSuggestion(false)}
+                  className="flex-1 rounded-xl py-2 text-sm font-semibold cursor-pointer bg-white/10 text-white/80"
+                >
+                  No, gracias
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="absolute bottom-24 left-0 right-0 flex flex-col items-center gap-2">
             <p className="text-[11px] uppercase tracking-wide text-white/50">
               {linkedToRealSet ? "Conectado a tu serie — nada se guarda hasta que confirmes" : "Prototipo — no guarda en tu registro todavía"}
@@ -417,6 +467,14 @@ function CamaraEntrenadorContent() {
                 </span>
               )}
             </div>
+            {techniqueNoteWanted && (
+              <button
+                onClick={() => setTechniqueNoteWanted(false)}
+                className="text-xs text-white/70 bg-white/10 rounded-full px-3 py-1 cursor-pointer"
+              >
+                + nota &ldquo;{MALA_TECNICA}&rdquo; (tocá para quitarla)
+              </button>
+            )}
             {linkedToRealSet && (
               <button
                 onClick={confirmRepsAndReturn}

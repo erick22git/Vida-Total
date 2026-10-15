@@ -27,7 +27,7 @@ import { RestDurationModal, formatRestDuration } from "@/components/gym/rest-dur
 import { PillActionButton } from "@/components/gym/pill-action-button";
 import { SessionTimer } from "@/components/gym/session-timer";
 import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
-import { SetTypeModal } from "@/components/gym/set-type-modal";
+import { SetTypeModal, MALA_TECNICA } from "@/components/gym/set-type-modal";
 import { useGymStore } from "@/lib/store/gymStore";
 import { blockRoundCount, dropsOf, initialDropsetPatch, nextAfterSet, previaLabelFor, withFixed } from "@/lib/gym-utils";
 import { unlockAudio } from "@/lib/sound/sound-engine";
@@ -110,12 +110,22 @@ function ActiveWorkoutContent() {
     }
     const log = activeSession.ejercicios[logIndex];
     const targetSet = log.sets.find((s) => s.id === camSetId)!;
-    updateSet(log.exerciseId, camSetId, { reps: repsNum, fijados: withFixed(targetSet, "reps", true) });
+    const patch: Parameters<typeof updateSet>[2] = { reps: repsNum, fijados: withFixed(targetSet, "reps", true) };
+    // Fase E: la cámara sugirió marcar "mala técnica" (varias repeticiones seguidas sin llegar a
+    // la profundidad citada) y el usuario lo confirmó allá — se agrega sin pisar una nota propia
+    // que ya hubiera, igual que el resto de notas manuales.
+    if (searchParams.get("camNota") === "1") {
+      const existing = (targetSet.notas ?? "").trim();
+      patch.notas = existing && existing !== MALA_TECNICA ? `${existing} · ${MALA_TECNICA}` : MALA_TECNICA;
+    }
+    updateSet(log.exerciseId, camSetId, patch);
     notify({
       type: "agent-result",
       priority: "low",
       title: "Repeticiones de la cámara aplicadas",
-      message: `${repsNum} reps cargadas en la serie — revisalas antes de tildarla.`,
+      message: patch.notas
+        ? `${repsNum} reps y la nota "${MALA_TECNICA}" cargadas — revisalas antes de tildar la serie.`
+        : `${repsNum} reps cargadas en la serie — revisalas antes de tildarla.`,
     });
     router.replace("/gym/entrenamiento/activo");
     // eslint-disable-next-line react-hooks/exhaustive-deps

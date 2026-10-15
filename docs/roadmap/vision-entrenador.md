@@ -1,9 +1,12 @@
-# Roadmap: visión por cámara y fotos (NO implementado)
+# Roadmap: visión por cámara y fotos
 
-Este documento es un plan para una **fase futura separada**, no una tarea en curso. Nada de lo que
-describe acá está implementado — el entrenador basado en datos (motor de hipertrofia, perfil
-avanzado, Rango, pantalla Coach) es la base que debe estar sólida antes de retomar esto. Se retoma
-recién cuando el usuario lo pida explícitamente.
+**Estado (sección 2, cámara en vivo): Fases A–E implementadas.** El conteo de reps por cámara con
+sugerencia de confirmación (sección 2.1.8) y de nota "mala técnica" (sección 2.1.9/Fase E) están en
+`src/lib/camara/` y conectadas a `/gym/entrenamiento/activo` y `/gym/entrenamiento/camara`. El
+resumen de cada fase queda al final de la sección 2 ("Estado de implementación"). La sección 1
+(estimación de % de grasa por foto) sigue sin implementar — es un problema más abierto (necesita un
+modelo entrenado contra un método de referencia que esta app no tiene) y queda para cuando el
+usuario lo pida explícitamente.
 
 ## 1. Estimación de % de grasa por fotos
 
@@ -347,4 +350,43 @@ coloreado de forma (sin fuente confiable aún, sección 2.1.3); estimación de %
 (sección 1, problema más abierto, queda de último en cualquier caso); cualquier ejercicio fuera de
 los 4 de la primera tanda.
 
-Quedo esperando tu aprobación de este plan de fases antes de escribir el primer módulo de código.
+## Estado de implementación (Fases A–E)
+
+Las 5 fases del plan de arriba quedaron implementadas, cada una en su propio commit:
+
+- **Fase A** (auto-medición y degradación, sección 2.1.9): `src/lib/camara/device-calibration.ts`
+  (pura) + `run-calibration.ts` (glue de navegador) + `cameraCalibrationStore.ts` (persistencia por
+  dispositivo). Reemplaza el benchmark manual de un solo dispositivo: cada teléfono real se mide
+  solo (2.5s por escalón de resolución) la primera vez que abre la cámara.
+- **Fase B** (ángulos + conteo de reps, secciones 2.1.3/2.1.8): `pose-landmarks.ts` (ángulo de
+  rodilla/cadera/codo, 2D a propósito, elige el lado más visible), `rep-counter.ts` (máquina de
+  estados con histéresis), `exercise-configs.ts` (umbrales citados para los 4 ejercicios de la
+  primera tanda).
+- **Fase C** (overlay visual, sección 2.1.7): pantalla `/gym/entrenamiento/camara` — esqueleto en
+  canvas sincronizado al mismo loop de `detectForVideo`, zoom óptico/digital, pantalla completa.
+  Acá se corrigió lo decidido en la Fase B: peso muerto pasó a `hasFormValidation: false` porque la
+  única fuente citada (Schellenberg 2013) describe un rango típico, no un criterio de corrección —
+  usarlo como rojo/verde habría prometido más precisión de la que la fuente da. Solo sentadilla
+  tiene el coloreado real de profundidad.
+- **Fase D** (conexión con el registro manual, sección 2.1.8, Opción 2 confirmada): botón "Cámara
+  (beta)" en la serie activa del ejercicio (solo las 4 variantes canónicas mapeadas en
+  `exercise-id-map.ts`, fuera de superserie/bloque), pantalla de cámara con "Confirmar N reps", y
+  recién ahí `/gym/entrenamiento/activo` aplica el número al campo de reps de esa serie puntual.
+  Nunca se guarda sin ese paso de confirmación explícito.
+- **Fase E** (conexión con "mala técnica", cierre): `technique-tracker.ts` cuenta repeticiones
+  SEGUIDAS que no llegaron a la profundidad citada (nunca por un intento aislado) y sugiere, solo
+  para sentadilla, marcar la misma nota "mala técnica" que ya existía en el registro manual — el
+  usuario la confirma o la descarta antes de que se guarde, igual que el resto.
+
+**Limitaciones conocidas, dichas con la misma honestidad que el resto de este documento:**
+- No se pudo verificar visualmente de punta a punta en un navegador automatizado porque la app
+  pide login contra el Supabase real del proyecto, y la cámara en sí solo tiene sentido probarla en
+  un teléfono real — la verificación de código (tsc/lint/build/tests, 72/72 checks acumulados en
+  `tools/camara/`) es sólida, pero la prueba real en un cuerpo humano moviéndose queda pendiente de
+  que el usuario la haga en su teléfono.
+- El flujo de la Fase D no cubre superseries/bloques (varios ejercicios por ronda) — se dejó afuera
+  a propósito en vez de arriesgar aplicar las reps a la serie equivocada.
+- Press de banca y curl de bíceps solo cuentan repeticiones, sin coloreado de forma ni sugerencia de
+  "mala técnica" — sigue sin haber una fuente citable en grados para esos dos (sección 2.1.3).
+- La estimación de rendimiento de arranque (sección 2.1.4, ~12–20 fps) sigue marcada como
+  "sin verificar" hasta que la auto-medición real (Fase A) corra en dispositivos de usuarios reales.

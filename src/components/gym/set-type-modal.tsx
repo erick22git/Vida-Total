@@ -6,8 +6,10 @@ import type { SetType } from "@/lib/types";
 import { SET_TYPE_META, SET_TYPES } from "@/components/gym/set-type";
 
 /** Chip rápido: solo prellena el texto de `notas`, no es un campo booleano aparte — el usuario puede
- * seguir editando el texto libremente después de tocarlo. */
-const MALA_TECNICA = "Mala técnica";
+ * seguir editando el texto libremente después de tocarlo. Exportada para que la Fase E del
+ * roadmap de cámara en vivo (docs/roadmap/vision-entrenador.md) pueda sugerir el mismo texto en
+ * vez de duplicar el literal en otro archivo. */
+export const MALA_TECNICA = "Mala técnica";
 
 export function SetTypeModal({
   open,
