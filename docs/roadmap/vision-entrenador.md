@@ -70,10 +70,281 @@ app). Esto es consistente con el criterio de privacidad que ya sigue el proyecto
   reps? ¿lo complementa? ¿qué pasa si el usuario no tiene buena luz o el teléfono no tiene dónde
   apoyarse para ver el cuerpo completo?).
 
-## Orden sugerido si se retoma
+## 2.1 Fase 5 — investigación y plan técnico (cámara en vivo, esqueleto rojo/verde)
 
-1. Investigar y documentar los umbrales de ángulos por ejercicio (con fuente) antes de tocar código.
-2. Prototipo de conteo de reps + puntuación de forma para 2-3 ejercicios comunes (sentadilla, press de
-   hombro, remo) antes de generalizar a todo el catálogo.
-3. Estimación de % de grasa por foto queda en segundo lugar: depende de encontrar o entrenar un modelo
-   con margen de error documentado, que es un problema más abierto que el conteo de reps.
+**Estado: investigación cerrada, plan propuesto, SIN código de producción todavía.** Esta sección
+responde punto por punto al encargo de investigación de Fase 5. Falta tu aprobación explícita antes
+de pasar a implementar nada de esto.
+
+### 1. Motor de pose: MediaPipe Pose Landmarker
+
+- Corre en el navegador vía el paquete `@mediapipe/tasks-vision` (WASM + opcional delegado GPU),
+  instalable por npm o CDN (jsDelivr). Es la pieza de MediaPipe que corresponde — Pose Landmarker,
+  no el Pose Solution viejo (deprecado).
+- Licencia: el código de ejemplo y los headers de archivo que Google publica para Pose Landmarker
+  están bajo Apache License 2.0 (uso comercial permitido). No encontré el campo `license` del
+  `package.json` publicado del paquete `@mediapipe/tasks-vision` en sí en esta búsqueda — **antes de
+  escribir una sola línea de código hay que confirmar el LICENSE/`license` field exacto del paquete
+  en npm/GitHub**, y por separado los términos de los archivos de modelo `.task` (se descargan de un
+  bucket de Google, no vienen con el mismo texto de licencia que el código). Es un chequeo de 5
+  minutos, pero no lo voy a dar por hecho sin verlo.
+- Confirmado por búsqueda: no existe ningún componente web reusable con licencia abierta que ya
+  dibuje "esqueleto rojo/verde" con comparación contra un rango de movimiento — los proyectos
+  equivalentes que hacen eso son apps nativas (iOS/Swift) o scripts de escritorio en Python. El
+  overlay, las reglas de ángulo por ejercicio y el coloreado hay que construirlos a medida sobre
+  MediaPipe Pose (que solo da los landmarks, no el análisis).
+  Fuentes: [Pose landmark detection guide for Web](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/web_js).
+
+### 2. Aclaración de alcance — "distintos ángulos" ≠ múltiples cámaras
+
+Queda explícito para no prometer de más en la UI: esto mide **varios ángulos articulares con una
+sola cámara 2D** (ej. rodilla + cadera en sentadilla, visibles desde un mismo plano). No es
+reconstrucción 3D volumétrica real ni usa varias cámaras físicas — una sola cámara de celular no
+puede dar eso. MediaPipe sí entrega coordenadas "world" (pseudo-3D estimadas a partir de la imagen
+2D), pero siguen siendo una estimación de profundidad hecha por el modelo, no una medición
+estereoscópica real. La UI debe hablar de "ángulos de las articulaciones visibles desde la cámara",
+nunca de "escaneo 3D de tu cuerpo".
+
+### 3. Ángulos y umbrales por ejercicio — resultado de la investigación
+
+La instrucción fue explícita: si no hay fuente confiable para un ejercicio, dejarlo fuera en vez de
+inventar un umbral. Con eso en mente, la investigación de biomecánica deportiva da resultados muy
+distintos de calidad según ejercicio:
+
+- **Sentadilla — sí hay base, pero sin un número único de consenso.** Múltiples estudios coinciden en
+  que la profundidad de la sentadilla depende principalmente del rango de flexión de rodilla (más que
+  de cadera o tobillo), y que el rango de dorsiflexión normal de tobillo (≈20° dorsiflexión) es lo que
+  limita bajar con los talones en el piso. No hay un grado exacto de "paralelo" acordado entre
+  estudios — varía con el ancho de postura, el ángulo del pie y el nivel del lifter. **Decisión para
+  el plan:** usar la definición reglamentaria de powerlifting (parte superior del muslo a la altura de
+  la cadera rompe el paralelo con la parte superior de la rodilla) traducida a "ángulo de rodilla
+  ≈90° o menos" como umbral de referencia, documentado como aproximación práctica — no como un
+  número de laboratorio citado letra por letra. Fuentes:
+  [Frontiers in Sports and Active Living 2024](https://www.frontiersin.org/journals/sports-and-active-living/articles/10.3389/fspor.2024.1454309/pdf),
+  [BMC Sports Science 2018](https://bmcsportsscimedrehabil.biomedcentral.com/track/pdf/10.1186/s13102-018-0103-7).
+- **Peso muerto — la mejor fuente de las cuatro.** Schellenberg et al. 2013 (análisis de movimiento 3D,
+  n=13) midió flexión máxima de rodilla ≈103–108° en el setup del peso muerto convencional, y flexión
+  de cadera consistentemente mayor que en el "good morning". Es un estudio pequeño pero con método
+  cuantitativo claro y citable. Fuente:
+  [Schellenberg et al. 2013, PMC3878967](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3878967/).
+- **Press de banca — SIN fuente confiable, queda fuera de la primera tanda.** Los únicos números de
+  ángulo de codo que encontré son de proyectos de laboratorio estudiantiles (Universidad de Michigan)
+  que se contradicen entre sí (115–120° de rango un reporte, 147° el otro) por usar convenciones de
+  medición distintas. El único estudio revisado por pares que encontré (JSSM 2019) mide rango
+  completo/parcial en categorías, no en grados. No hay base suficientemente confiable para prometer un
+  umbral de "técnica correcta" en grados — se deja fuera de esta tanda.
+- **Curl de bíceps — SIN fuente confiable, queda fuera de la primera tanda.** El único dato de ángulo
+  que encontré (≈12–18° en flexión máxima a ≈168–175° en extensión) viene de un único proyecto de
+  captura de movimiento de alcance estudiantil, no de un estudio revisado por pares con n reportado
+  rigurosamente. Se deja fuera por el mismo criterio.
+
+**Consecuencia para el plan:** la primera tanda de "puntuación de forma" (segmento que se pinta rojo
+si la técnica está mal) queda limitada a **sentadilla y peso muerto**, que son los dos únicos con
+algo citable sobre rango correcto. Press de banca y curl pueden entrar al conteo de repeticiones
+(ver punto 8 — no necesita un umbral "correcto", solo detectar mínimos/máximos del ángulo), pero
+sin la validación de forma hasta encontrar una fuente mejor.
+
+### 4. Rendimiento en celular real — SIN benchmark oficial, resuelto con auto-medición en producción
+
+**Búsqueda de un benchmark oficial de Google:** no existe una tabla de benchmarks pública de Google
+para Pose Landmarker (el modelo Tasks actual) con números de latencia/fps por dispositivo — revisé
+la página oficial de Pose Landmarker y no publica esa tabla para este modelo. Lo único indirecto que
+encontré:
+- El post de 2020 de MediaPipe Holistic (pipeline *distinto y más pesado*, ya desactualizado) midió
+  ≈18 fps en un Pixel 2 XL y ≈20 fps en un Galaxy S9+ (ambos gama media de la época). Fuente:
+  [MediaPipe Holistic blog 2020](https://ai.googleblog.com/2020/12/mediapipe-holistic-simultaneous-face.html?hl=es).
+- Un plugin de Flutter de terceros (no Google) reporta, en un Galaxy S25 Ultra (gama alta 2026), GPU
+  ≈3 ms/frame, NPU ≈13–16 ms, CPU ≈17 ms — con el Pose Landmarker actual, pero en un dispositivo de
+  gama alta y en una capa nativa (no navegador), así que no representa el piso de gama baja/media que
+  necesitamos.
+- Reportes de la comunidad en GitHub indican que, en versiones recientes, la diferencia CPU vs. GPU a
+  veces no es notable — el delegado GPU no garantiza mejora en todos los dispositivos.
+
+**Supuesto conservador de arranque (marcado explícitamente como SIN VERIFICAR):** con el modelo
+`lite` corriendo en navegador en un celular de gama media, estimo un rango de ≈12–20 fps como punto
+de partida razonable — basado en extrapolar el dato de Holistic 2020 (pipeline más pesado, ≈18-20
+fps en gama media de esa época) hacia abajo con cautela, dado que Pose Landmarker `lite` es más
+liviano pero corre sobre hardware/navegadores variables hoy. **Este número es una estimación
+indirecta, no una medición real, y se reemplaza automáticamente por el mecanismo de auto-medición
+del punto 9 en cuanto el código esté corriendo en cualquier dispositivo real** — incluido el tuyo, la
+primera vez que abras la función.
+
+**Decisión de diseño (reemplaza el banco de pruebas manual):** en vez de bloquear el plan en un
+número medido a mano en un dispositivo específico, la app se mide a sí misma en cada dispositivo
+donde corre — ver punto 9, "Auto-medición y degradación", que pasa a ser requisito obligatorio de la
+primera fase de código, no una verificación previa aparte.
+
+### 5. Zoom y pantalla completa
+
+- **Android/Chrome:** zoom óptico/hardware real es posible vía
+  `track.getCapabilities()` → si expone `zoom`, `track.applyConstraints({ advanced: [{ zoom }] })`.
+  Hay que comprobar la capacidad en runtime, nunca asumir que existe.
+- **iOS Safari:** no soporta zoom nativo por `applyConstraints` (confirmado por múltiples reportes,
+  sin soporte documentado de Apple). La alternativa ahí es **zoom digital**: aplicar
+  `transform: scale()` por CSS sobre el elemento `<video>` (o recortar el canvas), con la pérdida de
+  nitidez esperable de cualquier zoom digital. El plan debe mostrar esto como "zoom óptico en
+  Android, zoom digital (con menor nitidez) en iPhone" en la UI, no como la misma funcionalidad.
+  Fuente: [Dynamsoft — Camera Zoom Control on Web](https://www.dynamsoft.com/codepool/camera-zoom-control-on-web.html).
+- Pantalla completa: `Element.requestFullscreen()` estándar sobre el contenedor del video+overlay,
+  sin dependencias nuevas.
+
+### 6. Privacidad
+
+Requisito de diseño, no solo de implementación: el video y la inferencia de pose corren enteramente
+en el dispositivo (WASM/GPU local vía MediaPipe). Nada de la cámara se sube a ningún servidor, igual
+que el resto de fotos/cámara de la app. Esto se escribe en el plan como restricción de arquitectura
+desde el día 1 (no hay endpoint de subida de video en ningún diseño que se proponga).
+
+### 7. Arquitectura del overlay
+
+- Un `<canvas>` posicionado en `absolute` exactamente sobre el `<video>` (mismo tamaño, mismo
+  `object-fit`), redibujado en el mismo loop de `requestAnimationFrame` que llama a
+  `poseLandmarker.detectForVideo(video, timestamp)` — nunca un loop separado, para que el esqueleto
+  no se desincronice del frame real.
+- Por cada frame: se calculan los ángulos relevantes del ejercicio activo a partir de los landmarks
+  devueltos, se determina la fase del movimiento (bajando/abajo/subiendo, ver punto 8), y se dibuja
+  cada segmento del esqueleto (hombro-codo, codo-muñeca, cadera-rodilla, rodilla-tobillo, etc.) con
+  `canvas.strokeStyle` verde si ese segmento específico está dentro del rango esperado para la fase
+  actual, rojo solo en el segmento que se sale de rango — nunca todo el esqueleto en rojo.
+- Solo sentadilla y peso muerto (punto 3) tendrían el coloreado de "fuera de rango" real en la
+  primera tanda; press de banca y curl mostrarían el esqueleto en un color neutro (sin evaluación de
+  forma) hasta tener fuente confiable.
+- Librería: sin dependencia nueva — Canvas 2D nativo alcanza para líneas y color por segmento, no
+  hace falta SVG ni una librería de gráficos.
+
+### 8. Conteo de repeticiones — decisión de producto pendiente de tu confirmación
+
+Máquina de estados por el ángulo principal del ejercicio: `arriba → bajando → abajo → subiendo →
+arriba` (1 repetición completa cada vez que se vuelve a "arriba"), con histéresis (dos umbrales
+ligeramente separados al entrar y salir de cada estado) para no contar dobles por ruido del tracking.
+Esto **no necesita el umbral de "forma correcta" del punto 3** — solo detecta mínimos/máximos
+relativos del ángulo, así que puede aplicarse a los 4 ejercicios de la tanda (sentadilla, peso
+muerto, press de banca, curl) incluso a los que quedaron sin validación de forma.
+
+Lo que sí necesito que decidas antes de implementar (texto tuyo, de la tarea original: *"es una
+decisión de producto que quiero ver reflejada en el plan"*) — tres opciones, con mi recomendación:
+
+1. **Reemplaza el conteo manual.** Más cómodo si funciona bien, pero si la cámara pierde el tracking
+   (mala luz, cuerpo parcialmente fuera de cuadro) el dato queda mal sin que el usuario lo note en el
+   momento.
+2. **Sugiere un número, el usuario confirma/edita antes de guardar.** (Recomendado.) Consistente con
+   cómo se hizo el campo "mala técnica" la sesión pasada — manual-first, la cámara alimenta un dato
+   que el usuario revisa, no que se guarda solo. Reduce el riesgo de que un conteo erróneo quede
+   guardado sin que nadie lo vea.
+3. **Corre en paralelo solo como información en pantalla, nunca se guarda automáticamente.** Más
+   conservador todavía, pero el usuario sigue tecleando el número igual que hoy — menos valor
+   agregado inmediato.
+
+**Decisión confirmada: Opción 2.** La cámara sugiere la repetición detectada; el usuario confirma
+antes de que se guarde. Nunca reemplaza el conteo manual sin esa confirmación — mismo criterio
+manual-first que el resto de la app.
+
+### 9. Auto-medición de fps y degradación automática — requisito obligatorio, primera fase de código
+
+No es opcional ni se deja para el final: es lo primero que se construye al tocar código de cámara,
+porque es la red de seguridad que reemplaza al benchmark manual de un solo dispositivo.
+
+**Qué mide:** al iniciar la función de cámara, antes de mostrar el overlay "en serio", corre
+`detectForVideo` en los primeros 2–3 segundos de video real del dispositivo y calcula el fps
+efectivo (frames procesados / tiempo transcurrido), igual que hace `tools/perf/pose-fps-test.html`
+(la página de prueba manual que ya quedó en el repo — se reusa su misma lógica de medición, no se
+inventa una nueva).
+
+**Umbral propuesto (criterio técnico propio, documentado como tal — no es un número de la
+literatura):** **15 fps** como piso mínimo para que el overlay se sienta "en vivo" y no como una
+sucesión de fotos. Razonamiento: por debajo de ~15 fps el ojo humano empieza a percibir el
+movimiento como entrecortado (referencia general de percepción de movimiento en video, no específica
+de esta app), y además con menos de 15 muestras por segundo la máquina de estados de conteo de reps
+(punto 8) empieza a tener más margen de error para detectar el instante exacto en que el ángulo
+cruza un umbral — reps rápidas podrían perderse un frame clave. 15 fps es un número conservador
+elegido para errar del lado de "avisar y degradar" antes que "mostrar algo poco confiable".
+
+**Orden de degradación (automático, sin intervención del usuario salvo el aviso final):**
+1. Si el fps medido en los primeros 2-3s está por debajo del umbral, el primer paso es bajar la
+   resolución del video de entrada (ej. de 640×480 a 320×240 vía `applyConstraints`) y volver a medir
+   2-3s más.
+2. Si con la resolución más baja todavía no se alcanza el umbral, la app no se queda mostrando un
+   overlay trabado: muestra un mensaje claro ("tu teléfono no puede sostener el análisis en vivo, usá
+   el registro manual por ahora") y cae automáticamente al flujo de registro manual de series que ya
+   existe hoy.
+3. Nunca hay un estado intermedio de "overlay congelado sin avisar" — eso es justo lo que este
+   mecanismo existe para evitar.
+
+**Persistencia:** el resultado de la calibración (fps alcanzado, resolución final usada, si pasó o
+cayó a manual) se guarda localmente en el dispositivo (mismo patrón de `localStorage`/Zustand persist
+que ya usa el resto de la app), para no repetir la medición cada vez que se abre la cámara — solo se
+vuelve a medir si cambia de dispositivo/navegador (se puede detectar por un cambio de
+`navigator.userAgent` + resolución de pantalla guardados junto al resultado) o si el usuario fuerza
+"volver a calibrar" desde un ajuste.
+
+**Privacidad:** la medición es 100% local — ningún número de fps, video ni metadata del dispositivo
+sale de él. Mismo requisito que el punto 6.
+
+**Por qué esto resuelve el bloqueo de performance sin un benchmark previo:** cubre automáticamente
+cualquier teléfono real que use cualquier usuario, no solo el dispositivo que se pudo probar a mano
+antes de programar — y si un dispositivo no puede sostenerlo, la app lo sabe y se degrada sola en
+vez de prometer algo que no puede cumplir.
+
+## Bloqueantes previos — estado
+
+1. ~~Confirmar licencia de `@mediapipe/tasks-vision` y del modelo `.task`.~~ **Resuelto** — ambos
+   Apache 2.0, confirmado con el `package.json` real del paquete en el registry de npm y con la
+   respuesta oficial de un mantenedor de Google en
+   [google-ai-edge/mediapipe#6306](https://github.com/google-ai-edge/mediapipe/issues/6306)
+   (10 de junio de 2026). Permite uso comercial y redistribución conservando el aviso de licencia.
+2. ~~Benchmark real de fps en un dispositivo específico antes de programar.~~ **Resuelto de otra
+   forma** — en vez de bloquear el plan en una medición manual previa, la sección 2.1.9
+   (auto-medición y degradación) hace que cada dispositivo real se mida solo la primera vez que abre
+   la función, con un supuesto conservador de arranque documentado como sin verificar mientras tanto.
+3. Decisión de producto del punto 2.1.8 (conteo automático vs. manual). **Resuelto** — Opción 2
+   confirmada (sugiere, el usuario confirma).
+
+Con los tres bloqueantes cerrados, el plan de fases de implementación queda en la sección siguiente.
+
+## Plan de fases de implementación (PROPUESTO — esperando aprobación, sin código escrito todavía)
+
+Ningún ítem de esta lista se implementa hasta que apruebes explícitamente esta sección. Un commit
+por fase, con las mismas salvaguardas de siempre (tsc/lint/build limpios, pruebas pasando, escaneo
+de secretos antes de cada push). Sin dependencias nuevas de runtime salvo `@mediapipe/tasks-vision`
+(Apache 2.0, confirmado arriba) — es la única dependencia nueva de todo este plan.
+
+**Fase A — Auto-medición y degradación (sección 2.1.9), SIN overlay ni ejercicios todavía.**
+Módulo puro (`src/lib/camara/device-calibration.ts` o similar) que corre `detectForVideo` 2-3s,
+calcula fps, aplica el orden de degradación (bajar resolución → fallback a manual), persiste el
+resultado (Zustand persist, mismo patrón que el resto de la app). Se prueba con tests unitarios
+sobre la lógica de umbral/degradación (sin cámara real, con fps simulados) + una verificación manual
+en al menos un dispositivo real tuyo para confirmar que el flujo de "cae a manual" se ve bien. Esta
+fase por sí sola ya responde "¿mi teléfono puede sostener esto?" sin tocar ninguna pantalla de
+ejercicio todavía.
+
+**Fase B — Landmarks + ángulos, sin overlay visual todavía.**
+Integrar `PoseLandmarker` (modelo `lite`), un módulo puro de cálculo de ángulos a partir de
+landmarks (rodilla, cadera, codo), y la máquina de estados de fases de movimiento
+(`bajando/abajo/subiendo/arriba`) para sentadilla y peso muerto primero (los 2 con umbral citable).
+Sin canvas, sin color, solo lógica + tests unitarios con secuencias de ángulos simuladas. Esto separa
+"¿los ángulos se calculan bien?" de "¿se ve bien en pantalla?", para poder debuggear cada cosa por
+separado.
+
+**Fase C — Overlay visual (canvas verde/rojo) + pantalla completa + zoom.**
+Canvas sincronizado al mismo loop de `detectForVideo` (sección 2.1.7), con el coloreado por segmento
+para sentadilla y peso muerto. Zoom óptico en Android, zoom digital por CSS en iOS (sección 2.1.5).
+Pantalla completa vía `requestFullscreen`. Esta es la primera fase con algo visible para probar en
+el teléfono de verdad — foco de la verificación manual mobile-first (375×812, 390×844, 430×932).
+
+**Fase D — Conteo de reps sugerido + confirmación manual (Opción 2, sección 2.1.8).**
+Conecta la máquina de estados de la Fase B con una UI de "detecté N repeticiones, ¿confirmás?" que
+alimenta el mismo campo de reps del registro manual ya existente — nunca lo reemplaza sin
+confirmación. Incluye press de banca y curl acá (solo conteo, sin coloreado de forma, como quedó
+documentado en la sección 2.1.3).
+
+**Fase E — Conexión con "mala técnica" y cierre.**
+Cuando el overlay detecta un segmento fuera de rango de forma sostenida (no un frame suelto de
+ruido), ofrece marcar la nota "mala técnica" de esa serie automáticamente — el usuario la confirma o
+la descarta, igual que el resto. Build/test/secret-scan/push final, igual que en tareas anteriores.
+
+**Qué NO entra en este plan (fuera de alcance, para que quede explícito):** press de banca y curl con
+coloreado de forma (sin fuente confiable aún, sección 2.1.3); estimación de % de grasa por foto
+(sección 1, problema más abierto, queda de último en cualquier caso); cualquier ejercicio fuera de
+los 4 de la primera tanda.
+
+Quedo esperando tu aprobación de este plan de fases antes de escribir el primer módulo de código.
