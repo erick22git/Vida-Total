@@ -593,3 +593,108 @@ de menor costo de implementación y mayor valor percibido inmediato.
      mismo frame puede bajar el fps real en celulares de gama baja — no hay una segunda calibración
      de rendimiento para esto específicamente (reusa la de la Fase A, que solo midió Pose Landmarker
      solo); si el usuario nota que se pone lento al activar el marcador, hay que revisarlo.
+
+## 5. Tercera vuelta de feedback real: voz muda, reps fantasma al arrancar, y cuatro pedidos grandes
+
+Después de probar el marcador de color, el usuario reportó dos bugs más (ya corregidos — ver más
+abajo) y pidió cuatro cosas grandes, comparando con lo que hacen cámaras comerciales y mostrando
+como referencia visual una foto de un overlay tipo FaceMesh (malla densa con muchas líneas y
+profundidad sobre una cara) preguntando si se puede hacer "eso pero con el cuerpo".
+
+### 5.1 Bugs reales — corregidos
+
+- **La voz no decía nada.** Causa: muchos navegadores de celular (sobre todo Android) exigen que el
+  PRIMER `speechSynthesis.speak()` de la página ocurra dentro de un gesto real del usuario (un tap)
+  — si el primero que se intenta es automático (disparado por el conteo, sin que el usuario haya
+  tocado nada todavía), el navegador lo descarta en silencio, sin ningún error. Se agregó
+  `unlockVoice()`, llamado una vez desde el primer tap en la pantalla. Además, forzar `lang="es-ES"`
+  fallaba en silencio si el dispositivo no tenía esa voz instalada — ahora se busca cualquier voz en
+  español ya instalada y, si no hay ninguna, se usa la voz por defecto del navegador.
+- **Reps contadas "al principio" sin que el usuario las hiciera.** El pedido: que no cuente de más
+  mientras la cámara/el usuario todavía se están acomodando, antes de empezar a levantar de verdad.
+  Se agregó una ventana de arranque de 1.5s (`STARTUP_GRACE_MS`) donde ninguna repetición cuenta
+  todavía, aunque la fase se siga actualizando con el ángulo real.
+
+### 5.2 "Que no haya que usar un marcador fosforescente — que detecte lo que estoy agarrando, como detecta a la persona"
+
+Investigué si existe una alternativa sin marcador para detectar la barra/mancuerna:
+
+- **Detección clásica por forma (círculos de los discos, método Hough)**: funciona en teoría, pero
+  es frágil en la práctica — un disco visto en ángulo se ve como una elipse, no un círculo (se
+  pierde), y el fondo de un gimnasio (otras barras, discos, racks) genera muchos falsos positivos
+  que obligan a ajustar los parámetros según cada escena. No es un "listo para usar".
+- **Detector entrenado específico (tipo YOLO) para discos/barras**: existe al menos un modelo
+  comunitario de ejemplo ([Roboflow — Weight Plate Detection](https://universe.roboflow.com/recruiter-project/weight-plate-detection/model/1)),
+  pero sin verificar su precisión real ni su licencia — usarlo en serio significaría evaluarlo a
+  fondo o entrenar uno propio con un dataset propio, un proyecto aparte del tamaño del que ya se
+  armó para Pose Landmarker.
+- **Conclusión:** el marcador de color sigue siendo, por ahora, la opción confiable y ya
+  implementada. Una detección sin marcador es un proyecto de visión por computadora bastante más
+  grande (y más fértil para fallar en un gimnasio real con fondo ocupado) — no se recomienda
+  reemplazar el marcador todavía, aunque sí quede anotado como posible mejora futura si se
+  encuentra/entrena un detector confiable.
+
+### 5.3 "Malla densa con profundidad, como en la cara" (referencia: foto de un overlay tipo FaceMesh)
+
+- **Confirmado: no existe un equivalente de FaceMesh (468 puntos densos) para el cuerpo entero.**
+  MediaPipe Pose da 33 puntos dispersos (los que ya usamos), no una malla de superficie. La única
+  forma real de lograr una malla densa del cuerpo es ajustar un modelo paramétrico 3D (ej. SMPL) a
+  los puntos de pose — un proyecto de investigación/ingeniería propio, no un modelo que se pueda
+  simplemente instalar como Pose Landmarker, y sin ningún paquete "listo para navegador" encontrado.
+- **Conclusión: no se recomienda perseguir la malla densa.** El camino realista para que el
+  esqueleto "se vea con volumen" sigue siendo el ya implementado (cápsulas gruesas con contorno,
+  sección 3.3) — es un cambio de dibujo, no un modelo nuevo, y da una sensación de cuerpo sin el
+  costo/riesgo de ajustar un modelo 3D paramétrico que no tiene soporte de navegador.
+
+### 5.4 "Que detecte el ejercicio solo (qué estoy haciendo), en vez de elegirlo yo"
+
+- Existe investigación real sobre esto: una tesis de 2025/26 (Universidad de Bolonia) entrena un
+  clasificador de secuencias (TCN) sobre series de tiempo de ángulos articulares, para distinguir
+  16 categorías de ejercicio, con 95.82% de precisión reportada — pero es un modelo que HAY QUE
+  ENTRENAR (necesita datos etiquetados propios), no uno que se pueda reusar tal cual como Pose
+  Landmarker.
+- **El mismo trabajo encontró algo importante para esta app en particular: la precisión depende
+  mucho del ÁNGULO de la cámara — cae de 70% a 40% al pasar de una cámara elevada a una de frente.**
+  Justo el tipo de colocación casual de teléfono que esta app espera que use la gente en su casa.
+- **Conclusión: no se recomienda ahora.** Es un proyecto de entrenamiento de modelo propio, con
+  datos propios, y encima con precisión reportada mediocre (40-70%) en el escenario de cámara más
+  parecido al real de esta app. El selector manual de 4 botones, aunque menos "mágico", es
+  confiable y ya funciona.
+
+### 5.5 "Corregir rodillas, codos, hombros, dónde pongo las manos en la barra — verde/amarillo/rojo, y por voz"
+
+Esto es el pedido más grande: extender la validación de forma (hoy solo profundidad de sentadilla)
+a muchas más articulaciones y ejercicios, con un sistema de 3 niveles en vez de 2. Investigué
+artículo por articulación/ejercicio, con el mismo criterio de siempre (sin fuente confiable, no se
+inventa un umbral):
+
+- **Rodillas hacia adentro en sentadilla (valgo de rodilla) — SÍ hay base real para una versión
+  básica.** Hay investigación válida que usa estimación de pose en 2D para esto (OpenPose comparado
+  contra medición manual, con buena concordancia —
+  [Janisch et al., BMC Musculoskeletal Disorders](https://www.medicalschool-hamburg.de/files/inhalte/News/2026/2026-janisch_et_al-bmc_musculoskeletal_disorders.pdf)).
+  Pero NO hay un único umbral en grados validado universalmente — varía según la profundidad de la
+  sentadilla, la pierna de apoyo, y la población estudiada; un estudio reporta apenas 87.5%
+  sensibilidad / 68.8% especificidad para un umbral clínico específico
+  ([Bolgla et al. 2023](https://ijspt.scholasticahq.com/article/74269.pdf)). **Propuesta honesta:**
+  en vez de un ángulo exacto, una regla cualitativa defendible (la misma que usan entrenadores y
+  fisioterapeutas: "la rodilla no debería cruzar hacia adentro de la línea cadera-tobillo") —
+  comparar la posición horizontal de la rodilla contra la del tobillo, no un ángulo preciso. Es
+  citable como principio, no como número exacto.
+- **Codos/hombros en press de banca (elbow flare) — SIGUE sin fuente confiable.** Solo encontré
+  artículos de coaching que se contradicen entre sí (algunos dicen 45-70°, otros dicen que 90° es
+  más seguro) — ninguna fuente revisada por pares con un número validado. Se mantiene fuera, igual
+  que se decidió para el ángulo del codo en general (sección 2.1.3).
+- **Dónde poner las manos en la barra — no es algo que la cámara pueda juzgar "bien/mal" de forma
+  general:** el ancho de agarre correcto depende de la anatomía y el objetivo de cada persona (más
+  ancho enfatiza pecho, más cerrado enfatiza tríceps) — no hay un "correcto" universal para marcar
+  en rojo/verde, solo rangos de preferencia. Queda fuera por la misma razón que el ancho de agarre
+  en general.
+- **Sistema de 3 niveles (verde/amarillo/rojo) en vez de 2:** técnicamente simple de agregar una vez
+  que hay un criterio citable — es solo agregar una franja intermedia al mismo tipo de comparación
+  que ya hace `formVerdict`. No se implementa todavía porque, de los criterios pedidos, hoy solo uno
+  (valgo de rodilla, como regla cualitativa) tiene base real para hacerlo bien.
+
+**Resumen de la sección 5.5:** de todo lo pedido, lo único que se puede construir ahora sin inventar
+un número es una verificación básica de alineación de rodilla en sentadilla (cualitativa, no un
+ángulo exacto) — el resto (codos, hombros, manos en la barra) se queda afuera por falta de fuente
+confiable, igual que como se decidió para peso muerto/press/curl en la sección 2.1.3.
