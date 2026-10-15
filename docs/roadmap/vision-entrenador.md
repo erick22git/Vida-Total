@@ -462,11 +462,28 @@ existe hoy:
 - **Segmentación multiclase existente**: hay un modelo que separa pelo/cara/cuerpo/ropa — 4-6 clases
   muy generales, "cuerpo" sigue siendo una sola región (no separa brazo de pierna tampoco).
   Fuente: [TensorFlow blog — Body Segmentation](https://blog.tensorflow.org/2022/01/body-segmentation.html).
-- **Segmentación por EXTREMIDAD individual (brazo izquierdo vs. derecho, pierna vs. pierna) no
-  encontré ningún modelo preentrenado liviano, listo para correr en navegador, que haga esto.**
-  Existen modelos de segmentación de partes humanas en investigación académica (ej. DensePose,
-  Human Parsing), pero son pesados (pensados para servidor con GPU, no para un celular en el
-  navegador) y no tienen el mismo soporte "listo para usar" que Pose Landmarker.
+- **Confirmado, con más detalle (segunda vuelta de investigación):** Google SÍ publica un modelo
+  multiclase oficial, `SelfieMulticlass` (parte de MediaPipe Image Segmenter, 256×256,
+  [guía oficial](https://developers.google.com/edge/mediapipe/solutions/vision/image_segmenter/index)),
+  con 6 clases: fondo, pelo, piel del cuerpo, piel de la cara, ropa, otros. Sigue sin servir para
+  esto — "piel del cuerpo" es UNA sola región, no separa brazo de pierna.
+- **Segmentación por EXTREMIDAD individual (brazo izquierdo vs. derecho, pierna vs. pierna) existe
+  solo como modelo de investigación, no como algo listo para esto.** Encontré un puerto a ONNX de
+  "Self-Correction-Human-Parsing" con clases Head/Torso/UpperArms/LowerArms/UpperLegs/LowerLegs
+  ([ailia-models](https://github.com/vitaliyhan/ailia-models/blob/master/image_segmentation/human_part_segmentation/README.md)) —
+  pero es un modelo basado en ResNet (pesado, no pensado para celular), pensado para Python de
+  escritorio, sin ningún benchmark de navegador/móvil. Usarlo acá significaría: agregar
+  `onnxruntime-web` (dependencia nueva, varios MB de WASM), portar el preprocesamiento, y medir
+  rendimiento real en celular SIN ninguna garantía previa de que corra a tiempo real junto con Pose
+  Landmarker (que ya está usando el presupuesto de cómputo del dispositivo). Hay modelos de
+  investigación más livianos (MobileNetV2, ~2M parámetros) pero reportados en GPU de escritorio, no
+  en navegador — ninguno con el mismo soporte "instalar y listo" que tiene Pose Landmarker.
+- **Recomendación de esta vuelta: NO construir esto todavía.** El costo (dependencia nueva pesada +
+  investigación de rendimiento desde cero + riesgo real de que no llegue a tiempo real en el
+  celular) es alto, y el beneficio sobre lo que ya existe (ángulos + esqueleto grueso) es solo
+  estético — no mejora la detección de técnica, que ya viene de los ángulos. Si en el futuro
+  aparece un modelo de segmentación por extremidad oficialmente soportado para navegador (no uno
+  de investigación portado a mano), ahí vale la pena reevaluarlo.
 - **Alternativa realista, con lo que ya tenemos:** en vez de segmentación real (pintar píxeles),
   dibujar el esqueleto actual con **líneas MÁS GRUESAS en forma de cápsula** (óvalos entre
   articulación y articulación, no líneas de 1px) da una sensación visual mucho más parecida a "ver
@@ -494,11 +511,26 @@ Investigué cómo lo hacen apps reales de "bar path"/VBT (velocity-based trainin
   entrenaron el detector. Esto requeriría entrenar (o encontrar) un modelo de detección de objetos
   específico para discos/barras, con su propio dataset — un proyecto de investigación/entrenamiento
   de modelo aparte, no algo que MediaPipe Pose resuelva.
-- **Conclusión:** esto es una **segunda pieza de IA completamente separada** de la detección de pose
-  (un detector de objetos, no un estimador de pose), con su propio costo de investigación/datos. No
-  es una extensión natural de lo que ya tenemos — es un proyecto nuevo si se quiere hacer bien, y el
-  camino más realista para empezar sería pedirle al usuario un marcador simple (una pegatina de
-  color sólido conocido, por ejemplo) en vez de intentar detectar la barra "a ojo" sin nada.
+- **Confirmado, con más detalle (segunda vuelta de investigación):** el camino del marcador de
+  color SÍ es construible ahora mismo, con herramientas conocidas y bien probadas (no
+  investigación nueva): convertir cada frame a HSV, aislar el color del marcador con un umbral,
+  encontrar el contorno más grande y su centro — el mismo algoritmo que usan los proyectos de
+  bar-path open source citados arriba. Dos rutas de librería:
+  - **tracking.js**: tiene un rastreador de color ya armado, liviano, sin depender de OpenCV
+    completo — la opción más simple para "seguir una pegatina de un color conocido".
+  - **OpenCV.js**: más completo y flexible (sirve para más que solo color), pero es un WASM de
+    varios MB — dependencia nueva pesada para lo que acá se necesita.
+- **Conclusión:** sigue siendo una **segunda pieza de IA/visión completamente separada** de la
+  detección de pose (tracking de un color conocido, no un estimador de pose), pero a diferencia de
+  la segmentación, ESTA sí es una pieza chica y bien acotada — no hace falta entrenar ni portar
+  ningún modelo, es procesamiento de imagen clásico. El límite real no es técnico: es que necesita
+  que el usuario pegue o sostenga un marcador de un color conocido en la barra/mancuerna — sin eso,
+  detectar la barra "a ojo" sin marcador es un proyecto de entrenamiento de modelo propio (lo que
+  hacen Metric/RepSpeed con su "algoritmo patentado", sin publicar cómo).
+- **Recomendación de esta vuelta: SÍ es viable para hacer pronto, pero es una decisión de producto
+  antes que técnica** — hay que confirmar que pedirle al usuario un marcador (una pegatina de color
+  sólido, por ejemplo cinta fosforescente) es aceptable para la experiencia que se quiere, antes de
+  construirlo. Si se confirma, `tracking.js` es el camino más liviano.
 
 ### 3.5 Corrección por voz en tiempo real — la mejora más barata de las cuatro
 
@@ -539,10 +571,17 @@ de menor costo de implementación y mayor valor percibido inmediato.
    Botón de silenciar en la barra superior. 110/110 tests acumulados del módulo cámara.
 3. ~~Esqueleto "de extremidades" (cápsulas gruesas en vez de líneas, sección 3.3)~~ — adelantado al
    punto 1 de esta lista, ver arriba.
-4. **Segmentación real por partes del cuerpo y seguimiento de barra/mancuerna (secciones 3.3/3.4)**
-   — los dos proyectos más grandes, cada uno necesitaría su propia investigación técnica dedicada
-   (como se hizo para la Fase 5.0 de este documento) antes de tocar código: para segmentación, buscar
-   si ya existe un modelo multiclase de extremidades listo para navegador; para la barra, decidir si
-   se pide un marcador simple al usuario o se intenta un detector sin marcador (mucho más caro de
-   construir bien). Ninguno de los dos es una tarea de un commit — quedan para cuando se decida
-   retomarlos explícitamente, igual que el resto de este roadmap.
+4. **Segmentación real por partes del cuerpo y seguimiento de barra/mancuerna — investigación
+   cerrada (secciones 3.3/3.4), con conclusiones distintas para cada una:**
+   - **Segmentación por extremidad: NO se recomienda construir ahora.** No existe un modelo
+     multiclase de extremidades (brazo/pierna/torso por separado) con soporte oficial para
+     navegador — solo modelos de investigación pesados (ResNet) sin benchmark de celular. El costo
+     (dependencia nueva pesada + riesgo real de no llegar a tiempo real) no se justifica frente al
+     beneficio (solo estético, no mejora la detección de técnica). Queda descartada mientras no
+     cambie el estado del arte de estos modelos.
+   - **Seguimiento de barra/mancuerna por marcador de color: SÍ es viable técnicamente, con
+     `tracking.js` (liviano) o `OpenCV.js` (más completo, más pesado)** — es visión clásica bien
+     probada, no investigación nueva. Lo único que falta no es técnico: confirmar con el usuario
+     si pedirle un marcador de color pegado a la barra/mancuerna es una experiencia aceptable antes
+     de construirlo. Sin esa confirmación, no se empieza — detectarla sin marcador es un proyecto
+     de entrenamiento de modelo propio, fuera de alcance.
