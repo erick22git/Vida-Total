@@ -30,6 +30,10 @@ const CHART_OPTIONS: { id: CalorieChartKind; label: string }[] = [
 
 import { useTargetProfile } from "@/lib/nutrition/use-targets";
 import { getNutrientTargets, macrosVsMeta, reviewCalorieGoal, suggestMacros } from "@/lib/nutrition/nutrient-targets";
+import { weightTrendRate } from "@/lib/gym/calorie-adaptive";
+import { reviewCaloriePhase, type CaloriePhase } from "@/lib/gym/calorie-periodization";
+
+const PHASE_LABEL: Record<CaloriePhase, string> = { volumen: "Volumen", mantenimiento: "Mantenimiento", deficit: "Déficit" };
 
 export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
@@ -70,6 +74,10 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
     adaptive?.status === "suggestion" &&
     adaptive.suggestedCalorieGoal !== undefined &&
     adaptiveDismissed?.goal !== adaptive.suggestedCalorieGoal;
+
+  // Estado de fase (volumen/mantenimiento/déficit, sección "coach de nutrición" pedida): se deriva
+  // del objetivo declarado en el perfil y de qué tan rápido está cambiando el peso de tendencia real.
+  const phaseReview = useMemo(() => reviewCaloriePhase(gymProfile?.objetivoCalorico, weightTrendRate(weightEntries)), [gymProfile, weightEntries]);
 
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [macroModalOpen, setMacroModalOpen] = useState(false);
@@ -117,6 +125,22 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
                 Ajustes de Calorías
               </h1>
             </header>
+
+            {!phaseReview.sinDatosSuficientes && (
+              <div className="flex items-center justify-between rounded-2xl px-3.5 py-2.5" style={{ background: "#0d0d0d" }}>
+                <span className="text-[10px] uppercase tracking-[0.1em] text-white/40" style={MONO_FONT}>
+                  Estado: {PHASE_LABEL[phaseReview.phase]}
+                </span>
+                {phaseReview.pctPerWeek !== null && (
+                  <span className="text-[11px] text-white/50 tabular-nums">{phaseReview.pctPerWeek > 0 ? "+" : ""}{phaseReview.pctPerWeek.toFixed(2)} %/sem</span>
+                )}
+              </div>
+            )}
+            {phaseReview.ajuste && (
+              <div className="flex flex-col gap-2.5 rounded-2xl p-4" style={{ background: "#0d0d0d" }}>
+                <p className="text-xs text-white/70">{phaseReview.mensaje}</p>
+              </div>
+            )}
 
             <button
               onClick={() => {

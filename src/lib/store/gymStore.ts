@@ -26,6 +26,7 @@ import type {
   WaterEntry,
   WeeklyPlanDay,
   WeightEntry,
+  WalkSession,
   WorkoutExerciseLog,
   WorkoutSession,
   WorkoutSet,
@@ -351,6 +352,19 @@ export interface GymState {
   symptomEntries: SymptomEntry[];
   addSymptomEntry: (entry: Omit<SymptomEntry, "id">) => void;
   removeSymptomEntry: (id: string) => void;
+
+  // ---------- Caminata (GPS) ----------
+  walkSessions: WalkSession[];
+  /** Caminata en curso (entre "empezar" y "parar") — `null` si no hay ninguna activa. Solo local, no
+   * se persiste con Supabase todavía (sin pedido de sincronizar entre dispositivos). */
+  activeWalk: WalkSession | null;
+  startWalkSession: () => void;
+  addWalkPoint: (point: { lat: number; lng: number; timestampMs: number }) => void;
+  /** Cierra la caminata en curso con su resumen ya calculado (distancia/duración/kcal) y la agrega al
+   * historial. Sin caminata activa, no hace nada. */
+  finishWalkSession: (summary: { distanceKm: number; durationSeconds: number; kcal: number }) => void;
+  discardActiveWalk: () => void;
+  removeWalkSession: (id: string) => void;
 
   // ---------- Streak ----------
   streak: number;
@@ -1307,6 +1321,20 @@ export const useGymStore = create<GymState>()(
         set((state) => ({ symptomEntries: [{ ...entry, id: uid() }, ...state.symptomEntries] })),
       removeSymptomEntry: (id) =>
         set((state) => ({ symptomEntries: state.symptomEntries.filter((e) => e.id !== id) })),
+
+      walkSessions: [],
+      activeWalk: null,
+      startWalkSession: () => set({ activeWalk: { id: uid(), startedAt: new Date().toISOString(), points: [] } }),
+      addWalkPoint: (point) =>
+        set((state) => (state.activeWalk ? { activeWalk: { ...state.activeWalk, points: [...state.activeWalk.points, point] } } : {})),
+      finishWalkSession: (summary) =>
+        set((state) => {
+          if (!state.activeWalk) return {};
+          const finished: WalkSession = { ...state.activeWalk, ...summary };
+          return { walkSessions: [finished, ...state.walkSessions], activeWalk: null };
+        }),
+      discardActiveWalk: () => set({ activeWalk: null }),
+      removeWalkSession: (id) => set((state) => ({ walkSessions: state.walkSessions.filter((w) => w.id !== id) })),
 
       // Streak
       streak: 0,

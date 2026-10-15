@@ -13,6 +13,8 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { ChevronLeft, Check, X as XIcon, ChevronDown } from "lucide-react";
 import { useGymStore } from "@/lib/store/gymStore";
 import { mergeFoods } from "@/lib/food-utils";
@@ -29,6 +31,9 @@ import {
 } from "@/lib/nutrition/nutrition-care-engine";
 import { dailyMicronutrientTotals, topFoodsForNutrient } from "@/lib/nutrition/nutriologo-data";
 import { correlateAllSymptoms, MIN_SYMPTOM_OCCURRENCES } from "@/lib/nutrition/symptom-correlation";
+import { estimateSessionCalories } from "@/lib/gym/exercise-calorie-burn";
+import { dailyActivityTotals, weeklyActivityTotals, monthlyActivityTotals } from "@/lib/gym/activity-aggregation";
+import { WalkTracker } from "@/components/gym/walk-tracker";
 import { Mascot } from "@/components/agente/mascot";
 import { useSwipeCarousel, SwipeCarouselStage, SwipeCarouselDots } from "@/components/shared/swipe-carousel";
 import { MONO_FONT } from "@/lib/ui/mono-font";
@@ -61,7 +66,7 @@ const VOLVER_A_CALORIAS = "/gym/calorias?view=2";
 export default function NutriologoPage() {
   const router = useRouter();
   const [card, setCard] = useState(0);
-  const CARD_COUNT = 5;
+  const CARD_COUNT = 6;
   const { direction, goTo, onDragEnd } = useSwipeCarousel({ index: card, length: CARD_COUNT, onIndexChange: setCard });
 
   // Última pantalla de la cadena de Calorías: solo se vuelve hacia abajo (a la racha/año), no hay nada
@@ -107,6 +112,7 @@ export default function NutriologoPage() {
           {card === 2 && <IntervencionesCard />}
           {card === 3 && <SintomasCard />}
           {card === 4 && <AgenteCard />}
+          {card === 5 && <ActividadCard />}
         </SwipeCarouselStage>
       </main>
 
@@ -449,6 +455,87 @@ function AgenteCard() {
         &ldquo;¿Por qué?&rdquo; en cada uno — ahí está el dato exacto que generó cada aviso.
       </p>
       <p className="text-xs text-white/35 text-center max-w-xs">{DISCLAIMER_MEDICO}</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tarjeta 6: Actividad — calorías de entrenamiento (estimado) + caminata con GPS
+// ---------------------------------------------------------------------------
+const DISCLAIMER_ACTIVIDAD =
+  "Estimado (método MET, Compendium of Physical Activities 2011) a partir de tus series/reps/peso y del descanso configurado — una aproximación, no una medición real.";
+
+function ActividadCard() {
+  const sessions = useGymStore((s) => s.sessions);
+  const walkSessions = useGymStore((s) => s.walkSessions);
+  const gymProfile = useGymStore((s) => s.gymProfile);
+  const pesoCorporalKg = gymProfile?.pesoKg ?? 0;
+
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const todaySession = useMemo(() => sessions.find((s) => s.completado && s.date.slice(0, 10) === todayKey), [sessions, todayKey]);
+  const todayEstimate = useMemo(
+    () => (todaySession && pesoCorporalKg > 0 ? estimateSessionCalories(todaySession, pesoCorporalKg) : null),
+    [todaySession, pesoCorporalKg],
+  );
+
+  const daily = useMemo(() => dailyActivityTotals(sessions, walkSessions, pesoCorporalKg), [sessions, walkSessions, pesoCorporalKg]);
+  const weekly = useMemo(() => weeklyActivityTotals(daily), [daily]);
+  const monthly = useMemo(() => monthlyActivityTotals(daily), [daily]);
+  const weekKey = format(new Date(), "RRRR-'W'II");
+  const monthKey = format(new Date(), "yyyy-MM");
+
+  return (
+    <div className="flex flex-col gap-4 pt-2">
+      <SectionTitle>Calorías de entrenamiento (hoy)</SectionTitle>
+      {!pesoCorporalKg ? (
+        <p className="text-sm text-white/50">Agregá tu peso en el perfil para estimar las calorías de tu entrenamiento.</p>
+      ) : !todaySession ? (
+        <p className="text-sm text-white/50">Todavía no completaste un entrenamiento hoy.</p>
+      ) : (
+        <div className="rounded-3xl p-4 flex flex-col gap-3 bg-white/[0.05] border border-white/10">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-white/60">Total estimado</span>
+            <span className="text-lg font-semibold tabular-nums">{todayEstimate?.totalKcal ?? 0} kcal</span>
+          </div>
+          {todayEstimate?.porEjercicio.map((e) => (
+            <div key={e.exerciseId} className="flex items-center justify-between text-xs text-white/55">
+              <span className="capitalize">{e.exerciseId.replace(/-/g, " ")}</span>
+              <span className="tabular-nums">{e.kcal} kcal</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="rounded-3xl p-4 grid grid-cols-3 gap-2 text-center bg-white/[0.05] border border-white/10">
+        <div>
+          <p className="text-sm font-semibold tabular-nums">{Math.round(daily.get(todayKey)?.totalKcal ?? 0)}</p>
+          <p className="text-[10px] text-white/45 uppercase">hoy</p>
+        </div>
+        <div>
+          <p className="text-sm font-semibold tabular-nums">{Math.round(weekly.get(weekKey) ?? 0)}</p>
+          <p className="text-[10px] text-white/45 uppercase">esta semana</p>
+        </div>
+        <div>
+          <p className="text-sm font-semibold tabular-nums">{Math.round(monthly.get(monthKey) ?? 0)}</p>
+          <p className="text-[10px] text-white/45 uppercase">este mes</p>
+        </div>
+      </div>
+      <p className="text-[10px] text-white/35">{DISCLAIMER_ACTIVIDAD}</p>
+
+      <SectionTitle>Caminata</SectionTitle>
+      <WalkTracker />
+      {walkSessions.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          {walkSessions.slice(0, 5).map((w) => (
+            <div key={w.id} className="flex items-center justify-between text-xs text-white/55 rounded-xl px-3 py-2 bg-white/[0.04]">
+              <span>{format(new Date(w.startedAt), "d MMM, HH:mm", { locale: es })}</span>
+              <span className="tabular-nums">
+                {w.distanceKm?.toFixed(2) ?? "0.00"} km · {w.kcal ?? 0} kcal
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

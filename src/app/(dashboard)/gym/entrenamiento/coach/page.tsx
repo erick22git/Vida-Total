@@ -34,6 +34,7 @@ import {
   VOLUME_COLORS,
   type VolumeStatus,
 } from "@/lib/training/hypertrophy-engine";
+import { suggestNextWeight, type ProgressionSuggestion } from "@/lib/training/progressive-overload";
 import { useSwipeCarousel, SwipeCarouselStage } from "@/components/shared/swipe-carousel";
 import { ChainDots } from "@/components/gym/chain-dots";
 import { MONO_FONT } from "@/lib/ui/mono-font";
@@ -217,6 +218,28 @@ function buildCoachFeedback(sessions: WorkoutSession[], allExercises: ReturnType
 // ---------------------------------------------------------------------------
 // Tarjeta 2: Rutina / sugerencia de cambio
 // ---------------------------------------------------------------------------
+/** Series de trabajo (sin calentamiento) de las 2 sesiones completadas más recientes que incluyeron
+ * este ejercicio — [más reciente, anterior a esa] (la segunda solo para sacar `referenceReps`). */
+function lastTwoWorkingLogsFor(sessions: WorkoutSession[], exerciseId: string) {
+  const sorted = [...sessions].filter((s) => s.completado).sort((a, b) => (a.date < b.date ? 1 : -1));
+  const logs: WorkoutSession["ejercicios"][number]["sets"][] = [];
+  for (const s of sorted) {
+    const log = s.ejercicios.find((l) => l.exerciseId === exerciseId);
+    if (log) {
+      logs.push(log.sets.filter((set) => set.completado && set.tipo !== "calentamiento"));
+      if (logs.length === 2) break;
+    }
+  }
+  return logs;
+}
+
+function weightProgressionFor(sessions: WorkoutSession[], exerciseId: string): ProgressionSuggestion | null {
+  const [lastSets, previousSets] = lastTwoWorkingLogsFor(sessions, exerciseId);
+  if (!lastSets || lastSets.length === 0) return null;
+  const referenceReps = (previousSets ?? lastSets).map((s) => s.reps);
+  return suggestNextWeight({ lastSets, referenceReps });
+}
+
 function RutinaCard() {
   const weeklyPlan = useGymStore((s) => s.weeklyPlan);
   const routines = useGymStore((s) => s.routines);
@@ -259,10 +282,22 @@ function RutinaCard() {
           <p className="text-sm font-semibold">{routine.nombre ?? dayPlan.grupoMuscular}</p>
           {routine.ejercicios.map((rex) => {
             const ex = allExercises.find((e) => e.id === rex.exerciseId);
+            const progression = weightProgressionFor(sessions, rex.exerciseId);
             return (
-              <div key={rex.exerciseId} className="flex items-center justify-between text-xs text-white/60">
-                <span className="truncate">{ex?.nombre ?? rex.exerciseId}</span>
-                <span className="shrink-0 tabular-nums">{rex.sets.length} series</span>
+              <div key={rex.exerciseId} className="flex flex-col gap-0.5">
+                <div className="flex items-center justify-between text-xs text-white/60">
+                  <span className="truncate">{ex?.nombre ?? rex.exerciseId}</span>
+                  <span className="shrink-0 tabular-nums">{rex.sets.length} series</span>
+                </div>
+                {progression && !progression.sinDatos && (
+                  <p className="text-[11px]" style={{ color: progression.decision === "subir" ? "#4ade80" : progression.decision === "bajar" ? "#f59e0b" : "rgba(255,255,255,0.4)" }}>
+                    {progression.decision === "subir"
+                      ? `Probá ${progression.suggestedWeightKg} kg hoy`
+                      : progression.decision === "bajar"
+                        ? `Probá bajar a ${progression.suggestedWeightKg} kg hoy`
+                        : `Mismo peso hoy (${progression.lastWeight} kg) — sumá reps antes de subir`}
+                  </p>
+                )}
               </div>
             );
           })}

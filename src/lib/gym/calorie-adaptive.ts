@@ -27,7 +27,7 @@ export const MIN_LOG_DAYS_PER_WEEK = 5;
  * implícito (observado) para recién ahí sugerir un cambio. */
 export const DEVIATION_THRESHOLD_PCT = 0.1;
 
-function dayKey(d: Date): string {
+export function dayKey(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
@@ -39,14 +39,14 @@ function dayKey(d: Date): string {
  * encontradas con una prueba real (no mockeada): `tools/nutrition/window_real_dates_test.ts`. Con
  * comparación de STRINGS "yyyy-MM-dd" el orden lexicográfico ES el orden cronológico, sin ambigüedad —
  * mismo criterio ya usado en `hypertrophy-engine.ts` y `nutrition-care-engine.ts`. */
-function dayKeyNDaysBefore(from: Date, n: number): string {
+export function dayKeyNDaysBefore(from: Date, n: number): string {
   const d = new Date(from);
   d.setUTCDate(d.getUTCDate() - n);
   return dayKey(d);
 }
 
 /** Promedio de peso por día (si hubo más de una pesada el mismo día). */
-function dailyWeightAverages(entries: WeightEntry[]): Map<string, number> {
+export function dailyWeightAverages(entries: WeightEntry[]): Map<string, number> {
   const byDay = new Map<string, number[]>();
   for (const e of entries) {
     const key = dayKey(new Date(e.date));
@@ -58,9 +58,63 @@ function dailyWeightAverages(entries: WeightEntry[]): Map<string, number> {
   return out;
 }
 
-function average(vals: number[]): number | null {
+export function average(vals: number[]): number | null {
   if (vals.length === 0) return null;
   return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+export interface WeightTrendResult {
+  enoughData: boolean;
+  weighInsPerWeek: number;
+  /** kg por semana (positivo = subiendo, negativo = bajando). `null` sin suficiente dato. */
+  kgPerWeek: number | null;
+  /** % del peso corporal por semana — unidad que usa la literatura de volumen/déficit citada en
+   * `calorie-periodization.ts` (Garthe et al., Helms et al.). `null` sin suficiente dato. */
+  pctPerWeek: number | null;
+}
+
+/**
+ * Peso de tendencia (semana 1 vs semana 2 de la ventana de 14 días) — la MISMA lógica de ventana que
+ * ya usa `evaluateAdaptiveCalories`, separada para que `calorie-periodization.ts` la reuse sin
+ * duplicarla.
+ */
+export function weightTrendRate(weightEntries: WeightEntry[], today = new Date()): WeightTrendResult {
+  const todayKey = dayKey(today);
+  const windowStartKey = dayKeyNDaysBefore(today, WINDOW_DAYS - 1);
+  const weightByDay = dailyWeightAverages(
+    weightEntries.filter((w) => {
+      const k = dayKey(new Date(w.date));
+      return k >= windowStartKey && k <= todayKey;
+    }),
+  );
+  const weighInsPerWeek = (weightByDay.size / WINDOW_DAYS) * 7;
+
+  const week1StartKey = windowStartKey;
+  const week1EndKey = dayKeyNDaysBefore(today, 7);
+  const week2StartKey = dayKeyNDaysBefore(today, 6);
+  const week2EndKey = todayKey;
+
+  const week1Weights: number[] = [];
+  const week2Weights: number[] = [];
+  for (const [key, kg] of weightByDay) {
+    if (key >= week1StartKey && key <= week1EndKey) week1Weights.push(kg);
+    else if (key >= week2StartKey && key <= week2EndKey) week2Weights.push(kg);
+  }
+  const trendStart = average(week1Weights);
+  const trendEnd = average(week2Weights);
+  const enoughData = weighInsPerWeek >= MIN_WEIGH_INS_PER_WEEK && week1Weights.length > 0 && week2Weights.length > 0 && trendStart !== null && trendEnd !== null;
+
+  if (!enoughData) {
+    return { enoughData: false, weighInsPerWeek: Math.round(weighInsPerWeek * 10) / 10, kgPerWeek: null, pctPerWeek: null };
+  }
+  const kgPerWeek = trendEnd! - trendStart!; // ~7 días entre el punto medio de cada semana, igual que evaluateAdaptiveCalories
+  const pctPerWeek = (kgPerWeek / trendStart!) * 100;
+  return {
+    enoughData: true,
+    weighInsPerWeek: Math.round(weighInsPerWeek * 10) / 10,
+    kgPerWeek: Math.round(kgPerWeek * 100) / 100,
+    pctPerWeek: Math.round(pctPerWeek * 100) / 100,
+  };
 }
 
 export interface AdaptiveCalorieInput {

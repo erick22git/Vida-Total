@@ -508,6 +508,26 @@ export interface WeightEntry {
   date: string; // ISO date
 }
 
+// ---------- Caminata (GPS) ----------
+/** Un punto GPS registrado mientras una caminata está en curso. */
+export interface WalkGeoPoint {
+  lat: number;
+  lng: number;
+  timestampMs: number;
+}
+
+/** Una caminata registrada con el GPS del navegador (empezar/parar, como un reloj deportivo). */
+export interface WalkSession {
+  id: string;
+  /** ISO completo del momento en que se apretó "empezar". */
+  startedAt: string;
+  points: WalkGeoPoint[];
+  /** Se completa recién al apretar "parar" — mientras tanto `undefined`. */
+  distanceKm?: number;
+  durationSeconds?: number;
+  kcal?: number;
+}
+
 // ---------- Rank / SP per exercise ----------
 export interface ExerciseRankMeta {
   includeInGlobal: boolean;
