@@ -16,7 +16,7 @@
  */
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Maximize2, Minimize2, Plus, Minus, RotateCcw, AlertTriangle, Check, Volume2, VolumeX, Target, X as XIcon } from "lucide-react";
+import { ArrowLeft, Maximize2, Minimize2, Plus, Minus, RotateCcw, AlertTriangle, Check, Volume2, VolumeX, Target, X as XIcon, SwitchCamera } from "lucide-react";
 import { GlassButton } from "@/components/glass/glass-button";
 import { useCameraCalibrationStore } from "@/lib/store/cameraCalibrationStore";
 import { deviceFingerprint, shouldRecalibrate, type DeviceCalibrationResult } from "@/lib/camara/device-calibration";
@@ -165,6 +165,10 @@ function CamaraEntrenadorContent() {
 
   const [zoom, setZoom] = useState(1);
   const [zoomCaps, setZoomCaps] = useState<{ min: number; max: number; step: number } | null>(null);
+  /** "environment" = cámara trasera (default, mejor para encuadrar todo el cuerpo desde lejos);
+   * "user" = cámara delantera, para cuando el celular está apoyado de frente al usuario y no hay
+   * nadie más para sostenerlo mirando hacia atrás. */
+  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
   const pinchRef = useRef<{ startDist: number; startZoom: number } | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -459,7 +463,7 @@ function CamaraEntrenadorContent() {
     async function init() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } },
+          video: { facingMode, width: { ideal: 640 }, height: { ideal: 480 } },
           audio: false,
         });
         if (cancelled) {
@@ -514,7 +518,12 @@ function CamaraEntrenadorContent() {
       stopCamera();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [facingMode]);
+
+  function switchCamera() {
+    setStatus("starting");
+    setFacingMode((f) => (f === "environment" ? "user" : "environment"));
+  }
 
   useEffect(() => {
     function onFsChange() {
@@ -609,6 +618,13 @@ function CamaraEntrenadorContent() {
           </div>
         )}
         <div className="flex gap-2">
+          <button
+            onClick={switchCamera}
+            aria-label={facingMode === "environment" ? "Usar cámara delantera" : "Usar cámara trasera"}
+            className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+          >
+            <SwitchCamera size={16} />
+          </button>
           <button
             onClick={() => setVoiceEnabled((v) => !v)}
             aria-label={voiceEnabled ? "Silenciar la voz" : "Activar la voz"}
@@ -743,7 +759,7 @@ function CamaraEntrenadorContent() {
                 onClick={confirmRepsAndReturn}
                 disabled={reps === 0}
                 className="flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-default active:scale-95 transition-transform"
-                style={{ background: "#22c55e", color: "#052e16" }}
+                style={{ background: "#fff", color: "#000" }}
               >
                 <Check size={16} /> Confirmar {reps} {reps === 1 ? "repetición" : "repeticiones"}
               </button>

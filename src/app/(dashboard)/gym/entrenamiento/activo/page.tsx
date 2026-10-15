@@ -10,7 +10,6 @@ import {
   Repeat,
   StickyNote,
   Clock,
-  Sparkles,
   Trash2,
   Hash,
   Camera as CameraIcon,
@@ -75,7 +74,6 @@ function ActiveWorkoutContent() {
   const [restConfigOpen, setRestConfigOpen] = useState(false);
   const [dropsetTypeOpen, setDropsetTypeOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"remove" | "discard" | null>(null);
-  const [aiComingSoonOpen, setAiComingSoonOpen] = useState(false);
 
   // Al completar la última serie pendiente de todo el entrenamiento, pasa solo a la pantalla de
   // confirmar/terminar — antes había que acordarse de tocar "Terminar" a mano. El ref evita que se
@@ -341,11 +339,10 @@ function ActiveWorkoutContent() {
         <PillActionButton icon={Repeat} title="Reemplazar" onClick={() => setPickerOpen(true)} />
         <PillActionButton icon={StickyNote} title="Notas" onClick={() => setNotesOpen(true)} active={!!currentLog.nota} />
         <PillActionButton icon={Clock} title="Descanso" badge={formatRestDuration(restSeconds)} onClick={() => setRestConfigOpen(true)} />
-        <PillActionButton icon={Sparkles} title="IA" onClick={() => setAiComingSoonOpen(true)} />
         {cameraExerciseId && !isBlock && (
           <PillActionButton
             icon={CameraIcon}
-            title="Cámara (beta)"
+            title="IA"
             onClick={() => {
               if (!firstUncheckedSet) return;
               router.push(
@@ -533,13 +530,6 @@ function ActiveWorkoutContent() {
             </button>
           </div>
         </div>
-      </ExpandSheet>
-
-      <ExpandSheet open={aiComingSoonOpen} onClose={() => setAiComingSoonOpen(false)} title="Escáner de técnica IA">
-        <p className="text-sm text-white/60">
-          Estamos preparando el escáner de movimiento con la cámara para revisar tu técnica desde distintos
-          ángulos. Todavía no está disponible — pronto vas a poder activarlo desde acá.
-        </p>
       </ExpandSheet>
 
       <ExpandSheet open={notesOpen} onClose={() => setNotesOpen(false)} title="Nota del ejercicio">
