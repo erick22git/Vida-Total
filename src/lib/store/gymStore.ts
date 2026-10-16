@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { isSameDay, differenceInCalendarDays, startOfDay } from "date-fns";
 import { localDayKey, daysDiff, toLocalDayKey } from "@/lib/gym/kegel-dates";
 import type { RankOverride } from "@/lib/gym/rank-engine";
+import { buildDrinkNameIndex, waterLinkForLoggedFood } from "@/lib/gym/food-to-water";
 import type {
   Exercise,
   Food,
@@ -414,6 +415,13 @@ export const useGymStore = create<GymState>()(
           return { loggedFoods: [...state.loggedFoods, created] };
         });
         if (uidUser) syncInsertLoggedFood(created, orden, uidUser);
+        // Si lo registrado matchea una bebida del catálogo de Agua por nombre (agua, jugo, batido,
+        // cerveza...), se suma sola a la meta de agua del día — pedido explícito: "si pongo agua ahí
+        // o algún líquido se registre en gym/agua automáticamente". Nunca inventa: sin match, no hace nada.
+        const link = waterLinkForLoggedFood(created.nombre, created.gramos, buildDrinkNameIndex(get().drinkOverrides));
+        if (link) {
+          get().addWater(link.aguaMl, { id: link.drink.id, nombre: link.drink.nombre, emoji: link.drink.emoji });
+        }
         return created;
       },
       removeLoggedFood: (id) => {

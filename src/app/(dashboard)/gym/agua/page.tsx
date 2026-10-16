@@ -10,6 +10,7 @@ import { WeekStrip } from "@/components/shared/week-strip";
 import { SettingsGlyph } from "@/components/shared/settings-glyph";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { AddDrinkModal } from "@/components/gym/add-drink-modal";
+import { WaterSettingsSheet } from "@/components/gym/water-settings-sheet";
 import { totalsByDrink } from "@/lib/gym/water-stats";
 import { waterState } from "@/lib/gym/water-state";
 import { useGymStore, useTodayWaterEntries } from "@/lib/store/gymStore";
@@ -59,6 +60,7 @@ export default function AguaPage() {
   const [glassFailed, setGlassFailed] = useState(false);
   const start = useRef<{ x: number; y: number } | null>(null);
   const wheelLock = useRef(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const todayByDrink = useMemo(() => totalsByDrink(todayEntries, drinkOverrides), [todayEntries, drinkOverrides]);
   const totalMl = todayByDrink.reduce((sum, d) => sum + d.ml, 0);
@@ -110,9 +112,13 @@ export default function AguaPage() {
         <h1 className="text-[20px] uppercase tracking-[0.12em]" style={MONO_FONT}>
           Agua
         </h1>
-        <span className="w-10 h-10 -mr-2 flex items-center justify-center" aria-hidden>
+        <button
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Ajustes de agua"
+          className="w-10 h-10 -mr-2 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+        >
           <SettingsGlyph />
-        </span>
+        </button>
       </header>
 
       <main
@@ -190,6 +196,8 @@ export default function AguaPage() {
       <div className="pb-[max(env(safe-area-inset-bottom),28px)] min-h-[104px] shrink-0">
         <WeekStrip doneKeys={goalDays} todayISO={todayISO} viewIndex={0} viewCount={3} />
       </div>
+
+      <WaterSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
       <AddDrinkModal
         open={addDrinkOpen}
