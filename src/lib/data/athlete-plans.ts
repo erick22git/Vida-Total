@@ -41,7 +41,8 @@ const arnold: AthletePlan = {
         ex("pullover-mancuerna", 5, 8, 12, S, { descansoSeg: ARNOLD_REST }),
         ex("dominadas", 4, 8, 12, S, {
           descansoSeg: ARNOLD_REST,
-          nota: "La fuente dice «tantas como puedas»: sin rango fijo; se asume que se acerca al fallo.",
+          seriesAlFallo: 4,
+          nota: "La fuente dice «tantas como puedas»: sin rango fijo (8–12 es solo la referencia de carga); eso es llegar al fallo, por eso las 4 series van marcadas así.",
         }),
         ex("remo-barra", 5, 8, 12, S, { descansoSeg: ARNOLD_REST }),
         ex("peso-muerto", 3, 4, 10, S, { descansoSeg: ARNOLD_REST, ...arnoldPyramid }),
@@ -255,7 +256,7 @@ const cbum: AthletePlan = {
           nota: "Repeticiones lentas y controladas.",
           descendente: { bajadas: 1, descripcion: "Termina con una serie descendente." },
         }),
-        ex("aperturas-inclinadas-polea", 3, 8, 10, C, { nota: "Al final de cada serie mantiene la posición estirada hasta el fallo." }),
+        ex("aperturas-inclinadas-polea", 3, 8, 10, C, { seriesAlFallo: 3, nota: "Al final de cada serie mantiene la posición estirada hasta el fallo." }),
         ex("extension-triceps-polea-horizontal", 3, 12, 15, "estimado", { nota: "Unilateral. «Unas series» (cantidad no indicada)." }),
         ex("fondos-maquina", 3, 12, 15, "estimado", { nota: "Último ejercicio de tríceps." }),
       ],
