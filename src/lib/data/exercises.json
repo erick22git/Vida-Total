@@ -2988,5 +2988,180 @@
       "Camina hacia adelante con pasos cortos manteniendo las puntas arriba.",
       "Recorre unos 15–20 metros o hasta sentir fatiga en las espinillas."
     ]
+  },
+  {
+    "id": "extension-muneca-barra",
+    "nombre": "Extensión de muñeca con barra (palmas abajo)",
+    "categoria": "Antebrazo",
+    "musculoPrimario": "Extensores del antebrazo",
+    "musculosSecundarios": [],
+    "equipo": "Barra",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Sentado, apoya los antebrazos en las rodillas o en un banco con las palmas hacia abajo.",
+      "Baja la barra extendiendo la muñeca hacia abajo de forma controlada.",
+      "Sube la muñeca todo lo que puedas sin despegar el antebrazo."
+    ]
+  },
+  {
+    "id": "fondos-asistidos-maquina",
+    "nombre": "Fondos asistidos en máquina",
+    "categoria": "Triceps",
+    "musculoPrimario": "Triceps",
+    "musculosSecundarios": [
+      "Pectoral mayor",
+      "Hombros"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Elige el contrapeso que te permita hacer las repeticiones con buena técnica.",
+      "Baja con control hasta que los codos lleguen a unos 90°.",
+      "Empuja hasta extender los codos sin bloquearlos."
+    ]
+  },
+  {
+    "id": "jalon-agarre-supino",
+    "nombre": "Jalón al pecho agarre supino",
+    "categoria": "Espalda",
+    "musculoPrimario": "Dorsal ancho",
+    "musculosSecundarios": [
+      "Biceps"
+    ],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Agarra la barra con las palmas hacia ti, a la anchura de los hombros.",
+      "Tira de la barra hacia la parte alta del pecho llevando los codos hacia abajo.",
+      "Sube la barra de forma controlada hasta estirar los dorsales."
+    ]
+  },
+  {
+    "id": "remo-yates",
+    "nombre": "Remo Yates (barra, agarre supino)",
+    "categoria": "Espalda",
+    "musculoPrimario": "Dorsal ancho",
+    "musculosSecundarios": [
+      "Biceps",
+      "Trapecio"
+    ],
+    "equipo": "Barra",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Con el torso inclinado unos 30–45° y la barra en agarre supino, déjala colgar frente a las rodillas.",
+      "Tira de la barra hacia el abdomen bajo, llevando los codos atrás.",
+      "Baja con control sin perder la inclinación del torso."
+    ]
+  },
+  {
+    "id": "press-pecho-cable-sentado",
+    "nombre": "Press de pecho sentado en polea (agarre cerrado)",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral mayor",
+    "musculosSecundarios": [
+      "Triceps",
+      "Hombros"
+    ],
+    "equipo": "Polea",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Sentado, agarra las asas de las poleas a la altura del pecho.",
+      "Empuja hacia delante hasta extender los codos sin bloquearlos.",
+      "Vuelve con control manteniendo el pecho abierto."
+    ]
+  },
+  {
+    "id": "press-inclinado-maquina",
+    "nombre": "Press inclinado en máquina",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral superior",
+    "musculosSecundarios": [
+      "Hombros",
+      "Triceps"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Ajusta el asiento para que las asas queden a la altura del pecho alto.",
+      "Empuja hasta casi extender los codos.",
+      "Vuelve despacio hasta sentir estiramiento en el pecho."
+    ]
+  },
+  {
+    "id": "press-declinado-maquina",
+    "nombre": "Press declinado en máquina",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral inferior",
+    "musculosSecundarios": [
+      "Triceps",
+      "Hombros"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Siéntate con la espalda apoyada y las asas a la altura del pecho bajo.",
+      "Empuja hasta extender los codos sin bloquearlos.",
+      "Baja lento y controlado hasta sentir estiramiento en el pecho."
+    ]
+  },
+  {
+    "id": "aperturas-inclinadas-polea",
+    "nombre": "Aperturas inclinadas en polea",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral superior",
+    "musculosSecundarios": [
+      "Hombros"
+    ],
+    "equipo": "Polea",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Con un banco inclinado entre las poleas bajas, agarra las asas con los codos ligeramente flexionados.",
+      "Junta las manos sobre el pecho alto describiendo un arco.",
+      "Abre despacio hasta sentir el estiramiento del pecho."
+    ]
+  },
+  {
+    "id": "aperturas-inclinadas-maquina",
+    "nombre": "Aperturas inclinadas en máquina",
+    "categoria": "Pecho",
+    "musculoPrimario": "Pectoral superior",
+    "musculosSecundarios": [
+      "Hombros"
+    ],
+    "equipo": "Máquina",
+    "nivel": "Principiante",
+    "instrucciones": [
+      "Ajusta el asiento para que las asas queden a la altura del pecho alto.",
+      "Junta las asas empujando desde los codos.",
+      "Vuelve despacio hasta sentir el estiramiento sin dejar que los hombros se adelanten."
+    ]
+  },
+  {
+    "id": "extension-triceps-polea-horizontal",
+    "nombre": "Extensión de tríceps horizontal en polea",
+    "categoria": "Triceps",
+    "musculoPrimario": "Triceps",
+    "musculosSecundarios": [],
+    "equipo": "Polea",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "De pie o sentado de lado a la polea, con el codo pegado al torso y el brazo a la altura del pecho.",
+      "Extiende el codo llevando la mano hacia delante.",
+      "Vuelve despacio controlando el estiramiento."
+    ]
+  },
+  {
+    "id": "press-frances-mancuernas",
+    "nombre": "Press francés con mancuernas",
+    "categoria": "Triceps",
+    "musculoPrimario": "Triceps",
+    "musculosSecundarios": [],
+    "equipo": "Mancuernas",
+    "nivel": "Intermedio",
+    "instrucciones": [
+      "Acostado, sostén una mancuerna en cada mano con los brazos extendidos sobre el pecho.",
+      "Flexiona solo los codos llevando las mancuernas a los lados de la cabeza.",
+      "Extiende de nuevo sin mover los hombros."
+    ]
   }
 ]

@@ -22,7 +22,7 @@ function toSets(ex: AthleteExercise): RoutineSetPlan[] {
         repsDescendentes: Array(ex.descendente.bajadas).fill(0),
       };
     }
-    return { peso: 0, reps: ex.repsMax, tipo: i >= ex.series - alFallo && alFallo > 0 ? "fallo" : "normal" };
+    return { peso: 0, reps: ex.repsPorSerie?.[i] ?? ex.repsMax, tipo: i >= ex.series - alFallo && alFallo > 0 ? "fallo" : "normal" };
   });
 }
 

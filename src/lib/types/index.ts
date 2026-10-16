@@ -638,6 +638,8 @@ export interface AthleteExercise {
   series: number;
   repsMin: number;
   repsMax: number;
+  /** Reps por serie cuando varían (pirámide 10-6-4, 1RM + series de respaldo). Si falta, todas usan `repsMax`. */
+  repsPorSerie?: number[];
   /** Cuántas de las `series` van al fallo (las últimas). `series` = todas. Omitido = ninguna documentada. */
   seriesAlFallo?: number;
   /** Serie descendente al final: cantidad de bajadas y cómo se hacen (texto). */
