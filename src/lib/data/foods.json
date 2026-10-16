@@ -71,7 +71,8 @@
       "fdcId": 171534
     },
     "unSoloEstado": false,
-    "estadoDefault": "cocido"
+    "estadoDefault": "cocido",
+    "photoUrl": "/foods/pechuga-pollo.jpg"
   },
   {
     "id": "arroz-blanco",
@@ -158,7 +159,8 @@
       "fdcId": 169753
     },
     "unSoloEstado": false,
-    "estadoDefault": "cocido"
+    "estadoDefault": "cocido",
+    "photoUrl": "/foods/arroz-blanco.jpg"
   },
   {
     "id": "arroz-integral",
@@ -191,7 +193,8 @@
       "cobre": 0.13,
       "manganeso": 1.14
     },
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/arroz-integral.jpg"
   },
   {
     "id": "crema-arroz",
@@ -280,7 +283,8 @@
       "fdcId": 173914
     },
     "estadoDefault": "cocido",
-    "fuente": "Seco (base de comparación): \"Cereals, CREAM OF RICE, dry\" (SR Legacy #173900). Cocido real: \"Cereals, CREAM OF RICE, cooked with water, with salt\" (SR Legacy #173914)."
+    "fuente": "Seco (base de comparación): \"Cereals, CREAM OF RICE, dry\" (SR Legacy #173900). Cocido real: \"Cereals, CREAM OF RICE, cooked with water, with salt\" (SR Legacy #173914).",
+    "photoUrl": "/foods/crema-arroz.jpg"
   },
   {
     "id": "huevo",
@@ -370,7 +374,8 @@
       "fdcId": 173424
     },
     "unSoloEstado": false,
-    "estadoDefault": "cocido"
+    "estadoDefault": "cocido",
+    "photoUrl": "/foods/huevo.jpg"
   },
   {
     "id": "clara-huevo",
