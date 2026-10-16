@@ -698,3 +698,108 @@ inventa un umbral):
 un número es una verificación básica de alineación de rodilla en sentadilla (cualitativa, no un
 ángulo exacto) — el resto (codos, hombros, manos en la barra) se queda afuera por falta de fuente
 confiable, igual que como se decidió para peso muerto/press/curl en la sección 2.1.3.
+
+## 6. Investigación: segmentación/seguimiento real de persona en el celular, SIN servidor
+
+Reemplaza la idea de "PC como servidor" (celular = cámara, PC = cerebro vía red local, procesando con
+SAM 2 + detector de barra) que se había planteado como posible siguiente paso. Esa arquitectura nunca
+llegó a implementarse ni a medirse su costo de red, porque el propio requisito que la sostenía —la PC
+prendida y en la misma red wifi todo el entrenamiento— no sirve para el caso de uso real: el usuario
+entrena en el gimnasio, con otra red, y no puede dejar la PC encendida en su casa. Con eso descartado,
+todo tiene que correr en el propio celular, sin depender de ningún servidor externo. Esta sección
+investiga si **EdgeTAM** (el modelo que se había elegido para "seguir a la persona sin soltarla",
+sección 3.2/3.6) es viable para eso HOY, con evidencia concreta en vez de suposición.
+
+### 6.1 Repositorio y licencia — confirmado
+
+Código oficial: [facebookresearch/EdgeTAM](https://github.com/facebookresearch/EdgeTAM) en GitHub,
+"[CVPR 2025] Official PyTorch implementation of 'EdgeTAM: On-Device Track Anything Model'" (arXiv
+[2501.07256](https://arxiv.org/abs/2501.07256)). Licencia: **Apache 2.0**, confirmada en el propio
+README del repo ("The EdgeTAM model checkpoints and code are licensed under Apache 2.0") y en la
+página del modelo en Hugging Face ([facebook/EdgeTAM](https://huggingface.co/facebook/EdgeTAM),
+`license: apache-2.0`) — misma licencia que SAM 2, como se esperaba.
+
+### 6.2 ¿Corre HOY en un navegador o en un celular? — Depende de qué PARTE de EdgeTAM
+
+Esta es la pregunta clave, y la respuesta tiene una distinción importante que no estaba clara antes
+de investigar: EdgeTAM tiene dos partes separables —(a) un encoder de imagen + decoder de máscara,
+que segmenta UN objeto en UNA imagen suelta (lo mismo que SAM 2 "estático"), y (b) un **módulo de
+memoria/atención temporal**, que es lo que de verdad permite seguir a un sujeto cuadro a cuadro sin
+soltarlo durante un video — la razón real por la que se había elegido EdgeTAM en vez de un SAM 2
+genérico. Investigando ambas por separado:
+
+- **Export oficial de Meta (CoreML, iOS/macOS):** el propio repo dice que genera "three optimized
+  CoreML models": `edgetam_image_encoder`, `edgetam_prompt_encoder`, `edgetam_mask_decoder`. **No
+  menciona el módulo de memoria en ningún lado del script de export.** Es decir: lo único que Meta
+  mismo empaqueta para correr en un dispositivo real (iPhone) es la parte (a), imagen suelta — no el
+  seguimiento de video.
+- **Port comunitario a ONNX, corriendo EN UN NAVEGADOR de verdad:** existe
+  [onnx-community/EdgeTAM-ONNX](https://huggingface.co/onnx-community/EdgeTAM-ONNX) (pesos oficiales
+  sin modificar, mismo Apache 2.0), y un demo público que lo usa con transformers.js:
+  [rabiatsadiq.com/lab/edgetam](https://www.rabiatsadiq.com/lab/edgetam/) — confirmado corriendo del
+  lado del cliente ("tus fotos no se suben", procesa localmente). Pero la propia página del demo dice
+  explícitamente: **"Solo se usa la parte de imagen, no el seguimiento de video."** Mismo patrón: lo
+  que está demostrado funcionando en navegador es justo la parte que NO necesitamos (una foto suelta,
+  no un video en vivo).
+- **El número "16 FPS en iPhone 15 Pro Max sin cuantizar"** que cita el paper es un perfil de
+  investigación (PyTorch/CoreML medido con Xcode Instruments en un iPhone de laboratorio), no una app
+  real shippeada corriendo eso. Y el propio paper dice que el cuello de botella de latencia está
+  "en el módulo de atención de memoria" — exactamente el módulo que ni el export oficial de Meta ni el
+  port comunitario a navegador llegan a incluir.
+
+**Conclusión de este punto, sin adornar:** la parte de EdgeTAM que de verdad resuelve "seguir a la
+persona sin soltarla" (el módulo de memoria) **no tiene ninguna demostración pública corriendo en un
+dispositivo real hoy** — ni como app de iOS shippeada, ni en Android, ni en ningún navegador. Lo único
+confirmado corriendo on-device/en navegador es la segmentación de una imagen suelta, que es un
+problema distinto (más parecido a "recortar un objeto de una foto" que a "trackear a una persona en
+video").
+
+### 6.3 ¿Es factible convertir el módulo de memoria yo mismo?
+
+Técnicamente, no es descabellado en principio: el módulo de memoria de EdgeTAM/SAM 2 está construido
+con operaciones de atención tipo transformer (no kernels CUDA exóticos ni operaciones propietarias),
+que ONNX Runtime Web y WebGPU sí suelen soportar en términos generales. Pero eso es muy distinto de
+"es trivial":
+
+- **Nadie lo demostró públicamente todavía** — ni Meta, ni la comunidad que ya portó la parte de
+  imagen a ONNX/navegador se animó a exportar también la memoria, lo cual sugiere que no es un
+  trabajo de una línea (si lo fuera, alguien ya lo habría hecho, dado el interés que mostró la
+  comunidad en el resto del modelo).
+- **Riesgo real de toparse con un operador de atención específico no soportado** al exportar — un
+  problema común al convertir modelos de atención "no estándar" a ONNX, que puede trabar la
+  conversión semanas en vez de horas.
+- **El propio benchmark de Meta dice que ESE módulo es el cuello de botella de velocidad incluso en
+  un iPhone 15 Pro Max** (su chip más rápido de consumo) — en un Android de gama media (el público
+  real de esta app, no un buque insignia), es razonable esperar que sea bastante más lento todavía,
+  con riesgo real de terminar en un frame rate inutilizable en vivo.
+
+No se promete que esto sea viable a corto plazo — es una pieza de investigación abierta, no un camino
+listo para programar.
+
+### 6.4 ¿Hay algo público corriendo en Android? — Hueco de información explícito
+
+**No.** Ninguna búsqueda encontró un demo, benchmark o port de EdgeTAM (ni siquiera la parte de
+imagen) corriendo en Android — ni oficial de Meta, ni comunitario. El paper y el repo oficial solo
+reportan números de iPhone (CoreML). Esto no significa que sea imposible en Android, significa que
+**no hay ninguna evidencia pública de que funcione ahí** — no se debe asumir que "si corre en iPhone,
+corre igual en Android".
+
+### 6.5 Conclusión y actualización del plan
+
+- La arquitectura "PC como servidor" queda **descartada**, no por un problema técnico encontrado, sino
+  porque no encaja con cómo el usuario entrena de verdad (otra red, PC apagada). No se investigó su
+  latencia de red porque ya no hace falta: el requisito previo que la sostenía no aplica al caso real.
+- EdgeTAM **con seguimiento de video real** no está listo para integrarse en esta app hoy, en ningún
+  lado (ni iOS confirmado como app shippeada, ni Android, ni navegador) — queda como investigación
+  abierta a revisar más adelante, no como una pieza que se pueda planear para implementar ahora.
+- El camino realista de corto/mediano plazo sigue siendo el que ya está implementado: MediaPipe Pose
+  Landmarker corriendo en el navegador del celular (esqueleto + ángulos + conteo, secciones 2–5 de
+  este documento) — sin segmentación real de persona, con las limitaciones ya documentadas ahí.
+- **La auto-medición de fps y degradación a modo manual (sección 2.1.9) sigue siendo un requisito
+  obligatorio, sin cambios** — de hecho más importante todavía: sin EdgeTAM en el horizonte cercano, el
+  camino que SÍ corre hoy (MediaPipe) necesita ese mecanismo igual para sostenerse en celulares
+  Android de gama media/baja, que es la base real de usuarios de esta app. Nada de esta investigación
+  cambia esa pieza ni la reemplaza.
+- Si en el futuro aparece una demostración pública real de EdgeTAM con el módulo de memoria corriendo
+  on-device (iOS o Android) a una velocidad usable, ahí se vuelve a evaluar con datos nuevos — hoy no
+  existe nada concreto con qué integrar.
