@@ -619,3 +619,59 @@ export interface SymptomEntry {
    * ventana de horas entre comer y sentirse mal. */
   timestamp: number;
 }
+
+// ---------- Rutinas de atletas (solo lectura; "Copiar a mis rutinas" las vuelve Routine + TrainingPlan editables) ----------
+/** Qué tan respaldado está un dato: `confirmado` = fuente directa del atleta; `secundaria` = resumen/transcripción de terceros que
+ * cita al atleta; `estimado` = la fuente pública no da el detalle y es nuestra mejor estimación; `no-verificado` = atribuida al
+ * atleta sin fuente directa. */
+export type AthleteConfidence = "confirmado" | "secundaria" | "estimado" | "no-verificado";
+
+export interface AthleteSource {
+  titulo: string;
+  url: string;
+  /** "directa" = el propio atleta; "secundaria" = tercero que resume o transcribe. */
+  tipo: "directa" | "secundaria";
+}
+
+export interface AthleteExercise {
+  exerciseId: string;
+  series: number;
+  repsMin: number;
+  repsMax: number;
+  /** Cuántas de las `series` van al fallo (las últimas). `series` = todas. Omitido = ninguna documentada. */
+  seriesAlFallo?: number;
+  /** Serie descendente al final: cantidad de bajadas y cómo se hacen (texto). */
+  descendente?: { bajadas: number; descripcion: string };
+  /** Tempo / tiempo de bajada, solo si está documentado. */
+  tempo?: string;
+  /** Descanso entre series; `undefined` = no documentado y no se inventa. */
+  descansoSeg?: number;
+  /** Mismo `grupo` = superserie/triserie con el módulo existente (`RoutineExercise.grupo`). */
+  grupo?: string;
+  nota?: string;
+  confianza: AthleteConfidence;
+}
+
+export interface AthleteDay {
+  nombre: string; // "Pecho y espalda"
+  grupoMuscular: MuscleGroup;
+  ejercicios: AthleteExercise[];
+}
+
+export interface AthletePlan {
+  id: string;
+  atleta: string;
+  nombre: string;
+  resumen: string;
+  enfoque: string;
+  /** Sesiones distintas del ciclo (cada una se copia como una Routine). */
+  dias: AthleteDay[];
+  /** Cómo se reparte el ciclo en la semana: índice en `dias` o null (descanso), de L a D. */
+  semana: (number | null)[];
+  diasPorSemana: number;
+  minsPorSesion: number;
+  confianzaGeneral: AthleteConfidence;
+  fuentes: AthleteSource[];
+  /** Notas con contexto citado/parafraseado (filosofía, versión elegida, límites de la fuente). */
+  notas: string[];
+}
