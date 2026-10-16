@@ -12,6 +12,7 @@ import { EditPlanModal } from "@/components/gym/edit-plan-modal";
 import { useGymStore } from "@/lib/store/gymStore";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { LIBRARY_PLANS, PLAN_LIBRARY_CATEGORIES } from "@/lib/data/plan-library";
+import { ATHLETE_CONFIDENCE_LABEL, ATHLETE_PLANS } from "@/lib/data/athlete-plans";
 import type { TrainingPlan } from "@/lib/types";
 
 export default function PlanificacionesPage() {
@@ -151,6 +152,27 @@ export default function PlanificacionesPage() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <h3 className="text-base font-semibold text-white/85">Rutinas de atletas</h3>
+        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+          {ATHLETE_PLANS.map((a) => (
+            <Link key={a.id} href={`/gym/entrenamiento/planificaciones/atletas/${a.id}`} className="shrink-0">
+              <GlassCard
+                padding="none"
+                className="w-56 h-36 flex flex-col justify-end p-3.5 overflow-hidden"
+                style={{ background: "var(--glass-bg-dark)" }}
+              >
+                <p className="text-sm font-bold text-white leading-tight">{a.atleta}</p>
+                <p className="text-[11px] text-white/55 mt-1">
+                  {a.diasPorSemana} {a.diasPorSemana === 1 ? "día" : "días"}/semana · {a.enfoque}
+                </p>
+                <p className="text-[10px] text-white/40 mt-1">{ATHLETE_CONFIDENCE_LABEL[a.confianzaGeneral]}</p>
+              </GlassCard>
+            </Link>
+          ))}
+        </div>
       </div>
 
       {allCategories.map((cat) => {
