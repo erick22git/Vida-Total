@@ -803,3 +803,22 @@ corre igual en Android".
 - Si en el futuro aparece una demostración pública real de EdgeTAM con el módulo de memoria corriendo
   on-device (iOS o Android) a una velocidad usable, ahí se vuelve a evaluar con datos nuevos — hoy no
   existe nada concreto con qué integrar.
+
+## 7. App nativa futura (fuera de alcance ahora)
+
+Aclaración sobre cómo corre todo lo de las secciones 2–6: la cámara en vivo, MediaPipe y el futuro
+detector de barra funcionan **dentro del navegador** (Safari en iPhone, Chrome en Android), accedidos
+como página web — no como app instalada desde App Store/Play Store. Esto importa porque significa que
+no hace falta Apple Developer Program ni ningún pago para que esto funcione en un iPhone tal como está
+hoy: eso solo sería necesario el día que se publique una app nativa, que es un paso a futuro separado y
+no bloquea nada de lo que ya está implementado o planeado en las secciones anteriores.
+
+Cuando llegue ese paso futuro, el patrón a reutilizar es el mismo que ya usa el resto de la app
+(Hábitos, Gym, etc.): guardado local primero, con sincronización a Supabase por merge seguro.
+- **Sin conexión:** los datos se guardan localmente en el dispositivo y no se sincronizan hasta que
+  haya internet.
+- **Con conexión:** se sincronizan automáticamente, igual que ya hacen los demás módulos de la app.
+- Una futura app nativa (web + móvil) compartiría cuenta y datos bajo este mismo patrón, sin necesitar
+  una arquitectura de sincronización distinta a la que ya existe.
+
+No se implementa nada de esta sección ahora — queda anotado únicamente como dirección futura.
