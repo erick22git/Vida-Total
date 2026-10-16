@@ -646,7 +646,9 @@ export interface AthleteExercise {
   descendente?: { bajadas: number; descripcion: string };
   /** Tempo / tiempo de bajada, solo si está documentado. */
   tempo?: string;
-  /** Descanso entre series; `undefined` = no documentado y no se inventa. */
+  /** Serie pesada (cerca del tope de carga): guía cualitativa, NO un peso. Sigue siendo una serie `normal`; solo alarga el descanso sugerido. */
+  seriePesada?: boolean;
+  /** Descanso entre series que da la fuente; manda sobre la guía genérica. `undefined` = no documentado: se usa la guía por tipo de ejercicio. */
   descansoSeg?: number;
   /** Mismo `grupo` = superserie/triserie con el módulo existente (`RoutineExercise.grupo`). */
   grupo?: string;

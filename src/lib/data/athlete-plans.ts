@@ -296,7 +296,7 @@ const cbum: AthletePlan = {
 // ---------------------------------------------------------------- Laid
 const U = "no-verificado" as const;
 const T = (e: string, s: number, a: number, b: number, extra: Partial<AthleteExercise> = {}) => ex(e, s, a, b, U, extra);
-const accesorios = (e: string, n: string) => T(e, 3, 10, 10, { nota: n });
+const accesorios = (e: string, n: string) => T(e, 3, 10, 12, { nota: `${n} Esquema 3–4 series de 10–12 (se carga el mínimo, 3).`.trim() });
 
 const laid: AthletePlan = {
   id: "laid-powerbuilding",
@@ -313,8 +313,8 @@ const laid: AthletePlan = {
       nombre: "Push 1 (pesado)",
       grupoMuscular: "Pecho",
       ejercicios: [
-        T("press-banca-barra", 5, 1, 4, { repsPorSerie: [1, 4, 4, 4, 4], nota: "Primero una serie de 1RM y luego 4×4." }),
-        T("press-empuje", 3, 4, 4),
+        T("press-banca-barra", 5, 1, 4, { seriePesada: true, repsPorSerie: [1, 4, 4, 4, 4], nota: "Primero una serie de 1RM y luego 4×4." }),
+        T("press-empuje", 3, 4, 4, { seriePesada: true }),
         accesorios("fondos-paralelas", "Lastrados."),
         accesorios("aperturas-mancuernas", "O contractora de pecho."),
         accesorios("elevaciones-laterales", "Con mancuernas."),
@@ -326,7 +326,7 @@ const laid: AthletePlan = {
       nombre: "Pull 1 (peso muerto 3RM)",
       grupoMuscular: "Espalda",
       ejercicios: [
-        T("peso-muerto", 5, 3, 6, { repsPorSerie: [3, 6, 6, 6, 6], nota: "Primero una serie de 3RM y luego 4×6." }),
+        T("peso-muerto", 5, 3, 6, { seriePesada: true, repsPorSerie: [3, 6, 6, 6, 6], nota: "Primero una serie de 3RM y luego 4×6." }),
         accesorios("peso-muerto-piernas-rigidas", ""),
         T("dominadas", 3, 8, 10),
         accesorios("remo-yates", ""),
@@ -339,7 +339,7 @@ const laid: AthletePlan = {
       nombre: "Piernas 1 (sentadilla 5RM)",
       grupoMuscular: "Cuadriceps",
       ejercicios: [
-        T("sentadilla-barra", 5, 5, 12, { repsPorSerie: [5, 12, 12, 12, 12], nota: "Primero una serie de 5RM y luego 4×12." }),
+        T("sentadilla-barra", 5, 5, 12, { seriePesada: true, repsPorSerie: [5, 12, 12, 12, 12], nota: "Primero una serie de 5RM y luego 4×12." }),
         accesorios("peso-muerto-rumano", ""),
         T("zancadas-caminando-barra", 3, 10, 10, { nota: "10 por pierna." }),
         accesorios("hiperextension-reversa", "O glute-ham raise."),
@@ -349,7 +349,7 @@ const laid: AthletePlan = {
       nombre: "Push 2 (hombros)",
       grupoMuscular: "Hombros",
       ejercicios: [
-        T("press-militar-barra", 5, 5, 12, { repsPorSerie: [5, 12, 12, 12, 12], nota: "Primero una serie de 5RM y luego 4×12." }),
+        T("press-militar-barra", 5, 5, 12, { seriePesada: true, repsPorSerie: [5, 12, 12, 12, 12], nota: "Primero una serie de 5RM y luego 4×12." }),
         T("press-inclinado-barra", 3, 12, 12),
         accesorios("elevaciones-laterales", "Con mancuernas."),
         accesorios("fondos-paralelas", "Lastrados."),
@@ -361,7 +361,7 @@ const laid: AthletePlan = {
       nombre: "Pull 2 (peso muerto 1RM)",
       grupoMuscular: "Espalda",
       ejercicios: [
-        T("peso-muerto", 5, 1, 2, { repsPorSerie: [1, 2, 2, 2, 2], nota: "Primero una serie de 1RM y luego 4×2." }),
+        T("peso-muerto", 5, 1, 2, { seriePesada: true, repsPorSerie: [1, 2, 2, 2, 2], nota: "Primero una serie de 1RM y luego 4×2." }),
         accesorios("peso-muerto-piernas-rigidas", ""),
         T("dominadas", 3, 8, 10),
         accesorios("remo-yates", ""),
@@ -374,7 +374,7 @@ const laid: AthletePlan = {
       nombre: "Piernas 2 (sentadilla 3RM)",
       grupoMuscular: "Cuadriceps",
       ejercicios: [
-        T("sentadilla-barra", 5, 3, 8, { repsPorSerie: [3, 8, 8, 8, 8], nota: "Primero una serie de 3RM y luego 4×8." }),
+        T("sentadilla-barra", 5, 3, 8, { seriePesada: true, repsPorSerie: [3, 8, 8, 8, 8], nota: "Primero una serie de 3RM y luego 4×8." }),
         accesorios("peso-muerto-rumano", ""),
         T("zancadas-caminando-barra", 3, 10, 10, { nota: "10 por pierna." }),
         accesorios("hiperextension-reversa", "O glute-ham raise."),
@@ -383,13 +383,22 @@ const laid: AthletePlan = {
   ],
   fuentes: [
     {
+      titulo: "Lift Vault — David Laid DUP Program (resumen del programa que Laid vende en davidlaid.com; no incluye el detalle por día)",
+      url: "https://liftvault.com/programs/david-laid-dup-program-spreadsheet/",
+      tipo: "secundaria",
+    },
+    {
       titulo: "Gymshark — David Laid's Powerbuilding Split (artículo de terceros: no cita a Laid como autor de las series y reps)",
       url: "https://www.gymshark.com/blog/article/david-laid-workout",
       tipo: "secundaria",
     },
   ],
   notas: [
-    "NO VERIFICADO: no encontré ninguna fuente directa (entrevista, video propio o programa publicado por Laid) con su rutina. La estructura sale de un artículo que la llama «comúnmente asociada» a él, sin respaldo. Otras páginas lo describen como PPL o «bro split»: las fuentes se contradicen. Tomalo como una rutina inspirada en Laid, no como la suya.",
+    "CONFIRMADO POR FUENTE SECUNDARIA (Lift Vault, que resume el programa DUP que Laid vende en davidlaid.com): 6 días por semana, rotación push / pull / piernas hecha dos veces, peso muerto 2 veces por semana, series de trabajo compuestas pesadas (85 % o más del máximo en la mayor parte del bloque) y accesorios de 3–4 series de 10–12 repeticiones. Esas cuatro cosas son la estructura de esta rutina.",
+    "PESO MUERTO DOS VECES: es real según esa fuente («2x weekly deadlift»), no un error de carga. Está en Pull 1 y Pull 2, que en la semana quedan separados por 3 días (martes y viernes). Lift Vault no dice en qué sesiones va; que sea en las dos sesiones de pull es la lectura del artículo de Gymshark.",
+    "SIGUE SIN VERIFICAR: qué ejercicios y qué series/reps exactas hace cada día. Salen del artículo de Gymshark, que no cita a Laid como autor. Piernas tiene pocos ejercicios porque así figura en esa única fuente detallada; no se completó con ejercicios inventados.",
+    "Series «pesadas» (intentos de 1, 3 o 5RM y push press): guía cualitativa, sin peso cargado. Quedan como series normales; el descanso sugerido es más largo.",
+    "NO VERIFICADO (conserva esta etiqueta): no encontré ninguna fuente directa (entrevista, video propio o programa publicado por Laid) con su rutina. La estructura sale de un artículo que la llama «comúnmente asociada» a él, sin respaldo. Otras páginas lo describen como PPL o «bro split»: las fuentes se contradicen. Tomalo como una rutina inspirada en Laid, no como la suya.",
     "Lo único atribuido a Laid en ese artículo son referencias sueltas: el concepto de DUP (video de 2018) y su lista de ejercicios favoritos (dominadas, fondos, elevaciones laterales, jalones de tríceps). El artículo tampoco dice que haya empezado delgado ni cómo ajustó su entrenamiento, así que no hay nada documentado sobre esa transformación.",
     "El orden de la semana (Push 1 – Pull 1 – Piernas 1 – Push 2 – Pull 2 – Piernas 2) es nuestra estimación: el artículo lista las 6 sesiones sin asignar días. Las sesiones «xRM» son un intento al máximo; el resto, series de respaldo. Descanso y tempo: no figuran. Duración (90 min): estimación nuestra.",
     "Series «hasta el fallo»: ninguna marcada. Las series de RM se hacen a máximo esfuerzo pero no se señalaron como fallo.",

@@ -110,6 +110,22 @@ con la visión por cámara cuando se implemente (`docs/roadmap/vision-entrenador
 señala que la detección automática de errores de forma es lo que más impacto tendría, y este conteo
 manual es el mismo dato, solo que anotado a mano por ahora.
 
+## Descanso entre series (`src/lib/training/rest-guidelines.ts`)
+
+Se usa para precargar el descanso al copiar una rutina de atleta. **Si la fuente del atleta da un descanso, ese manda** y esta tabla no se usa.
+
+| Tipo de ejercicio | Base | Fuente / criterio |
+|---|---|---|
+| Compuesto pesado (sentadilla, peso muerto, press banca/militar, remo con barra…) | 3:00 | ACSM 2009 (Ratamess et al., *Progression Models in Resistance Training*): 2–3 min entre series en ejercicios multiarticulares «de base»; se toma el extremo alto para los levantamientos grandes de barra por su fatiga sistémica (criterio propio) |
+| Compuesto (resto de multiarticulares: dominadas, prensa, fondos, press con mancuernas o máquina…) | 2:00 | Misma ACSM (2–3 min) y revisión de Stronger by Science (Milo Wolf, abr-2024): 1–2 min parece una guía sólida para hipertrofia; 2:00 cae en ambos rangos |
+| Aislamiento (curls, elevaciones, extensiones…) | 1:15 | ACSM 2009: 1–2 min en ejercicios monoarticulares. La misma revisión de 2024 indica que menos de 1 min puede reducir la hipertrofia, por eso no se baja de ahí |
+
+**Modificadores (convención propia, sin cifra publicada):** +30 s si el ejercicio tiene series al fallo o una serie pesada, +60 s si tiene una serie descendente, tope 4:00. Respaldo cualitativo: la misma revisión sugiere descansar más cuando se entrena cerca del fallo, en tren inferior y en ejercicios multiarticulares; los segundos exactos son decisión de este proyecto. Como hoy cada ejercicio de una rutina guarda un solo descanso (`restSeconds`), se usa el de la serie más exigente.
+
+**Qué se leyó y qué no:** el ACSM 2009 se confirmó a través de un artículo secundario (*Journal of Human Kinetics*, 2017) que cita sus cifras; no pude abrir el PDF original. Schoenfeld et al. 2016 (3 min vs 1 min, 21 hombres entrenados, mayor ganancia de fuerza y grosor muscular con 3 min) se leyó en resúmenes; Ahtiainen et al. (2 vs 5 min) no encontró diferencias en el área de sección. No pude acceder al texto de la NSCA (el sitio bloqueó la lectura), así que **NSCA no está citada**. La evidencia sobre descanso e hipertrofia es mixta: la tabla es una guía, no una regla.
+
+**Serie pesada:** «Lo hago pesado» no se guarda como kilos (no se conoce la carga real de cada persona). Es una guía cualitativa en las notas: *cerca del fallo en las últimas 2–3 reps, con buena técnica*. Sigue siendo una serie `normal` del modelo existente (`SetType`), solo cambia el descanso sugerido.
+
 ## Qué queda fuera (no implementado, documentado para revisión futura)
 
 - Landmarks de Abductores/Aductores: no hay fuente — el motor no inventa un número, reporta "sin referencia".

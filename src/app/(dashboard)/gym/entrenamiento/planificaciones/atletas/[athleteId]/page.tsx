@@ -9,7 +9,8 @@ import { GlassBadge } from "@/components/glass/glass-badge";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { useGymStore } from "@/lib/store/gymStore";
 import { ATHLETE_CONFIDENCE_LABEL, getAthletePlan } from "@/lib/data/athlete-plans";
-import { copyAthletePlan } from "@/lib/gym/athlete-plan-copy";
+import { athleteExerciseRest, copyAthletePlan, HEAVY_SET_GUIDE } from "@/lib/gym/athlete-plan-copy";
+import { formatRest, REST_BASE_SECONDS } from "@/lib/training/rest-guidelines";
 import { notifyInfo } from "@/lib/notify/use-notify";
 import type { AthleteConfidence, AthleteExercise } from "@/lib/types";
 
@@ -23,6 +24,15 @@ const CONFIDENCE_COLOR: Record<AthleteConfidence, string> = {
 function repsLabel(ex: AthleteExercise) {
   if (ex.repsPorSerie) return ex.repsPorSerie.join(" · ");
   return ex.repsMin === ex.repsMax ? `${ex.repsMax}` : `${ex.repsMin}–${ex.repsMax}`;
+}
+
+function RestLine({ ex }: { ex: AthleteExercise }) {
+  const r = athleteExerciseRest(ex);
+  return (
+    <p className="text-[11px] text-white/50">
+      Descanso: {formatRest(r.seconds)} · {r.origen === "fuente" ? "según la fuente" : `guía (${r.reason})`}
+    </p>
+  );
 }
 
 export default function AthletePlanPage({ params }: { params: Promise<{ athleteId: string }> }) {
@@ -75,6 +85,26 @@ export default function AthletePlanPage({ params }: { params: Promise<{ athleteI
         </div>
       </GlassCard>
 
+      <GlassCard interactive={false} className="flex flex-col gap-2" style={{ background: "var(--glass-bg-dark)" }}>
+        <p className="text-sm font-semibold text-white/85">Cómo leer esta rutina</p>
+        <ul className="text-xs text-white/60 leading-relaxed list-disc pl-4 flex flex-col gap-1">
+          <li>
+            <b>Al fallo / descendente:</b> las series marcadas llegan a esos tipos al copiar la rutina, igual que en el registro de series.
+          </li>
+          <li>
+            <b>Serie pesada:</b> cerca del fallo en las últimas 2–3 reps. No se guarda un peso: lo elegís vos.
+          </li>
+          <li>
+            <b>Descanso:</b> si la fuente lo da, manda. Si no, es una guía por tipo de ejercicio ({formatRest(REST_BASE_SECONDS["compuesto-pesado"])} compuesto
+            pesado · {formatRest(REST_BASE_SECONDS.compuesto)} compuesto · {formatRest(REST_BASE_SECONDS.aislamiento)} aislamiento), con 30 s más tras series al
+            fallo o pesadas y 60 s más tras una descendente.
+          </li>
+          <li>
+            <b>Etiquetas:</b> «Fuente secundaria» = resumen de terceros; «Estimado» = nuestra estimación; «No verificado» = sin fuente directa.
+          </li>
+        </ul>
+      </GlassCard>
+
       {plan.dias.map((dia, i) => (
         <div key={dia.nombre} className="flex flex-col gap-2.5">
           <h2 className="text-base font-semibold text-white/85">
@@ -89,10 +119,11 @@ export default function AthletePlanPage({ params }: { params: Promise<{ athleteI
               <p className="text-xs text-white/70">
                 {ex.series} {ex.series === 1 ? "serie" : "series"} × {repsLabel(ex)} reps
                 {ex.seriesAlFallo ? ` · ${ex.seriesAlFallo === ex.series ? "todas" : ex.seriesAlFallo} al fallo` : ""}
-                {ex.descansoSeg ? ` · descanso ${ex.descansoSeg} s` : ""}
                 {ex.tempo ? ` · tempo ${ex.tempo}` : ""}
                 {ex.grupo ? ` · superserie ${ex.grupo}` : ""}
               </p>
+              <RestLine ex={ex} />
+              {ex.seriePesada && <p className="text-[11px] text-white/50">{HEAVY_SET_GUIDE}</p>}
               {ex.descendente && <p className="text-[11px] text-white/50">Descendente: {ex.descendente.descripcion}</p>}
               {ex.nota && <p className="text-[11px] text-white/45 italic">{ex.nota}</p>}
             </GlassCard>

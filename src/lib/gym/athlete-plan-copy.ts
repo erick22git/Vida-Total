@@ -7,6 +7,36 @@ import type {
   WeeklyPlanDay,
 } from "@/lib/types";
 import { DAY_LABELS } from "@/lib/data/weekly-plan";
+import exercisesData from "@/lib/data/exercises.json";
+import { formatRest, suggestRest } from "@/lib/training/rest-guidelines";
+import type { Exercise } from "@/lib/types";
+
+const CATALOG = exercisesData as Exercise[];
+
+export const HEAVY_SET_GUIDE = "Serie pesada: cerca del fallo en las últimas 2–3 reps (buena técnica). No hay peso cargado: usá el tuyo.";
+
+/** Tipos de serie que genera `toSets` para el ejercicio (normal / fallo / descendente). */
+export function athleteSetTypes(ex: AthleteExercise): RoutineSetPlan["tipo"][] {
+  return toSets(ex).map((s) => s.tipo);
+}
+
+export interface AthleteRest {
+  seconds: number;
+  /** "fuente" = lo da la fuente del atleta (manda); "guia" = guía por tipo de ejercicio y de serie. */
+  origen: "fuente" | "guia";
+  reason: string;
+}
+
+export function athleteExerciseRest(ex: AthleteExercise, catalog: Exercise[] = CATALOG): AthleteRest {
+  if (ex.descansoSeg) return { seconds: ex.descansoSeg, origen: "fuente", reason: "dato de la fuente" };
+  const s = suggestRest({
+    exerciseId: ex.exerciseId,
+    exercise: catalog.find((e) => e.id === ex.exerciseId),
+    setTypes: athleteSetTypes(ex),
+    seriePesada: ex.seriePesada,
+  });
+  return { seconds: s.seconds, origen: "guia", reason: s.reason };
+}
 
 function toSets(ex: AthleteExercise): RoutineSetPlan[] {
   const alFallo = Math.min(ex.seriesAlFallo ?? 0, ex.series);
@@ -28,12 +58,20 @@ function toSets(ex: AthleteExercise): RoutineSetPlan[] {
 
 export function athleteExerciseToRoutine(ex: AthleteExercise): RoutineExercise {
   const rango = ex.repsMin === ex.repsMax ? `${ex.repsMax} reps` : `${ex.repsMin}–${ex.repsMax} reps`;
-  const partes = [rango, ex.tempo && `tempo ${ex.tempo}`, ex.descendente?.descripcion, ex.nota].filter(Boolean);
+  const rest = athleteExerciseRest(ex);
+  const partes = [
+    rango,
+    ex.tempo && `tempo ${ex.tempo}`,
+    ex.descendente?.descripcion,
+    ex.seriePesada && HEAVY_SET_GUIDE,
+    `Descanso ${formatRest(rest.seconds)} (${rest.origen === "fuente" ? "según la fuente" : `guía: ${rest.reason}`})`,
+    ex.nota,
+  ].filter(Boolean);
   return {
     exerciseId: ex.exerciseId,
     sets: toSets(ex),
     nota: partes.join(" · "),
-    restSeconds: ex.descansoSeg,
+    restSeconds: rest.seconds,
     grupo: ex.grupo,
   };
 }
