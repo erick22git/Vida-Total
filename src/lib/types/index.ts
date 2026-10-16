@@ -45,6 +45,8 @@ export interface Exercise {
   nivel: Difficulty;
   instrucciones: string[];
   imagen?: string;
+  /** Autor y licencia de la imagen cuando exige atribución (ver docs/licencias-imagenes-ejercicios.md). */
+  imagenCredito?: string;
 }
 
 export interface FoodPortion {

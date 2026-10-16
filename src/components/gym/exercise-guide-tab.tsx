@@ -16,6 +16,8 @@ export function ExerciseGuideTab({ exercise }: { exercise: Exercise }) {
         )}
       </div>
 
+      {exercise.imagen && exercise.imagenCredito && <p className="-mt-3 text-[10px] text-white/35">{exercise.imagenCredito}</p>}
+
       {exercise.instrucciones.length > 0 && (
         <div>
           <p className="text-sm font-semibold text-white/80 mb-2.5">Instrucciones</p>

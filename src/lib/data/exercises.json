@@ -3085,7 +3085,9 @@
       "Ajusta el asiento para que las asas queden a la altura del pecho alto.",
       "Empuja hasta casi extender los codos.",
       "Vuelve despacio hasta sentir estiramiento en el pecho."
-    ]
+    ],
+    "imagen": "/exercises/gifs/press-inclinado-maquina.jpg",
+    "imagenCredito": "Foto «Chest Incline» de Aliva Sahoo, CC BY-SA 4.0 (Wikimedia Commons); redimensionada"
   },
   {
     "id": "press-declinado-maquina",
@@ -3162,6 +3164,8 @@
       "Acostado, sostén una mancuerna en cada mano con los brazos extendidos sobre el pecho.",
       "Flexiona solo los codos llevando las mancuernas a los lados de la cabeza.",
       "Extiende de nuevo sin mover los hombros."
-    ]
+    ],
+    "imagen": "/exercises/gifs/press-frances-mancuernas.svg",
+    "imagenCredito": "Ilustración de Everkinetic, CC BY-SA 3.0 (Wikimedia Commons)"
   }
 ]
