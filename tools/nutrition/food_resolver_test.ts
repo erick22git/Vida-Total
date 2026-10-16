@@ -4,6 +4,7 @@ import aliasData from "../../src/lib/nutrition/food-aliases.json";
 import { BASE_FOODS } from "../../src/lib/food-utils";
 import {
   normalizeText, stem, parseQuantityFromText, resolveFood, nutritionForResult, buildUsageMap,
+  getResolverIndex, resolveRecipe,
 } from "../../src/lib/nutrition/food-resolver";
 import type { Recipe } from "../../src/lib/types";
 
@@ -150,6 +151,15 @@ ok(resolveFood("pescado", foods).confidence === "baja", "pescado → solo sugere
   ok(resolveFood("leche", foods, [batido]).tipo === "alimento", "si hay alimento razonable NO usa la receta");
   const cyc: Recipe = { ...batido, id: "cic", nombre: "Mi cosa", ingredientes: [{ ...batido.ingredientes[0], foodId: "x", nombre: "Mi cosa" }] };
   ok(resolveFood("mi cosa", foods, [cyc]).tipo === "receta", "receta que se menciona a sí misma no recursa");
+
+  // `resolveRecipe` exportada (la usa "Agregar" en la pantalla de Recetas — no hace falta escribir el
+  // nombre de la receta, ya se tiene el objeto `Recipe` directo al tocar la tarjeta).
+  const idxRecetas = getResolverIndex(foods, [batido]);
+  const direct = resolveRecipe(batido, idxRecetas, undefined, null);
+  ok(direct.gramos === 200, "resolveRecipe sin gramos pedidos: 1 porción (peso total/porciones), igual que resolveFood");
+  ok(direct.ingredientes.length === 2 && direct.ingredientes[0].foodId === leche.id, "resolveRecipe expande y vincula los mismos ingredientes");
+  const direct2 = resolveRecipe(batido, idxRecetas, undefined, 100);
+  ok(direct2.ingredientes[0].gramos === 75 && direct2.ingredientes[1].gramos === 25, "resolveRecipe con gramos pedidos escala igual que resolveFood");
 }
 
 console.log(`\n${checks - fails}/${checks} comprobaciones OK`);

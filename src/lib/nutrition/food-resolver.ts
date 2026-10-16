@@ -360,7 +360,10 @@ function requestedState(normalized: string): CookedState | undefined {
   return undefined;
 }
 
-function resolveRecipe(
+/** Exportada para que "Agregar" una receta guardada (pantalla de Recetas → registrarla en una
+ * comida) use la MISMA escala (1 porción por defecto) y resolución de ingredientes que ya usan
+ * Lista/Escáner/Voz al reconocer el nombre de una receta escrito a mano — ver `meal-to-recipe.ts`. */
+export function resolveRecipe(
   recipe: Recipe,
   idx: ResolverIndex,
   usage: Map<string, number> | undefined,

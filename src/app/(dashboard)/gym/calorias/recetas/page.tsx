@@ -11,10 +11,14 @@ import { Search, Sparkles, Plus, Heart, Clock, Users, X } from "lucide-react";
 import { FoodSectionHeader, FOOD_SECTION_BG } from "@/components/gym/food-section-header";
 import { VerifiedBadge } from "@/components/gym/verified-badge";
 import { useGymStore } from "@/lib/store/gymStore";
-import { MEAL_LABELS, type MealType } from "@/lib/types";
+import { MEAL_LABELS, type MealType, type Recipe } from "@/lib/types";
 import { generateAiRecipe } from "@/lib/ai-recipe";
 import { mergeFoods } from "@/lib/food-utils";
+import { commitDraftItems, uid, type DraftItem } from "@/lib/nutrition/draft-item";
+import { getResolverIndex, resolveRecipe } from "@/lib/nutrition/food-resolver";
 import { MONO_FONT } from "@/lib/ui/mono-font";
+
+const MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 
 type FilterChip = "mejor" | MealType | "favoritos";
 
@@ -24,6 +28,10 @@ export default function RecetasPage() {
   const addRecipe = useGymStore((s) => s.addRecipe);
   const toggleFavoriteRecipe = useGymStore((s) => s.toggleFavoriteRecipe);
   const customFoods = useGymStore((s) => s.customFoods);
+  const addLoggedFood = useGymStore((s) => s.addLoggedFood);
+  const addCustomFood = useGymStore((s) => s.addCustomFood);
+
+  const idx = useMemo(() => getResolverIndex(mergeFoods(customFoods), recipes), [customFoods, recipes]);
 
   const [query, setQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState<FilterChip[]>([]);
@@ -56,6 +64,35 @@ export default function RecetasPage() {
     }
     return list;
   }, [recipes, query, activeFilters]);
+
+  /** "Agregar" una receta guardada a una comida — faltaba: hasta ahora tocar una receta solo abría su
+   * editor, nunca la registraba. Reusa `resolveRecipe` (misma escala y resolución de ingredientes que
+   * ya usan Lista/Escáner/Voz al reconocer el nombre de una receta) y `commitDraftItems` (mismo
+   * guardado, ya probado) en vez de reescribir esa lógica acá. */
+  function handleAddToMeal(recipe: Recipe, e: React.MouseEvent) {
+    e.stopPropagation();
+    const mealParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("meal") : null;
+    const meal: MealType = mealParam && MEALS.includes(mealParam as MealType) ? (mealParam as MealType) : "desayuno";
+    const { gramos, ingredientes } = resolveRecipe(recipe, idx, undefined, null);
+    const totales = ingredientes.reduce(
+      (a, i) => ({ calorias: a.calorias + i.calorias, proteina: a.proteina + i.proteina, carbos: a.carbos + i.carbos, grasas: a.grasas + i.grasas }),
+      { calorias: 0, proteina: 0, carbos: 0, grasas: 0 },
+    );
+    const draft: DraftItem = {
+      id: uid(),
+      meal,
+      texto: recipe.nombre,
+      tipo: "receta",
+      nombre: recipe.nombre,
+      recipeId: recipe.id,
+      gramos,
+      base: { gramos, ...totales },
+      ingredientesBase: ingredientes,
+      candidates: [],
+    };
+    commitDraftItems([draft], { addLoggedFood, addCustomFood });
+    router.push(`/gym/calorias?justAdded=${meal}`);
+  }
 
   function handleGenerateAi() {
     if (!aiIngredients.trim()) return;
@@ -140,15 +177,25 @@ export default function RecetasPage() {
                     <span className="truncate">{recipe.nombre}</span>
                     <VerifiedBadge item={recipe} size={14} />
                   </span>
-                  <span
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavoriteRecipe(recipe.id);
-                    }}
-                    className="shrink-0 cursor-pointer text-white/30 hover:text-red-400"
-                  >
-                    <Heart size={15} fill={recipe.favorito ? "#ff5c5c" : "none"} color={recipe.favorito ? "#ff5c5c" : "currentColor"} />
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span
+                      onClick={(e) => handleAddToMeal(recipe, e)}
+                      aria-label={`Agregar ${recipe.nombre} a una comida`}
+                      className="cursor-pointer w-6 h-6 rounded-full flex items-center justify-center text-white/70 hover:text-white"
+                      style={{ background: "rgba(255,255,255,0.1)" }}
+                    >
+                      <Plus size={13} />
+                    </span>
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavoriteRecipe(recipe.id);
+                      }}
+                      className="cursor-pointer text-white/30 hover:text-red-400"
+                    >
+                      <Heart size={15} fill={recipe.favorito ? "#ff5c5c" : "none"} color={recipe.favorito ? "#ff5c5c" : "currentColor"} />
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3 text-[11px] text-white/45">
                   <span className="flex items-center gap-1">
