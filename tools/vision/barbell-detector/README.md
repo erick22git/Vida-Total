@@ -45,6 +45,19 @@ una muestra (`inspect_labels.ipynb`, celda final del notebook de Fase 1) antes d
 Si alguna clase detecta mal, lo que hay que ajustar es el texto del prompt de esa fila de la tabla —
 decime cuál y lo afino.
 
+## Camino recomendado: todo en un solo notebook de Kaggle
+
+`03_kaggle_pipeline.ipynb` — Fase 1 + Fase 2 combinadas, pensado para correr con **Save & Run All
+(Commit)** en Kaggle: no depende de tener el navegador abierto durante las ~6h (a diferencia de
+Colab free, que se desconecta por inactividad y perdía el dataset armado si cerrabas la pestaña).
+Necesita un secreto `ROBOFLOW_API_KEY` (Add-ons > Secrets del notebook) en vez de pedir la key a
+mano — en modo desatendido no hay nadie para tipearla. El resultado final (modelo, ONNX, métricas)
+queda en el tab **Output** del commit, listo para descargar.
+
+Los notebooks `01_assemble_dataset.ipynb` y `02_train_yolo.ipynb` de abajo son el mismo contenido
+separado en dos pasos — quedan documentados por si se prefiere correrlos en Colab en algún momento,
+pero el camino recomendado hoy es el combinado de Kaggle.
+
 ## Qué corre en Colab (en orden)
 
 1. **`01_assemble_dataset.ipynb`** — Fase 1:
