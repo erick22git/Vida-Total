@@ -14,6 +14,12 @@ import { AgentFab } from "@/components/agente/agent-fab";
 import { AgentInboxApplier } from "@/components/agente/agent-inbox-applier";
 import { AgentNotificationBanner } from "@/components/agente/agent-notification-banner";
 import { DynamicIsland } from "@/components/shared/dynamic-island";
+import { PaymentGate } from "@/components/pago/payment-gate";
+import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
+import { ModuleAccessGate } from "@/components/account/module-access-gate";
+import { GuidedTour } from "@/components/tutorial/guided-tour";
+import { loadAccountExtras } from "@/lib/account/load-account";
+import { getSubscription } from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/server";
 import { getAccountNotice, type Profile } from "@/lib/types/profile";
 
@@ -67,6 +73,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   const notice = profile ? getAccountNotice(profile) : null;
 
+  // Módulos habilitados, estado de suscripción y datos de pago (cada consulta degrada sola si la migración 0018 no está aplicada).
+  const extras = await loadAccountExtras(supabase, user.id);
+  const subscription = profile ? getSubscription(profile, extras.hasPendingReceipt) : null;
+  const account = { modules: extras.modules, subscription, payment: extras.payment };
+
   // Ver src/app/auth/impersonate/route.ts: se setea al canjear un magic
   // link generado desde /admin/usuarios/[userId] ("Entrar como este
   // usuario"). Solo es un marcador legible (no la sesión en sí, esa vive
@@ -74,8 +85,27 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const cookieStore = await cookies();
   const impersonatingEmail = cookieStore.get("vt_impersonating_email")?.value ?? null;
 
+  // Suscripción vencida (o bloqueada a mano): en lugar de los módulos, la pantalla de pago. El pago lo confirma un admin A MANO.
+  if (profile && subscription?.locked) {
+    return (
+      <ProfileProvider profile={profile} account={account}>
+        <PaymentGate userId={user.id} subscription={subscription} payment={extras.payment} />
+      </ProfileProvider>
+    );
+  }
+
+  // Usuario nuevo: el formulario inicial va ANTES de cualquier módulo. `onboarding_done === undefined` (migración 0018 sin aplicar)
+  // se trata como hecho: nunca se fuerza a nadie a un formulario que no podría guardar.
+  if (profile && profile.onboarding_done === false) {
+    return (
+      <ProfileProvider profile={profile} account={account}>
+        <OnboardingWizard userId={user.id} name={profile.full_name ?? sessionUser.name} />
+      </ProfileProvider>
+    );
+  }
+
   return (
-    <ProfileProvider profile={profile}>
+    <ProfileProvider profile={profile} account={account}>
       <div className="flex items-start min-h-dvh w-full">
         <UserScopeScript userId={user.id} />
         <HabitSourceBridge />
@@ -99,7 +129,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                 <AccountNoticeBanner notice={notice} />
               </div>
             )}
-            {children}
+            <ModuleAccessGate>{children}</ModuleAccessGate>
           </div>
         </main>
         <BottomNav />
@@ -107,6 +137,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         <AgentInboxApplier userId={user.id} />
         <AgentNotificationBanner userId={user.id} />
         <DynamicIsland />
+        <GuidedTour userId={user.id} autoStart={profile?.tutorial_seen === false} />
       </div>
     </ProfileProvider>
   );

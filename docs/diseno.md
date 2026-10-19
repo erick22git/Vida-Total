@@ -241,6 +241,14 @@ blanca, inconsistente con el resto oscuro), y las dos páginas de planificacione
 `ExpandSheet`, que usa `z-50`). Solo funciona con la app abierta — no hay push del navegador; con la
 app cerrada el único canal es Telegram (ver arriba).
 
+## Pantallas de cuenta: pago, formulario inicial y tutorial
+
+Mismo lenguaje negro de las notificaciones y los modales (sin vidrio): fondo `#000`, tarjetas `#1c1c1e` / `#2b2b2e` con borde `rgba(255,255,255,0.08)`, botón claro `#f4f4f5`, chips `#3b3b3f`; se reutilizan `DarkCard`, `Btn` y `Row` de `components/agente/ui.tsx`.
+
+- **Pantalla de pago** (`components/pago/payment-gate.tsx`): escena 3D sobre un degradado verde muy oscuro; el QR aparece como tarjeta blanca plana ENCIMA (nunca dentro de la escena).
+- **Formulario inicial** (`components/onboarding/onboarding-wizard.tsx`): 3 pasos con barra de progreso; opciones como chips de 44 px de alto mínimo.
+- **Tutorial** (`components/tutorial/guided-tour.tsx`): recorte con `box-shadow` alrededor del bloque, burbuja `#1c1c1e` de 340 px como máximo, mascota 2D con flecha animada; con «reducir movimiento» la transición del QR baja a 0,26 s. Ver `docs/suscripciones-usuarios.md`.
+
 ## Sonido
 
 Ver [`docs/sound/README.md`](../sound/README.md) — manifiesto de eventos, licencias por archivo

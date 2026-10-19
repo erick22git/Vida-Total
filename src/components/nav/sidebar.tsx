@@ -9,6 +9,8 @@ import { ICON_MAP } from "./icon-map";
 import { UserMenu, type SessionUser } from "./user-menu";
 import { MascotIcon } from "@/components/agente/mascot-dock";
 import { useMascotUi } from "@/lib/store/mascotUiStore";
+import { useAccount } from "@/components/providers/profile-provider";
+import { isNavModuleVisible } from "@/lib/account/modules";
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -17,6 +19,7 @@ function isActive(pathname: string, href: string) {
 
 export function Sidebar({ user, isAdmin = false }: { user: SessionUser; isAdmin?: boolean }) {
   const pathname = usePathname();
+  const { modules } = useAccount();
 
   return (
     <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-60 lg:w-64 shrink-0 p-4 z-40">
@@ -27,7 +30,7 @@ export function Sidebar({ user, isAdmin = false }: { user: SessionUser; isAdmin?
         </div>
 
         <nav className="flex flex-col gap-1">
-          {MODULES.map((mod) => {
+          {MODULES.filter((mod) => isNavModuleVisible(mod.id, modules)).map((mod) => {
             const Icon = ICON_MAP[mod.icon];
             const active = isActive(pathname, mod.href);
             const color = `var(${mod.color})`;

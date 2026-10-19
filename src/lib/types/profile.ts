@@ -34,6 +34,9 @@ export interface Profile {
   access_until: string | null;
   is_blocked: boolean;
   created_at: string;
+  /** Migración 0018. `undefined` = la migración todavía no se aplicó: se trata como «ya hecho» (no se fuerza nada). */
+  onboarding_done?: boolean;
+  tutorial_seen?: boolean;
 }
 
 export interface UserModuleAccess {
@@ -54,8 +57,8 @@ export interface AdminAuditLog {
 /**
  * Resultado de evaluar si una cuenta tiene algún aviso pendiente
  * (bloqueada manualmente por un admin, o con `access_until` vencido).
- * El acceso NUNCA se corta por esto — ver
- * `src/app/(dashboard)/layout.tsx` — solo se usa para mostrar un banner.
+ * Un aviso (banner) se sigue usando para cuentas no vencidas pero con aviso; el CORTE de acceso por suscripción vencida lo
+ * decide `src/lib/subscription.ts` y lo aplica `src/app/(dashboard)/layout.tsx`.
  */
 export interface AccountNotice {
   reason: "blocked" | "expired";

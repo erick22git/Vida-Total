@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, LayoutDashboard, Users, ScrollText, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CreditCard, LayoutDashboard, Users, ScrollText, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/admin", label: "Resumen", icon: LayoutDashboard, exact: true },
   { href: "/admin/usuarios", label: "Usuarios", icon: Users, exact: false },
+  { href: "/admin/pagos", label: "Pagos", icon: CreditCard, exact: false },
   { href: "/admin/auditoria", label: "Auditoría", icon: ScrollText, exact: false },
 ];
 

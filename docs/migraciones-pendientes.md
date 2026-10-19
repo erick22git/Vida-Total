@@ -135,3 +135,17 @@ Los micronutrientes nuevos (biotina, yodo, cromo, molibdeno, flúor, cloruro) **
 **Cómo aplicarla** (SQL Editor de Supabase): 1) `supabase/verificar-0016.sql` (solo lectura, debe mostrar `existe = false` antes); 2) `supabase/aplicar-0016.sql`; 3) `verificar-0016.sql` otra vez: `migracion_completa = true` y `default_ok = true`. Si cambias la migración, regenera el script con `node scripts/build-aplicar-0016.mjs`.
 
 **Es retrocompatible:** la app funciona igual **antes y después** de aplicarla. Sin las columnas, guarda sin ellas (y avisa en la consola solo en desarrollo) y no pierde nada local; cuando las aplicas, la siguiente hidratación sube lo que faltaba.
+
+## 10. Migración 0018 (suscripciones por transferencia, onboarding y tutorial)
+
+Nueva, **sin aplicar**. Aditiva e idempotente. Detalle completo en `docs/suscripciones-usuarios.md`.
+
+| Qué crea | Para qué |
+|---|---|
+| `profiles.onboarding_done`, `profiles.tutorial_seen` | Formulario inicial y tutorial de usuario nuevo. Los perfiles que ya existían quedan en `true` (no ven nada nuevo). |
+| `app_settings` | Clave/valor global. `payment_qr_payload` guarda el TEXTO del QR del banco; también monto e instrucciones. Lectura para todo usuario logueado, escritura solo admin. |
+| `payment_requests` | Comprobantes: `pendiente` / `aprobado` / `rechazado`. El usuario inserta los suyos; solo admin los revisa. |
+| Bucket privado `comprobantes` | Imágenes/PDF del comprobante, en la carpeta `<user_id>/`; las ve su dueño y los admins. |
+
+**Cómo aplicarla:** SQL Editor de Supabase → pegar `supabase/migrations/0018_suscripciones_onboarding.sql` → Run. **Retrocompatible:** sin ella la app funciona igual que hoy (no se fuerza onboarding ni tutorial, y la pantalla de pago avisa que no hay QR cargado).
+

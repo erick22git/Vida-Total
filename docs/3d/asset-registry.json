@@ -1691,6 +1691,32 @@
         "bytes": 970772
       },
       "futureAssets": "Avatar femenino pendiente (la pantalla elige el modelo según gymProfile.sexo; hoy usa el masculino para ambos y lo avisa)"
+    },
+    {
+      "id": "tree_payment_001",
+      "name": "Árbol procedural (pantalla de pago / QR)",
+      "module": "suscripciones",
+      "category": "payment-figure",
+      "background": "transparent",
+      "source": "Generado por script propio (sin assets de terceros)",
+      "license": "Obra propia",
+      "licenseNote": "Geometría y texturas (corteza, normal map, hoja) generadas por tools/3d/blender/40_payment_tree.py con numpy; no hay ningún archivo externo.",
+      "author": "Vida Total (generado)",
+      "publishable": true,
+      "originalFile": "tools/3d/blender/40_payment_tree.py",
+      "format": "script -> glb (meshopt)",
+      "polyCount": {
+        "glbTris": 26800,
+        "leafCards": 3640
+      },
+      "glb": {
+        "file": "public/models/tree_payment_001_meshopt.glb",
+        "sha256": "8172950b5b33870f1437149046e81e0f336a934025e51ee1e2fdcaf1b3c54b09",
+        "bytes": 966776,
+        "textures": "corteza 512 px + normal 512 px + hoja 256 px (PNG embebidas)",
+        "alphaMode": "MASK (hojas, cutoff 0.5)"
+      },
+      "runtime": "src/lib/3d/payment-scene.ts (three.js; WebGPURenderer con caída automática a WebGL2 y luego WebGLRenderer). Registro de figuras intercambiables en src/lib/3d/payment-figures.ts."
     }
   ],
   "replacementPlan": "Sustituir los cinco assets sin licencia por assets propios, CC0, con licencia comercial o creados para Vida Total. Cambiar colores/materiales no los vuelve propios ni publicables.",

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { BOTTOM_NAV_MODULES } from "@/lib/constants";
+import { useAccount } from "@/components/providers/profile-provider";
+import { isNavModuleVisible } from "@/lib/account/modules";
 import { ICON_MAP } from "./icon-map";
 import { useGlassMenu } from "@/glass-engine/use-glass-menu";
 import { MascotIcon } from "@/components/agente/mascot-dock";
@@ -13,7 +15,6 @@ type ModuleDefItem = (typeof BOTTOM_NAV_MODULES)[number];
 
 // Ícono de la mascota: va en el menú expandido, pero NO navega: despliega el panel de la mascota desde arriba.
 const MASCOT_ITEM = { id: "mascota", label: "Mascota", href: "#mascota", icon: "Home", color: "--gym" } as unknown as ModuleDefItem;
-const NAV_ITEMS: ModuleDefItem[] = [...BOTTOM_NAV_MODULES, MASCOT_ITEM];
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -146,8 +147,21 @@ function GlassMenuRow({
  */
 type Stage = "peek" | "bubble" | "expanded";
 
+/** Solo los módulos que el admin habilitó para este usuario (Home y la mascota siempre). */
+function useVisibleNav() {
+  const { modules } = useAccount();
+  return visibleNav(modules);
+}
+
+function visibleNav(modules: Parameters<typeof isNavModuleVisible>[1]) {
+  const navModules = BOTTOM_NAV_MODULES.filter((mod) => isNavModuleVisible(mod.id, modules));
+  const navItems: ModuleDefItem[] = [...navModules, MASCOT_ITEM];
+  return { navModules, navItems };
+}
+
 export function BottomNav() {
   const pathname = usePathname();
+  const { navModules, navItems } = useVisibleNav();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -156,9 +170,9 @@ export function BottomNav() {
 
   const [stage, setStage] = useState<Stage>("peek");
 
-  const rawActiveIndex = BOTTOM_NAV_MODULES.findIndex((mod) => isActive(pathname, mod.href));
+  const rawActiveIndex = navModules.findIndex((mod) => isActive(pathname, mod.href));
   const activeIndex = rawActiveIndex === -1 ? 0 : rawActiveIndex;
-  const activeModule = BOTTOM_NAV_MODULES[activeIndex];
+  const activeModule = navModules[activeIndex];
 
   // Cualquier navegación real (tap en un módulo dentro del menú
   // expandido) cambia el pathname — se usa como red de seguridad
@@ -285,7 +299,7 @@ export function BottomNav() {
       {stage === "expanded" ? (
         <GlassMenuRow
           key="expanded"
-          modules={NAV_ITEMS}
+          modules={navItems}
           activeIndex={activeIndex}
           containerClassName="glass-menu w-full flex items-center justify-between px-1.5 pointer-events-auto"
           renderItem={(mod, index, active) => {

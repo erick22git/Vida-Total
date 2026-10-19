@@ -7,6 +7,8 @@ import { ModuleToggles } from "@/components/admin/module-toggles";
 import { ImpersonateButton } from "@/components/admin/impersonate-button";
 import { AuditLogList } from "@/components/admin/audit-log-list";
 import { UserAccessSummary } from "@/components/admin/user-access-summary";
+import { SubscriptionCard } from "@/components/admin/subscription-card";
+import type { PaymentRequestRow } from "@/lib/admin/payments";
 import { createClient } from "@/lib/supabase/server";
 import { MODULE_KEYS, type ModuleKey, type Profile, type AdminAuditLog } from "@/lib/types/profile";
 
@@ -27,6 +29,14 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
   }
 
   const typedProfile = profile as Profile;
+
+  // Comprobantes del usuario (migración 0018). Si la tabla todavía no existe, la consulta devuelve error y se ignora.
+  const { data: paymentRows } = await supabase
+    .from("payment_requests")
+    .select("id, user_id, receipt_path, note, status, created_at, reviewed_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(10);
 
   const enabledMap = MODULE_KEYS.reduce(
     (acc, key) => {
@@ -79,6 +89,8 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
           <ImpersonateButton userId={typedProfile.id} userEmail={typedProfile.email ?? ""} />
         )}
       </GlassCard>
+
+      <SubscriptionCard profile={typedProfile} adminId={currentAdminId} requests={(paymentRows ?? []) as unknown as PaymentRequestRow[]} />
 
       <UserAccessSummary profile={typedProfile} adminId={currentAdminId} />
 

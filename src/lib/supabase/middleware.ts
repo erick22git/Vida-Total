@@ -62,7 +62,12 @@ export async function updateSession(request: NextRequest) {
     // Rutas sin sesión de usuario que se protegen con su propio secreto: el webhook de Telegram (secret_token) y el
     // programador de avisos (Authorization: Bearer CRON_SECRET). Cada ruta lo verifica y responde 401 si no coincide.
     const isPublicRoute =
-      pathname === "/login" || pathname.startsWith("/auth") || pathname === "/api/telegram/webhook" || pathname === "/api/agent/tick";
+      pathname === "/login" ||
+      pathname.startsWith("/auth") ||
+      // Modelos 3D estáticos (public/models): el matcher del proxy no excluye .glb y, sin esto, una petición sin cookie recibía la página de login en vez del archivo.
+      pathname.startsWith("/models/") ||
+      pathname === "/api/telegram/webhook" ||
+      pathname === "/api/agent/tick";
 
     if (!user && !isPublicRoute) {
       const redirectUrl = new URL("/login", request.url);

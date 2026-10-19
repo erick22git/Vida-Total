@@ -1,0 +1,99 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { AUDIT_ACTIONS, logAdminAction } from "@/lib/admin/audit";
+import { SETTING_KEYS } from "@/lib/account/load-account";
+import { nextAccessUntil } from "@/lib/subscription";
+
+/**
+ * Operaciones de pago que corren en el navegador con la sesión del admin (las policies RLS de la migración 0018 son la barrera
+ * real: un usuario que no es admin no puede ejecutar ninguna de estas escrituras aunque llame esta función).
+ *
+ * EL PAGO SE CONFIRMA A MANO. El QR es de una transferencia bancaria: no hay webhook ni API que avise cuando llega el dinero.
+ * Estas funciones solo registran la decisión del admin.
+ */
+
+export interface PaymentRequestRow {
+  id: string;
+  user_id: string;
+  receipt_path: string | null;
+  note: string | null;
+  status: "pendiente" | "aprobado" | "rechazado";
+  created_at: string;
+  reviewed_at: string | null;
+}
+
+export async function approvePayment(
+  supabase: SupabaseClient,
+  p: { adminId: string; request: PaymentRequestRow | null; userId: string; email: string | null; currentAccessUntil: string | null },
+): Promise<{ ok: true; accessUntil: string } | { ok: false; error: string }> {
+  const accessUntil = nextAccessUntil(p.currentAccessUntil);
+  const { error } = await supabase.from("profiles").update({ access_until: accessUntil, is_blocked: false }).eq("id", p.userId);
+  if (error) return { ok: false, error: error.message };
+  if (p.request) {
+    const { error: reqError } = await supabase
+      .from("payment_requests")
+      .update({ status: "aprobado", reviewed_by: p.adminId, reviewed_at: new Date().toISOString() })
+      .eq("id", p.request.id);
+    if (reqError) console.error("approvePayment: no se pudo cerrar el comprobante:", reqError.message);
+  }
+  await logAdminAction(supabase, {
+    adminId: p.adminId,
+    targetUserId: p.userId,
+    action: AUDIT_ACTIONS.APPROVED_PAYMENT,
+    details: { email: p.email, before: { access_until: p.currentAccessUntil }, after: { access_until: accessUntil }, requestId: p.request?.id ?? null },
+  });
+  return { ok: true, accessUntil };
+}
+
+export async function rejectPayment(
+  supabase: SupabaseClient,
+  p: { adminId: string; request: PaymentRequestRow; email: string | null },
+): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase
+    .from("payment_requests")
+    .update({ status: "rechazado", reviewed_by: p.adminId, reviewed_at: new Date().toISOString() })
+    .eq("id", p.request.id);
+  if (error) return { ok: false, error: error.message };
+  await logAdminAction(supabase, {
+    adminId: p.adminId,
+    targetUserId: p.request.user_id,
+    action: AUDIT_ACTIONS.REJECTED_PAYMENT,
+    details: { email: p.email, requestId: p.request.id },
+  });
+  return { ok: true };
+}
+
+export async function saveAppSetting(supabase: SupabaseClient, adminId: string, key: string, value: string | null) {
+  return supabase.from("app_settings").upsert({ key, value, updated_at: new Date().toISOString(), updated_by: adminId }, { onConflict: "key" });
+}
+
+export async function saveQrPayload(supabase: SupabaseClient, adminId: string, payload: string) {
+  const res = await saveAppSetting(supabase, adminId, SETTING_KEYS.qrPayload, payload);
+  if (!res.error) {
+    await logAdminAction(supabase, {
+      adminId,
+      targetUserId: adminId,
+      action: AUDIT_ACTIONS.UPDATED_PAYMENT_QR,
+      details: { length: payload.length },
+    });
+  }
+  return res;
+}
+
+/** Sube el comprobante del usuario al bucket privado y registra la solicitud como «pendiente». */
+export async function submitReceipt(
+  supabase: SupabaseClient,
+  p: { userId: string; file: File | null; note: string },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  let receiptPath: string | null = null;
+  if (p.file) {
+    const safe = p.file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-60);
+    receiptPath = `${p.userId}/${Date.now()}-${safe}`;
+    const { error: upError } = await supabase.storage.from("comprobantes").upload(receiptPath, p.file, { contentType: p.file.type || undefined });
+    if (upError) return { ok: false, error: upError.message };
+  }
+  const { error } = await supabase
+    .from("payment_requests")
+    .insert({ user_id: p.userId, receipt_path: receiptPath, note: p.note.trim() || null, status: "pendiente" });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, CreditCard, GraduationCap, Users } from "lucide-react";
 import { TelegramLinkCard } from "@/components/agente/telegram-link-card";
 import { useAutoTotalActive } from "@/components/agente/auto-total-badge";
 import { BORDER, Btn, DarkCard, Row, SURFACE, Toggle } from "@/components/agente/ui";
 import { useAgentStore } from "@/lib/store/agentStore";
 import { useMascotUi } from "@/lib/store/mascotUiStore";
+import { useTour } from "@/lib/store/tourStore";
+import { useProfile } from "@/components/providers/profile-provider";
 import { cn } from "@/lib/utils";
 
 /** Ajustes rápidos de la mascota. Todo lo demás (herramientas, límites, historial) está en «Agente y permisos». */
@@ -17,6 +19,7 @@ export function DockSettings() {
   const stopAuto = useAgentStore((s) => s.stopAutoTotal);
   const close = useMascotUi((s) => s.closeDock);
   const { active } = useAutoTotalActive();
+  const isAdmin = useProfile()?.role === "admin";
 
   return (
     <div className="flex flex-col gap-2.5 p-2.5 max-h-[min(66dvh,540px)] overflow-y-auto">
@@ -48,6 +51,42 @@ export function DockSettings() {
       </DarkCard>
 
       <TelegramLinkCard />
+
+      <DarkCard className="flex flex-col gap-1">
+        <Row
+          label="Tutorial guiado"
+          hint="La mascota te muestra Calorías y Entrenamiento paso a paso."
+          right={
+            <Btn
+              onClick={() => {
+                close();
+                useTour.getState().start(false);
+              }}
+              className="flex items-center gap-1.5"
+            >
+              <GraduationCap size={15} /> Ver
+            </Btn>
+          }
+        />
+      </DarkCard>
+
+      {isAdmin && (
+        <DarkCard className="flex flex-col gap-1">
+          <p className="text-[13px] font-extrabold text-white/60 uppercase tracking-wide">Administración</p>
+          {([
+            ["/admin/usuarios", "Usuarios, módulos y suscripciones", Users],
+            ["/admin/pagos", "QR de pago y comprobantes", CreditCard],
+          ] as const).map(([href, label, Icon]) => (
+            <Link key={href} href={href} onClick={close} className="flex items-center justify-between min-h-[48px] text-[15px] font-extrabold">
+              <span className="flex items-center gap-2.5">
+                <Icon size={17} className="text-white/60" />
+                {label}
+              </span>
+              <ChevronRight size={18} className="text-white/50" />
+            </Link>
+          ))}
+        </DarkCard>
+      )}
 
       <Link href="/configuracion/agente" onClick={close} className="flex items-center justify-between rounded-[22px] px-4 min-h-[52px] text-[15px] font-extrabold" style={{ background: SURFACE, border: BORDER }}>
         Permisos, herramientas e historial

@@ -13,6 +13,9 @@ export const AUDIT_ACTIONS = {
   ENABLED_MODULE: "enabled_module",
   DISABLED_MODULE: "disabled_module",
   IMPERSONATED_USER: "impersonated_user",
+  APPROVED_PAYMENT: "approved_payment",
+  REJECTED_PAYMENT: "rejected_payment",
+  UPDATED_PAYMENT_QR: "updated_payment_qr",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
