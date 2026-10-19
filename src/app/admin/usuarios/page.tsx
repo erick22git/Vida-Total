@@ -15,7 +15,9 @@ export default async function AdminUsuariosPage({
   const { error: errorParam } = await searchParams;
   const supabase = await createClient();
   const [{ data, error }, { data: userData }] = await Promise.all([
-    supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+    // Solo usuarios normales: un admin no se administra a sí mismo desde acá (nunca se bloquea, nunca
+    // necesita módulos habilitados a mano) — ver `getSubscription`.
+    supabase.from("profiles").select("*").eq("role", "user").order("created_at", { ascending: false }),
     supabase.auth.getUser(),
   ]);
 

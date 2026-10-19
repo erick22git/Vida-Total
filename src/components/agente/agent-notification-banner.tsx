@@ -17,7 +17,7 @@ const snoozeIso = () => new Date(Date.now() + SNOOZE_MIN * 60_000).toISOString()
  * los escribe para filas de `profiles` con `role = 'admin'`, así que no hace falta volver a chequear
  * el rol acá — alcanza con mirar el `kind`. */
 type AdminNoticeKind = "admin_new_user" | "admin_payment" | "admin_module_request";
-type NoticeKind = "task" | "subtask" | "routine" | "water" | "meal" | "summary" | AdminNoticeKind;
+type NoticeKind = "task" | "subtask" | "routine" | "water" | "meal" | "summary" | AdminNoticeKind | "trial_granted";
 const ADMIN_KINDS = new Set<NoticeKind>(["admin_new_user", "admin_payment", "admin_module_request"]);
 
 interface Row {
@@ -38,6 +38,7 @@ const KIND_TO_NOTIFY_TYPE: Record<NoticeKind, NotifyType> = {
   admin_new_user: "agent-message",
   admin_payment: "agent-message",
   admin_module_request: "agent-message",
+  trial_granted: "agent-message",
 };
 
 /**

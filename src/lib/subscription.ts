@@ -56,8 +56,8 @@ export function extendAccessUntil(current: string | null, amount: number, unit: 
 
 /** Módulo (clave de `user_module_access`) al que pertenece una ruta; `null` = ruta libre (home, configuración, etc.). */
 export function moduleForPath(pathname: string): "gym_calorias" | "gym_entrenamiento" | "habitos" | "outfit" | "paz_mental" | "finanzas" | "voz" | null {
-  if (pathname.startsWith("/gym/calorias") || pathname.startsWith("/gym/nutriologo")) return "gym_calorias";
-  if (pathname.startsWith("/gym/entrenamiento")) return "gym_entrenamiento";
+  if (pathname.startsWith("/gym/calorias") || pathname.startsWith("/gym/nutriologo") || pathname.startsWith("/gym/agua")) return "gym_calorias";
+  if (pathname.startsWith("/gym/entrenamiento") || pathname.startsWith("/gym/kegel")) return "gym_entrenamiento";
   if (pathname.startsWith("/habitos")) return "habitos";
   if (pathname.startsWith("/outfit")) return "outfit";
   if (pathname.startsWith("/paz-mental")) return "paz_mental";

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Flame, Droplets, Dumbbell, Sparkles } from "lucide-react";
+import { Flame, Droplets, Dumbbell, Sparkles, Lock } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { CalorieArcMini } from "@/components/gym/calorie-arc-visual";
@@ -14,8 +14,22 @@ import {
 } from "@/lib/store/gymStore";
 import { computeWorkoutStreak, dayHasWorkout } from "@/lib/gym/training-streaks";
 import { activeLoggedFoods } from "@/lib/food-utils";
+import { useAccount } from "@/components/providers/profile-provider";
+
+/** Tarjeta deshabilitada: mismo lugar en la grilla, sin link, con candado — para que el usuario sepa
+ * que existe pero no entre a un módulo que `ModuleAccessGate` igual le va a cortar. */
+function LockedCard({ label, Icon }: { label: string; Icon: typeof Flame }) {
+  return (
+    <GlassCard padding="sm" className="flex flex-col gap-2 h-full justify-center items-center opacity-40" style={{ background: "var(--glass-bg-dark)" }}>
+      <Icon size={18} className="text-white/50" />
+      <p className="text-sm text-white/50">{label}</p>
+      <Lock size={14} className="text-white/40" />
+    </GlassCard>
+  );
+}
 
 export default function GymHubPage() {
+  const { modules } = useAccount();
   const calorieGoal = useGymStore((s) => s.calorieGoal);
   const proteinGoal = useGymStore((s) => s.proteinGoal);
   const carbsGoal = useGymStore((s) => s.carbsGoal);
@@ -56,110 +70,126 @@ export default function GymHubPage() {
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Calorías */}
-        <Link href="/gym/calorias">
-          <GlassCard
-            padding="sm"
-            glow
-            accentColor="var(--gym)"
-            className="flex flex-col gap-2 h-full justify-center"
-            style={{ background: "var(--glass-bg-dark)" }}
-          >
-            <div className="flex items-center gap-2">
-              <Flame size={18} className="text-white" />
-              <p className="text-sm text-white/55">Calorías</p>
-            </div>
-            <CalorieArcMini
-              totals={todayTotals}
-              calorieGoal={calorieGoal}
-              proteinGoal={proteinGoal}
-              carbsGoal={carbsGoal}
-              fatGoal={fatGoal}
-            />
-          </GlassCard>
-        </Link>
+        {modules.gym_calorias ? (
+          <Link href="/gym/calorias">
+            <GlassCard
+              padding="sm"
+              glow
+              accentColor="var(--gym)"
+              className="flex flex-col gap-2 h-full justify-center"
+              style={{ background: "var(--glass-bg-dark)" }}
+            >
+              <div className="flex items-center gap-2">
+                <Flame size={18} className="text-white" />
+                <p className="text-sm text-white/55">Calorías</p>
+              </div>
+              <CalorieArcMini
+                totals={todayTotals}
+                calorieGoal={calorieGoal}
+                proteinGoal={proteinGoal}
+                carbsGoal={carbsGoal}
+                fatGoal={fatGoal}
+              />
+            </GlassCard>
+          </Link>
+        ) : (
+          <LockedCard label="Calorías" Icon={Flame} />
+        )}
 
-        {/* Agua */}
-        <Link href="/gym/agua">
-          <GlassCard
-            padding="sm"
-            glow
-            accentColor="rgba(255,255,255,0.6)"
-            className="flex flex-col gap-2 h-full justify-center"
-            style={{ background: "var(--glass-bg-dark)" }}
-          >
-            <div className="flex items-center gap-2">
-              <Droplets size={18} className="text-white" />
-              <p className="text-sm text-white/55">Agua</p>
-            </div>
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="text-2xl font-bold text-white tabular-nums">{waterPct}%</span>
-              <span className="text-xs text-white/45 tabular-nums">
-                {(waterToday / 1000).toFixed(1)} l de {(waterGoalMl / 1000).toFixed(1)} l
-              </span>
-            </div>
-            <WeeklyWaterCard waterEntries={waterEntries} waterGoalMl={waterGoalMl} compact />
-          </GlassCard>
-        </Link>
+        {/* Agua: mismo módulo que Calorías (se registra junto a la comida). */}
+        {modules.gym_calorias ? (
+          <Link href="/gym/agua">
+            <GlassCard
+              padding="sm"
+              glow
+              accentColor="rgba(255,255,255,0.6)"
+              className="flex flex-col gap-2 h-full justify-center"
+              style={{ background: "var(--glass-bg-dark)" }}
+            >
+              <div className="flex items-center gap-2">
+                <Droplets size={18} className="text-white" />
+                <p className="text-sm text-white/55">Agua</p>
+              </div>
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-2xl font-bold text-white tabular-nums">{waterPct}%</span>
+                <span className="text-xs text-white/45 tabular-nums">
+                  {(waterToday / 1000).toFixed(1)} l de {(waterGoalMl / 1000).toFixed(1)} l
+                </span>
+              </div>
+              <WeeklyWaterCard waterEntries={waterEntries} waterGoalMl={waterGoalMl} compact />
+            </GlassCard>
+          </Link>
+        ) : (
+          <LockedCard label="Agua" Icon={Droplets} />
+        )}
 
         {/* Entrenamiento */}
-        <Link href="/gym/entrenamiento">
-          <GlassCard
-            padding="md"
-            glow
-            accentColor="var(--gym-2)"
-            className="flex flex-col gap-3 h-full"
-            style={{ background: "var(--glass-bg-dark)" }}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-2xl font-extrabold text-white tabular-nums">
-                  {streak.current} {streak.current === 1 ? "DÍA" : "DÍAS"}
-                </span>
-                <span className="text-xs font-semibold text-white">
-                  {trainedToday ? "Entrenaste hoy" : "Entrena hoy"}
-                </span>
+        {modules.gym_entrenamiento ? (
+          <Link href="/gym/entrenamiento">
+            <GlassCard
+              padding="md"
+              glow
+              accentColor="var(--gym-2)"
+              className="flex flex-col gap-3 h-full"
+              style={{ background: "var(--glass-bg-dark)" }}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-2xl font-extrabold text-white tabular-nums">
+                    {streak.current} {streak.current === 1 ? "DÍA" : "DÍAS"}
+                  </span>
+                  <span className="text-xs font-semibold text-white">
+                    {trainedToday ? "Entrenaste hoy" : "Entrena hoy"}
+                  </span>
+                </div>
+                <div
+                  className="flex items-center justify-center w-10 h-10 rounded-full shrink-0"
+                  style={{
+                    background: trainedToday
+                      ? "radial-gradient(circle, rgba(255,255,255,0.2), transparent 70%)"
+                      : "transparent",
+                  }}
+                >
+                  <Flame
+                    size={28}
+                    style={{ color: "white" }}
+                    fill={trainedToday ? "white" : "none"}
+                    fillOpacity={trainedToday ? 0.25 : 0}
+                  />
+                </div>
               </div>
-              <div
-                className="flex items-center justify-center w-10 h-10 rounded-full shrink-0"
-                style={{
-                  background: trainedToday
-                    ? "radial-gradient(circle, rgba(255,255,255,0.2), transparent 70%)"
-                    : "transparent",
-                }}
-              >
-                <Flame
-                  size={28}
-                  style={{ color: "white" }}
-                  fill={trainedToday ? "white" : "none"}
-                  fillOpacity={trainedToday ? 0.25 : 0}
-                />
-              </div>
-            </div>
-            <WeeklyTrainingRow sessions={sessions} />
-          </GlassCard>
-        </Link>
+              <WeeklyTrainingRow sessions={sessions} />
+            </GlassCard>
+          </Link>
+        ) : (
+          <LockedCard label="Entrenamiento" Icon={Dumbbell} />
+        )}
 
-        {/* Kegel */}
-        <Link href="/gym/kegel">
-          <GlassCard
-            padding="md"
-            glow
-            accentColor="var(--paz-mental)"
-            className="flex flex-col gap-3 h-full"
-            style={{ background: "var(--glass-bg-dark)" }}
-          >
-            <div className="flex items-center gap-2">
-              <Sparkles size={18} className="text-white" />
-              <p className="text-sm text-white/55">Kegel</p>
-            </div>
-            <div className="flex flex-col gap-2">
-              <p className="text-lg md:text-xl font-semibold text-white">
-                Racha: {kegelStreak} días · Nivel {kegelLevel}
-              </p>
-            </div>
-            <ProgressBar value={kegelLevel} max={10} color="rgba(255,255,255,0.85)" />
-          </GlassCard>
-        </Link>
+        {/* Kegel: mismo módulo que Entrenamiento. */}
+        {modules.gym_entrenamiento ? (
+          <Link href="/gym/kegel">
+            <GlassCard
+              padding="md"
+              glow
+              accentColor="var(--paz-mental)"
+              className="flex flex-col gap-3 h-full"
+              style={{ background: "var(--glass-bg-dark)" }}
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles size={18} className="text-white" />
+                <p className="text-sm text-white/55">Kegel</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="text-lg md:text-xl font-semibold text-white">
+                  Racha: {kegelStreak} días · Nivel {kegelLevel}
+                </p>
+              </div>
+              <ProgressBar value={kegelLevel} max={10} color="rgba(255,255,255,0.85)" />
+            </GlassCard>
+          </Link>
+        ) : (
+          <LockedCard label="Kegel" Icon={Sparkles} />
+        )}
       </section>
       </div>
     </div>

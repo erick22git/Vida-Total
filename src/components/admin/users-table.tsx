@@ -156,6 +156,12 @@ export function UsersTable({ initialUsers, adminId }: { initialUsers: Profile[];
                     Acceso: {formatDate(profile.access_from)} →{" "}
                     {profile.access_until ? formatDate(profile.access_until) : "Sin vencimiento"}
                   </span>
+                  {profile.login_count !== undefined && (
+                    <span>
+                      Entró {profile.login_count} {profile.login_count === 1 ? "vez" : "veces"}
+                      {profile.last_login_at ? ` · última: ${formatDateTime(profile.last_login_at)}` : ""}
+                    </span>
+                  )}
                 </div>
               </div>
 

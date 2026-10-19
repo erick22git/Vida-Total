@@ -163,3 +163,15 @@ Nueva, **sin aplicar**. Aditiva e idempotente, en varios bloques `do $$ ... $$` 
 
 **Cómo aplicarla:** SQL Editor de Supabase → pegar `supabase/migrations/0019_admin_notifications.sql` → Run. Requiere 0001. Si 0015 y/o 0018 no están aplicadas, esas partes se saltan solas (sin error) y la app sigue igual que hoy en lo que no alcanzó a crear.
 
+## 12. Migración 0020 (nada habilitado por default, contador de ingresos, aviso de prueba gratuita)
+
+Nueva, **sin aplicar**. Requiere 0001 y 0019 (para la siembra de módulos: si 0019 corrió, la siembra de quienes ya tenían fila no se repite; si no corrió, 0020 la hace igual). Detalle completo en `docs/suscripciones-usuarios.md` §11.
+
+| Qué hace | Para qué |
+|---|---|
+| Siembra `user_module_access` para usuarios ya existentes sin filas | Acompaña el cambio de código: el default pasa de "solo Entrenamiento" a "nada habilitado". |
+| `profiles.login_count` / `last_login_at` + trigger en `auth.sessions` | Cuántas veces entró cada usuario, visible en `/admin/usuarios`. |
+| Policy de insert para admin en `agent_notification_log` + kind `trial_granted` | El usuario ve un aviso cuando el admin le da prueba gratuita o le aprueba un pago. Se salta sola si 0015 no está aplicada. |
+
+**Cómo aplicarla:** SQL Editor de Supabase → pegar `supabase/migrations/0020_module_defaults_and_activity.sql` → Run.
+

@@ -1,7 +1,36 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { AUDIT_ACTIONS, logAdminAction } from "@/lib/admin/audit";
 import { SETTING_KEYS } from "@/lib/account/load-account";
 import { extendAccessUntil } from "@/lib/subscription";
+
+function fmtAccessDate(iso: string) {
+  try {
+    return format(new Date(`${iso}T00:00:00`), "d 'de' MMMM", { locale: es });
+  } catch {
+    return iso;
+  }
+}
+
+/** Avisa al USUARIO (no al admin) que su acceso se extendió — se ve en la Isla Dinámica la próxima vez
+ * que abra la app (mismo camino que los avisos de admin, `agent_notification_log`, migración 0020: si
+ * la tabla o la policy de insert para admin todavía no existen, esto falla solo y no rompe nada; el
+ * cambio de `access_until` ya se guardó antes de llamar esto). */
+async function notifyUserAccessGranted(supabase: SupabaseClient, p: { userId: string; accessUntil: string; title: string; body: string }) {
+  try {
+    await supabase.from("agent_notification_log").insert({
+      user_id: p.userId,
+      key: `trial_${p.userId}_${p.accessUntil}`,
+      kind: "trial_granted",
+      title: p.title,
+      body: p.body,
+      payload: {},
+    });
+  } catch {
+    /* migración 0020 sin aplicar, o la tabla 0015 no existe: el usuario no se entera por acá, pero su acceso ya quedó extendido */
+  }
+}
 
 /**
  * Operaciones de pago que corren en el navegador con la sesión del admin (las policies RLS de la migración 0018 son la barrera
@@ -40,6 +69,12 @@ export async function approvePayment(
     targetUserId: p.userId,
     action: AUDIT_ACTIONS.APPROVED_PAYMENT,
     details: { email: p.email, before: { access_until: p.currentAccessUntil }, after: { access_until: accessUntil }, requestId: p.request?.id ?? null, months: p.months ?? 1 },
+  });
+  void notifyUserAccessGranted(supabase, {
+    userId: p.userId,
+    accessUntil,
+    title: "Pago confirmado",
+    body: `Tu pago quedó confirmado. Tenés acceso hasta el ${fmtAccessDate(accessUntil)}.`,
   });
   return { ok: true, accessUntil };
 }
@@ -111,6 +146,12 @@ export async function grantAccess(
     targetUserId: p.userId,
     action: AUDIT_ACTIONS.GRANTED_ACCESS,
     details: { email: p.email, before: { access_until: p.currentAccessUntil }, after: { access_until: accessUntil }, amount: p.amount, unit: p.unit },
+  });
+  void notifyUserAccessGranted(supabase, {
+    userId: p.userId,
+    accessUntil,
+    title: "¡Felicidades! Tenés prueba gratuita",
+    body: `El administrador te dio acceso gratis hasta el ${fmtAccessDate(accessUntil)}. Después de esa fecha se vuelve a pedir el pago para seguir — tus datos quedan guardados igual.`,
   });
   return { ok: true, accessUntil };
 }

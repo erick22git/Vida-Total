@@ -8,14 +8,12 @@ export function allModulesEnabled(): ModuleAccessMap {
   return MODULE_KEYS.reduce((acc, key) => ({ ...acc, [key]: true }), {} as ModuleAccessMap);
 }
 
-/** Default para un usuario NUEVO (sin ninguna fila todavía en `user_module_access`): solo
- * Entrenamiento, hasta que el admin le habilite el resto a mano. Antes el default era "todo
- * habilitado", lo que dejaba a cualquier cuenta nueva viendo todos los módulos sin que el admin
- * hubiera hecho nada — corregido a pedido explícito. */
+/** Default para un usuario NUEVO (sin ninguna fila todavía en `user_module_access`): NADA habilitado —
+ * ni siquiera Entrenamiento. El admin habilita módulo por módulo a mano desde `/admin/usuarios`. Antes
+ * el default era "todo habilitado" (y, por un momento, "solo Entrenamiento"); corregido a pedido
+ * explícito: "lo importante es que [el usuario nuevo] me aparezca, yo le habilito qué puede ver". */
 function defaultModuleAccess(): ModuleAccessMap {
-  const map = MODULE_KEYS.reduce((acc, key) => ({ ...acc, [key]: false }), {} as ModuleAccessMap);
-  map.gym_entrenamiento = true;
-  return map;
+  return MODULE_KEYS.reduce((acc, key) => ({ ...acc, [key]: false }), {} as ModuleAccessMap);
 }
 
 export function buildModuleAccess(rows: { module: string; enabled: boolean }[] | null | undefined): ModuleAccessMap {

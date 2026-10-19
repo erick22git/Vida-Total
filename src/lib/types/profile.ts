@@ -39,6 +39,10 @@ export interface Profile {
   tutorial_seen?: boolean;
   /** Migración 0019. `undefined`/`null` = sin migración o cuenta anterior a este cambio. */
   username?: string | null;
+  /** Migración 0020. `undefined` = la migración todavía no se aplicó. 0 también puede significar
+   * "nunca contado" en una cuenta que ya existía antes de este contador. */
+  login_count?: number;
+  last_login_at?: string | null;
 }
 
 export interface UserModuleAccess {
