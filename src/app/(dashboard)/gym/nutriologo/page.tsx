@@ -15,11 +15,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, Check, X as XIcon, ChevronDown } from "lucide-react";
+import { ChevronLeft, Check, X as XIcon, ChevronDown, Download, RefreshCw } from "lucide-react";
 import { useGymStore } from "@/lib/store/gymStore";
 import { mergeFoods } from "@/lib/food-utils";
 import { useTargetProfile, useNutrientTargets } from "@/lib/nutrition/use-targets";
-import { calcCalorieGoal } from "@/lib/gym/calorie-calc";
+import { calcCalorieGoal, OBJETIVO_LABELS } from "@/lib/gym/calorie-calc";
 import { evaluateAdaptiveCalories } from "@/lib/gym/calorie-adaptive";
 import {
   evaluate,
@@ -30,6 +30,7 @@ import {
   type NutritionDiagnosis,
 } from "@/lib/nutrition/nutrition-care-engine";
 import { dailyMicronutrientTotals, topFoodsForNutrient } from "@/lib/nutrition/nutriologo-data";
+import { suggestMealPlan, formatMealPlanAsText } from "@/lib/nutrition/meal-plan-suggester";
 import { correlateAllSymptoms, MIN_SYMPTOM_OCCURRENCES } from "@/lib/nutrition/symptom-correlation";
 import { estimateSessionCalories } from "@/lib/gym/exercise-calorie-burn";
 import { dailyActivityTotals, weeklyActivityTotals, monthlyActivityTotals } from "@/lib/gym/activity-aggregation";
@@ -66,22 +67,32 @@ const VOLVER_A_CALORIAS = "/gym/calorias?view=2";
 export default function NutriologoPage() {
   const router = useRouter();
   const [card, setCard] = useState(0);
-  const CARD_COUNT = 6;
+  const CARD_COUNT = 7;
   const { direction, goTo, onDragEnd } = useSwipeCarousel({ index: card, length: CARD_COUNT, onIndexChange: setCard });
 
   // Última pantalla de la cadena de Calorías: solo se vuelve hacia abajo (a la racha/año), no hay nada
-  // después. Mismo mecanismo pointerDown/pointerUp que Coach en Entrenamiento.
+  // después. Mismo mecanismo pointerDown/pointerUp que Coach en Entrenamiento. Tarjetas como
+  // "Sugerencias de intervención" y "Diagnósticos" tienen su propio scroll vertical interno
+  // (`overflow-y-auto` en `SwipeCarouselStage`): si el gesto empieza a mitad de esa lista (scrollTop > 0),
+  // un arrastre hacia abajo para volver a subir en la lista NO debe disparar también la salida a
+  // Calorías — solo cuenta como "volver" cuando el gesto arranca con la tarjeta ya en el tope.
   const startY = useRef<number | null>(null);
+  const startScrollTop = useRef(0);
+  function onPointerDown(e: React.PointerEvent) {
+    startY.current = e.clientY;
+    const scrollEl = (e.target as HTMLElement).closest(".overflow-y-auto") as HTMLElement | null;
+    startScrollTop.current = scrollEl?.scrollTop ?? 0;
+  }
   function onPointerUp(e: React.PointerEvent) {
     const dy = e.clientY - (startY.current ?? e.clientY);
     startY.current = null;
-    if (dy > 70) router.push(VOLVER_A_CALORIAS);
+    if (dy > 70 && startScrollTop.current <= 0) router.push(VOLVER_A_CALORIAS);
   }
 
   return (
     <div
       className="app-bg fixed inset-0 z-[45] flex flex-col text-white select-none overflow-hidden"
-      onPointerDown={(e) => (startY.current = e.clientY)}
+      onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
     >
       <header className="shrink-0 px-5 pt-[max(env(safe-area-inset-top),10px)]">
@@ -113,6 +124,7 @@ export default function NutriologoPage() {
           {card === 3 && <SintomasCard />}
           {card === 4 && <AgenteCard />}
           {card === 5 && <ActividadCard />}
+          {card === 6 && <PlanComidasCard />}
         </SwipeCarouselStage>
       </main>
 
@@ -536,6 +548,127 @@ function ActividadCard() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tarjeta 7: Plan de comidas sugerido — combina alimentos de tu propia base (USDA + regional) para
+// acercarse a tu meta de kcal/macros, y se puede descargar como lista de texto.
+// ---------------------------------------------------------------------------
+const DISCLAIMER_PLAN =
+  "Combinación de alimentos de tu propia base (USDA FoodData Central + datos regionales) para acercarse a tu meta de calorías y macros — no es un plan hecho por un nutricionista ni lo reemplaza.";
+
+function PlanComidasCard() {
+  const { allFoods } = useEvaluation();
+  const calorieGoal = useGymStore((s) => s.calorieGoal);
+  const proteinGoal = useGymStore((s) => s.proteinGoal);
+  const carbsGoal = useGymStore((s) => s.carbsGoal);
+  const fatGoal = useGymStore((s) => s.fatGoal);
+  const gymProfile = useGymStore((s) => s.gymProfile);
+  const [nonce, setNonce] = useState(0);
+
+  const plan = useMemo(
+    () =>
+      suggestMealPlan({
+        foods: allFoods,
+        calorieGoal,
+        proteinGoal,
+        carbsGoal,
+        fatGoal,
+        dia: `${new Date().toISOString().slice(0, 10)}#${nonce}`,
+      }),
+    [allFoods, calorieGoal, proteinGoal, carbsGoal, fatGoal, nonce],
+  );
+
+  function download() {
+    const objetivoLabel = gymProfile?.objetivoCalorico ? OBJETIVO_LABELS[gymProfile.objetivoCalorico] : "Sin objetivo configurado";
+    const text = formatMealPlanAsText(plan, objetivoLabel);
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vida-total-plan-comidas-${plan.dia.slice(0, 10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="flex flex-col gap-4 pt-2">
+      <SectionTitle>Plan de comidas sugerido</SectionTitle>
+      {calorieGoal <= 0 ? (
+        <p className="text-sm text-white/50">Configurá tu meta calórica en Calorías → Ajustes para generar un plan.</p>
+      ) : (
+        <>
+          <div className="flex gap-2">
+            <button
+              onClick={download}
+              className="flex-1 rounded-full py-2.5 text-xs font-semibold text-center cursor-pointer bg-white text-black flex items-center justify-center gap-1.5"
+            >
+              <Download size={13} /> Descargar lista (.txt)
+            </button>
+            <button
+              onClick={() => setNonce((n) => n + 1)}
+              aria-label="Probar otra combinación"
+              className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center cursor-pointer bg-white/10 text-white"
+            >
+              <RefreshCw size={14} />
+            </button>
+          </div>
+
+          {plan.entries.map((entry) => (
+            <div key={entry.meal} className="rounded-3xl p-4 flex flex-col gap-2 bg-white/[0.05] border border-white/10">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold capitalize">{entry.meal === "snack1" ? "Colación 1" : entry.meal === "snack2" ? "Colación 2" : entry.meal}</p>
+                <span className="text-xs text-white/45 tabular-nums">{Math.round(entry.totales.calorias)} kcal</span>
+              </div>
+              {entry.items.map((item) => (
+                <div key={item.food.id + item.role} className="flex items-center justify-between text-xs text-white/60">
+                  <span className="truncate pr-2">
+                    {item.food.nombre} · {item.gramos} g
+                  </span>
+                  <span className="tabular-nums shrink-0">{item.nutricion.calorias} kcal</span>
+                </div>
+              ))}
+              {entry.items.length === 0 && <p className="text-xs text-white/40">Sin alimentos suficientes en tu base para esta comida.</p>}
+            </div>
+          ))}
+
+          <div className="rounded-3xl p-4 flex flex-col gap-1.5 bg-white/[0.05] border border-white/10">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-white/60">Total del día</span>
+              <span className="font-semibold tabular-nums">
+                {Math.round(plan.totalesDia.calorias)} / {Math.round(plan.metas.calorias)} kcal
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-white/55">
+              <span>Proteína</span>
+              <span className="tabular-nums">
+                {Math.round(plan.totalesDia.proteina)} / {Math.round(plan.metas.proteina)} g
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-white/55">
+              <span>Carbohidratos</span>
+              <span className="tabular-nums">
+                {Math.round(plan.totalesDia.carbos)} / {Math.round(plan.metas.carbos)} g
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-white/55">
+              <span>Grasas</span>
+              <span className="tabular-nums">
+                {Math.round(plan.totalesDia.grasas)} / {Math.round(plan.metas.grasas)} g
+              </span>
+            </div>
+          </div>
+
+          {plan.avisos.map((a) => (
+            <p key={a} className="text-xs text-amber-200/80">
+              {a}
+            </p>
+          ))}
+        </>
+      )}
+      <p className="text-xs text-white/35">{DISCLAIMER_PLAN}</p>
     </div>
   );
 }

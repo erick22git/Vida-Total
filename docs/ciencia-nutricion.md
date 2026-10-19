@@ -101,3 +101,12 @@ Matices: el PAL de la FAO es gasto total ÷ gasto basal **con las ecuaciones de 
 - **El libro de Katch y McArdle** (de donde viene el nombre de la fórmula) y su atribución exacta.
 - **Guías de práctica clínica sobre ritmo de pérdida de peso** (NHLBI, AHA/ACC/TOS 2013, ACSM): NCBI Bookshelf responde con una verificación anti-bot que no salté y no abrí las otras; por eso los porcentajes de déficit/superávit quedan documentados solo como convención.
 - **Tabla S-1 de agua para menores de 19 años** (NAM 2005): la proporción de bebidas (~81 %) se aplica a ellos por extensión.
+
+## Plan de comidas sugerido (Nutriólogo → "Plan de comidas sugerido")
+
+`src/lib/nutrition/meal-plan-suggester.ts`. **No es una receta tomada de ningún sitio ni un plan de un nutricionista**: arma cada comida combinando alimentos que YA están en la base de la app (USDA FoodData Central + datos regionales, los mismos que usa el contador de calorías), ajustando los gramos de cada uno para acercarse a la meta de esa comida. Nunca inventa un alimento ni fuerza el total a calzar exacto — el plan descargado siempre muestra el total real logrado contra la meta.
+
+- **Estructura por comida** (proteína + carbohidrato, y en almuerzo/cena también verdura + grasa): mismo patrón que la *Healthy Eating Plate* de Harvard T.H. Chan School of Public Health y el *MyPlate* del USDA — un plato con proteína, cereal/tubérculo, verdura y una porción de grasa. [hsph.harvard.edu/nutritionsource/healthy-eating-plate](https://www.hsph.harvard.edu/nutritionsource/healthy-eating-plate/) · [myplate.gov](https://www.myplate.gov/).
+- **Reparto de la meta diaria entre las 5 comidas (25/30/10/10/25 %)**: convención del proyecto, no una norma de ninguna entidad — mismo criterio que los % de déficit/superávit de `calorie-calc.ts` (se documenta como convención, no como ciencia).
+- **Categorías de alimentos excluidas a propósito** de la sugerencia (Snack, Comida rápida, Plato preparado, Postre, Endulzante, Bebida, Suplemento, Condimento, Otros): son para registrar lo que la persona ya comió, no alimentos base para armar una comida sugerida.
+- Las cantidades se calculan despejando gramos de las kcal/macros por 100 g que ya tiene cada alimento en la base (mismas funciones `scaleNutrition`/`parsePorcionGramos` que usa el resto de la app), con topes mínimos/máximos razonables por rol para no sugerir, por ejemplo, 900 g de pollo o 2 g de aceite.
