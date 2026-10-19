@@ -32,9 +32,11 @@ import {
   recentTechniqueWarnings,
   DROPSET_VOLUME_MULTIPLIER,
   VOLUME_COLORS,
+  volumeCeilingForPhase,
   type VolumeStatus,
 } from "@/lib/training/hypertrophy-engine";
 import { suggestNextWeight, type ProgressionSuggestion } from "@/lib/training/progressive-overload";
+import { phaseFromObjetivo, type CaloriePhase } from "@/lib/gym/calorie-periodization";
 import { useSwipeCarousel, SwipeCarouselStage } from "@/components/shared/swipe-carousel";
 import { ChainDots } from "@/components/gym/chain-dots";
 import { MONO_FONT } from "@/lib/ui/mono-font";
@@ -169,17 +171,26 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 // ---------------------------------------------------------------------------
 // Tarjeta 1: Coach por voz
 // ---------------------------------------------------------------------------
+const PHASE_LABEL: Record<CaloriePhase, string> = { deficit: "Déficit calórico", mantenimiento: "Mantenimiento", volumen: "Superávit calórico" };
+
 function CoachVozCard() {
   const gymProfile = useGymStore((s) => s.gymProfile);
   const sessions = useGymStore((s) => s.sessions);
   const allExercises = useAllExercises();
+  const phase = phaseFromObjetivo(gymProfile?.objetivoCalorico);
 
-  const feedback = useMemo(() => buildCoachFeedback(sessions, allExercises, gymProfile?.experiencia), [sessions, allExercises, gymProfile?.experiencia]);
+  const feedback = useMemo(
+    () => buildCoachFeedback(sessions, allExercises, gymProfile?.experiencia, phase),
+    [sessions, allExercises, gymProfile?.experiencia, phase],
+  );
 
   return (
     <div className="flex flex-col items-center gap-5 pt-6">
       <Mascot costume="sport" accent={ENTRENAMIENTO_ACCENT} size={140} />
       <div className="rounded-3xl p-4 flex flex-col gap-2 bg-white/[0.05] border border-white/10 max-w-sm">
+        {gymProfile?.objetivoCalorico && (
+          <span className="text-[10px] uppercase tracking-wide text-white/40 self-start">Fase: {PHASE_LABEL[phase]}</span>
+        )}
         <p className="text-sm leading-relaxed">{feedback}</p>
       </div>
       <p className="text-xs text-white/40 text-center max-w-xs">
@@ -190,7 +201,16 @@ function CoachVozCard() {
   );
 }
 
-function buildCoachFeedback(sessions: WorkoutSession[], allExercises: ReturnType<typeof useAllExercises>, experiencia: Experiencia | undefined) {
+/** El volumen "en rango" (semáforo de `volumeStatus`) no cambia con la fase calórica — los landmarks
+ * MEV/MAV/MRV son los mismos. Lo que SÍ cambia es el TECHO que el Coach recomienda perseguir dentro de
+ * ese rango (`volumeCeilingForPhase`, ver hypertrophy-engine.ts): en déficit, aunque técnicamente estés
+ * "en rango", si ya pasaste el techo de la fase se avisa aparte en vez de invitar a seguir sumando. */
+function buildCoachFeedback(
+  sessions: WorkoutSession[],
+  allExercises: ReturnType<typeof useAllExercises>,
+  experiencia: Experiencia | undefined,
+  phase: CaloriePhase,
+) {
   const level = experienceLevelFrom(experiencia);
   const weekStart = mondayOf(new Date());
   const volume = weeklyMuscleVolume(sessions, allExercises, weekStart);
@@ -201,17 +221,25 @@ function buildCoachFeedback(sessions: WorkoutSession[], allExercises: ReturnType
     .map((g) => {
       const landmarks = volumeLandmarksFor(g, level);
       if (!landmarks) return null;
-      return { g, status: volumeStatus(volume[g] ?? 0, landmarks) };
+      const sets = volume[g] ?? 0;
+      const ceiling = volumeCeilingForPhase(landmarks, phase);
+      return { g, status: volumeStatus(sets, landmarks), sobreTechoFase: phase !== "volumen" && sets >= ceiling && sets < landmarks.mrv };
     })
-    .filter((x): x is { g: MuscleGroup; status: VolumeStatus } => x !== null);
+    .filter((x): x is { g: MuscleGroup; status: VolumeStatus; sobreTechoFase: boolean } => x !== null);
 
   const excedido = withStatus.filter((x) => x.status === "excedido");
-  const cercaLimite = withStatus.filter((x) => x.status === "cercaLimite");
+  const sobreTechoFase = withStatus.filter((x) => x.sobreTechoFase && x.status !== "excedido");
+  const cercaLimite = withStatus.filter((x) => x.status === "cercaLimite" && !x.sobreTechoFase);
   const bajo = withStatus.filter((x) => x.status === "bajo");
 
   if (excedido.length > 0) return `Esta semana ya pasaste el volumen máximo recuperable en ${excedido.map((x) => x.g).join(", ")}. Puede ser buen momento para un deload en esos grupos.`;
+  if (sobreTechoFase.length > 0 && phase === "deficit") {
+    return `${sobreTechoFase.map((x) => x.g).join(", ")} está técnicamente en rango, pero con el déficit activo tu cuerpo recupera peor — no hace falta sumar más series ahí por ahora. Si querés subir más volumen, conviene esperar a mantenimiento o superávit.`;
+  }
   if (cercaLimite.length > 0) return `${cercaLimite.map((x) => x.g).join(", ")} está cerca del límite de recuperación esta semana — seguí sumando con cuidado.`;
   if (bajo.length > 0) return `${bajo.map((x) => x.g).join(", ")} todavía está por debajo del mínimo para progresar esta semana. Sumá alguna serie más si podés.`;
+  if (phase === "volumen") return "Tu volumen de esta semana está en rango en todos los grupos que entrenaste. Con el superávit activo, tenés margen para sumar más series si buscás progresar más rápido.";
+  if (phase === "deficit") return "Tu volumen de esta semana está en rango en todos los grupos que entrenaste. Con el déficit activo, no hace falta buscar más volumen que el que ya tenés — mantenerlo ya es suficiente estímulo.";
   return "Tu volumen de esta semana está en rango en todos los grupos que entrenaste. Seguí así.";
 }
 

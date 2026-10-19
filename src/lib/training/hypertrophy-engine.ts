@@ -6,6 +6,7 @@
  */
 import type { Exercise, MuscleGroup, WorkoutSession, WorkoutSet } from "@/lib/types";
 import type { Experiencia } from "@/lib/store/gymStore";
+import type { CaloriePhase } from "@/lib/gym/calorie-periodization";
 
 // ============================================================================
 // Landmarks de volumen (sets/semana de trabajo DIRECTO), calibrados para nivel intermedio.
@@ -356,13 +357,36 @@ export interface MesocycleWeekTarget {
 }
 
 /** Series objetivo de la semana N de un mesociclo para un grupo muscular: arranca en MEV, suma 1
- * serie por semana (convención propia, sin cifra de una fuente específica) hasta MAV, y entra en
- * deload (vuelve a MEV) si `weekInMesocycle` ya alcanzó o pasó MRV en el ritmo de +1/semana, o si
- * `plateau` es true. */
-export function mesocycleWeekTarget(landmarks: VolumeLandmarks, weekInMesocycle: number, plateau: boolean): MesocycleWeekTarget {
+ * serie por semana (convención propia, sin cifra de una fuente específica) hasta el techo de
+ * `volumeCeilingForPhase` (MAV sin fase declarada, para no cambiar el comportamiento de antes), y
+ * entra en deload (vuelve a MEV) si `weekInMesocycle` ya alcanzó o pasó MRV en el ritmo de +1/semana,
+ * o si `plateau` es true. */
+export function mesocycleWeekTarget(landmarks: VolumeLandmarks, weekInMesocycle: number, plateau: boolean, phase: CaloriePhase = "mantenimiento"): MesocycleWeekTarget {
   const raw = landmarks.mev + Math.max(0, weekInMesocycle - 1);
   if (plateau || raw >= landmarks.mrv) {
     return { phase: "deload", targetSets: landmarks.mev };
   }
-  return { phase: "acumulacion", targetSets: Math.min(raw, landmarks.mav) };
+  return { phase: "acumulacion", targetSets: Math.min(raw, volumeCeilingForPhase(landmarks, phase)) };
+}
+
+// ============================================================================
+// Techo de volumen según fase calórica (Coach ↔ Nutriólogo): Helms et al. 2014 ("Evidence-based
+// recommendations for natural bodybuilding contest preparation", J Int Soc Sports Nutr 11:20 —
+// ya citado en `nutrient-targets.ts` para la proteína) recomienda bajar el volumen de entrenamiento a
+// medida que una dieta se profundiza, porque con menos energía disponible el cuerpo recupera peor; en
+// superávit la literatura no describe ese mismo límite, así que se puede sostener volumen más alto.
+// Esa fuente NO da una cifra exacta de "cuánto" bajar — el punto medio entre MEV y MAV como techo en
+// déficit es una CONVENCIÓN propia del proyecto (ver docs/ciencia-entrenamiento.md), no una norma
+// publicada. `phase` es la fase DECLARADA (objetivo calórico del usuario, `phaseFromObjetivo` en
+// `calorie-periodization.ts`), no una medición: es la misma fase que ya se usa para repartir proteína
+// en `suggestMacros`.
+// ============================================================================
+
+/** Techo de series semanales recomendado para un grupo según la fase calórica: en déficit, no
+ * perseguir el volumen más alto (tope a mitad de camino entre MEV y MAV); en mantenimiento, hasta MAV
+ * (igual que el comportamiento de antes de esta fase); en volumen (superávit), hasta MRV. */
+export function volumeCeilingForPhase(landmarks: VolumeLandmarks, phase: CaloriePhase): number {
+  if (phase === "deficit") return Math.round(landmarks.mev + (landmarks.mav - landmarks.mev) / 2);
+  if (phase === "volumen") return landmarks.mrv;
+  return landmarks.mav;
 }

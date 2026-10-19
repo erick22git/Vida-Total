@@ -131,3 +131,17 @@ Se usa para precargar el descanso al copiar una rutina de atleta. **Si la fuente
 - Landmarks de Abductores/Aductores: no hay fuente — el motor no inventa un número, reporta "sin referencia".
 - El ajuste por experiencia es una escala propia, no validada contra ningún estudio de dosis-respuesta por nivel de entrenamiento.
 - El incremento de +1 serie/semana es una convención de programación común, no una cifra de un paper específico.
+
+## Techo de volumen según fase calórica (Coach ↔ Nutriólogo)
+
+`volumeCeilingForPhase` en `hypertrophy-engine.ts`, usada por `mesocycleWeekTarget` y por el feedback de "Coach por voz" (`coach/page.tsx`). La fase (`CaloriePhase`: déficit/mantenimiento/volumen) es la **declarada** por el objetivo calórico del usuario (`phaseFromObjetivo`, `calorie-periodization.ts`) — la misma que ya usa `suggestMacros` para repartir proteína.
+
+Fuente: Helms et al. 2014, *"Evidence-based recommendations for natural bodybuilding contest preparation: nutrition and supplementation"* (J Int Soc Sports Nutr 11:20 — ya citado en `docs/ciencia-nutricion.md` para la proteína en déficit) recomienda bajar el volumen de entrenamiento a medida que una dieta se profundiza: con menos energía disponible el cuerpo recupera peor del mismo volumen. Esa fuente no da una cifra exacta de "cuánto" bajar.
+
+**Lo que es ciencia vs. lo que es convención del proyecto:**
+- Que conviene bajar volumen en déficit: Helms et al. 2014 (ver arriba).
+- **Cuánto** bajarlo — el punto medio entre MEV y MAV como techo en déficit, MAV en mantenimiento (igual que antes de este cambio), MRV en volumen (sin techo extra): convención propia, sin una cifra publicada que la respalde exactamente.
+
+El semáforo de `volumeStatus` (bajo/enRango/cercaLimite/excedido) **no cambia** con la fase — los landmarks MEV/MAV/MRV siguen siendo los mismos objetivos fisiológicos de siempre. Lo que cambia es que, en déficit, el Coach avisa aparte cuando ya se pasó el techo de la fase aunque el semáforo todavía diga "en rango", en vez de invitar a seguir sumando series.
+
+No se tocó la sugerencia de **peso** (`suggestNextWeight`, autorregulación por RIR): ese mecanismo ya se adapta solo a la capacidad de recuperación real de cada sesión, independientemente de la fase declarada.
