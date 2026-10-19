@@ -228,11 +228,11 @@ export class PaymentScene {
     return this.raycaster.intersectObject(this.figure, true).length > 0;
   }
 
-  /** Transición al QR: la cámara se acerca a la copa mientras la figura sigue girando y la escena se funde. Resuelve al terminar. */
+  /** Transición al QR: la cámara sube a vista cenital mientras el árbol se eleva y se funde. Resuelve al terminar. */
   playSelectTransition(): Promise<void> {
     if (this.selected) return Promise.resolve();
     this.selected = true;
-    const dur = this.opts.reduceMotion ? 260 : 950;
+    const dur = this.opts.reduceMotion ? 260 : 1400;
     return new Promise((resolve) => {
       this.transition = { t0: performance.now(), dur, resolve };
     });
@@ -242,6 +242,7 @@ export class PaymentScene {
   reset() {
     this.selected = false;
     this.transition = null;
+    this.pivot.position.y = 0;
     if (this.renderer) this.renderer.domElement.style.opacity = "1";
   }
 
@@ -268,11 +269,18 @@ export class PaymentScene {
     } else if (this.selected) {
       k = 1;
     }
-    // Cámara: en reposo mira el tronco/copa desde lejos; en la transición se acerca y sube hacia la copa.
-    const d = this.def.distance * (1 - 0.58 * k);
-    this.camera.position.set(0, this.def.focus[1] * 0.8 + 0.5 * k, d);
-    this.camera.lookAt(0, this.def.focus[1] + 0.9 * k, 0);
-    this.renderer.domElement.style.opacity = String(1 - 0.78 * k);
+    // Cámara: en reposo mira de frente; al tocar sube en arco hasta una vista cenital sobre la base mientras el árbol
+    // se eleva y se desvanece. El QR NO se dibuja acá: aparece después como SVG plano encima (ver payment-gate).
+    const f = this.def.focus[1];
+    const e0 = Math.atan2(f * 0.8 - f, this.def.distance);
+    const e = e0 + (1.45 - e0) * k;
+    const r = this.def.distance * (1 - 0.3 * k);
+    const ty = f * (1 - k) + 0.2 * k;
+    this.camera.position.set(0, ty + r * Math.sin(e), r * Math.cos(e));
+    this.camera.lookAt(0, ty, 0);
+    this.pivot.position.y = 6 * k * k;
+    const fade = Math.min(1, Math.max(0, (k - 0.45) / 0.55));
+    this.renderer.domElement.style.opacity = String(1 - fade * fade * (3 - 2 * fade) * 0.85);
     void this.renderer.render(this.scene, this.camera);
   };
 
