@@ -149,3 +149,17 @@ Nueva, **sin aplicar**. Aditiva e idempotente. Detalle completo en `docs/suscrip
 
 **Cómo aplicarla:** SQL Editor de Supabase → pegar `supabase/migrations/0018_suscripciones_onboarding.sql` → Run. **Retrocompatible:** sin ella la app funciona igual que hoy (no se fuerza onboarding ni tutorial, y la pantalla de pago avisa que no hay QR cargado).
 
+## 11. Migración 0019 (username, red de seguridad del perfil, pedidos de módulo, avisos al admin)
+
+Nueva, **sin aplicar**. Aditiva e idempotente, en varios bloques `do $$ ... $$` que se saltan solos si lo que necesitan (0015/0018) no está aplicado. Detalle completo en `docs/suscripciones-usuarios.md` §10.
+
+| Qué crea | Para qué |
+|---|---|
+| `profiles.username` (único) | Lo pide el formulario inicial (onboarding), antes de la pantalla de pago. |
+| Función `ensure_own_profile()` | Red de seguridad: si el trigger `handle_new_user` no corrió para una cuenta, el propio usuario (nunca otro) puede crear su fila de `profiles` la próxima vez que entra. Sin esto esa cuenta queda invisible en `/admin/usuarios` para siempre. |
+| Siembra de `user_module_access` para usuarios YA existentes sin filas | Acompaña el cambio de código en `lib/account/modules.ts` (el default pasa de "todo habilitado" a "solo Entrenamiento"): deja grabado explícitamente el acceso total que esos usuarios ya tenían en los hechos, para que nadie pierda módulos de golpe al desplegar. |
+| `module_requests` | El botón "pídele acceso" de la pantalla de módulo bloqueado ahora hace algo. |
+| 3 `kind` nuevos en `agent_notification_log` + triggers | Avisan al admin (usuario nuevo / pago subido / pedido de módulo) si 0015 está aplicada; si no, este bloque se salta solo. |
+
+**Cómo aplicarla:** SQL Editor de Supabase → pegar `supabase/migrations/0019_admin_notifications.sql` → Run. Requiere 0001. Si 0015 y/o 0018 no están aplicadas, esas partes se saltan solas (sin error) y la app sigue igual que hoy en lo que no alcanzó a crear.
+

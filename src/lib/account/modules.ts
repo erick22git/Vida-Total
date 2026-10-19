@@ -2,13 +2,24 @@ import { MODULE_KEYS, type ModuleKey } from "@/lib/types/profile";
 
 export type ModuleAccessMap = Record<ModuleKey, boolean>;
 
-/** Sin fila en `user_module_access` = habilitado (default documentado en la migración 0001). */
+/** Todos los módulos habilitados — lo que ve un admin (nunca depende de `user_module_access`: ver
+ * `(dashboard)/layout.tsx`, que usa esto en vez de `buildModuleAccess` cuando `role === "admin"`). */
 export function allModulesEnabled(): ModuleAccessMap {
   return MODULE_KEYS.reduce((acc, key) => ({ ...acc, [key]: true }), {} as ModuleAccessMap);
 }
 
+/** Default para un usuario NUEVO (sin ninguna fila todavía en `user_module_access`): solo
+ * Entrenamiento, hasta que el admin le habilite el resto a mano. Antes el default era "todo
+ * habilitado", lo que dejaba a cualquier cuenta nueva viendo todos los módulos sin que el admin
+ * hubiera hecho nada — corregido a pedido explícito. */
+function defaultModuleAccess(): ModuleAccessMap {
+  const map = MODULE_KEYS.reduce((acc, key) => ({ ...acc, [key]: false }), {} as ModuleAccessMap);
+  map.gym_entrenamiento = true;
+  return map;
+}
+
 export function buildModuleAccess(rows: { module: string; enabled: boolean }[] | null | undefined): ModuleAccessMap {
-  const map = allModulesEnabled();
+  const map = defaultModuleAccess();
   for (const row of rows ?? []) {
     if ((MODULE_KEYS as readonly string[]).includes(row.module)) map[row.module as ModuleKey] = row.enabled;
   }

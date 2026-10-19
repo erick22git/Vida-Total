@@ -5,13 +5,20 @@ import { createClient } from "@/lib/supabase/client";
 import { executeClient } from "@/lib/agent/actions/client";
 import { SNOOZE_MIN, buttonLabel, type NoticeButton } from "@/lib/agent/notifications";
 import { useAgentStore } from "@/lib/store/agentStore";
+import { useAdminNotifyVoiceStore } from "@/lib/store/adminNotifyVoiceStore";
+import { speak } from "@/lib/camara/voice-speak";
 import { notify } from "@/lib/notify/use-notify";
 import type { NotifyType } from "@/lib/store/notifyStore";
 
 const nowIso = () => new Date().toISOString();
 const snoozeIso = () => new Date(Date.now() + SNOOZE_MIN * 60_000).toISOString();
 
-type NoticeKind = "task" | "subtask" | "routine" | "water" | "meal" | "summary";
+/** Los 3 kinds `admin_*` (migración 0019) nunca llegan a un usuario normal: el trigger de la base solo
+ * los escribe para filas de `profiles` con `role = 'admin'`, así que no hace falta volver a chequear
+ * el rol acá — alcanza con mirar el `kind`. */
+type AdminNoticeKind = "admin_new_user" | "admin_payment" | "admin_module_request";
+type NoticeKind = "task" | "subtask" | "routine" | "water" | "meal" | "summary" | AdminNoticeKind;
+const ADMIN_KINDS = new Set<NoticeKind>(["admin_new_user", "admin_payment", "admin_module_request"]);
 
 interface Row {
   id: string;
@@ -28,6 +35,9 @@ const KIND_TO_NOTIFY_TYPE: Record<NoticeKind, NotifyType> = {
   water: "reminder",
   meal: "reminder",
   summary: "agent-message",
+  admin_new_user: "agent-message",
+  admin_payment: "agent-message",
+  admin_module_request: "agent-message",
 };
 
 /**
@@ -39,6 +49,7 @@ const KIND_TO_NOTIFY_TYPE: Record<NoticeKind, NotifyType> = {
  */
 export function AgentNotificationBanner({ userId }: { userId: string }) {
   const enabled = useAgentStore((s) => s.config.notifications.enabled && s.config.notifications.inApp && !s.config.killSwitch);
+  const speakAdmin = useAdminNotifyVoiceStore((s) => s.speakEnabled);
   const busy = useRef(false);
   const pushed = useRef(new Set<string>());
 
@@ -95,13 +106,16 @@ export function AgentNotificationBanner({ userId }: { userId: string }) {
           actions: (row.payload.buttons ?? []).map((b) => ({ label: buttonLabel[b], onClick: () => act(row, b) })),
           onDismiss: () => void close(row),
         });
+        // Avisos de admin (usuario nuevo / pago / pedido de módulo): además de la Isla Dinámica, la
+        // mascota los dice en voz alta (Web Speech API, ver `voice-speak.ts`) — apagable en Ajustes.
+        if (ADMIN_KINDS.has(row.kind) && speakAdmin) speak(`${row.title}. ${row.body}`);
       }
     } catch {
       /* sin conexión: se reintenta */
     } finally {
       busy.current = false;
     }
-  }, [userId, act, close]);
+  }, [userId, act, close, speakAdmin]);
 
   useEffect(() => {
     if (!enabled) return;

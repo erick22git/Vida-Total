@@ -61,10 +61,13 @@ function NumberField({ label, unit, value, onChange, min, max }: { label: string
 }
 
 const num = (s: string) => (s.trim() === "" ? NaN : Number(s));
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
 
 export function OnboardingWizard({ userId, name }: { userId: string; name: string | null }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
+  const [username, setUsername] = useState("");
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const [sexo, setSexo] = useState<"hombre" | "mujer" | null>(null);
   const [edad, setEdad] = useState("");
   const [peso, setPeso] = useState("");
@@ -76,12 +79,32 @@ export function OnboardingWizard({ userId, name }: { userId: string; name: strin
   const [equipo, setEquipo] = useState<EquipoDisponible>("gimnasio");
   const [saving, setSaving] = useState(false);
 
-  const bodyOk = !!sexo && num(edad) >= 12 && num(edad) <= 100 && num(peso) >= 30 && num(peso) <= 300 && num(altura) >= 120 && num(altura) <= 230;
+  const bodyOk =
+    USERNAME_RE.test(username) &&
+    !!sexo &&
+    num(edad) >= 12 &&
+    num(edad) <= 100 &&
+    num(peso) >= 30 &&
+    num(peso) <= 300 &&
+    num(altura) >= 120 &&
+    num(altura) <= 230;
   const steps = ["Tus datos", "Tu objetivo", "Tu entrenamiento"];
 
   async function finish() {
-    if (!sexo) return;
+    if (!sexo || !USERNAME_RE.test(username)) return;
     setSaving(true);
+    // Si `profiles.username` todavía no existe (migración 0019 sin aplicar), este update falla solo y
+    // se sigue igual que antes — no se pierde nada, el resto del onboarding guarda aparte.
+    const { error: usernameErr } = await createClient().from("profiles").update({ username }).eq("id", userId);
+    if (usernameErr) {
+      if (usernameErr.code === "23505") {
+        setUsernameError("Ese nombre de usuario ya está en uso — probá con otro.");
+        setStep(0);
+        setSaving(false);
+        return;
+      }
+      console.warn("onboarding: no se pudo guardar username (¿falta la migración 0019?):", usernameErr.message);
+    }
     // Intensidad por defecto de la calculadora: «estándar» para mantener, «moderado» para perder o ganar (se cambia luego en Calorías).
     const intensidad = objetivo === "mantener" ? "estandar" : "moderado";
     const calc = calcCalorieGoal({
@@ -144,6 +167,24 @@ export function OnboardingWizard({ userId, name }: { userId: string; name: strin
 
         {step === 0 && (
           <>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[13px] font-extrabold text-white/60 uppercase tracking-wide">Nombre de usuario</span>
+              <div className="flex items-center rounded-2xl px-3 min-h-[48px]" style={{ background: "#2b2b2e", border: BORDER }}>
+                <input
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value.replace(/\s/g, ""));
+                    setUsernameError(null);
+                  }}
+                  aria-label="Nombre de usuario"
+                  placeholder="tu_usuario"
+                  maxLength={24}
+                  className="flex-1 bg-transparent outline-none text-[17px] font-bold min-w-0"
+                />
+              </div>
+              <span className="text-xs text-white/40">3 a 24 caracteres: letras, números y guión bajo. No se puede repetir.</span>
+              {usernameError && <span className="text-xs text-[#ff9a9d]">{usernameError}</span>}
+            </label>
             <div className="flex flex-col gap-1.5">
               <span className="text-[13px] font-extrabold text-white/60 uppercase tracking-wide">Sexo</span>
               <div className="flex gap-2">

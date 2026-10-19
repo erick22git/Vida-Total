@@ -6,6 +6,8 @@ import { TelegramLinkCard } from "@/components/agente/telegram-link-card";
 import { useAutoTotalActive } from "@/components/agente/auto-total-badge";
 import { BORDER, Btn, DarkCard, Row, SURFACE, Toggle } from "@/components/agente/ui";
 import { useAgentStore } from "@/lib/store/agentStore";
+import { useAdminNotifyVoiceStore } from "@/lib/store/adminNotifyVoiceStore";
+import { unlockVoice } from "@/lib/camara/voice-speak";
 import { useMascotUi } from "@/lib/store/mascotUiStore";
 import { useTour } from "@/lib/store/tourStore";
 import { useProfile } from "@/components/providers/profile-provider";
@@ -20,6 +22,8 @@ export function DockSettings() {
   const close = useMascotUi((s) => s.closeDock);
   const { active } = useAutoTotalActive();
   const isAdmin = useProfile()?.role === "admin";
+  const speakAdmin = useAdminNotifyVoiceStore((s) => s.speakEnabled);
+  const setSpeakAdmin = useAdminNotifyVoiceStore((s) => s.setSpeakEnabled);
 
   return (
     <div className="flex flex-col gap-2.5 p-2.5 max-h-[min(66dvh,540px)] overflow-y-auto">
@@ -50,7 +54,9 @@ export function DockSettings() {
         <Row label="Avisos" hint="Recordatorios de tareas, rutina, agua…" right={<Toggle on={config.notifications.enabled} onChange={(v) => setConfig((c) => ({ ...c, notifications: { ...c.notifications, enabled: v } }))} label="Avisos" />} />
       </DarkCard>
 
-      <TelegramLinkCard />
+      {/* Vincular Telegram: solo admin por ahora. Para los usuarios, el agente todavía es solo de la app
+          (ver docs/telegram.md) — nadie más puede hablarle por Telegram todavía. */}
+      {isAdmin && <TelegramLinkCard />}
 
       <DarkCard className="flex flex-col gap-1">
         <Row
@@ -73,6 +79,20 @@ export function DockSettings() {
       {isAdmin && (
         <DarkCard className="flex flex-col gap-1">
           <p className="text-[13px] font-extrabold text-white/60 uppercase tracking-wide">Administración</p>
+          <Row
+            label="La mascota te dice los avisos"
+            hint="Usuario nuevo, pago y pedidos de módulo, en voz — no solo en la Isla Dinámica."
+            right={
+              <Toggle
+                on={speakAdmin}
+                onChange={(v) => {
+                  setSpeakAdmin(v);
+                  if (v) unlockVoice(); // desbloquea la síntesis de voz con este toque real, para que el próximo aviso automático sí suene
+                }}
+                label="La mascota te dice los avisos"
+              />
+            }
+          />
           {([
             ["/admin/usuarios", "Usuarios, módulos y suscripciones", Users],
             ["/admin/pagos", "QR de pago y comprobantes", CreditCard],

@@ -37,6 +37,8 @@ export interface Profile {
   /** Migración 0018. `undefined` = la migración todavía no se aplicó: se trata como «ya hecho» (no se fuerza nada). */
   onboarding_done?: boolean;
   tutorial_seen?: boolean;
+  /** Migración 0019. `undefined`/`null` = sin migración o cuenta anterior a este cambio. */
+  username?: string | null;
 }
 
 export interface UserModuleAccess {

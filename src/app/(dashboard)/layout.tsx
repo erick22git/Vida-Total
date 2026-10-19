@@ -19,6 +19,7 @@ import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { ModuleAccessGate } from "@/components/account/module-access-gate";
 import { GuidedTour } from "@/components/tutorial/guided-tour";
 import { loadAccountExtras } from "@/lib/account/load-account";
+import { allModulesEnabled } from "@/lib/account/modules";
 import { getSubscription } from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/server";
 import { getAccountNotice, type Profile } from "@/lib/types/profile";
@@ -71,12 +72,31 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     console.error("Dashboard layout: excepción al cargar profile:", err);
   }
 
+  // Red de seguridad (migración 0019): si el trigger `handle_new_user` no corrió para esta cuenta por
+  // lo que sea, el propio usuario crea su fila de `profiles` acá (RPC `ensure_own_profile`, solo puede
+  // tocar SU propio id) y se vuelve a pedir — sin esto, una cuenta sin fila queda invisible para
+  // siempre en /admin/usuarios y nadie puede asignarle módulos ni revisar su suscripción. Si la función
+  // todavía no existe (migración sin aplicar) o falla, se sigue igual que antes: sin perfil.
+  if (!profile) {
+    try {
+      const { error } = await supabase.rpc("ensure_own_profile");
+      if (!error) {
+        const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+        profile = data as Profile | null;
+      }
+    } catch {
+      /* ensure_own_profile no existe todavía (migración 0019 sin aplicar) o falló: se sigue sin perfil */
+    }
+  }
+
   const notice = profile ? getAccountNotice(profile) : null;
 
   // Módulos habilitados, estado de suscripción y datos de pago (cada consulta degrada sola si la migración 0018 no está aplicada).
   const extras = await loadAccountExtras(supabase, user.id);
+  // Un admin ve TODOS los módulos siempre, nunca depende de `user_module_access` (ver `buildModuleAccess`:
+  // el default para quien no tiene filas ahí es restrictivo — correcto para un usuario normal, no para un admin).
   const subscription = profile ? getSubscription(profile, extras.hasPendingReceipt) : null;
-  const account = { modules: extras.modules, subscription, payment: extras.payment };
+  const account = { modules: profile?.role === "admin" ? allModulesEnabled() : extras.modules, subscription, payment: extras.payment };
 
   // Ver src/app/auth/impersonate/route.ts: se setea al canjear un magic
   // link generado desde /admin/usuarios/[userId] ("Entrar como este
@@ -85,21 +105,23 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const cookieStore = await cookies();
   const impersonatingEmail = cookieStore.get("vt_impersonating_email")?.value ?? null;
 
+  // Usuario nuevo: el formulario inicial va ANTES que cualquier otra cosa (incluida la pantalla de
+  // pago) — primero se presenta (nombre de usuario, datos básicos), recién después se le pide pagar.
+  // `onboarding_done === undefined` (migración 0018 sin aplicar) se trata como hecho: nunca se fuerza
+  // a nadie a un formulario que no podría guardar.
+  if (profile && profile.onboarding_done === false) {
+    return (
+      <ProfileProvider profile={profile} account={account}>
+        <OnboardingWizard userId={user.id} name={profile.full_name ?? sessionUser.name} />
+      </ProfileProvider>
+    );
+  }
+
   // Suscripción vencida (o bloqueada a mano): en lugar de los módulos, la pantalla de pago. El pago lo confirma un admin A MANO.
   if (profile && subscription?.locked) {
     return (
       <ProfileProvider profile={profile} account={account}>
         <PaymentGate userId={user.id} subscription={subscription} payment={extras.payment} />
-      </ProfileProvider>
-    );
-  }
-
-  // Usuario nuevo: el formulario inicial va ANTES de cualquier módulo. `onboarding_done === undefined` (migración 0018 sin aplicar)
-  // se trata como hecho: nunca se fuerza a nadie a un formulario que no podría guardar.
-  if (profile && profile.onboarding_done === false) {
-    return (
-      <ProfileProvider profile={profile} account={account}>
-        <OnboardingWizard userId={user.id} name={profile.full_name ?? sessionUser.name} />
       </ProfileProvider>
     );
   }
