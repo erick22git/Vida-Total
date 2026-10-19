@@ -10,6 +10,7 @@ const ACTION_TITLES: Record<string, string> = {
   [AUDIT_ACTIONS.DISABLED_MODULE]: "Deshabilitó un módulo",
   [AUDIT_ACTIONS.IMPERSONATED_USER]: "Entró como este usuario",
   [AUDIT_ACTIONS.APPROVED_PAYMENT]: "Confirmó un pago",
+  [AUDIT_ACTIONS.GRANTED_ACCESS]: "Dio prueba gratuita / extendió el acceso",
   [AUDIT_ACTIONS.REJECTED_PAYMENT]: "Rechazó un comprobante",
   [AUDIT_ACTIONS.UPDATED_PAYMENT_QR]: "Cambió el QR de pago",
 };

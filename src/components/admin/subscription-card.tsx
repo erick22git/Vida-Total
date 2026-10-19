@@ -7,8 +7,8 @@ import { CheckCircle2 } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { GlassBadge } from "@/components/glass/glass-badge";
 import { createClient } from "@/lib/supabase/client";
-import { approvePayment, rejectPayment, type PaymentRequestRow } from "@/lib/admin/payments";
-import { getSubscription, nextAccessUntil, SUBSCRIPTION_LABEL } from "@/lib/subscription";
+import { approvePayment, grantAccess, rejectPayment, type PaymentRequestRow } from "@/lib/admin/payments";
+import { extendAccessUntil, getSubscription, nextAccessUntil, SUBSCRIPTION_LABEL } from "@/lib/subscription";
 import type { Profile } from "@/lib/types/profile";
 
 function fmt(iso: string | null) {
@@ -29,6 +29,8 @@ export function SubscriptionCard({ profile: initial, adminId, requests: initialR
   const [requests, setRequests] = useState(initialRequests);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [grantAmount, setGrantAmount] = useState("7");
+  const [grantUnit, setGrantUnit] = useState<"dias" | "meses">("dias");
 
   const pending = requests.find((r) => r.status === "pendiente") ?? null;
   const sub = getSubscription(profile, !!pending);
@@ -42,6 +44,18 @@ export function SubscriptionCard({ profile: initial, adminId, requests: initialR
       if (request) setRequests((rs) => rs.map((r) => (r.id === request.id ? { ...r, status: "aprobado" } : r)));
       setMsg(`Pago confirmado. Acceso hasta el ${fmt(res.accessUntil)}.`);
     } else setMsg(`No se pudo confirmar: ${res.error}`);
+    setBusy(false);
+  }
+
+  async function grant() {
+    const amount = Math.floor(Number(grantAmount));
+    if (!Number.isFinite(amount) || amount < 1) return setMsg("Escribe un número de 1 en adelante.");
+    setBusy(true);
+    const res = await grantAccess(createClient(), { adminId, userId: profile.id, email: profile.email, currentAccessUntil: profile.access_until, amount, unit: grantUnit });
+    if (res.ok) {
+      setProfile((p) => ({ ...p, access_until: res.accessUntil, is_blocked: false }));
+      setMsg(`Acceso extendido hasta el ${fmt(res.accessUntil)}.`);
+    } else setMsg(`No se pudo extender: ${res.error}`);
     setBusy(false);
   }
 
@@ -78,6 +92,31 @@ export function SubscriptionCard({ profile: initial, adminId, requests: initialR
             Rechazar comprobante
           </button>
         )}
+      </div>
+      <div className="flex flex-wrap items-end gap-2 border-t border-white/10 pt-3">
+        <label className="flex flex-col gap-1 text-xs text-white/50">
+          Prueba gratuita / extender acceso
+          <span className="flex gap-2">
+            <input
+              type="number"
+              min={1}
+              value={grantAmount}
+              onChange={(e) => setGrantAmount(e.target.value)}
+              className="w-20 rounded-2xl bg-white/[0.06] border border-white/10 px-3 py-2 text-sm text-white outline-none"
+            />
+            <select
+              value={grantUnit}
+              onChange={(e) => setGrantUnit(e.target.value as "dias" | "meses")}
+              className="rounded-2xl bg-white/[0.06] border border-white/10 px-3 py-2 text-sm text-white outline-none"
+            >
+              <option value="dias" className="text-black">días</option>
+              <option value="meses" className="text-black">meses</option>
+            </select>
+          </span>
+        </label>
+        <button disabled={busy} onClick={grant} className="rounded-full px-4 py-2 text-sm font-semibold cursor-pointer disabled:opacity-40 bg-white/[0.1] hover:bg-white/[0.18] text-white">
+          Dar acceso hasta {fmt(extendAccessUntil(profile.access_until, Math.max(1, Math.floor(Number(grantAmount)) || 1), grantUnit))}
+        </button>
       </div>
       {msg && <p role="status" className="text-xs text-white/60">{msg}</p>}
     </GlassCard>

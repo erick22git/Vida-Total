@@ -37,11 +37,19 @@ export const SUBSCRIPTION_LABEL: Record<SubscriptionStatus, { label: string; col
 };
 
 /** Nueva fecha de fin al aprobar un pago de 1 mes: parte de hoy o del vencimiento actual, lo que sea posterior. */
-export function nextAccessUntil(current: string | null, now: Date = new Date()): string {
+export function nextAccessUntil(current: string | null, now: Date = new Date(), months = 1): string {
+  return extendAccessUntil(current, months, "meses", now);
+}
+
+/** Suma `amount` días o meses a hoy o al vencimiento actual (lo que sea posterior). Sirve para pagos de varios meses y pruebas gratuitas. */
+export function extendAccessUntil(current: string | null, amount: number, unit: "dias" | "meses", now: Date = new Date()): string {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const base = current ? new Date(`${current}T00:00:00`) : today;
   const start = base.getTime() > today.getTime() ? base : today;
-  const d = new Date(start.getFullYear(), start.getMonth() + 1, start.getDate());
+  const d =
+    unit === "meses"
+      ? new Date(start.getFullYear(), start.getMonth() + amount, start.getDate())
+      : new Date(start.getFullYear(), start.getMonth(), start.getDate() + amount);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }

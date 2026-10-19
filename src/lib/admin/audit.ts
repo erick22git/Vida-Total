@@ -14,6 +14,7 @@ export const AUDIT_ACTIONS = {
   DISABLED_MODULE: "disabled_module",
   IMPERSONATED_USER: "impersonated_user",
   APPROVED_PAYMENT: "approved_payment",
+  GRANTED_ACCESS: "granted_access",
   REJECTED_PAYMENT: "rejected_payment",
   UPDATED_PAYMENT_QR: "updated_payment_qr",
 } as const;

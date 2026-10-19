@@ -6,6 +6,20 @@ export interface PaymentSettings {
   qrPayload: string | null;
   amountLabel: string | null;
   instructions: string | null;
+  /** JSON {"1":"Bs 30","3":"Bs 80",...}: precio por cantidad de meses. */
+  prices: string | null;
+}
+
+export const PLAN_MONTHS = [1, 3, 6, 12] as const;
+
+export function parsePrices(raw: string | null): Record<string, string> {
+  if (!raw) return {};
+  try {
+    const o = JSON.parse(raw) as Record<string, unknown>;
+    return Object.fromEntries(Object.entries(o).filter(([, v]) => typeof v === "string" && v.trim()) as [string, string][]);
+  } catch {
+    return {};
+  }
 }
 
 export interface AccountExtras {
@@ -18,6 +32,7 @@ export const SETTING_KEYS = {
   qrPayload: "payment_qr_payload",
   amountLabel: "payment_amount_label",
   instructions: "payment_instructions",
+  prices: "payment_prices",
 } as const;
 
 /**
@@ -29,7 +44,7 @@ export async function loadAccountExtras(supabase: SupabaseClient, userId: string
   const extras: AccountExtras = {
     modules: buildModuleAccess([]),
     hasPendingReceipt: false,
-    payment: { qrPayload: null, amountLabel: null, instructions: null },
+    payment: { qrPayload: null, amountLabel: null, instructions: null, prices: null },
   };
 
   try {
@@ -59,6 +74,7 @@ export async function loadAccountExtras(supabase: SupabaseClient, userId: string
         qrPayload: get(SETTING_KEYS.qrPayload),
         amountLabel: get(SETTING_KEYS.amountLabel),
         instructions: get(SETTING_KEYS.instructions),
+        prices: get(SETTING_KEYS.prices),
       };
     }
   } catch (err) {

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AUDIT_ACTIONS, logAdminAction } from "@/lib/admin/audit";
 import { SETTING_KEYS } from "@/lib/account/load-account";
-import { nextAccessUntil } from "@/lib/subscription";
+import { extendAccessUntil } from "@/lib/subscription";
 
 /**
  * Operaciones de pago que corren en el navegador con la sesión del admin (las policies RLS de la migración 0018 son la barrera
@@ -23,9 +23,9 @@ export interface PaymentRequestRow {
 
 export async function approvePayment(
   supabase: SupabaseClient,
-  p: { adminId: string; request: PaymentRequestRow | null; userId: string; email: string | null; currentAccessUntil: string | null },
+  p: { adminId: string; request: PaymentRequestRow | null; userId: string; email: string | null; currentAccessUntil: string | null; months?: number },
 ): Promise<{ ok: true; accessUntil: string } | { ok: false; error: string }> {
-  const accessUntil = nextAccessUntil(p.currentAccessUntil);
+  const accessUntil = extendAccessUntil(p.currentAccessUntil, p.months ?? 1, "meses");
   const { error } = await supabase.from("profiles").update({ access_until: accessUntil, is_blocked: false }).eq("id", p.userId);
   if (error) return { ok: false, error: error.message };
   if (p.request) {
@@ -39,7 +39,7 @@ export async function approvePayment(
     adminId: p.adminId,
     targetUserId: p.userId,
     action: AUDIT_ACTIONS.APPROVED_PAYMENT,
-    details: { email: p.email, before: { access_until: p.currentAccessUntil }, after: { access_until: accessUntil }, requestId: p.request?.id ?? null },
+    details: { email: p.email, before: { access_until: p.currentAccessUntil }, after: { access_until: accessUntil }, requestId: p.request?.id ?? null, months: p.months ?? 1 },
   });
   return { ok: true, accessUntil };
 }
@@ -96,4 +96,21 @@ export async function submitReceipt(
     .insert({ user_id: p.userId, receipt_path: receiptPath, note: p.note.trim() || null, status: "pendiente" });
   if (error) return { ok: false, error: error.message };
   return { ok: true };
+}
+
+/** Prueba gratuita o extensión manual: suma días/meses al acceso del usuario y lo desbloquea. */
+export async function grantAccess(
+  supabase: SupabaseClient,
+  p: { adminId: string; userId: string; email: string | null; currentAccessUntil: string | null; amount: number; unit: "dias" | "meses" },
+): Promise<{ ok: true; accessUntil: string } | { ok: false; error: string }> {
+  const accessUntil = extendAccessUntil(p.currentAccessUntil, p.amount, p.unit);
+  const { error } = await supabase.from("profiles").update({ access_until: accessUntil, is_blocked: false }).eq("id", p.userId);
+  if (error) return { ok: false, error: error.message };
+  await logAdminAction(supabase, {
+    adminId: p.adminId,
+    targetUserId: p.userId,
+    action: AUDIT_ACTIONS.GRANTED_ACCESS,
+    details: { email: p.email, before: { access_until: p.currentAccessUntil }, after: { access_until: accessUntil }, amount: p.amount, unit: p.unit },
+  });
+  return { ok: true, accessUntil };
 }

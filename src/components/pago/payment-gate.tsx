@@ -12,7 +12,7 @@ import { PaymentScene, type RenderBackend } from "@/lib/3d/payment-scene";
 import { renderQrSvg } from "@/lib/qr/qr";
 import { submitReceipt } from "@/lib/admin/payments";
 import { createClient } from "@/lib/supabase/client";
-import type { PaymentSettings } from "@/lib/account/load-account";
+import { parsePrices, type PaymentSettings } from "@/lib/account/load-account";
 import type { SubscriptionInfo } from "@/lib/subscription";
 
 function formatDate(iso: string | null) {
@@ -36,11 +36,16 @@ export function PaymentGate({
   subscription,
   payment,
   figureId,
+  preview,
+  onClosePreview,
 }: {
   userId: string;
   subscription: SubscriptionInfo;
   payment: PaymentSettings;
   figureId?: string;
+  /** Vista previa para el admin: no envía comprobantes y se cierra con un botón. */
+  preview?: boolean;
+  onClosePreview?: () => void;
 }) {
   const router = useRouter();
   const hostRef = useRef<HTMLDivElement>(null);
@@ -56,6 +61,7 @@ export function PaymentGate({
   const [error, setError] = useState<string | null>(null);
 
   const hasQr = !!payment.qrPayload;
+  const prices = parsePrices(payment.prices);
   const pending = sent || subscription.status === "pendiente";
 
   // El SVG del QR se regenera desde el TEXTO guardado; nunca se usa la imagen original.
@@ -106,6 +112,7 @@ export function PaymentGate({
   }
 
   async function sendReceipt() {
+    if (preview) return setError("Vista previa: acá no se envían comprobantes.");
     setSending(true);
     setError(null);
     const res = await submitReceipt(createClient(), { userId, file, note });
@@ -125,6 +132,7 @@ export function PaymentGate({
   }
 
   async function signOut() {
+    if (preview) return onClosePreview?.();
     await createClient().auth.signOut();
     router.push("/login");
     router.refresh();
@@ -145,7 +153,7 @@ export function PaymentGate({
           </div>
         </div>
         <button onClick={signOut} aria-label="Cerrar sesión" className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white cursor-pointer">
-          <LogOut size={14} /> Salir
+          <LogOut size={14} /> {preview ? "Cerrar vista previa" : "Salir"}
         </button>
       </div>
 
@@ -194,6 +202,20 @@ export function PaymentGate({
         <Btn variant="chip" onClick={() => openQr.current()} className="w-full max-w-[460px]">
           Ver el QR de pago
         </Btn>
+      )}
+
+      {Object.keys(prices).length > 0 && (
+        <DarkCard className="w-full max-w-[460px] flex flex-col gap-2">
+          <p className="text-[15px] font-extrabold">Planes</p>
+          {Object.entries(prices)
+            .sort((a, b) => Number(a[0]) - Number(b[0]))
+            .map(([m, price]) => (
+              <div key={m} className="flex justify-between text-sm">
+                <span className="text-white/60">{m === "1" ? "1 mes" : `${m} meses`}</span>
+                <span className="font-bold">{price}</span>
+              </div>
+            ))}
+        </DarkCard>
       )}
 
       {/* Comprobante */}

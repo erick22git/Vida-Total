@@ -30,7 +30,7 @@ export interface AccountState {
 const EMPTY_ACCOUNT: AccountState = {
   modules: allModulesEnabled(),
   subscription: null,
-  payment: { qrPayload: null, amountLabel: null, instructions: null },
+  payment: { qrPayload: null, amountLabel: null, instructions: null, prices: null },
 };
 
 const ProfileContext = createContext<Profile | null>(null);

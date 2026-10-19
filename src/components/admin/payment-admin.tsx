@@ -6,7 +6,8 @@ import { es } from "date-fns/locale";
 import { CheckCircle2, FileText, QrCode, ShieldAlert, XCircle } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { createClient } from "@/lib/supabase/client";
-import { SETTING_KEYS } from "@/lib/account/load-account";
+import { SETTING_KEYS, PLAN_MONTHS, parsePrices } from "@/lib/account/load-account";
+import { PaymentGate } from "@/components/pago/payment-gate";
 import { approvePayment, rejectPayment, saveAppSetting, saveQrPayload, type PaymentRequestRow } from "@/lib/admin/payments";
 import { decodeQrFromFile, renderQrSvg, verifyQrSvg } from "@/lib/qr/qr";
 import { nextAccessUntil } from "@/lib/subscription";
@@ -50,6 +51,10 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [requests, setRequests] = useState<RequestView[]>([]);
+  const [prices, setPrices] = useState<Record<string, string>>({});
+  const [months, setMonths] = useState<Record<string, number>>({});
+  const [savedPayload, setSavedPayload] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -63,6 +68,8 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
     const payload = get(SETTING_KEYS.qrPayload);
     setAmount(get(SETTING_KEYS.amountLabel) ?? "");
     setInstructions(get(SETTING_KEYS.instructions) ?? "");
+    setSavedPayload(payload);
+    setPrices(parsePrices(get(SETTING_KEYS.prices)));
     setSavedSvg(payload ? await renderQrSvg(payload) : null);
 
     const { data: reqs } = await supabase.from("payment_requests").select("*").eq("status", "pendiente").order("created_at", { ascending: true });
@@ -124,7 +131,10 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
     const supabase = createClient();
     const a = await saveAppSetting(supabase, adminId, SETTING_KEYS.amountLabel, amount.trim() || null);
     const b = await saveAppSetting(supabase, adminId, SETTING_KEYS.instructions, instructions.trim() || null);
-    setMsg(a.error || b.error ? `No se pudo guardar: ${(a.error ?? b.error)?.message}` : "Monto e instrucciones guardados.");
+    const clean = Object.fromEntries(Object.entries(prices).filter(([, v]) => v.trim()));
+    const c = await saveAppSetting(supabase, adminId, SETTING_KEYS.prices, Object.keys(clean).length ? JSON.stringify(clean) : null);
+    const err = a.error ?? b.error ?? c.error;
+    setMsg(err ? `No se pudo guardar: ${err.message}` : "Precios, monto e instrucciones guardados.");
     setBusy(false);
   }
 
@@ -136,7 +146,7 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
 
   async function approve(r: RequestView) {
     setBusy(true);
-    const res = await approvePayment(createClient(), { adminId, request: r, userId: r.user_id, email: r.email, currentAccessUntil: r.access_until });
+    const res = await approvePayment(createClient(), { adminId, request: r, userId: r.user_id, email: r.email, currentAccessUntil: r.access_until, months: months[r.id] ?? 1 });
     setMsg(res.ok ? `Pago de ${r.email ?? "usuario"} confirmado. Acceso hasta el ${res.accessUntil}.` : `No se pudo confirmar: ${res.error}`);
     setBusy(false);
     if (res.ok) await load();
@@ -211,13 +221,24 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
             Monto (se muestra junto al QR)
             <input className={inputCls} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Ej: Bs 30 / mes" />
           </label>
+          <div className="sm:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {PLAN_MONTHS.map((n) => (
+              <label key={n} className="flex flex-col gap-1.5 text-xs text-white/50">
+                Precio {n === 1 ? "1 mes" : `${n} meses`}
+                <input className={inputCls} value={prices[String(n)] ?? ""} onChange={(e) => setPrices((p) => ({ ...p, [String(n)]: e.target.value }))} placeholder="Ej: Bs 30" />
+              </label>
+            ))}
+          </div>
           <label className="flex flex-col gap-1.5 text-xs text-white/50 sm:col-span-2">
             Instrucciones
             <textarea className={`${inputCls} min-h-[72px]`} value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="Ej: Escanea con la app de tu banco y sube la captura del comprobante." />
           </label>
         </div>
         <button disabled={busy} onClick={saveTexts} className={`${btnCls} bg-white/[0.1] hover:bg-white/[0.18] text-white w-fit`}>
-          Guardar monto e instrucciones
+          Guardar precios, monto e instrucciones
+        </button>
+        <button onClick={() => setPreviewOpen(true)} className={`${btnCls} bg-white text-black w-fit`}>
+          Ver la pantalla de pago como la ve el usuario
         </button>
       </GlassCard>
 
@@ -236,9 +257,23 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
                   {r.email} · enviado {format(new Date(r.created_at), "d MMM HH:mm", { locale: es })}
                 </p>
               </div>
-              <p className="text-xs text-white/50">Si apruebas: acceso hasta {nextAccessUntil(r.access_until)}</p>
+              <p className="text-xs text-white/50">Si apruebas: acceso hasta {nextAccessUntil(r.access_until, new Date(), months[r.id] ?? 1)}</p>
             </div>
             {r.note && <p className="text-xs text-white/60 italic">“{r.note}”</p>}
+            <label className="flex items-center gap-2 text-xs text-white/50">
+              Meses que pagó
+              <select
+                value={months[r.id] ?? 1}
+                onChange={(e) => setMonths((m) => ({ ...m, [r.id]: Number(e.target.value) }))}
+                className="rounded-xl bg-white/[0.06] border border-white/10 px-2 py-1.5 text-sm text-white outline-none"
+              >
+                {PLAN_MONTHS.map((n) => (
+                  <option key={n} value={n} className="text-black">
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div className="flex flex-wrap gap-2">
               {r.receipt_path && (
                 <button onClick={() => openReceipt(r.receipt_path!)} className={`${btnCls} bg-white/[0.08] hover:bg-white/[0.16] text-white`}>
@@ -246,7 +281,7 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
                 </button>
               )}
               <button disabled={busy} onClick={() => approve(r)} className={`${btnCls} bg-emerald-500/80 hover:bg-emerald-500 text-black flex items-center gap-1.5`}>
-                <CheckCircle2 size={15} /> Confirmar pago (+1 mes)
+                <CheckCircle2 size={15} /> Confirmar pago (+{months[r.id] ?? 1} {(months[r.id] ?? 1) === 1 ? "mes" : "meses"})
               </button>
               <button disabled={busy} onClick={() => reject(r)} className={`${btnCls} bg-red-500/20 hover:bg-red-500/30 text-red-200 flex items-center gap-1.5`}>
                 <XCircle size={15} /> Rechazar
@@ -257,6 +292,18 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
       </GlassCard>
 
       {msg && <p role="status" className="text-sm text-white/70">{msg}</p>}
+
+      {previewOpen && (
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-black">
+          <PaymentGate
+            preview
+            onClosePreview={() => setPreviewOpen(false)}
+            userId={adminId}
+            subscription={{ status: "vencida", nextPayment: null, locked: true }}
+            payment={{ qrPayload: savedPayload, amountLabel: amount.trim() || null, instructions: instructions.trim() || null, prices: JSON.stringify(Object.fromEntries(Object.entries(prices).filter(([, v]) => v.trim()))) }}
+          />
+        </div>
+      )}
     </div>
   );
 }
