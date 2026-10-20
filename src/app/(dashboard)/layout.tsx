@@ -21,7 +21,7 @@ import { GuidedTour } from "@/components/tutorial/guided-tour";
 import { AccountRemoved } from "@/components/account/account-removed";
 import { FirstUseForms } from "@/components/account/first-use-forms";
 import { loadAccountExtras } from "@/lib/account/load-account";
-import { allModulesEnabled } from "@/lib/account/modules";
+import { allModulesEnabled, restrictForUsers } from "@/lib/account/modules";
 import { getSubscription } from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/server";
 import { getAccountNotice, type Profile } from "@/lib/types/profile";
@@ -98,7 +98,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   // Un admin ve TODOS los módulos siempre, nunca depende de `user_module_access` (ver `buildModuleAccess`:
   // el default para quien no tiene filas ahí es restrictivo — correcto para un usuario normal, no para un admin).
   const subscription = profile ? getSubscription(profile, extras.hasPendingReceipt) : null;
-  const account = { modules: profile?.role === "admin" ? allModulesEnabled() : extras.modules, subscription, payment: extras.payment };
+  const account = { modules: profile?.role === "admin" ? allModulesEnabled() : restrictForUsers(extras.modules), subscription, payment: extras.payment };
 
   // Ver src/app/auth/impersonate/route.ts: se setea al canjear un magic
   // link generado desde /admin/usuarios/[userId] ("Entrar como este

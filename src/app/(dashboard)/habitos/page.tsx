@@ -16,9 +16,12 @@ import { HabitOrbsCard, habitHref } from "@/components/habitos/habit-orbs-card";
 import { AgendaWidget } from "@/components/agenda/agenda-widget";
 import { NewHabitFlow } from "@/components/habitos/new-habit-flow";
 import { usePreferencesStore } from "@/lib/store/preferencesStore";
+import { useProfile } from "@/components/providers/profile-provider";
 
 export default function HabitosHubPage() {
   const router = useRouter();
+  // Dentro de Hábitos, un usuario normal solo tiene los hábitos. Agenda, tareas y workspace son solo del admin por ahora.
+  const isAdmin = useProfile()?.role === "admin";
   const habits = useHabitsStore((s) => s.habits);
   const addHabit = useHabitsStore((s) => s.addHabit);
   const today = todayISO();
@@ -65,6 +68,7 @@ export default function HabitosHubPage() {
 
       <HabitOrbsCard habits={habits} todayISO={today} onCreate={() => setCreateOpen(true)} />
 
+      {isAdmin && (
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <AgendaWidget />
         {sections.map((s) => (
@@ -91,6 +95,7 @@ export default function HabitosHubPage() {
           </Link>
         ))}
       </section>
+      )}
 
       <NewHabitFlow
         open={createOpen}

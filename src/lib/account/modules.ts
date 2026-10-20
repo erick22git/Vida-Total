@@ -1,4 +1,5 @@
 import { MODULE_KEYS, type ModuleKey } from "@/lib/types/profile";
+import { isUserVisible } from "@/lib/account/module-catalog";
 
 export type ModuleAccessMap = Record<ModuleKey, boolean>;
 
@@ -49,4 +50,12 @@ export function isNavModuleVisible(navId: string, access: ModuleAccessMap): bool
 export function resolveNavModule<T extends { id: string; label: string; href: string }>(mod: T, isAdmin: boolean): T {
   if (mod.id === "home" && !isAdmin) return { ...mod, label: "Mis módulos", href: "/mis-modulos" };
   return mod;
+}
+
+/** Para un usuario normal, los módulos en mantenimiento quedan SIEMPRE apagados, aunque la base diga otra cosa (p. ej. cuentas
+ * anteriores a la restricción, que tenían todo habilitado): no los ve ni los puede pedir. El admin nunca pasa por acá. */
+export function restrictForUsers(map: ModuleAccessMap): ModuleAccessMap {
+  const out = { ...map };
+  for (const key of MODULE_KEYS) if (!isUserVisible(key)) out[key] = false;
+  return out;
 }

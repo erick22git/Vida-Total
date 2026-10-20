@@ -19,6 +19,8 @@ export interface ModuleCatalogEntry {
   /** Nombre de ícono de lucide (se resuelve en la interfaz, así este archivo no importa React). */
   icon: "Flame" | "Droplets" | "Dumbbell" | "Sparkles" | "CalendarCheck2" | "Shirt" | "Leaf" | "Wallet" | "Mic";
   color: string;
+  /** false = módulo en mantenimiento: SOLO lo ve el admin. Un usuario normal no lo ve en ningún lado (ni en la navegación, ni en "Mis módulos", ni como pedido de acceso). */
+  userVisible: boolean;
 }
 
 export const MODULE_CATALOG: Record<ModuleKey, ModuleCatalogEntry> = {
@@ -29,6 +31,7 @@ export const MODULE_CATALOG: Record<ModuleKey, ModuleCatalogEntry> = {
     pathPrefixes: ["/gym/calorias", "/gym/nutriologo"],
     icon: "Flame",
     color: "var(--gym)",
+    userVisible: true,
   },
   gym_agua: {
     label: "Agua",
@@ -37,6 +40,7 @@ export const MODULE_CATALOG: Record<ModuleKey, ModuleCatalogEntry> = {
     pathPrefixes: ["/gym/agua"],
     icon: "Droplets",
     color: "var(--gym)",
+    userVisible: true,
   },
   gym_entrenamiento: {
     label: "Entrenamiento",
@@ -45,6 +49,7 @@ export const MODULE_CATALOG: Record<ModuleKey, ModuleCatalogEntry> = {
     pathPrefixes: ["/gym/entrenamiento"],
     icon: "Dumbbell",
     color: "var(--gym)",
+    userVisible: true,
   },
   gym_kegel: {
     label: "Kegel",
@@ -53,14 +58,16 @@ export const MODULE_CATALOG: Record<ModuleKey, ModuleCatalogEntry> = {
     pathPrefixes: ["/gym/kegel"],
     icon: "Sparkles",
     color: "var(--paz-mental)",
+    userVisible: false,
   },
   habitos: {
     label: "Hábitos",
-    description: "Hábitos, rutinas y agenda del día.",
+    description: "Tus hábitos de cada día.",
     href: "/habitos",
     pathPrefixes: ["/habitos"],
     icon: "CalendarCheck2",
     color: "var(--habitos)",
+    userVisible: true,
   },
   outfit: {
     label: "Outfit",
@@ -69,6 +76,7 @@ export const MODULE_CATALOG: Record<ModuleKey, ModuleCatalogEntry> = {
     pathPrefixes: ["/outfit"],
     icon: "Shirt",
     color: "var(--outfit)",
+    userVisible: false,
   },
   paz_mental: {
     label: "Paz Mental",
@@ -77,6 +85,7 @@ export const MODULE_CATALOG: Record<ModuleKey, ModuleCatalogEntry> = {
     pathPrefixes: ["/paz-mental"],
     icon: "Leaf",
     color: "var(--paz-mental)",
+    userVisible: false,
   },
   finanzas: {
     label: "Finanzas",
@@ -85,6 +94,7 @@ export const MODULE_CATALOG: Record<ModuleKey, ModuleCatalogEntry> = {
     pathPrefixes: ["/finanzas"],
     icon: "Wallet",
     color: "var(--finanzas)",
+    userVisible: false,
   },
   voz: {
     label: "Voz",
@@ -93,8 +103,23 @@ export const MODULE_CATALOG: Record<ModuleKey, ModuleCatalogEntry> = {
     pathPrefixes: ["/voz"],
     icon: "Mic",
     color: "var(--voz)",
+    userVisible: false,
   },
 };
+
+/** Módulos que ve un usuario normal (hoy: Calorías, Agua, Entrenamiento y Hábitos). El resto está en mantenimiento y es solo del admin. */
+export const USER_MODULE_KEYS: ModuleKey[] = MODULE_KEYS.filter((k) => MODULE_CATALOG[k].userVisible);
+
+export function isUserVisible(key: ModuleKey): boolean {
+  return MODULE_CATALOG[key].userVisible;
+}
+
+/** Dentro de Hábitos el usuario solo tiene los hábitos: agenda, línea de tiempo, tareas y workspace son solo del admin por ahora. */
+const ADMIN_ONLY_PATHS = ["/habitos/agenda", "/habitos/timeline", "/habitos/tareas", "/habitos/workspace"];
+
+export function isAdminOnlyPath(pathname: string): boolean {
+  return ADMIN_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
 
 /** Módulo al que pertenece una ruta; `null` = ruta libre (configuración, mis módulos, administración, etc.). */
 export function moduleForPath(pathname: string): ModuleKey | null {

@@ -8,6 +8,7 @@ import { RequestAccessButton } from "@/components/account/request-access-button"
 import { useAccount, useProfile } from "@/components/providers/profile-provider";
 import { MODULE_CATALOG, type ModuleCatalogEntry } from "@/lib/account/module-catalog";
 import { MODULE_KEYS, type ModuleKey } from "@/lib/types/profile";
+import { USER_MODULE_KEYS } from "@/lib/account/module-catalog";
 
 const ICONS: Record<ModuleCatalogEntry["icon"], LucideIcon> = { Flame, Droplets, Dumbbell, Sparkles, CalendarCheck2, Shirt, Leaf, Wallet, Mic };
 
@@ -21,8 +22,10 @@ export default function MisModulosPage() {
   const { modules } = useAccount();
   const name = profile?.display_name || profile?.full_name?.split(" ")[0] || null;
 
-  const enabled = MODULE_KEYS.filter((k) => modules[k]);
-  const locked = MODULE_KEYS.filter((k) => !modules[k]);
+  // Un usuario normal solo ve los módulos disponibles hoy; los que están en mantenimiento no aparecen ni como "no habilitados".
+  const visibleKeys = profile?.role === "admin" ? MODULE_KEYS : USER_MODULE_KEYS;
+  const enabled = visibleKeys.filter((k) => modules[k]);
+  const locked = visibleKeys.filter((k) => !modules[k]);
 
   return (
     <div className="flex flex-col gap-6 max-w-[640px] mx-auto">

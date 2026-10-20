@@ -166,7 +166,8 @@ export default function GymHubPage() {
         )}
 
         {/* Kegel: módulo propio, independiente de Entrenamiento. */}
-        {modules.gym_kegel ? (
+        {/* En mantenimiento: solo el admin lo ve (para un usuario `modules.gym_kegel` es siempre false y no aparece ni como bloqueado). */}
+        {modules.gym_kegel && (
           <Link href="/gym/kegel">
             <GlassCard
               padding="md"
@@ -187,8 +188,6 @@ export default function GymHubPage() {
               <ProgressBar value={kegelLevel} max={10} color="rgba(255,255,255,0.85)" />
             </GlassCard>
           </Link>
-        ) : (
-          <LockedCard label="Kegel" Icon={Sparkles} />
         )}
       </section>
       </div>

@@ -1,14 +1,15 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 import { Mascot } from "@/components/agente/mascot";
 import { DarkCard, Btn } from "@/components/agente/ui";
 import { useAccount, useProfile } from "@/components/providers/profile-provider";
 import { MODULE_LABELS } from "@/lib/admin/module-labels";
 import { moduleForPath } from "@/lib/subscription";
+import { isAdminOnlyPath, isUserVisible } from "@/lib/account/module-catalog";
 import { RequestAccessButton } from "@/components/account/request-access-button";
 
 /**
@@ -21,7 +22,17 @@ export function ModuleAccessGate({ children }: { children: ReactNode }) {
   const profile = useProfile();
   const { modules } = useAccount();
   const key = moduleForPath(pathname);
-  if (profile?.role === "admin" || !key || modules[key]) return <>{children}</>;
+  const router = useRouter();
+  const isAdmin = profile?.role === "admin";
+  // Módulos en mantenimiento (y las partes de Hábitos que son solo del admin): el usuario no los ve ni sabe que existen. No se le
+  // muestra un "no habilitado" ni un botón de pedir acceso: se lo lleva de vuelta a lo suyo.
+  const hiddenFromUser = !isAdmin && (isAdminOnlyPath(pathname) || (key !== null && !isUserVisible(key)));
+  const backTo = isAdminOnlyPath(pathname) ? "/habitos" : "/mis-modulos";
+  useEffect(() => {
+    if (hiddenFromUser) router.replace(backTo);
+  }, [hiddenFromUser, backTo, router]);
+  if (hiddenFromUser) return null;
+  if (isAdmin || !key || modules[key]) return <>{children}</>;
 
   const label = MODULE_LABELS[key].label;
 

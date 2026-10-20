@@ -5,8 +5,8 @@ import { GlassCard } from "@/components/glass/glass-card";
 import { createClient } from "@/lib/supabase/client";
 import { logAdminAction, AUDIT_ACTIONS } from "@/lib/admin/audit";
 import { MODULE_LABELS } from "@/lib/admin/module-labels";
-import { MODULE_CATALOG } from "@/lib/account/module-catalog";
-import { MODULE_KEYS, type ModuleKey } from "@/lib/types/profile";
+import { MODULE_CATALOG, USER_MODULE_KEYS } from "@/lib/account/module-catalog";
+import type { ModuleKey } from "@/lib/types/profile";
 
 function Toggle({ enabled, onClick, disabled }: { enabled: boolean; onClick: () => void; disabled: boolean }) {
   return (
@@ -76,11 +76,11 @@ export function ModuleToggles({
     <GlassCard padding="lg">
       <h2 className="text-sm font-semibold text-white mb-1">Módulos habilitados</h2>
       <p className="text-xs text-white/45 mb-4">
-        Controla a qué módulos de la app tiene acceso esta cuenta. Un módulo sin configurar explícitamente está
+        Controla a qué módulos tiene acceso esta cuenta. Hoy los usuarios solo tienen Calorías, Agua, Entrenamiento y Hábitos; el resto está en mantenimiento y no lo ven. Un módulo sin configurar explícitamente está
         deshabilitado por defecto (salvo que seas admin: un admin siempre ve todo).
       </p>
       <div className="flex flex-col divide-y divide-white/[0.06]">
-        {MODULE_KEYS.map((key) => {
+        {USER_MODULE_KEYS.map((key) => {
           const meta = MODULE_LABELS[key];
           return (
             <div key={key} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
