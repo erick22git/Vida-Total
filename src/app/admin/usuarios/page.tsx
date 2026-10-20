@@ -29,6 +29,9 @@ export default async function AdminUsuariosPage({
   // Pedidos de módulo sin resolver (migración 0019). Si la tabla todavía no existe, la consulta
   // devuelve error y se ignora — el resto de la pantalla sigue funcionando igual.
   const adminId = userData.user?.id ?? "";
+  // Quiénes tienen un comprobante sin revisar (migración 0018) — para el estado "Pago en revisión" de la lista.
+  const { data: pendingRows } = await supabase.from("payment_requests").select("user_id").eq("status", "pendiente");
+  const pendingUserIds = Array.from(new Set((pendingRows ?? []).map((r) => r.user_id as string)));
   const { data: requestRows } = await supabase
     .from("module_requests")
     .select("id, user_id, module, created_at")
@@ -47,7 +50,7 @@ export default async function AdminUsuariosPage({
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-xl md:text-2xl font-semibold text-white">Usuarios</h1>
-        <p className="text-sm text-white/45 mt-1">{(data ?? []).length} cuentas registradas.</p>
+        <p className="text-sm text-white/45 mt-1">{(data ?? []).filter((u) => !u.deleted_at).length} cuentas registradas.</p>
       </div>
       {errorParam && IMPERSONATE_ERROR_MESSAGES[errorParam] && (
         <div className="rounded-2xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
@@ -55,7 +58,7 @@ export default async function AdminUsuariosPage({
         </div>
       )}
       <PendingModuleRequests initialRequests={moduleRequests} adminId={adminId} />
-      <UsersTable initialUsers={(data ?? []) as Profile[]} adminId={adminId} />
+      <UsersTable initialUsers={(data ?? []) as Profile[]} adminId={adminId} pendingUserIds={pendingUserIds} />
     </div>
   );
 }

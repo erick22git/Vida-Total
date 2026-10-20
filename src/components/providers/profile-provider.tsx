@@ -3,6 +3,7 @@
 import { createContext, useContext, type ReactNode } from "react";
 import type { Profile } from "@/lib/types/profile";
 import { defaultModuleAccess, type ModuleAccessMap } from "@/lib/account/modules";
+import { DEFAULT_PLANS } from "@/lib/subscription-plans";
 import type { PaymentSettings } from "@/lib/account/load-account";
 import type { SubscriptionInfo } from "@/lib/subscription";
 
@@ -33,7 +34,7 @@ export interface AccountState {
 const EMPTY_ACCOUNT: AccountState = {
   modules: defaultModuleAccess(),
   subscription: null,
-  payment: { qrPayload: null, amountLabel: null, instructions: null, prices: null },
+  payment: { qrPayload: null, amountLabel: null, instructions: null, plans: DEFAULT_PLANS },
 };
 
 const ProfileContext = createContext<Profile | null>(null);

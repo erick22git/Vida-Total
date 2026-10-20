@@ -1710,13 +1710,68 @@
         "leafCards": 3640
       },
       "glb": {
-        "file": "public/models/tree_payment_001_meshopt.glb",
+        "file": "public/models/tree_payment_001_meshopt.glb (borrado: reemplazado por tree_payment_002)",
         "sha256": "8172950b5b33870f1437149046e81e0f336a934025e51ee1e2fdcaf1b3c54b09",
         "bytes": 966776,
         "textures": "corteza 512 px + normal 512 px + hoja 256 px (PNG embebidas)",
         "alphaMode": "MASK (hojas, cutoff 0.5)"
       },
-      "runtime": "src/lib/3d/payment-scene.ts (three.js; WebGPURenderer con caída automática a WebGL2 y luego WebGLRenderer). Registro de figuras intercambiables en src/lib/3d/payment-figures.ts."
+      "runtime": "src/lib/3d/payment-scene.ts (three.js; WebGPURenderer con caída automática a WebGL2 y luego WebGLRenderer). Registro de figuras intercambiables en src/lib/3d/payment-figures.ts.",
+      "status": "superseded",
+      "supersededBy": "tree_payment_002"
+    },
+    {
+      "id": "tree_payment_002",
+      "name": "Árbol (castaño) en escala de grises para la pantalla de pago / QR",
+      "module": "suscripciones",
+      "category": "payment-figure",
+      "background": "transparent",
+      "source": "Modelado en Blender 5.2 por script propio (sin assets de terceros). Referencia visual aportada por el dueño del proyecto (imagen de un castaño isométrico en grises); no se copió ningún modelo ni textura.",
+      "license": "Obra propia",
+      "licenseNote": "Geometría y texturas (corteza, normal map, hoja palmeada de 7 folíolos) generadas por tools/3d/blender/42_payment_tree_v2.py con numpy; no hay ningún archivo externo. Paleta estrictamente blanco/negro/grises.",
+      "author": "Vida Total (generado)",
+      "publishable": true,
+      "originalFile": "tools/3d/blender/42_payment_tree_v2.py",
+      "format": "script -> glb (meshopt)",
+      "polyCount": {
+        "glbTris": 21500,
+        "leafCards": 1280,
+        "lobes": 20
+      },
+      "glb": {
+        "file": "public/models/tree_payment_002_meshopt.glb",
+        "sha256": "e49534d93ee26f0d98b31e8bac1a5dfe45dbbdb579c33cf35120a1f649f9775d",
+        "bytes": 726280,
+        "textures": "corteza 512 px + normal 512 px + hoja palmeada 256 px (PNG embebidas, grises)",
+        "alphaMode": "MASK (hojas, cutoff 0.5)"
+      },
+      "nodes": "Tree > Bark, Litter, Ground, lobe_00..lobe_19 (cada lóbulo con su pivote: la app los mece con el viento)",
+      "runtime": "src/lib/3d/payment-scene.ts (three.js; WebGPURenderer con caída automática a WebGL2 y luego WebGLRenderer). El PISO no viene en el GLB: se arma en la app desde la matriz real del QR."
+    },
+    {
+      "id": "grass_tuft_payment_001",
+      "name": "Matas de pasto en grises (borde del tablero del QR)",
+      "module": "suscripciones",
+      "category": "payment-figure",
+      "background": "transparent",
+      "source": "Generado por script propio (sin assets de terceros)",
+      "license": "Obra propia",
+      "licenseNote": "Hojas de pasto generadas por tools/3d/blender/43_payment_grass.py; tono por vértice, sin texturas.",
+      "author": "Vida Total (generado)",
+      "publishable": true,
+      "originalFile": "tools/3d/blender/43_payment_grass.py",
+      "format": "script -> glb (meshopt)",
+      "polyCount": {
+        "glbTris": 688,
+        "variants": 4
+      },
+      "glb": {
+        "file": "public/models/grass_tuft_payment_001_meshopt.glb",
+        "sha256": "079d9861fad0e4016897ce9453e4fbf7b17827887d9b87e1a9c6c12c91fe6ab3",
+        "bytes": 21544,
+        "textures": "ninguna (color por vértice)"
+      },
+      "runtime": "src/lib/3d/payment-scene.ts: se instancian ~90 matas en la zona de silencio del tablero y se mecen."
     }
   ],
   "replacementPlan": "Sustituir los cinco assets sin licencia por assets propios, CC0, con licencia comercial o creados para Vida Total. Cambiar colores/materiales no los vuelve propios ni publicables.",

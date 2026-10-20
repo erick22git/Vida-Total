@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { BOTTOM_NAV_MODULES } from "@/lib/constants";
-import { useAccount } from "@/components/providers/profile-provider";
-import { isNavModuleVisible } from "@/lib/account/modules";
+import { useAccount, useProfile } from "@/components/providers/profile-provider";
+import { isNavModuleVisible, resolveNavModule } from "@/lib/account/modules";
 import { ICON_MAP } from "./icon-map";
 import { useGlassMenu } from "@/glass-engine/use-glass-menu";
 import { MascotIcon } from "@/components/agente/mascot-dock";
@@ -150,11 +150,12 @@ type Stage = "peek" | "bubble" | "expanded";
 /** Solo los módulos que el admin habilitó para este usuario (Home y la mascota siempre). */
 function useVisibleNav() {
   const { modules } = useAccount();
-  return visibleNav(modules);
+  const isAdmin = useProfile()?.role === "admin";
+  return visibleNav(modules, isAdmin);
 }
 
-function visibleNav(modules: Parameters<typeof isNavModuleVisible>[1]) {
-  const navModules = BOTTOM_NAV_MODULES.filter((mod) => isNavModuleVisible(mod.id, modules));
+function visibleNav(modules: Parameters<typeof isNavModuleVisible>[1], isAdmin: boolean) {
+  const navModules = BOTTOM_NAV_MODULES.filter((mod) => isNavModuleVisible(mod.id, modules)).map((m) => resolveNavModule(m, isAdmin));
   const navItems: ModuleDefItem[] = [...navModules, MASCOT_ITEM];
   return { navModules, navItems };
 }

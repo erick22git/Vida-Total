@@ -175,3 +175,16 @@ Nueva, **sin aplicar**. Requiere 0001 y 0019 (para la siembra de módulos: si 00
 
 **Cómo aplicarla:** SQL Editor de Supabase → pegar `supabase/migrations/0020_module_defaults_and_activity.sql` → Run.
 
+## 13. Migración 0021 (módulos independientes, planes configurables, cuenta nueva exige pago, eliminar usuarios)
+
+Nueva, **sin aplicar**. Aditiva e idempotente; las partes que dependen de 0018/0019 se saltan solas. Detalle en `docs/suscripciones-usuarios.md` §12. **Aplicar también la 0020** si todavía no está (contador de ingresos y aviso de prueba gratuita; la 0021 no depende de ella).
+
+| Qué hace | Para qué |
+|---|---|
+| Amplía el CHECK de `user_module_access.module` (+ `gym_agua`, `gym_kegel`) y copia el valor actual de Calorías → Agua y de Entrenamiento → Kegel | Módulos independientes; nadie pierde lo que ya tenía |
+| `subscription_plans` (+ RLS, siembra 1 mes / 3 meses / 6 meses / 1 año, copia los precios viejos de `app_settings`) | Planes configurables |
+| `payment_requests.plan_id / plan_name / plan_months / plan_price_label` | El comprobante queda atado al plan elegido |
+| `profiles.payment_required` (cuentas existentes → `false`, nuevas → `true`), `deleted_at`, `deleted_by`, `display_name`, `phone` + policy de update que protege los campos administrativos | Cuenta nueva exige pago; eliminar con soft-delete; onboarding mínimo |
+| Índice único de pedidos sin resolver y trigger con el nombre real del módulo | "Pedido de acceso a Calorías" |
+
+**Cómo aplicarla:** SQL Editor de Supabase → pegar `supabase/migrations/0021_modulos_independientes_planes_usuarios.sql` → Run (con el traductor de Chrome desactivado). Sin ella la app sigue funcionando (planes de respaldo, sin eliminar ni exigir pago a cuentas nuevas).

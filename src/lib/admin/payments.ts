@@ -4,6 +4,7 @@ import { es } from "date-fns/locale";
 import { AUDIT_ACTIONS, logAdminAction } from "@/lib/admin/audit";
 import { SETTING_KEYS } from "@/lib/account/load-account";
 import { extendAccessUntil } from "@/lib/subscription";
+import { isFallbackPlan, type SubscriptionPlan } from "@/lib/subscription-plans";
 
 function fmtAccessDate(iso: string) {
   try {
@@ -48,14 +49,32 @@ export interface PaymentRequestRow {
   status: "pendiente" | "aprobado" | "rechazado";
   created_at: string;
   reviewed_at: string | null;
+  /** Plan que el usuario eligió al pagar (migración 0021). Es una copia: si el admin edita o borra el plan después, el pedido conserva lo que se eligió. */
+  plan_name?: string | null;
+  plan_months?: number | null;
+  plan_price_label?: string | null;
+}
+
+/**
+ * Deja la cuenta con acceso hasta `accessUntil`: lo desbloquea y apaga `payment_required` (la cuenta nueva ya no exige pago).
+ * Si la columna todavía no existe (migración 0021 sin aplicar) se reintenta sin ella — nunca se frena una confirmación por eso.
+ */
+async function setAccess(supabase: SupabaseClient, userId: string, accessUntil: string) {
+  const full = await supabase.from("profiles").update({ access_until: accessUntil, is_blocked: false, payment_required: false }).eq("id", userId);
+  if (full.error && /payment_required/i.test(full.error.message)) {
+    return supabase.from("profiles").update({ access_until: accessUntil, is_blocked: false }).eq("id", userId);
+  }
+  return full;
 }
 
 export async function approvePayment(
   supabase: SupabaseClient,
   p: { adminId: string; request: PaymentRequestRow | null; userId: string; email: string | null; currentAccessUntil: string | null; months?: number },
 ): Promise<{ ok: true; accessUntil: string } | { ok: false; error: string }> {
-  const accessUntil = extendAccessUntil(p.currentAccessUntil, p.months ?? 1, "meses");
-  const { error } = await supabase.from("profiles").update({ access_until: accessUntil, is_blocked: false }).eq("id", p.userId);
+  // Los meses salen del PLAN que el usuario eligió al pagar; el admin puede corregirlos antes de confirmar (`p.months`).
+  const months = p.months ?? p.request?.plan_months ?? 1;
+  const accessUntil = extendAccessUntil(p.currentAccessUntil, months, "meses");
+  const { error } = await setAccess(supabase, p.userId, accessUntil);
   if (error) return { ok: false, error: error.message };
   if (p.request) {
     const { error: reqError } = await supabase
@@ -68,7 +87,7 @@ export async function approvePayment(
     adminId: p.adminId,
     targetUserId: p.userId,
     action: AUDIT_ACTIONS.APPROVED_PAYMENT,
-    details: { email: p.email, before: { access_until: p.currentAccessUntil }, after: { access_until: accessUntil }, requestId: p.request?.id ?? null, months: p.months ?? 1 },
+    details: { email: p.email, before: { access_until: p.currentAccessUntil }, after: { access_until: accessUntil }, requestId: p.request?.id ?? null, months, plan: p.request?.plan_name ?? null },
   });
   void notifyUserAccessGranted(supabase, {
     userId: p.userId,
@@ -117,7 +136,7 @@ export async function saveQrPayload(supabase: SupabaseClient, adminId: string, p
 /** Sube el comprobante del usuario al bucket privado y registra la solicitud como «pendiente». */
 export async function submitReceipt(
   supabase: SupabaseClient,
-  p: { userId: string; file: File | null; note: string },
+  p: { userId: string; file: File | null; note: string; plan?: SubscriptionPlan | null },
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   let receiptPath: string | null = null;
   if (p.file) {
@@ -126,9 +145,13 @@ export async function submitReceipt(
     const { error: upError } = await supabase.storage.from("comprobantes").upload(receiptPath, p.file, { contentType: p.file.type || undefined });
     if (upError) return { ok: false, error: upError.message };
   }
-  const { error } = await supabase
-    .from("payment_requests")
-    .insert({ user_id: p.userId, receipt_path: receiptPath, note: p.note.trim() || null, status: "pendiente" });
+  const base = { user_id: p.userId, receipt_path: receiptPath, note: p.note.trim() || null, status: "pendiente" };
+  // El plan elegido viaja con el comprobante (migración 0021). Un plan de respaldo no tiene fila en la base: solo se guardan sus datos.
+  const withPlan = p.plan
+    ? { ...base, plan_id: isFallbackPlan(p.plan) ? null : p.plan.id, plan_name: p.plan.name, plan_months: p.plan.months, plan_price_label: p.plan.price_label || null }
+    : base;
+  let { error } = await supabase.from("payment_requests").insert(withPlan);
+  if (error && /plan_/i.test(error.message)) ({ error } = await supabase.from("payment_requests").insert(base));
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
@@ -139,7 +162,7 @@ export async function grantAccess(
   p: { adminId: string; userId: string; email: string | null; currentAccessUntil: string | null; amount: number; unit: "dias" | "meses" },
 ): Promise<{ ok: true; accessUntil: string } | { ok: false; error: string }> {
   const accessUntil = extendAccessUntil(p.currentAccessUntil, p.amount, p.unit);
-  const { error } = await supabase.from("profiles").update({ access_until: accessUntil, is_blocked: false }).eq("id", p.userId);
+  const { error } = await setAccess(supabase, p.userId, accessUntil);
   if (error) return { ok: false, error: error.message };
   await logAdminAction(supabase, {
     adminId: p.adminId,
@@ -154,4 +177,15 @@ export async function grantAccess(
     body: `El administrador te dio acceso gratis hasta el ${fmtAccessDate(accessUntil)}. Después de esa fecha se vuelve a pedir el pago para seguir — tus datos quedan guardados igual.`,
   });
   return { ok: true, accessUntil };
+}
+
+/** Vuelve a exigir el pago a una cuenta (revoca el acceso actual sin borrar nada): ve la pantalla de pago hasta que se confirme otro pago. */
+export async function requirePaymentAgain(
+  supabase: SupabaseClient,
+  p: { adminId: string; userId: string; email: string | null },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { error } = await supabase.from("profiles").update({ payment_required: true, is_blocked: false }).eq("id", p.userId);
+  if (error) return { ok: false, error: /payment_required/i.test(error.message) ? "Falta aplicar la migración 0021 en Supabase." : error.message };
+  await logAdminAction(supabase, { adminId: p.adminId, targetUserId: p.userId, action: AUDIT_ACTIONS.REQUIRED_PAYMENT, details: { email: p.email } });
+  return { ok: true };
 }

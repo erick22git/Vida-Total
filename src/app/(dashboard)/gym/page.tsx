@@ -96,8 +96,8 @@ export default function GymHubPage() {
           <LockedCard label="Calorías" Icon={Flame} />
         )}
 
-        {/* Agua: mismo módulo que Calorías (se registra junto a la comida). */}
-        {modules.gym_calorias ? (
+        {/* Agua: módulo propio, independiente de Calorías. */}
+        {modules.gym_agua ? (
           <Link href="/gym/agua">
             <GlassCard
               padding="sm"
@@ -165,8 +165,8 @@ export default function GymHubPage() {
           <LockedCard label="Entrenamiento" Icon={Dumbbell} />
         )}
 
-        {/* Kegel: mismo módulo que Entrenamiento. */}
-        {modules.gym_entrenamiento ? (
+        {/* Kegel: módulo propio, independiente de Entrenamiento. */}
+        {modules.gym_kegel ? (
           <Link href="/gym/kegel">
             <GlassCard
               padding="md"

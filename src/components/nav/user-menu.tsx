@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Bot, LogOut, ShieldCheck } from "lucide-react";
 import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { createClient } from "@/lib/supabase/client";
@@ -66,7 +65,6 @@ export function UserMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const router = useRouter();
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -76,8 +74,10 @@ export function UserMenu({
     // este mismo navegador después, los stores de Zustand no sigan
     // apuntando (aunque sea momentáneamente) a los datos de esta cuenta.
     setCurrentUserId(null);
-    router.push("/login");
-    router.refresh();
+    // Recarga completa (no navegación de SPA): descarta de la memoria los stores de la cuenta que se va, para que
+    // nada de ella quede a la vista ni se escriba bajo la cuenta siguiente en la misma pestaña.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- recarga COMPLETA a propósito: descarta de la memoria los stores de la cuenta que sale
+    window.location.href = "/login";
   }
 
   return (

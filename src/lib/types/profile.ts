@@ -13,7 +13,9 @@ export type UserRole = "user" | "admin";
  * en la migración SQL. */
 export const MODULE_KEYS = [
   "gym_calorias",
+  "gym_agua",
   "gym_entrenamiento",
+  "gym_kegel",
   "habitos",
   "outfit",
   "paz_mental",
@@ -43,6 +45,14 @@ export interface Profile {
    * "nunca contado" en una cuenta que ya existía antes de este contador. */
   login_count?: number;
   last_login_at?: string | null;
+  /** Migración 0021. `true` = cuenta nueva que todavía no pagó ni recibió prueba gratuita (ve la pantalla de pago).
+   * `undefined` = la migración no se aplicó: se trata como "no exige pago" (nunca se corta a nadie por una columna que no existe). */
+  payment_required?: boolean;
+  /** Soft-delete (migración 0021): cuenta eliminada por el admin, bloqueada y oculta del listado, con los datos intactos. */
+  deleted_at?: string | null;
+  /** Cómo la llama la mascota (onboarding). */
+  display_name?: string | null;
+  phone?: string | null;
 }
 
 export interface UserModuleAccess {

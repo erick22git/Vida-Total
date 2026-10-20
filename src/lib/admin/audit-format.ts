@@ -13,6 +13,11 @@ const ACTION_TITLES: Record<string, string> = {
   [AUDIT_ACTIONS.GRANTED_ACCESS]: "Dio prueba gratuita / extendió el acceso",
   [AUDIT_ACTIONS.REJECTED_PAYMENT]: "Rechazó un comprobante",
   [AUDIT_ACTIONS.UPDATED_PAYMENT_QR]: "Cambió el QR de pago",
+  [AUDIT_ACTIONS.REQUIRED_PAYMENT]: "Volvió a exigir el pago",
+  [AUDIT_ACTIONS.DELETED_ACCOUNT]: "Eliminó la cuenta (oculta y bloqueada, datos intactos)",
+  [AUDIT_ACTIONS.RESTORED_ACCOUNT]: "Restauró la cuenta",
+  [AUDIT_ACTIONS.PURGED_ACCOUNT]: "Borró la cuenta definitivamente",
+  [AUDIT_ACTIONS.MANAGED_PLAN]: "Cambió un plan de suscripción",
 };
 
 /** Título humano de la acción (para el badge/encabezado de cada fila). */

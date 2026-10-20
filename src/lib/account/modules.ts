@@ -28,7 +28,7 @@ export function buildModuleAccess(rows: { module: string; enabled: boolean }[] |
 export function isNavModuleVisible(navId: string, access: ModuleAccessMap): boolean {
   switch (navId) {
     case "gym":
-      return access.gym_calorias || access.gym_entrenamiento;
+      return access.gym_calorias || access.gym_agua || access.gym_entrenamiento || access.gym_kegel;
     case "habitos":
       return access.habitos;
     case "outfit":
@@ -42,4 +42,11 @@ export function isNavModuleVisible(navId: string, access: ModuleAccessMap): bool
     default:
       return true;
   }
+}
+
+/** Para un usuario normal, "Home" se reemplaza por "Mis módulos": no hay Home genérico (mostraba datos de
+ * módulos que quizá ni tiene habilitados). El admin conserva su Home. */
+export function resolveNavModule<T extends { id: string; label: string; href: string }>(mod: T, isAdmin: boolean): T {
+  if (mod.id === "home" && !isAdmin) return { ...mod, label: "Mis módulos", href: "/mis-modulos" };
+  return mod;
 }

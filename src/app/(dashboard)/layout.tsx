@@ -18,6 +18,8 @@ import { PaymentGate } from "@/components/pago/payment-gate";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { ModuleAccessGate } from "@/components/account/module-access-gate";
 import { GuidedTour } from "@/components/tutorial/guided-tour";
+import { AccountRemoved } from "@/components/account/account-removed";
+import { FirstUseForms } from "@/components/account/first-use-forms";
 import { loadAccountExtras } from "@/lib/account/load-account";
 import { allModulesEnabled } from "@/lib/account/modules";
 import { getSubscription } from "@/lib/subscription";
@@ -105,6 +107,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const cookieStore = await cookies();
   const impersonatingEmail = cookieStore.get("vt_impersonating_email")?.value ?? null;
 
+  // Cuenta eliminada por el admin (soft-delete): no entra a nada. Un admin nunca queda fuera.
+  if (profile?.deleted_at && profile.role !== "admin") return <AccountRemoved />;
+
   // Usuario nuevo: el formulario inicial va ANTES que cualquier otra cosa (incluida la pantalla de
   // pago) — primero se presenta (nombre de usuario, datos básicos), recién después se le pide pagar.
   // `onboarding_done === undefined` (migración 0018 sin aplicar) se trata como hecho: nunca se fuerza
@@ -112,7 +117,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   if (profile && profile.onboarding_done === false) {
     return (
       <ProfileProvider profile={profile} account={account}>
-        <OnboardingWizard userId={user.id} name={profile.full_name ?? sessionUser.name} />
+        <OnboardingWizard userId={user.id} name={profile.display_name ?? profile.full_name ?? sessionUser.name} />
       </ProfileProvider>
     );
   }
@@ -160,6 +165,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         <AgentNotificationBanner userId={user.id} />
         <DynamicIsland />
         <GuidedTour userId={user.id} autoStart={profile?.tutorial_seen === false} />
+        <FirstUseForms />
       </div>
     </ProfileProvider>
   );

@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useProfile } from "@/components/providers/profile-provider";
 import { Flame, Droplets, Dumbbell, Sparkles, Shirt, Leaf, Wallet, CalendarCheck2, Rows3, ArrowUpRight, ArrowDownRight, Mic } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -22,6 +25,14 @@ import { useMonthSummary, useMonthTrend, useCurrencySymbol, formatMoney } from "
 import { useVoiceStreak, useTodayVoiceLesson, VOICE_CATEGORY_LABEL } from "@/lib/store/voiceStore";
 
 export default function HomePage() {
+  // Un usuario normal no ve este Home (mezcla datos de todos los módulos, incluso los que no tiene habilitados):
+  // entra a "Mis módulos". Solo el admin conserva el Home.
+  const router = useRouter();
+  const profile = useProfile();
+  const redirectToModules = !!profile && profile.role !== "admin";
+  useEffect(() => {
+    if (redirectToModules) router.replace("/mis-modulos");
+  }, [redirectToModules, router]);
   const calorieGoal = useGymStore((s) => s.calorieGoal);
   const waterGoalMl = useGymStore((s) => s.waterGoalMl);
   const kegelStreak = useGymStore((s) => s.kegelStreak);
@@ -51,6 +62,8 @@ export default function HomePage() {
 
   const vozStreak = useVoiceStreak();
   const todayVoiceLesson = useTodayVoiceLesson();
+
+  if (redirectToModules) return null;
 
   return (
     <div className="flex flex-col gap-6">

@@ -6,7 +6,9 @@ import { es } from "date-fns/locale";
 import { CheckCircle2, FileText, QrCode, ShieldAlert, XCircle } from "lucide-react";
 import { GlassCard } from "@/components/glass/glass-card";
 import { createClient } from "@/lib/supabase/client";
-import { SETTING_KEYS, PLAN_MONTHS, parsePrices } from "@/lib/account/load-account";
+import { SETTING_KEYS } from "@/lib/account/load-account";
+import { PlansManager } from "@/components/admin/plans-manager";
+import { DEFAULT_PLANS, type SubscriptionPlan } from "@/lib/subscription-plans";
 import { PaymentGate } from "@/components/pago/payment-gate";
 import { approvePayment, rejectPayment, saveAppSetting, saveQrPayload, type PaymentRequestRow } from "@/lib/admin/payments";
 import { decodeQrFromFile, renderQrSvg, verifyQrSvg } from "@/lib/qr/qr";
@@ -51,7 +53,7 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [requests, setRequests] = useState<RequestView[]>([]);
-  const [prices, setPrices] = useState<Record<string, string>>({});
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [months, setMonths] = useState<Record<string, number>>({});
   const [savedPayload, setSavedPayload] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -69,7 +71,6 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
     setAmount(get(SETTING_KEYS.amountLabel) ?? "");
     setInstructions(get(SETTING_KEYS.instructions) ?? "");
     setSavedPayload(payload);
-    setPrices(parsePrices(get(SETTING_KEYS.prices)));
     setSavedSvg(payload ? await renderQrSvg(payload) : null);
 
     const { data: reqs } = await supabase.from("payment_requests").select("*").eq("status", "pendiente").order("created_at", { ascending: true });
@@ -88,6 +89,18 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
+
+  /** Meses con los que se confirma un comprobante: el corregido por el admin, si no el del plan que eligió el usuario, si no 1. */
+  function monthsFor(r: RequestView) {
+    return months[r.id] ?? r.plan_months ?? 1;
+  }
+  /** Opciones del selector: los meses de los planes configurados (sin repetir) + el del plan elegido, por si ese plan ya se borró. */
+  function monthOptions(r: RequestView) {
+    const set = new Set<number>(plans.map((p) => p.months));
+    if (r.plan_months) set.add(r.plan_months);
+    if (set.size === 0) [1, 3, 6, 12].forEach((n) => set.add(n));
+    return [...set].sort((a, b) => a - b);
+  }
 
   async function onFile(file: File | null) {
     setDecoded(null);
@@ -131,10 +144,8 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
     const supabase = createClient();
     const a = await saveAppSetting(supabase, adminId, SETTING_KEYS.amountLabel, amount.trim() || null);
     const b = await saveAppSetting(supabase, adminId, SETTING_KEYS.instructions, instructions.trim() || null);
-    const clean = Object.fromEntries(Object.entries(prices).filter(([, v]) => v.trim()));
-    const c = await saveAppSetting(supabase, adminId, SETTING_KEYS.prices, Object.keys(clean).length ? JSON.stringify(clean) : null);
-    const err = a.error ?? b.error ?? c.error;
-    setMsg(err ? `No se pudo guardar: ${err.message}` : "Precios, monto e instrucciones guardados.");
+    const err = a.error ?? b.error;
+    setMsg(err ? `No se pudo guardar: ${err.message}` : "Monto e instrucciones guardados.");
     setBusy(false);
   }
 
@@ -146,7 +157,7 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
 
   async function approve(r: RequestView) {
     setBusy(true);
-    const res = await approvePayment(createClient(), { adminId, request: r, userId: r.user_id, email: r.email, currentAccessUntil: r.access_until, months: months[r.id] ?? 1 });
+    const res = await approvePayment(createClient(), { adminId, request: r, userId: r.user_id, email: r.email, currentAccessUntil: r.access_until, months: monthsFor(r) });
     setMsg(res.ok ? `Pago de ${r.email ?? "usuario"} confirmado. Acceso hasta el ${res.accessUntil}.` : `No se pudo confirmar: ${res.error}`);
     setBusy(false);
     if (res.ok) await load();
@@ -218,29 +229,23 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5 text-xs text-white/50">
-            Monto (se muestra junto al QR)
+            Monto general (solo se muestra si el plan elegido no tiene precio)
             <input className={inputCls} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Ej: Bs 30 / mes" />
           </label>
-          <div className="sm:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {PLAN_MONTHS.map((n) => (
-              <label key={n} className="flex flex-col gap-1.5 text-xs text-white/50">
-                Precio {n === 1 ? "1 mes" : `${n} meses`}
-                <input className={inputCls} value={prices[String(n)] ?? ""} onChange={(e) => setPrices((p) => ({ ...p, [String(n)]: e.target.value }))} placeholder="Ej: Bs 30" />
-              </label>
-            ))}
-          </div>
           <label className="flex flex-col gap-1.5 text-xs text-white/50 sm:col-span-2">
             Instrucciones
             <textarea className={`${inputCls} min-h-[72px]`} value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="Ej: Escanea con la app de tu banco y sube la captura del comprobante." />
           </label>
         </div>
         <button disabled={busy} onClick={saveTexts} className={`${btnCls} bg-white/[0.1] hover:bg-white/[0.18] text-white w-fit`}>
-          Guardar precios, monto e instrucciones
+          Guardar monto e instrucciones
         </button>
         <button onClick={() => setPreviewOpen(true)} className={`${btnCls} bg-white text-black w-fit`}>
           Ver la pantalla de pago como la ve el usuario
         </button>
       </GlassCard>
+
+      <PlansManager adminId={adminId} onChange={setPlans} />
 
       <GlassCard padding="lg" className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
@@ -257,17 +262,25 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
                   {r.email} · enviado {format(new Date(r.created_at), "d MMM HH:mm", { locale: es })}
                 </p>
               </div>
-              <p className="text-xs text-white/50">Si apruebas: acceso hasta {nextAccessUntil(r.access_until, new Date(), months[r.id] ?? 1)}</p>
+              <p className="text-xs text-white/50">Si apruebas: acceso hasta {nextAccessUntil(r.access_until, new Date(), monthsFor(r))}</p>
             </div>
+            {r.plan_name ? (
+              <p className="text-xs text-white/70">
+                Plan elegido: <b>{r.plan_name}</b>
+                {r.plan_price_label ? ` · ${r.plan_price_label}` : ""} ({r.plan_months} {r.plan_months === 1 ? "mes" : "meses"})
+              </p>
+            ) : (
+              <p className="text-xs text-amber-200/80">El usuario no eligió plan (comprobante anterior a los planes): elegí los meses abajo.</p>
+            )}
             {r.note && <p className="text-xs text-white/60 italic">“{r.note}”</p>}
             <label className="flex items-center gap-2 text-xs text-white/50">
               Meses que pagó
               <select
-                value={months[r.id] ?? 1}
+                value={monthsFor(r)}
                 onChange={(e) => setMonths((m) => ({ ...m, [r.id]: Number(e.target.value) }))}
                 className="rounded-xl bg-white/[0.06] border border-white/10 px-2 py-1.5 text-sm text-white outline-none"
               >
-                {PLAN_MONTHS.map((n) => (
+                {monthOptions(r).map((n) => (
                   <option key={n} value={n} className="text-black">
                     {n}
                   </option>
@@ -281,7 +294,7 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
                 </button>
               )}
               <button disabled={busy} onClick={() => approve(r)} className={`${btnCls} bg-emerald-500/80 hover:bg-emerald-500 text-black flex items-center gap-1.5`}>
-                <CheckCircle2 size={15} /> Confirmar pago (+{months[r.id] ?? 1} {(months[r.id] ?? 1) === 1 ? "mes" : "meses"})
+                <CheckCircle2 size={15} /> Confirmar pago (+{monthsFor(r)} {monthsFor(r) === 1 ? "mes" : "meses"})
               </button>
               <button disabled={busy} onClick={() => reject(r)} className={`${btnCls} bg-red-500/20 hover:bg-red-500/30 text-red-200 flex items-center gap-1.5`}>
                 <XCircle size={15} /> Rechazar
@@ -300,7 +313,7 @@ export function PaymentAdmin({ adminId }: { adminId: string }) {
             onClosePreview={() => setPreviewOpen(false)}
             userId={adminId}
             subscription={{ status: "vencida", nextPayment: null, locked: true }}
-            payment={{ qrPayload: savedPayload, amountLabel: amount.trim() || null, instructions: instructions.trim() || null, prices: JSON.stringify(Object.fromEntries(Object.entries(prices).filter(([, v]) => v.trim()))) }}
+            payment={{ qrPayload: savedPayload, amountLabel: amount.trim() || null, instructions: instructions.trim() || null, plans: plans.filter((p) => p.active).length > 0 ? plans.filter((p) => p.active) : DEFAULT_PLANS }}
           />
         </div>
       )}

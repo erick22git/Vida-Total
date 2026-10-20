@@ -10,6 +10,7 @@ import { UserAccessSummary } from "@/components/admin/user-access-summary";
 import { SubscriptionCard } from "@/components/admin/subscription-card";
 import type { PaymentRequestRow } from "@/lib/admin/payments";
 import { createClient } from "@/lib/supabase/server";
+import type { SubscriptionPlan } from "@/lib/subscription-plans";
 import { MODULE_KEYS, type ModuleKey, type Profile, type AdminAuditLog } from "@/lib/types/profile";
 
 export default async function AdminUserDetailPage({ params }: { params: Promise<{ userId: string }> }) {
@@ -33,7 +34,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
   // Comprobantes del usuario (migración 0018). Si la tabla todavía no existe, la consulta devuelve error y se ignora.
   const { data: paymentRows } = await supabase
     .from("payment_requests")
-    .select("id, user_id, receipt_path, note, status, created_at, reviewed_at")
+    .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(10);
@@ -41,6 +42,9 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
   // Mismo default que `buildModuleAccess` (lib/account/modules.ts): sin fila para este módulo, el
   // usuario NO lo ve — antes decía `true` acá (quedó de cuando el default real era "todo habilitado")
   // y el admin veía los 7 toggles en verde para una cuenta nueva que en los hechos no veía nada.
+  // Planes configurados (para el selector de meses de la tarjeta de suscripción). Sin tabla: lista vacía.
+  const { data: planRows } = await supabase.from("subscription_plans").select("id, name, months, price_label, sort_order, active").eq("active", true);
+
   const enabledMap = MODULE_KEYS.reduce(
     (acc, key) => {
       const row = (moduleRows ?? []).find((r) => r.module === key);
@@ -93,7 +97,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
         )}
       </GlassCard>
 
-      <SubscriptionCard profile={typedProfile} adminId={currentAdminId} requests={(paymentRows ?? []) as unknown as PaymentRequestRow[]} />
+      <SubscriptionCard profile={typedProfile} adminId={currentAdminId} requests={(paymentRows ?? []) as unknown as PaymentRequestRow[]} plans={(planRows ?? []) as SubscriptionPlan[]} />
 
       <UserAccessSummary profile={typedProfile} adminId={currentAdminId} />
 

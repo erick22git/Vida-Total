@@ -5,6 +5,7 @@ import { GlassCard } from "@/components/glass/glass-card";
 import { createClient } from "@/lib/supabase/client";
 import { logAdminAction, AUDIT_ACTIONS } from "@/lib/admin/audit";
 import { MODULE_LABELS } from "@/lib/admin/module-labels";
+import { MODULE_CATALOG } from "@/lib/account/module-catalog";
 import { MODULE_KEYS, type ModuleKey } from "@/lib/types/profile";
 
 function Toggle({ enabled, onClick, disabled }: { enabled: boolean; onClick: () => void; disabled: boolean }) {
@@ -87,7 +88,7 @@ export function ModuleToggles({
                 <span className="h-2 w-2 rounded-full shrink-0" style={{ background: meta.color }} />
                 <div className="min-w-0">
                   <div className="text-sm text-white truncate">{meta.label}</div>
-                  <div className="text-[11px] text-white/35">{meta.group}</div>
+                  <div className="text-[11px] text-white/35 truncate">{MODULE_CATALOG[key].description}</div>
                 </div>
               </div>
               <Toggle enabled={enabledMap[key]} disabled={busyModule === key} onClick={() => toggle(key)} />

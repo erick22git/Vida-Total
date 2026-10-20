@@ -10,7 +10,7 @@ import { UserMenu, type SessionUser } from "./user-menu";
 import { MascotIcon } from "@/components/agente/mascot-dock";
 import { useMascotUi } from "@/lib/store/mascotUiStore";
 import { useAccount } from "@/components/providers/profile-provider";
-import { isNavModuleVisible } from "@/lib/account/modules";
+import { isNavModuleVisible, resolveNavModule } from "@/lib/account/modules";
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -30,7 +30,7 @@ export function Sidebar({ user, isAdmin = false }: { user: SessionUser; isAdmin?
         </div>
 
         <nav className="flex flex-col gap-1">
-          {MODULES.filter((mod) => isNavModuleVisible(mod.id, modules)).map((mod) => {
+          {MODULES.filter((mod) => isNavModuleVisible(mod.id, modules)).map((m) => resolveNavModule(m, isAdmin)).map((mod) => {
             const Icon = ICON_MAP[mod.icon];
             const active = isActive(pathname, mod.href);
             const color = `var(${mod.color})`;

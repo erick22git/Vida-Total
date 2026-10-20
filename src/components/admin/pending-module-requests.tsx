@@ -75,8 +75,9 @@ export function PendingModuleRequests({ initialRequests, adminId }: { initialReq
           <div key={r.id} className="rounded-2xl bg-white/[0.04] border border-white/10 p-3 flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
               <p className="text-sm text-white truncate">
-                <b>{r.full_name || r.email || r.user_id}</b> pidió acceso a <b>{label}</b>
+                <b>Pedido de acceso a {label}</b>
               </p>
+              <p className="text-xs text-white/55 truncate">{r.full_name || r.email || r.user_id}</p>
               <p className="text-[11px] text-white/40">{format(new Date(r.created_at), "d MMM, HH:mm", { locale: es })}</p>
             </div>
             <div className="flex gap-2 shrink-0">

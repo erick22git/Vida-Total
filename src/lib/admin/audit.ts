@@ -17,6 +17,11 @@ export const AUDIT_ACTIONS = {
   GRANTED_ACCESS: "granted_access",
   REJECTED_PAYMENT: "rejected_payment",
   UPDATED_PAYMENT_QR: "updated_payment_qr",
+  REQUIRED_PAYMENT: "required_payment",
+  DELETED_ACCOUNT: "deleted_account",
+  RESTORED_ACCOUNT: "restored_account",
+  PURGED_ACCOUNT: "purged_account",
+  MANAGED_PLAN: "managed_plan",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
