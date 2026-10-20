@@ -76,7 +76,7 @@ export function ModuleToggles({
       <h2 className="text-sm font-semibold text-white mb-1">Módulos habilitados</h2>
       <p className="text-xs text-white/45 mb-4">
         Controla a qué módulos de la app tiene acceso esta cuenta. Un módulo sin configurar explícitamente está
-        habilitado por defecto.
+        deshabilitado por defecto (salvo que seas admin: un admin siempre ve todo).
       </p>
       <div className="flex flex-col divide-y divide-white/[0.06]">
         {MODULE_KEYS.map((key) => {

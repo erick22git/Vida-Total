@@ -12,7 +12,7 @@ export function allModulesEnabled(): ModuleAccessMap {
  * ni siquiera Entrenamiento. El admin habilita módulo por módulo a mano desde `/admin/usuarios`. Antes
  * el default era "todo habilitado" (y, por un momento, "solo Entrenamiento"); corregido a pedido
  * explícito: "lo importante es que [el usuario nuevo] me aparezca, yo le habilito qué puede ver". */
-function defaultModuleAccess(): ModuleAccessMap {
+export function defaultModuleAccess(): ModuleAccessMap {
   return MODULE_KEYS.reduce((acc, key) => ({ ...acc, [key]: false }), {} as ModuleAccessMap);
 }
 

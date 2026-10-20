@@ -2,7 +2,7 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 import type { Profile } from "@/lib/types/profile";
-import { allModulesEnabled, type ModuleAccessMap } from "@/lib/account/modules";
+import { defaultModuleAccess, type ModuleAccessMap } from "@/lib/account/modules";
 import type { PaymentSettings } from "@/lib/account/load-account";
 import type { SubscriptionInfo } from "@/lib/subscription";
 
@@ -27,8 +27,11 @@ export interface AccountState {
   payment: PaymentSettings;
 }
 
+// Default restrictivo (mismo criterio que `defaultModuleAccess`), no "todo habilitado": esto solo se
+// usaría si algún día se monta `<ProfileProvider>` sin pasarle `account` explícito (hoy no pasa — el
+// único uso real, `(dashboard)/layout.tsx`, siempre pasa uno) — mejor fallar cerrado que abierto.
 const EMPTY_ACCOUNT: AccountState = {
-  modules: allModulesEnabled(),
+  modules: defaultModuleAccess(),
   subscription: null,
   payment: { qrPayload: null, amountLabel: null, instructions: null, prices: null },
 };

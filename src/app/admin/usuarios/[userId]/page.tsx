@@ -38,10 +38,13 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
     .order("created_at", { ascending: false })
     .limit(10);
 
+  // Mismo default que `buildModuleAccess` (lib/account/modules.ts): sin fila para este módulo, el
+  // usuario NO lo ve — antes decía `true` acá (quedó de cuando el default real era "todo habilitado")
+  // y el admin veía los 7 toggles en verde para una cuenta nueva que en los hechos no veía nada.
   const enabledMap = MODULE_KEYS.reduce(
     (acc, key) => {
       const row = (moduleRows ?? []).find((r) => r.module === key);
-      acc[key] = row ? row.enabled : true;
+      acc[key] = row ? row.enabled : false;
       return acc;
     },
     {} as Record<ModuleKey, boolean>,
