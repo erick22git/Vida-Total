@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { userScopedLocalStorage } from "./scoped-storage";
+import type { MealType } from "@/lib/types";
 
 /**
  * Preferencias de feedback compartidas por TODA la app, no solo Hábitos —
@@ -15,9 +16,21 @@ interface PreferencesState {
   /** "system" = seguir `prefers-reduced-motion` del dispositivo (default).
    * "on"/"off" = el usuario lo fuerza explícitamente desde la app. */
   reduceMotion: "system" | "on" | "off";
+  /** Hora de INICIO de cada comida ("HH:mm"), configurable desde Calorías → Tiempos de comida. Cada comida dura hasta que
+   * empieza la siguiente; así el título de Calorías y el círculo de "ya pasó" siguen el horario real de la persona. */
+  mealStartTimes: Record<MealType, string>;
+  setMealStartTimes: (t: Record<MealType, string>) => void;
   setSoundEnabled: (v: boolean) => void;
   setReduceMotion: (v: "system" | "on" | "off") => void;
 }
+
+export const DEFAULT_MEAL_START_TIMES: Record<MealType, string> = {
+  desayuno: "05:00",
+  almuerzo: "11:00",
+  snack1: "14:30",
+  snack2: "16:30",
+  cena: "19:00",
+};
 
 export const usePreferencesStore = create<PreferencesState>()(
   persist(
@@ -26,6 +39,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       // que el usuario lo prende — ver `src/lib/sound/sound-manager.ts`.
       soundEnabled: false,
       reduceMotion: "system",
+      mealStartTimes: DEFAULT_MEAL_START_TIMES,
+      setMealStartTimes: (t) => set({ mealStartTimes: t }),
       setSoundEnabled: (v) => set({ soundEnabled: v }),
       setReduceMotion: (v) => set({ reduceMotion: v }),
     }),

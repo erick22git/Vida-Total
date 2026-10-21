@@ -1,4 +1,5 @@
 import type { MealType } from "@/lib/types";
+import { DEFAULT_MEAL_START_TIMES, usePreferencesStore } from "@/lib/store/preferencesStore";
 
 /**
  * Qué comida corresponde según la hora del día — usado por la pantalla principal de Calorías para que el título de
@@ -6,27 +7,34 @@ import type { MealType } from "@/lib/types";
  * Orden real del día: desayuno → almuerzo → snack1 → snack2 → cena (los snacks van ENTRE almuerzo y cena, no
  * después de la cena).
  *
- * `fromMin` = minutos desde las 00:00 (permite horas "quebradas" como las 2:30 pm del almuerzo).
+ * La hora de inicio de cada comida es configurable (Calorías → Tiempos de comida, `preferencesStore.mealStartTimes`); cada
+ * comida dura hasta que empieza la siguiente.
  */
-const RANGES: { fromMin: number; meal: MealType }[] = [
-  { fromMin: 5 * 60, meal: "desayuno" },
-  { fromMin: 11 * 60, meal: "almuerzo" },
-  { fromMin: 14 * 60 + 30, meal: "snack1" }, // el almuerzo termina a las 2:30 pm
-  { fromMin: 16 * 60 + 30, meal: "snack2" },
-  { fromMin: 19 * 60, meal: "cena" },
-];
+export const MEAL_ORDER: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
+
+function toMinutes(hhmm: string | undefined, fallback: string): number {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm ?? "") ?? /^(\d{1,2}):(\d{2})$/.exec(fallback)!;
+  return Math.min(23, Number(m[1])) * 60 + Math.min(59, Number(m[2]));
+}
+
+/** Rangos ordenados por hora de inicio, tomando lo configurado (o el valor por defecto si falta). */
+function ranges(): { fromMin: number; meal: MealType }[] {
+  const t = usePreferencesStore.getState().mealStartTimes;
+  return MEAL_ORDER.map((meal) => ({ meal, fromMin: toMinutes(t?.[meal], DEFAULT_MEAL_START_TIMES[meal]) })).sort((a, b) => a.fromMin - b.fromMin);
+}
 
 function minutesOfDay(date: Date): number {
   return date.getHours() * 60 + date.getMinutes();
 }
 
-/** Devuelve la comida que corresponde a esta hora (hora local). Antes de las 5 AM sigue siendo la última comida
- * (cena) del día anterior. */
+/** Devuelve la comida que corresponde a esta hora (hora local). Antes de la primera comida del día sigue siendo la última
+ * (la del día anterior). */
 export function mealForTime(date: Date = new Date()): MealType {
+  const r = ranges();
   const m = minutesOfDay(date);
-  let current = RANGES[RANGES.length - 1].meal;
-  for (const r of RANGES) {
-    if (m >= r.fromMin) current = r.meal;
+  let current = r[r.length - 1].meal;
+  for (const range of r) {
+    if (m >= range.fromMin) current = range.meal;
     else break;
   }
   return current;
@@ -35,14 +43,15 @@ export function mealForTime(date: Date = new Date()): MealType {
 /**
  * ¿Ya pasó el horario de esa comida? — para pintar de blanco el círculo de las comidas que "ya fueron" (ej. el
  * desayuno a la 1 pm). Un día anterior a hoy: todas pasaron; un día futuro: ninguna. Hoy: pasó si la hora actual
- * ya alcanzó el inicio de la comida siguiente. La última comida del día (cena) no se da por pasada el mismo día.
+ * ya alcanzó el inicio de la comida siguiente. La última comida del día no se da por pasada el mismo día.
  */
 export function mealTimePassed(meal: MealType, day: Date, now: Date = new Date()): boolean {
   const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   if (dayStart < todayStart) return true;
   if (dayStart > todayStart) return false;
-  const i = RANGES.findIndex((r) => r.meal === meal);
-  if (i < 0 || i === RANGES.length - 1) return false;
-  return minutesOfDay(now) >= RANGES[i + 1].fromMin;
+  const r = ranges();
+  const i = r.findIndex((x) => x.meal === meal);
+  if (i < 0 || i === r.length - 1) return false;
+  return minutesOfDay(now) >= r[i + 1].fromMin;
 }

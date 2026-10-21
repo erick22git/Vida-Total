@@ -23,7 +23,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Clock } from "lucide-react";
 import { SettingsGlyph } from "@/components/shared/settings-glyph";
 import { AnimatePresence, motion } from "framer-motion";
 import { isToday, startOfDay } from "date-fns";
@@ -37,6 +37,8 @@ import { activeLoggedFoods, mergeFoods, nutrientDayReport } from "@/lib/food-uti
 import { totalMlForDay } from "@/lib/gym/water-stats";
 import { computeLoggedDaysStreak, loggedDayKeys } from "@/lib/gym/streaks";
 import { mealForTime, mealTimePassed } from "@/lib/gym/meal-time";
+import { MealTimesSheet } from "@/components/gym/meal-times-sheet";
+import { usePreferencesStore } from "@/lib/store/preferencesStore";
 import { MEAL_LABELS, type MealType, type TrackableNutrient } from "@/lib/types";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { SwipeCarouselDots, SwipeCarouselStage, swipeSlide, useSwipeCarousel } from "@/components/shared/swipe-carousel";
@@ -87,6 +89,9 @@ export function MealHomeScreen() {
   const hasFood = foodsForMeal.length > 0;
   const totalKcal = foodsForMeal.reduce((sum, f) => sum + f.calorias, 0);
   // Al aplicar la meta desde la calculadora se vuelve con ?ajustes=1 para ver Ajustes ya abierto.
+  const [mealTimesOpen, setMealTimesOpen] = useState(false);
+  // Se suscribe para que el título y los círculos se actualicen apenas se cambian los horarios.
+  usePreferencesStore((s) => s.mealStartTimes);
   const [settingsOpen, setSettingsOpen] = useState(() => searchParams.get("ajustes") === "1");
   // El círculo (el "+") siempre lleva a buscar para AGREGAR más. Para EDITAR hay que mantener presionado
   // 2 s el fondo negro de atrás: ahí se abre la pantalla de edición (misma interfaz que la de agregar,
@@ -272,13 +277,22 @@ export function MealHomeScreen() {
             </AnimatePresence>
           )}
         </div>
-        <button
-          onClick={() => setSettingsOpen(true)}
-          aria-label="Ajustes de calorías"
-          className="w-10 h-10 flex items-center justify-center cursor-pointer shrink-0"
-        >
-          <SettingsGlyph />
-        </button>
+        <div className="flex items-center shrink-0">
+          <button
+            onClick={() => setMealTimesOpen(true)}
+            aria-label="Tiempos de comida"
+            className="w-10 h-10 flex items-center justify-center cursor-pointer"
+          >
+            <Clock size={21} strokeWidth={2.2} />
+          </button>
+          <button
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Ajustes de calorías"
+            className="w-10 h-10 flex items-center justify-center cursor-pointer"
+          >
+            <SettingsGlyph />
+          </button>
+        </div>
       </header>
 
       {view === 0 && (
@@ -374,6 +388,7 @@ export function MealHomeScreen() {
         </AnimatePresence>
       </main>
 
+      <MealTimesSheet open={mealTimesOpen} onClose={() => setMealTimesOpen(false)} />
       <CalorieSettingsSheet
         open={settingsOpen}
         onClose={() => {

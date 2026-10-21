@@ -61,17 +61,28 @@ export function DockSettings() {
       <DarkCard className="flex flex-col gap-1">
         <Row
           label="Tutorial guiado"
-          hint="La mascota te muestra Calorías y Entrenamiento paso a paso."
+          hint="La mascota te explica cada módulo paso a paso."
           right={
-            <Btn
-              onClick={() => {
-                close();
-                useTour.getState().start(false);
-              }}
-              className="flex items-center gap-1.5"
-            >
-              <GraduationCap size={15} /> Ver
-            </Btn>
+            <div className="flex gap-1.5">
+              <Btn
+                onClick={() => {
+                  close();
+                  useTour.getState().start("calorias", false);
+                }}
+                className="flex items-center gap-1.5"
+              >
+                <GraduationCap size={15} /> Calorías
+              </Btn>
+              <Btn
+                onClick={() => {
+                  close();
+                  useTour.getState().start("entrenamiento", false);
+                }}
+                className="flex items-center gap-1.5"
+              >
+                <GraduationCap size={15} /> Entrenamiento
+              </Btn>
+            </div>
           }
         />
       </DarkCard>

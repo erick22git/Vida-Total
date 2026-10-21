@@ -68,6 +68,31 @@ def build_tuft(name, count, hmin, hmax, wmin, wmax, spread, bend_max):
         cols.extend(c)
         norms.extend(n)
         faces.extend([tuple(i + off for i in face) for face in f])
+    # montículo bajo la mata (cúpula oscura): le da cuerpo a cada mata y apoya las hojas, como en la referencia
+    dome_r = spread * 1.25
+    rings, seg = 3, 10
+    d0 = len(verts)
+    verts.append(Vector((0, dome_r * 0.55, 0)))
+    cols.append((0.07, 0.07, 0.07))
+    norms.append(Vector((0, 1, 0)))
+    for ri in range(1, rings + 1):
+        t = ri / rings
+        rr = dome_r * t
+        hh = dome_r * 0.55 * (1 - t * t)
+        for sg in range(seg):
+            a = sg / seg * math.tau
+            verts.append(Vector((math.cos(a) * rr, hh, math.sin(a) * rr)))
+            cols.append((0.05, 0.05, 0.05))
+            norms.append(Vector((math.cos(a) * t, 1 - t * 0.6, math.sin(a) * t)).normalized())
+    for sg in range(seg):
+        faces.append((d0, d0 + 1 + sg, d0 + 1 + (sg + 1) % seg))
+    for ri in range(1, rings):
+        for sg in range(seg):
+            a = d0 + 1 + (ri - 1) * seg + sg
+            b = d0 + 1 + (ri - 1) * seg + (sg + 1) % seg
+            c2 = d0 + 1 + ri * seg + (sg + 1) % seg
+            dd = d0 + 1 + ri * seg + sg
+            faces.append((a, dd, c2, b))
     mesh = bpy.data.meshes.new(name)
     mesh.from_pydata([tuple(v) for v in verts], [], faces)
     mesh.update()
@@ -86,10 +111,10 @@ def build_tuft(name, count, hmin, hmax, wmin, wmax, spread, bend_max):
 
 
 variants = [
-    build_tuft("tuft_0", 18, 0.38, 0.62, 0.035, 0.06, 0.07, 0.55),
-    build_tuft("tuft_1", 24, 0.30, 0.52, 0.03, 0.05, 0.09, 0.7),
-    build_tuft("tuft_2", 14, 0.45, 0.78, 0.04, 0.065, 0.06, 0.4),
-    build_tuft("tuft_3", 30, 0.22, 0.42, 0.03, 0.05, 0.12, 0.8),
+    build_tuft("tuft_0", 16, 0.24, 0.44, 0.05, 0.085, 0.05, 0.38),
+    build_tuft("tuft_1", 20, 0.20, 0.38, 0.045, 0.075, 0.06, 0.45),
+    build_tuft("tuft_2", 13, 0.30, 0.52, 0.055, 0.09, 0.045, 0.3),
+    build_tuft("tuft_3", 22, 0.16, 0.32, 0.045, 0.07, 0.07, 0.5),
 ]
 root = bpy.data.objects.new("Grass", None)
 scene.collection.objects.link(root)

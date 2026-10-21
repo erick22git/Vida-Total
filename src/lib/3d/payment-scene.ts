@@ -6,13 +6,16 @@ import type { QrMatrix } from "@/lib/qr/qr";
 import { PAYMENT_FIGURES, DEFAULT_PAYMENT_FIGURE, type PaymentFigureDef } from "./payment-figures";
 
 /**
- * Escena 3D de la pantalla de pago: un árbol sobre un tablero cuyo PISO tiene la forma real de la matriz del QR (cada módulo
- * oscuro es un bloque en relieve, los de las esquinas —los tres cuadrados de posición— son reconocibles), con pasto en los bordes.
- * Todo se mueve: las hojas se mecen con el viento (cada lóbulo de la copa rota sobre su propia base), el pasto se dobla y la
- * vista gira despacio.
+ * Escena 3D de la pantalla de pago: un árbol sobre un piso claro, sin marco. TODO sale de la matriz real del QR, módulo por módulo:
+ *  - PASTO: en cada módulo oscuro crece una mata sobre el piso (los claros quedan como baldosa).
+ *  - COPA: en cada módulo oscuro hay un punto ANCLA exactamente sobre su (columna, fila) —el mismo X/Z del módulo, elevado en Y
+ *    para formar la cúpula— y de ese punto sale un racimo de hojas. La posición base nunca se mueve con ruido: la variación va
+ *    solo en la rotación, la escala y el color de cada hoja. Vista desde arriba, la copa ES la matriz.
+ * Los tres cuadrados de posición se reconocen en el piso y en la copa. Todo se mueve: las hojas se mecen con el viento
+ * (cada lóbulo de la copa rota sobre su propia base), el pasto se dobla y la vista gira despacio.
  *
- * Al tocar: el árbol sube y desaparece, la cámara se levanta hasta una vista cenital, y los bloques del piso se aplanan (en
- * onda desde el centro) hasta quedar exactamente como la matriz 2D del QR. Recién ahí la interfaz muestra el QR como SVG PLANO
+ * Al tocar: el árbol sube y desaparece, la cámara se levanta hasta una vista cenital, el pasto se aplasta y cada baldosa de un
+ * módulo oscuro se vuelve negra (en onda desde el centro) hasta quedar exactamente como la matriz 2D del QR. Recién ahí la interfaz muestra el QR como SVG PLANO
  * encima (overlay HTML, sin luz, sombra ni nada de esta escena). El QR que se escanea NUNCA es esta escena: acá solo se usa la
  * matriz para dar forma al piso y para el morph.
  *
@@ -104,7 +107,30 @@ interface GrassInst {
   rotY: number;
   scale: number;
   phase: number;
+  /** 0..1: matiz y luminosidad del verde de esta mata. */
+  tone: number;
+  /** El pasto se alta/baja según la mata (más bajo que ancho: que no tape la forma del QR vista desde arriba). */
+  sy: number;
 }
+
+/** Una hoja de un racimo: posición ya resuelta (ancla del módulo + pequeño corrimiento dentro del racimo), giro, escala, color y viento. */
+interface LeafInst {
+  x: number;
+  y: number;
+  z: number;
+  yaw: number;
+  tilt: number;
+  roll: number;
+  scale: number;
+  phase: number;
+  speed: number;
+}
+
+/** Copa = elipsoide: centro a CANOPY_YC de alto y semi-altura CANOPY_RY (unidades de la escena; el tablero mide BOARD). */
+const CANOPY_YC = 4.2;
+const CANOPY_RY = 2.25;
+const CANOPY_LAYERS = 5;
+const LEAF_PALETTE = [0x56a83a, 0x78c244, 0xa2dc5c].map((c) => new THREE.Color(c));
 
 export class PaymentScene {
   private host: HTMLElement;
@@ -115,8 +141,12 @@ export class PaymentScene {
   private camera = new THREE.PerspectiveCamera(28, 1, 0.1, 80);
   private pivot = new THREE.Group();
   private boardGroup = new THREE.Group();
-  private frameGroup = new THREE.Group();
   private treeRoot: THREE.Object3D | null = null;
+  private canopyGroup = new THREE.Group();
+  private canopy: { mesh: THREE.InstancedMesh; inst: LeafInst[] }[] = [];
+  private leafGeos: THREE.BufferGeometry[] = [];
+  /** Largo (en Z) de cada hoja, para escalarla al tamaño de un módulo: así el racimo no se sale de su celda. */
+  private leafLen: number[] = [];
   private treeBaseScale = 1;
   private lobes: Lobe[] = [];
   private grassMeshes: { mesh: THREE.InstancedMesh; inst: GrassInst[] }[] = [];
@@ -136,11 +166,11 @@ export class PaymentScene {
   private stdMesh: THREE.InstancedMesh | null = null;
   private flatMesh: THREE.InstancedMesh | null = null;
   private hLight = 0.07;
-  private hDark = 0.24;
+  private baseTone: number[] = [];
   private lastFlatten = -1;
 
   // Cámara / vista
-  private yaw = 0.5;
+  private yaw = 0;
   private yawVel = 0;
   private lastT = 0;
   private time = 0;
@@ -163,7 +193,7 @@ export class PaymentScene {
     this.matrix = opts.matrix;
     this.def = PAYMENT_FIGURES[opts.figureId ?? DEFAULT_PAYMENT_FIGURE] ?? PAYMENT_FIGURES[DEFAULT_PAYMENT_FIGURE];
     this.scene.add(this.pivot);
-    this.pivot.add(this.boardGroup, this.frameGroup);
+    this.pivot.add(this.boardGroup, this.canopyGroup);
     void this.init();
   }
 
@@ -203,7 +233,8 @@ export class PaymentScene {
       const sun = new THREE.DirectionalLight(0xffffff, SUN_INTENSITY);
       sun.position.set(-5, 9, 6);
       sun.castShadow = true;
-      sun.shadow.mapSize.set(1024, 1024);
+      sun.shadow.mapSize.set(2048, 2048);
+      sun.shadow.radius = 2.5;
       sun.shadow.camera.left = -6.5;
       sun.shadow.camera.right = 6.5;
       sun.shadow.camera.top = 6.5;
@@ -216,7 +247,7 @@ export class PaymentScene {
       this.sun = sun;
 
       this.buildBoard();
-      await Promise.all([this.loadTree(), this.loadGrass()]);
+      await Promise.all([this.loadTree(), this.loadGrass(), this.loadLeaves()]);
       if (this.disposed) return;
       this.resize();
       this.ro = new ResizeObserver(() => this.resize());
@@ -250,12 +281,6 @@ export class PaymentScene {
       m.dispose();
     }
     this.stdMesh = this.flatMesh = null;
-    for (const child of [...this.frameGroup.children]) {
-      this.frameGroup.remove(child);
-      const mesh = child as THREE.Mesh;
-      mesh.geometry?.dispose();
-      (mesh.material as THREE.Material | undefined)?.dispose();
-    }
   }
 
   /** (Re)arma el tablero desde la matriz actual: un payload más largo da más módulos y el piso se adapta, sin cantidades fijas. */
@@ -265,8 +290,7 @@ export class PaymentScene {
     const N = n + QUIET * 2;
     const c = BOARD / N;
     this.cellSize = c;
-    this.hLight = Math.max(0.045, c * 0.42);
-    this.hDark = this.hLight + Math.max(0.12, c * 1.35);
+    this.hLight = Math.max(0.05, c * 0.45);
     this.cellData = [];
     const maxD = (BOARD / 2) * Math.SQRT2;
     for (let iy = 0; iy < N; iy++) {
@@ -288,9 +312,13 @@ export class PaymentScene {
     const col = new THREE.Color();
     let seed = 7;
     const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    // Baldosas claras (como el piso de la referencia). Las de módulos oscuros también arrancan claras: la forma del QR la dan las
+    // matas de pasto; recién en el morph esas baldosas se oscurecen hasta el negro puro.
+    this.baseTone = [];
     for (let i = 0; i < total; i++) {
-      const d = this.cellData[i].dark;
-      col.setScalar(d ? 0.006 + 0.014 * rand() : 0.8 + 0.17 * rand());
+      const tone = 0.8 + 0.17 * rand();
+      this.baseTone.push(tone);
+      col.setScalar(tone);
       this.stdMesh.setColorAt(i, col);
     }
 
@@ -303,42 +331,24 @@ export class PaymentScene {
     this.boardGroup.add(this.stdMesh, this.flatMesh);
     this.lastFlatten = -1;
     this.updateCells(0);
-
-    // Marco del tablero (borde oscuro + base), como el zócalo de la referencia.
-    const T = 0.34;
-    const rimH = Math.max(this.hDark + 0.05, 0.3);
-    const rimMat = new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.8 });
-    const mk = (w: number, d: number, x: number, z: number) => {
-      const g = new THREE.BoxGeometry(w, rimH, d);
-      g.translate(0, rimH / 2, 0);
-      const m = new THREE.Mesh(g, rimMat);
-      m.position.set(x, 0, z);
-      m.castShadow = m.receiveShadow = true;
-      this.frameGroup.add(m);
-    };
-    const W = BOARD + 2 * T;
-    mk(W, T, 0, -(BOARD / 2 + T / 2));
-    mk(W, T, 0, BOARD / 2 + T / 2);
-    mk(T, BOARD, -(BOARD / 2 + T / 2), 0);
-    mk(T, BOARD, BOARD / 2 + T / 2, 0);
-    const baseG = new THREE.BoxGeometry(W + 0.06, 0.42, W + 0.06);
-    baseG.translate(0, -0.21, 0);
-    const base = new THREE.Mesh(baseG, new THREE.MeshStandardMaterial({ color: 0x0e0e0e, roughness: 0.85 }));
-    base.receiveShadow = true;
-    this.frameGroup.add(base);
   }
 
-  /** `f` 0 = piso en relieve, 1 = todo plano (la matriz 2D). Cada celda se aplana con un retardo según su distancia al centro: onda desde el árbol. */
+  /** `f` 0 = piso con baldosas bajas, 1 = todo plano y en blanco/negro (la matriz 2D). Cada celda cambia con un retardo según su distancia al centro: onda desde el árbol. */
   private updateCells(f: number) {
     if (!this.stdMesh || !this.flatMesh || f === this.lastFlatten) return;
     this.lastFlatten = f;
     const dummy = this.tmpObj;
     const c = this.cellSize;
+    const col = new THREE.Color();
     for (let i = 0; i < this.cellData.length; i++) {
       const cd = this.cellData[i];
       const fi = ease(THREE.MathUtils.clamp((f - cd.delay) / (1 - 0.4), 0, 1));
-      const idle = cd.dark ? this.hDark : this.hLight;
-      const h = idle + (FLAT_H - idle) * fi;
+      const h = this.hLight + (FLAT_H - this.hLight) * fi;
+      if (cd.dark) {
+        // la baldosa de un módulo oscuro se va al negro puro a medida que el pasto se aplasta
+        col.setScalar(this.baseTone[i] * (1 - fi));
+        this.stdMesh.setColorAt(i, col);
+      }
       const g = 0.955 + 0.045 * fi; // las celdas se juntan: sin rendijas, igual que el SVG
       dummy.position.set(cd.x, 0, cd.z);
       dummy.rotation.set(0, 0, 0);
@@ -359,6 +369,7 @@ export class PaymentScene {
     if (this.renderer) {
       this.buildBoard();
       this.placeGrass();
+      this.placeCanopy();
       if (this.treeRoot) this.treeRoot.position.y = this.hLight;
     }
   }
@@ -378,18 +389,11 @@ export class PaymentScene {
         const mats = Array.isArray(m.material) ? m.material : [m.material];
         for (const mat of mats) {
           const std = mat as THREE.MeshStandardMaterial;
-          if (std.alphaTest > 0) {
-            std.transparent = false;
-            std.depthWrite = true;
-            std.color.multiplyScalar(0.92); // hojas en gris medio (como la referencia), no casi blancas bajo la luz
-          }
           if (std.map) std.map.anisotropy = 4;
         }
       });
-      const box = new THREE.Box3().setFromObject(root);
-      const size = box.getSize(new THREE.Vector3());
-      const width = Math.max(size.x, size.z, 0.001);
-      this.treeBaseScale = (BOARD * 0.88) / width;
+      // El tronco viene a escala real de la escena (no se reescala por su ancho: la copa se arma aparte, sobre la matriz).
+      this.treeBaseScale = 1;
       root.scale.setScalar(this.treeBaseScale);
       root.position.set(0, this.hLight, 0);
       this.treeRoot = root;
@@ -429,6 +433,7 @@ export class PaymentScene {
         const m = o as THREE.Mesh;
         if (m.isMesh && m.name.startsWith("tuft_")) tufts.push(m);
       });
+      // Pasto VERDE: el tono por vértice (raíz oscura -> punta clara) se multiplica por un verde distinto por mata (instanceColor).
       const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, side: THREE.DoubleSide });
       for (const t of tufts) {
         const geo = t.geometry.clone();
@@ -445,36 +450,134 @@ export class PaymentScene {
     }
   }
 
-  /** Pasto en la zona de silencio: más denso en las 4 esquinas (como los canteros de la referencia) y suelto a lo largo de los bordes. */
-  private placeGrass() {
-    if (this.grassMeshes.length === 0) return;
-    const ring = this.cellSize * QUIET; // ancho de la zona de silencio en unidades
-    let seed = 91;
+  private async loadLeaves() {
+    try {
+      const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(this.def.leavesUrl);
+      gltf.scene.updateMatrixWorld(true);
+      const found: THREE.Mesh[] = [];
+      gltf.scene.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (m.isMesh && m.name.startsWith("leaf_")) found.push(m);
+      });
+      found.sort((a, b) => a.name.localeCompare(b.name));
+      this.leafGeos = found.map((m) => {
+        const g = m.geometry.clone();
+        g.applyMatrix4(m.matrixWorld); // base de la hoja en el origen, punta hacia +Z, Y arriba
+        g.computeBoundingBox();
+        const bb = g.boundingBox!;
+        g.translate(0, 0, -(bb.min.z + bb.max.z) / 2); // se centra en su ancla: la hoja gira SOBRE el punto del módulo, no hacia un lado
+        return g;
+      });
+      this.leafLen = this.leafGeos.map((g) => {
+        g.computeBoundingBox();
+        return Math.max(0.01, g.boundingBox!.max.z - g.boundingBox!.min.z);
+      });
+      this.placeCanopy();
+    } catch (e) {
+      console.warn("payment-scene: sin hojas:", e);
+    }
+  }
+
+  /**
+   * La copa: un punto ancla por módulo OSCURO, en el X/Z exacto de ese módulo (`cellData`, la misma grilla del piso) y elevado en Y
+   * con una cúpula. Cada ancla da dos capas de racimo (la de arriba y otra más baja, por dentro) de varias hojas. El azar solo toca
+   * la rotación, la escala y el color de cada hoja, y un corrimiento mínimo dentro del propio módulo; nunca la posición base.
+   */
+  private placeCanopy() {
+    if (this.leafGeos.length === 0) return;
+    for (const c of this.canopy) {
+      this.canopyGroup.remove(c.mesh);
+      c.mesh.dispose();
+    }
+    this.canopy = [];
+    let seed = 1234;
     const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    const half = BOARD / 2;
-    const pts: GrassInst[] = [];
-    const push = (x: number, z: number) => pts.push({ x, z, rotY: rand() * Math.PI * 2, scale: 0.55 + rand() * 0.55, phase: rand() * Math.PI * 2 });
-    for (const sx of [-1, 1]) {
-      for (const sz of [-1, 1]) {
-        for (let i = 0; i < 11; i++) push(sx * (half - ring * 0.12 - rand() * ring * 0.76), sz * (half - ring * 0.12 - rand() * ring * 0.76));
+    const c = this.cellSize;
+    const R = BOARD * 0.5;
+    const per = this.leafGeos.map(() => [] as { leaf: LeafInst; color: THREE.Color }[]);
+    const col = new THREE.Color();
+    let n = 0;
+    for (const cd of this.cellData) {
+      if (!cd.dark) continue;
+      // Cúpula sobre la posición EXACTA del módulo: solo cambia la altura, nunca el X/Z. Los módulos de las esquinas (fuera del
+      // círculo) se quedan en el borde de la copa en vez de colgar.
+      const r = Math.min(0.97, Math.hypot(cd.x, cd.z) / R);
+      const half = Math.sqrt(1 - r * r);
+      const yTop = CANOPY_YC + CANOPY_RY * half;
+      const yBot = CANOPY_YC - CANOPY_RY * half * 0.7;
+      for (let layer = 0; layer < CANOPY_LAYERS; layer++) {
+        const t = layer / (CANOPY_LAYERS - 1); // 0 = capa de arriba, 1 = la de abajo (por dentro)
+        const yBase = yTop + (yBot - yTop) * t;
+        const shade = 1 - 0.42 * t; // las capas de adentro quedan más oscuras (sombra dentro de la copa)
+        const hRel = THREE.MathUtils.clamp((yBase - (CANOPY_YC - CANOPY_RY)) / (CANOPY_RY * 2), 0, 1);
+        for (let j = 0; j < 3; j++) {
+          const v = n++ % per.length;
+          col.copy(LEAF_PALETTE[Math.floor(rand() * LEAF_PALETTE.length)]).multiplyScalar(shade * (0.7 + 0.5 * hRel + (rand() - 0.5) * 0.18));
+          per[v].push({
+            color: col.clone(),
+            leaf: {
+              x: cd.x + (rand() - 0.5) * c * 0.22,
+              y: yBase + (rand() - 0.5) * 0.06,
+              z: cd.z + (rand() - 0.5) * c * 0.22,
+              yaw: rand() * Math.PI * 2,
+              tilt: -0.15 + rand() * 0.95,
+              roll: (rand() - 0.5) * 0.9,
+              scale: ((1.1 * c) / this.leafLen[v]) * (0.85 + rand() * 0.3),
+              phase: rand() * Math.PI * 2,
+              speed: 0.8 + rand() * 0.9,
+            },
+          });
+        }
       }
     }
-    for (let i = 0; i < 26; i++) {
-      const along = (rand() * 2 - 1) * (half - ring);
-      const inset = half - ring * 0.12 - rand() * ring * 0.76;
-      const side = i % 4;
-      if (side === 0) push(along, -inset);
-      else if (side === 1) push(along, inset);
-      else if (side === 2) push(-inset, along);
-      else push(inset, along);
-    }
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0, side: THREE.DoubleSide });
+    this.canopy = this.leafGeos.map((geo, i) => {
+      const mesh = new THREE.InstancedMesh(geo, mat, Math.max(1, per[i].length));
+      mesh.count = per[i].length;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      per[i].forEach((p, k) => mesh.setColorAt(k, p.color));
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      this.canopyGroup.add(mesh);
+      return { mesh, inst: per[i].map((p) => p.leaf) };
+    });
+  }
+
+  /** Pasto SOLO en los módulos oscuros del QR (dos matas por módulo, repartidas entre las variantes): las líneas negras son pasto. */
+  private placeGrass() {
+    if (this.grassMeshes.length === 0) return;
+    let seed = 91;
+    const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const c = this.cellSize;
     const per = this.grassMeshes.map(() => [] as GrassInst[]);
-    pts.forEach((p, i) => per[i % per.length].push(p));
+    let n = 0;
+    for (const cd of this.cellData) {
+      if (!cd.dark) continue;
+      for (let j = 0; j < 2; j++) {
+        const s0 = c * (5.6 + rand() * 1.6);
+        per[n++ % per.length].push({
+          x: cd.x + (rand() - 0.5) * c * 0.4,
+          z: cd.z + (rand() - 0.5) * c * 0.4,
+          rotY: rand() * Math.PI * 2,
+          scale: s0,
+          sy: 0.85 + rand() * 0.3,
+          tone: rand(),
+          phase: rand() * Math.PI * 2,
+        });
+      }
+    }
     this.grassMeshes.forEach((g, i) => {
       const old = g.mesh;
       const fresh = new THREE.InstancedMesh(old.geometry, old.material, Math.max(1, per[i].length));
       fresh.castShadow = true;
+      fresh.receiveShadow = true;
       fresh.count = per[i].length;
+      const tint = new THREE.Color();
+      per[i].forEach((p, k) => {
+        tint.setHSL(0.27 + p.tone * 0.07, 0.62, 0.42 + p.tone * 0.16);
+        fresh.setColorAt(k, tint);
+      });
+      if (fresh.instanceColor) fresh.instanceColor.needsUpdate = true;
       this.boardGroup.remove(old);
       old.dispose();
       this.boardGroup.add(fresh);
@@ -496,8 +599,8 @@ export class PaymentScene {
     const tanV = Math.tan(THREE.MathUtils.degToRad(this.camera.fov) / 2);
     const needV = (this.def.height * 0.56 + 1.0) / tanV;
     const needH = (BOARD * 0.78) / (tanV * this.camera.aspect);
-    this.dist0 = Math.max(needV, needH) * 0.95;
-    this.lookY0 = this.def.height * 0.34;
+    this.dist0 = Math.max(needV, needH) * 0.76;
+    this.lookY0 = this.def.height * 0.42;
   }
 
   private onDown = (e: PointerEvent) => {
@@ -531,7 +634,7 @@ export class PaymentScene {
     const rect = this.renderer.domElement.getBoundingClientRect();
     const ndc = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
     this.raycaster.setFromCamera(ndc, this.camera);
-    const targets: THREE.Object3D[] = [this.boardGroup, this.frameGroup];
+    const targets: THREE.Object3D[] = [this.boardGroup, this.canopyGroup];
     if (this.treeRoot) targets.push(this.treeRoot);
     return this.raycaster.intersectObjects(targets, true).length > 0;
   }
@@ -597,9 +700,8 @@ export class PaymentScene {
 
     const e1 = ease(smooth(0, 0.55, k)); // cámara
     const eTree = ease(smooth(0.04, 0.5, k));
-    const eGrass = ease(smooth(0, 0.4, k));
-    const eFrame = ease(smooth(0.3, 0.8, k));
-    const f = smooth(0.32, 0.88, k);
+    const eGrass = ease(smooth(0.22, 0.6, k));
+    const f = smooth(0.24, 0.86, k);
 
     this.pivot.rotation.y = k > 0 ? this.yawStart * (1 - e1) : this.yaw;
 
@@ -610,6 +712,26 @@ export class PaymentScene {
       const s2 = Math.sin(this.time * l.speed * 0.77 + l.phase * 1.7) * l.amp * 0.6 * gust;
       l.obj.rotation.set(l.base.x + s, l.base.y + s2 * 0.6, l.base.z + s2);
     }
+    // copa: viento por hoja (solo giro, nunca la posición base) y, al tocar, sube y se achica igual que el tronco
+    const dummyL = this.tmpObj;
+    dummyL.rotation.order = "YXZ";
+    for (const g of this.canopy) {
+      for (let i = 0; i < g.inst.length; i++) {
+        const l = g.inst[i];
+        const sw = Math.sin(this.time * l.speed + l.phase) * 0.16 * gust;
+        const sw2 = Math.sin(this.time * l.speed * 0.8 + l.phase * 1.6) * 0.1 * gust;
+        dummyL.position.set(l.x, l.y, l.z);
+        dummyL.rotation.set(l.tilt + sw, l.yaw, l.roll + sw2);
+        dummyL.scale.setScalar(l.scale);
+        dummyL.updateMatrix();
+        g.mesh.setMatrixAt(i, dummyL.matrix);
+      }
+      g.mesh.instanceMatrix.needsUpdate = true;
+    }
+    dummyL.rotation.order = "XYZ";
+    this.canopyGroup.position.y = 9 * eTree;
+    this.canopyGroup.scale.setScalar(Math.max(0.0001, 1 - 0.94 * eTree));
+    this.canopyGroup.visible = eTree < 0.995;
     if (this.treeRoot) {
       this.treeRoot.position.y = this.hLight + 9 * eTree;
       this.treeRoot.scale.setScalar(this.treeBaseScale * (1 - 0.94 * eTree));
@@ -623,17 +745,16 @@ export class PaymentScene {
         const sz = Math.sin(this.time * 1.5 + p.phase * 1.3) * 0.13 * gust;
         dummy.position.set(p.x, this.hLight, p.z);
         dummy.rotation.set(sx, p.rotY, sz);
-        dummy.scale.setScalar(Math.max(0.0001, p.scale * (1 - eGrass)));
+        // el pasto se aplasta contra el piso (y -> 0) mientras el árbol sube
+        dummy.scale.set(p.scale, Math.max(0.0001, p.scale * p.sy * (1 - eGrass)), p.scale);
         dummy.updateMatrix();
         g.mesh.setMatrixAt(i, dummy.matrix);
       }
       g.mesh.instanceMatrix.needsUpdate = true;
       g.mesh.visible = eGrass < 0.995;
     }
-    this.frameGroup.scale.y = Math.max(0.0001, 1 - eFrame);
-    this.frameGroup.visible = eFrame < 0.995;
 
-    // piso: relieve -> plano; al final se cambia a la copia plana (blanco/negro puros, sin luz)
+    // piso: baldosas -> plano y negro en los módulos oscuros; al final se cambia a la copia plana (blanco/negro puros, sin luz)
     this.updateCells(f);
     const swap = k >= 0.9;
     if (this.stdMesh) this.stdMesh.visible = !swap;

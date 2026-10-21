@@ -1,13 +1,16 @@
 /**
- * Pasos del tutorial guiado (burbujas narradas por la mascota). Prioriza Calorías y Entrenamiento: ahí la explicación es
- * completa; el resto de módulos no lleva tutorial por ahora.
+ * Pasos del tutorial guiado (burbujas narradas por la mascota). Cada módulo tiene SU recorrido y termina en ese módulo: el de
+ * Calorías no salta a Entrenamiento ni a Gym.
  *
  * Los módulos congelados (Gym, Calorías, Entrenamiento) NO se tocaron: cada paso encuentra su bloque por selectores sobre lo que
- * ya existe en pantalla (aria-label / placeholder / etiquetas). Si algún día cambia un aria-label, el paso no rompe nada: muestra
- * la burbuja centrada, sin resaltar el bloque.
+ * ya existe en pantalla (aria-label / placeholder / etiquetas). Un paso debe señalar EXACTAMENTE el botón o bloque que explica:
+ * si el selector no encuentra nada (o cambia un aria-label), muestra la burbuja centrada, sin resaltar nada.
  */
+export type TourModule = "calorias" | "entrenamiento";
+
 export interface TourStep {
   id: string;
+  module: TourModule;
   /** Ruta (con query) a la que hay que estar para ver este paso. */
   href: string;
   /** Devuelve el bloque a señalar, o null si no existe en este momento. */
@@ -18,11 +21,18 @@ export interface TourStep {
   next?: string;
 }
 
+/** Pantalla de entrada de cada módulo: donde queda la persona al terminar su recorrido. */
+export const TOUR_HOME: Record<TourModule, string> = {
+  calorias: "/gym/calorias",
+  entrenamiento: "/gym/entrenamiento",
+};
+
 const q = (sel: string) => () => document.querySelector<HTMLElement>(sel);
 
 export const TOUR_STEPS: TourStep[] = [
   {
     id: "cal-comida",
+    module: "calorias",
     href: "/gym/calorias",
     find: q("header h1"),
     title: "Tu comida actual",
@@ -30,6 +40,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "cal-puntos",
+    module: "calorias",
     href: "/gym/calorias",
     find: () => document.querySelector<HTMLElement>('[aria-label^="Ir a "]')?.parentElement ?? null,
     title: "Los puntitos",
@@ -37,6 +48,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "cal-mas",
+    module: "calorias",
     href: "/gym/calorias",
     find: q('[aria-label^="Agregar a "], [aria-label*="mantén presionado para ver las kcal"]'),
     title: "Agregar un alimento",
@@ -44,27 +56,32 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "cal-vistas",
+    module: "calorias",
     href: "/gym/calorias",
-    find: q("main"),
+    find: () => null,
     title: "Desliza hacia arriba",
     text: "Hacia arriba hay más vistas del día: primero el detalle de nutrientes (tus calorías y las 4 categorías de nutrientes, ahí viven los macros); después el calendario del año, donde cada día se pinta según tu racha: dorado si fue un día suelto, rojo en rachas de 2 a 6 días y verde desde 7. Más abajo está el Nutriólogo.",
   },
   {
+    id: "cal-tiempos",
+    module: "calorias",
+    href: "/gym/calorias",
+    find: q('[aria-label="Tiempos de comida"]'),
+    title: "Tiempos de comida",
+    text: "Con el reloj eliges a qué hora empieza cada comida (desayuno, almuerzo, colaciones y cena). El título de arriba cambia solo según tu horario.",
+  },
+  {
     id: "cal-ajustes",
+    module: "calorias",
     href: "/gym/calorias",
     find: q('[aria-label="Ajustes de calorías"]'),
     title: "Tus metas",
     text: "Desde acá cambias tu meta de calorías y de macros, y cómo se muestra el gráfico del día.",
-  },
-  {
-    id: "bus-buscar",
-    href: "/gym/calorias/buscar-nuevo?meal=desayuno",
-    find: q('input[placeholder^="Buscar alimento"]'),
-    title: "Buscar un alimento",
-    text: "Escribe el nombre de lo que comiste. Toca un resultado para ver su detalle y agregarlo a tu comida.",
+    next: "Terminar",
   },
   {
     id: "ent-dia",
+    module: "entrenamiento",
     href: "/gym/entrenamiento",
     find: q("header h1"),
     title: "Lo que toca hoy",
@@ -72,13 +89,15 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "ent-iniciar",
+    module: "entrenamiento",
     href: "/gym/entrenamiento",
-    find: () => document.querySelector<HTMLElement>('[aria-label^="Iniciar o continuar"]') ?? document.querySelector<HTMLElement>("main"),
+    find: () => document.querySelector<HTMLElement>('[aria-label^="Iniciar o continuar"]'),
     title: "Registrar tu entrenamiento",
     text: "Tócalo para empezar. En cada serie anotas el peso y las repeticiones y la marcas con el ✓. Cada serie puede ser Normal, Calentamiento, Descendente o Al fallo: se cambia desde su botón de tipo. Entre series corre el temporizador de descanso.",
   },
   {
     id: "ent-ajustes",
+    module: "entrenamiento",
     href: "/gym/entrenamiento",
     find: q('[aria-label="Configuración e historial"]'),
     title: "Planes, rango y perfil",
@@ -86,3 +105,7 @@ export const TOUR_STEPS: TourStep[] = [
     next: "Terminar",
   },
 ];
+
+export function stepsForModule(module: TourModule): TourStep[] {
+  return TOUR_STEPS.filter((s) => s.module === module);
+}

@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { Mascot } from "@/components/agente/mascot";
 import { BORDER, Btn } from "@/components/agente/ui";
-import { TOUR_STEPS, type TourStep } from "@/lib/tutorial/steps";
+import { stepsForModule, TOUR_HOME, type TourModule } from "@/lib/tutorial/steps";
 import { useTour } from "@/lib/store/tourStore";
 import { createClient } from "@/lib/supabase/client";
 
@@ -17,7 +17,16 @@ interface Rect {
   height: number;
 }
 
-const PAD = 8;
+const PAD = 6;
+const MODULE_NAME: Record<TourModule, string> = { calorias: "Calorías", entrenamiento: "Entrenamiento" };
+const SEEN_KEY = (userId: string, m: TourModule) => `vt_tutorial_seen_${userId}_${m}`;
+const wasSeen = (userId: string, m: TourModule) => {
+  try {
+    return localStorage.getItem(SEEN_KEY(userId, m)) === "1";
+  } catch {
+    return false;
+  }
+};
 const BUBBLE_W = 340;
 
 /**
@@ -25,42 +34,43 @@ const BUBBLE_W = 340;
  * mueve hasta el bloque, lo señala con una flecha y habla). Se muestra solo a un usuario nuevo (`profiles.tutorial_seen = false`),
  * se marca como visto al terminar o saltarlo, y se puede volver a lanzar desde Configuración (panel de la mascota).
  */
-export function GuidedTour({ userId, autoStart, steps = TOUR_STEPS }: { userId: string; autoStart: boolean; steps?: TourStep[] }) {
+export function GuidedTour({ userId, autoStart }: { userId: string; autoStart: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { active, intro, index, start, begin, next, prev, stop } = useTour();
+  const { active, intro, index, module, start, begin, next, prev, stop } = useTour();
+  const steps = stepsForModule(module);
   const [rect, setRect] = useState<Rect | null>(null);
   const [vp, setVp] = useState({ w: 375, h: 700 });
   const step = active && !intro ? steps[index] : null;
 
   const markSeen = useCallback(async () => {
     try {
-      localStorage.setItem(`vt_tutorial_seen_${userId}`, "1");
+      localStorage.setItem(SEEN_KEY(userId, module), "1");
     } catch {
       /* sin almacenamiento local */
     }
+    // `tutorial_seen` del perfil solo se marca cuando ya vio los recorridos de los dos módulos.
+    if (!wasSeen(userId, "calorias") || !wasSeen(userId, "entrenamiento")) return;
     const { error } = await createClient().from("profiles").update({ tutorial_seen: true }).eq("id", userId);
     if (error) console.warn("tutorial: no se pudo guardar tutorial_seen (¿falta la migración 0018?):", error.message);
-  }, [userId]);
+  }, [userId, module]);
 
   const finish = useCallback(() => {
     stop();
     void markSeen();
-  }, [stop, markSeen]);
+    // El recorrido de un módulo termina EN ese módulo (nunca salta a otro).
+    if (window.location.pathname !== TOUR_HOME[module]) router.push(TOUR_HOME[module]);
+  }, [stop, markSeen, router, module]);
 
-  // Arranque automático para un usuario nuevo (con una burbuja de bienvenida que pregunta antes de mover nada).
+  // Arranque automático para un usuario nuevo la PRIMERA vez que entra a cada módulo (con una burbuja que pregunta antes de
+  // mover nada). Cada módulo tiene su propio recorrido.
   useEffect(() => {
-    if (!autoStart) return;
-    let seen = false;
-    try {
-      seen = localStorage.getItem(`vt_tutorial_seen_${userId}`) === "1";
-    } catch {
-      /* sin almacenamiento local */
-    }
-    if (seen) return;
-    const t = setTimeout(() => start(true), 900);
+    if (!autoStart || active) return;
+    const target: TourModule | null = pathname === TOUR_HOME.calorias ? "calorias" : pathname === TOUR_HOME.entrenamiento ? "entrenamiento" : null;
+    if (!target || wasSeen(userId, target)) return;
+    const t = setTimeout(() => start(target, true), 900);
     return () => clearTimeout(t);
-  }, [autoStart, userId, start]);
+  }, [autoStart, active, pathname, userId, start]);
 
   // Ir a la ruta del paso.
   useEffect(() => {
@@ -124,8 +134,8 @@ export function GuidedTour({ userId, autoStart, steps = TOUR_STEPS }: { userId: 
       <div className="fixed inset-0 z-[300] flex items-center justify-center p-5 bg-black/75" role="dialog" aria-modal="true" aria-label="Tutorial">
         <motion.div initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="w-full max-w-[360px] rounded-[28px] p-5 flex flex-col items-center gap-3 text-center" style={{ background: "#1c1c1e", border: BORDER }}>
           <Mascot mood="happy" size={110} />
-          <p className="text-[19px] font-extrabold">¿Te muestro cómo funciona?</p>
-          <p className="text-sm text-white/60">Te guío por Calorías y Entrenamiento, señalando cada parte de la pantalla. Dura un minuto y puedes repetirlo cuando quieras desde Configuración.</p>
+          <p className="text-[19px] font-extrabold">¿Te muestro {MODULE_NAME[module]}?</p>
+          <p className="text-sm text-white/60">Te explico este módulo señalando cada botón de la pantalla. Dura menos de un minuto y puedes repetirlo cuando quieras desde Configuración.</p>
           <div className="flex gap-2 pt-1">
             <Btn onClick={finish}>Ahora no</Btn>
             <Btn variant="light" onClick={begin}>Sí, vamos</Btn>
@@ -154,14 +164,14 @@ export function GuidedTour({ userId, autoStart, steps = TOUR_STEPS }: { userId: 
   return (
     <div className="fixed inset-0 z-[300]" role="dialog" aria-modal="true" aria-label={`Tutorial: ${step.title}`}>
       {/* bloquea la pantalla de abajo mientras dura el recorrido */}
-      <div className="absolute inset-0" style={{ background: rect ? "transparent" : "rgba(0,0,0,0.72)" }} />
+      <div className="absolute inset-0" style={{ background: rect ? "transparent" : "rgba(0,0,0,0.6)" }} />
       {rect && (
         <motion.div
           className="absolute rounded-[20px] pointer-events-none"
           initial={false}
           animate={{ left: rect.left - PAD, top: rect.top - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2 }}
           transition={{ type: "spring", damping: 28, stiffness: 260 }}
-          style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.72), 0 0 0 2px rgba(255,255,255,0.55)" }}
+          style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.62), 0 0 0 3px #ffd60a, 0 0 26px 6px rgba(255,214,10,0.55)" }}
         />
       )}
 
