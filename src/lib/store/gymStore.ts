@@ -34,9 +34,10 @@ import type {
 } from "@/lib/types";
 import { DEFAULT_TRACKED_NUTRIENTS } from "@/lib/types";
 import { BASE_FOODS } from "@/lib/food-utils";
-import { DEFAULT_WEEKLY_PLAN } from "@/lib/data/weekly-plan";
+import { EMPTY_WEEKLY_PLAN } from "@/lib/data/weekly-plan";
 import type { DrinkOverride } from "@/lib/data/drinks";
 import { getCurrentUserId } from "./user-scope";
+import { useSyncReadyStore } from "./syncReadyStore";
 import {
   syncInsertLoggedFood,
   syncUpdateLoggedFood,
@@ -765,7 +766,8 @@ export const useGymStore = create<GymState>()(
         })),
 
       // Workout
-      weeklyPlan: DEFAULT_WEEKLY_PLAN,
+      // Cuenta nueva = semana vacía: la rutina la elige o arma la persona (antes arrancaba con un split fijo, el del dueño de la app).
+      weeklyPlan: EMPTY_WEEKLY_PLAN,
       sessions: [],
       activeSession: null,
       activeExerciseIndex: 0,
@@ -1468,6 +1470,7 @@ const SETTINGS_KEYS = [
   "dayFinishedDate",
   "drinkOverrides",
   "hiddenDrinkIds",
+  "gymProfile",
 ] as const satisfies readonly (keyof GymState)[];
 
 const WORKOUT_STATE_KEYS = [
@@ -1553,7 +1556,18 @@ function mergeIds(remote: string[], local: string[]): { merged: string[]; localO
  * intacto (mezclar con vacío no quita nada).
  */
 export async function hydrateGymStore(userId: string): Promise<void> {
+  try {
+    await hydrateGymStoreInner(userId);
+  } finally {
+    // Pase lo que pase (también si Supabase no respondió) se avisa: nada se queda esperando para siempre.
+    useSyncReadyStore.getState().setGymReady();
+  }
+}
+
+async function hydrateGymStoreInner(userId: string): Promise<void> {
   const remote: GymHydratedState = await hydrateGymStoreFromSupabase(userId);
+  // Si mientras se esperaba la respuesta la página pasó a otra cuenta, no se mezcla nada.
+  if (getCurrentUserId() !== userId) return;
   const local = useGymStore.getState();
 
   const loggedFoods = mergeById(remote.loggedFoods, local.loggedFoods);
@@ -1604,6 +1618,11 @@ export async function hydrateGymStore(userId: string): Promise<void> {
     ...remote.workoutState,
   };
   useGymStore.getState()._hydrateFromRemote(patch);
+
+  // Cuentas anteriores a la sincronización de la ficha de salud: la tenían solo en este navegador. Se sube una vez.
+  if (local.gymProfile && !remote.settings.gymProfile) {
+    void upsertGymSettings(userId, pick(useGymStore.getState(), SETTINGS_KEYS));
+  }
 
   // Backfill: sube a Supabase lo que era solo local, para que un usuario
   // con historial previo a esta capa de sync termine de verdad con sus

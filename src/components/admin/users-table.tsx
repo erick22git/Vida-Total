@@ -13,7 +13,7 @@ import { EditAccessDatesModal } from "@/components/admin/edit-access-dates-modal
 import { UserStatusBadge, userStatus } from "@/components/admin/user-status-badge";
 import { createClient } from "@/lib/supabase/client";
 import { logAdminAction, AUDIT_ACTIONS } from "@/lib/admin/audit";
-import { purgeAccount, restoreAccount, softDeleteAccount } from "@/lib/admin/accounts";
+import { purgeAccount, restoreAccount } from "@/lib/admin/accounts";
 import type { Profile } from "@/lib/types/profile";
 
 type StatusFilter = "todos" | "activos" | "porcobrar" | "bloqueados" | "eliminados";
@@ -62,16 +62,6 @@ export function UsersTable({ initialUsers, adminId, pendingUserIds = [] }: { ini
       return true;
     });
   }, [users, search, statusFilter, pending]);
-
-  async function deleteAccount(profile: Profile) {
-    setBusyId(profile.id);
-    setActionError(null);
-    const res = await softDeleteAccount(createClient(), { adminId, userId: profile.id, email: profile.email });
-    if (res.ok) setUsers((prev) => prev.map((u) => (u.id === profile.id ? { ...u, deleted_at: new Date().toISOString(), is_blocked: true } : u)));
-    else setActionError(res.error);
-    setBusyId(null);
-    setDeleteTarget(null);
-  }
 
   async function restore(profile: Profile) {
     setBusyId(profile.id);
@@ -278,10 +268,13 @@ export function UsersTable({ initialUsers, adminId, pendingUserIds = [] }: { ini
         <ConfirmModal
           open={!!deleteTarget}
           onClose={() => setDeleteTarget(null)}
-          onConfirm={() => deleteAccount(deleteTarget)}
+          onConfirm={async () => {
+            await purge(deleteTarget);
+            setDeleteTarget(null);
+          }}
           title="Eliminar cuenta"
-          message={`¿Eliminar la cuenta de ${deleteTarget.email}? Queda bloqueada y oculta de la lista, pero sus datos NO se borran: la podés restaurar desde la pestaña "Eliminados". Para borrarla de verdad hay un segundo paso aparte.`}
-          confirmLabel="Eliminar"
+          message={`¿Eliminar la cuenta de ${deleteTarget.email}? Se borra la cuenta y TODO lo suyo (comidas, entrenamientos, hábitos, comprobantes…) y no se puede deshacer. Si esa persona vuelve a entrar con el mismo correo, empieza como un usuario nuevo: sin datos, sin plan y con el pago pendiente.`}
+          confirmLabel="Eliminar para siempre"
           danger
           loading={busyId === deleteTarget.id}
         />

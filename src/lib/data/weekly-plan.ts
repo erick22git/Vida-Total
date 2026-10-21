@@ -10,6 +10,17 @@ export const DEFAULT_WEEKLY_PLAN: WeeklyPlanDay[] = [
   { day: "D", grupoMuscular: "Descanso" },
 ];
 
+/** Semana sin nada planificado: es lo que tiene una cuenta nueva hasta que elige o arma su rutina. */
+export const EMPTY_WEEKLY_PLAN: WeeklyPlanDay[] = [
+  { day: "L", grupoMuscular: "Descanso" },
+  { day: "M", grupoMuscular: "Descanso" },
+  { day: "X", grupoMuscular: "Descanso" },
+  { day: "J", grupoMuscular: "Descanso" },
+  { day: "V", grupoMuscular: "Descanso" },
+  { day: "S", grupoMuscular: "Descanso" },
+  { day: "D", grupoMuscular: "Descanso" },
+];
+
 export const DAY_LABELS = ["L", "M", "X", "J", "V", "S", "D"];
 
 /** Returns the JS-week-index-adjusted day letter for "today" (Mon=0 ... Sun=6). */

@@ -68,8 +68,8 @@ export function SubscriptionCard({ profile: initial, adminId, requests: initialR
     setBusy(true);
     const res = await requirePaymentAgain(createClient(), { adminId, userId: profile.id, email: profile.email });
     if (res.ok) {
-      setProfile((p) => ({ ...p, payment_required: true, is_blocked: false }));
-      setMsg("Listo: ahora ve la pantalla de pago hasta que confirmes otro pago o le des una prueba.");
+      setProfile((p) => ({ ...p, payment_required: true, is_blocked: false, access_until: null }));
+      setMsg("Listo: se le quitó el acceso gratuito. Ahora ve la pantalla de pago hasta que confirmes otro pago o le des una prueba.");
     } else setMsg(`No se pudo: ${res.error}`);
     setBusy(false);
   }
@@ -123,7 +123,7 @@ export function SubscriptionCard({ profile: initial, adminId, requests: initialR
         </button>
         {profile.payment_required !== true && (
           <button disabled={busy} onClick={requireAgain} className="rounded-full px-4 py-2 text-sm font-semibold cursor-pointer disabled:opacity-40 bg-white/[0.08] hover:bg-white/[0.15] text-white flex items-center gap-1.5">
-            <RotateCcw size={14} /> Volver a exigir el pago
+            <RotateCcw size={14} /> Quitar plan gratuito / exigir pago
           </button>
         )}
         {pending && (

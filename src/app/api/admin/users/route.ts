@@ -7,8 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * DELETE { userId } -> { ok: true } | { error }
  *
- * Borrado DEFINITIVO de una cuenta (segundo paso de "Eliminar", ver `lib/admin/accounts.ts`). Solo admin (se re-verifica acá, un
- * layout no protege una API), solo sobre una cuenta que YA fue eliminada (soft-delete) y nunca sobre un admin ni sobre uno mismo.
+ * Borrado DEFINITIVO de una cuenta ("Eliminar" del admin). Solo admin (se re-verifica acá, un layout no protege una API) y nunca
+ * sobre un admin ni sobre uno mismo. Si esa persona vuelve a entrar con Google se crea un usuario NUEVO (otro id): empieza de cero.
  * Borra el usuario de Auth con la service role: las claves foráneas `on delete cascade` se llevan `profiles` y todos los datos
  * del usuario. Antes limpia sus comprobantes del bucket privado `comprobantes` (la base no los borra sola).
  */
@@ -29,7 +29,6 @@ export async function DELETE(request: Request) {
   const { data: target } = await supabase.from("profiles").select("id, email, role, deleted_at").eq("id", userId).maybeSingle();
   if (!target) return NextResponse.json({ error: "No existe esa cuenta." }, { status: 404 });
   if (target.role === "admin") return NextResponse.json({ error: "No se puede borrar a un administrador." }, { status: 400 });
-  if (!target.deleted_at) return NextResponse.json({ error: "Primero hay que eliminar la cuenta (paso reversible)." }, { status: 409 });
 
   const adminClient = createAdminClient();
   if (!adminClient) return NextResponse.json({ error: "Falta SUPABASE_SERVICE_ROLE_KEY en el servidor." }, { status: 503 });

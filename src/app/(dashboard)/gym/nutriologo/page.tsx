@@ -314,19 +314,30 @@ function IntervencionesCard() {
       )}
 
       {inadecuados.map((d) => {
-        const foods = topFoodsForNutrient(allFoods, d.nutrientId, 4);
+        const falta = Math.max(0, d.valorReferencia - d.promedioObservado);
+        // Cantidades REALES: gramos de cada alimento (con su porción habitual) que cubren la brecha, no valores por 100 g.
+        const foods = topFoodsForNutrient(allFoods, d.nutrientId, 4, falta);
         const intervention = buildIntervention(d, foods.map((f) => f.foodId));
         return (
           <div key={d.nutrientId} className="rounded-3xl p-4 flex flex-col gap-3 bg-white/[0.05] border border-white/10">
             <p className="text-sm">{intervention.mensaje}</p>
             {foods.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
+              <ul className="flex flex-col gap-1.5">
                 {foods.map((f) => (
-                  <span key={f.foodId} className="text-[11px] rounded-full px-2.5 py-1 bg-white/10">
-                    {f.nombre}
-                  </span>
+                  <li key={f.foodId} className="text-xs rounded-2xl px-3 py-2 bg-white/10 flex items-baseline justify-between gap-3">
+                    <span className="font-semibold truncate">{f.nombre}</span>
+                    <span className="text-white/65 text-right shrink-0">
+                      ≈ {f.gramosParaCubrir} g
+                      {f.porcionesParaCubrir !== undefined && f.porcionesParaCubrir > 0
+                        ? ` (${f.porcionesParaCubrir} ${f.porcionesParaCubrir === 1 ? "porción" : "porciones"} de ${f.gramosPorcion} g)`
+                        : ""}
+                    </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
+            )}
+            {foods.length === 0 && (
+              <p className="text-xs text-white/45">Ningún alimento de tu base cubre esta brecha con una cantidad realista por sí solo: conviene repartirla entre varios.</p>
             )}
             <div className="flex gap-2">
               <Link

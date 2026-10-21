@@ -127,3 +127,18 @@ Migración **0020**, nueva, sin aplicar:
 - **Descargar imagen del QR:** botón "Descargar QR" en el overlay y "Descargar imagen del QR" debajo de la escena: PNG de ≥1000 px, módulos de píxeles enteros, que se relee con el decodificador antes de entregarlo.
 - **Verificación de escaneo (decodificadores, NO apps de teléfono):** el QR de la pantalla (captura real de la página), el PNG de descarga y el SVG rasterizado a 160/220/300 px se leyeron con **ZXing-C++, ZBar y OpenCV-ArUco** devolviendo el texto exacto; también con degradaciones (desenfoque, ruido, rotación de 14°, perspectiva, 110 px, bajo contraste). Hallazgo: **ZXing-JS (el único decodificador que usaba la app) NO leía este QR** (matriz de 45×45) a casi ningún tamaño, aunque el QR es válido — por eso se agregó **jsQR** como decodificador principal (nueva dependencia, ~40 KB, sin dependencias propias) y ZXing-JS queda de respaldo. Falta escanear con un teléfono real.
 - **Pendiente / límites:** el árbol se ve más oscuro que la referencia bajo la luz del navegador (ajustable con `SUN_INTENSITY` y la exposición); no se probó en un celular real ni con WebGL puro (en WebGPU sí); `next build` se cae por falta de memoria en esta máquina, y la verificación visual de las pantallas de admin se hizo con datos de ejemplo (el texto de cada componente), no con capturas de todas.
+
+
+## 14. Aislamiento entre cuentas, usuario nuevo y administración (auditoría de octubre)
+
+**Causas reales de los cruces entre cuentas, y arreglos**
+- **Impersonación ("Entrar como este usuario") escribía en la cuenta ajena.** Cambia la sesión del navegador a la del usuario: todo lo que el admin hacía (anotar comidas, formularios, la sincronización de fondo) se guardaba en SU cuenta. Ahora el cliente de Supabase es **de solo lectura** mientras dura la impersonación (`lib/supabase/client.ts`: las escrituras a datos/almacenamiento se rechazan en el propio navegador).
+- **El id de usuario en `localStorage` es compartido entre pestañas.** Otra pestaña que iniciaba sesión cambiaba ese id bajo los pies de la primera, que seguía guardando bajo la cuenta equivocada. Ahora el id se **fija por carga de página** (`lib/store/user-scope.ts`) y `SessionGuard` recarga la pestaña en cuanto detecta que la sesión cambió (evento `storage`, vuelta de foco o `onAuthStateChange`).
+- **Sin usuario conocido, los stores ya no caen a la clave vieja sin sufijo** (podía tener datos de quien usaba antes el navegador): usan `::anon`, siempre vacía.
+- **La ficha de salud (`gymProfile`) no se sincronizaba**: en otro dispositivo o navegador la cuenta parecía no haberla llenado y aparecía el formulario de "primera vez" (también al admin). Ahora viaja dentro de `gym_settings.dashboard_prefs` (sin migración nueva) y `FirstUseForms` espera a que termine el traído desde la nube, ignora al admin y a las impersonaciones, y no trata como nueva a una cuenta que ya tiene actividad.
+
+**Usuario nuevo en Entrenamiento:** ya no recibe la semana del dueño. Arranca con la semana vacía y, tras el perfil, `/gym/entrenamiento/empezar` le pide elegir **rutina de principiante sugerida** (cuerpo completo, 3 días, `lib/gym/beginner-plan.ts`) o **armar la suya**.
+
+**Eliminar usuario = borrado real** (un paso, con confirmación): borra la cuenta y todo lo suyo; si vuelve a entrar con Google se crea un usuario nuevo (otro id) y empieza de cero, con el pago pendiente. **Quitar plan gratuito:** botón "Quitar plan gratuito / exigir pago" en la tarjeta de suscripción (limpia también el vencimiento).
+
+**Nuevo:** `/configuracion/cuenta` ("Mis datos y contraseña": nombre, contacto, contraseña, con ojito) y ojito en los campos de contraseña del onboarding y de restablecer.

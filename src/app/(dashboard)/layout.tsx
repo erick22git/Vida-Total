@@ -6,6 +6,7 @@ import { BottomNav } from "@/components/nav/bottom-nav";
 import { MobileUserMenu } from "@/components/nav/mobile-user-menu";
 import type { SessionUser } from "@/components/nav/user-menu";
 import { UserScopeScript } from "@/components/nav/user-scope-script";
+import { SessionGuard } from "@/components/nav/session-guard";
 import { AccountNoticeBanner } from "@/components/nav/account-notice-banner";
 import { ImpersonationBanner } from "@/components/nav/impersonation-banner";
 import { ProfileProvider } from "@/components/providers/profile-provider";
@@ -165,7 +166,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         <AgentNotificationBanner userId={user.id} />
         <DynamicIsland />
         <GuidedTour userId={user.id} autoStart={profile?.tutorial_seen === false} />
-        <FirstUseForms />
+        <FirstUseForms impersonating={!!impersonatingEmail} />
+        <SessionGuard userId={user.id} />
       </div>
     </ProfileProvider>
   );

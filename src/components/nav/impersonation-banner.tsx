@@ -18,7 +18,7 @@ export function ImpersonationBanner({ email }: { email: string }) {
       <div className="flex items-center gap-2.5 min-w-0">
         <UserRoundCheck size={16} className="text-fuchsia-200 shrink-0" />
         <p className="text-xs sm:text-sm text-fuchsia-100 truncate">
-          Estás viendo la cuenta de <span className="font-semibold">{email}</span> como administrador.
+          Estás viendo la cuenta de <span className="font-semibold">{email}</span> como administrador, en modo solo lectura (no se guarda nada en esa cuenta).
         </p>
       </div>
       <a

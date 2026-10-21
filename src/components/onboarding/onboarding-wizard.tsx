@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { Mascot } from "@/components/agente/mascot";
 import { BORDER, Btn, DarkCard } from "@/components/agente/ui";
 import { createClient } from "@/lib/supabase/client";
@@ -40,13 +41,29 @@ function Field({
   );
 }
 
-const inputCls = "flex-1 bg-transparent outline-none text-[17px] font-bold min-w-0";
+/** "Ojito" para ver u ocultar lo que se escribe en los campos de contraseña. */
+function EyeButton({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={shown ? "Ocultar contraseña" : "Mostrar contraseña"}
+      aria-pressed={shown}
+      className="ml-2 p-1.5 rounded-lg text-white/60 hover:text-white cursor-pointer shrink-0"
+    >
+      {shown ? <EyeOff size={20} /> : <Eye size={20} />}
+    </button>
+  );
+}
+
+const inputCls ="flex-1 bg-transparent outline-none text-[17px] font-bold min-w-0";
 
 export function OnboardingWizard({ userId, name }: { userId: string; name: string | null }) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState((name ?? "").split(" ")[0] ?? "");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,11 +127,13 @@ export function OnboardingWizard({ userId, name }: { userId: string; name: strin
           hint={`Mínimo ${MIN_PASSWORD} caracteres. Con ella también podés entrar con tu email, sin Google.`}
           error={password && !passwordOk ? `Mínimo ${MIN_PASSWORD} caracteres.` : null}
         >
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} aria-label="Contraseña" autoComplete="new-password" className={inputCls} />
+          <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} aria-label="Contraseña" autoComplete="new-password" className={inputCls} />
+          <EyeButton shown={showPassword} onToggle={() => setShowPassword((v) => !v)} />
         </Field>
 
         <Field label="Repetí la contraseña" error={confirm && !confirmOk ? "No coincide." : null}>
-          <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} aria-label="Repetí la contraseña" autoComplete="new-password" className={inputCls} />
+          <input type={showPassword ? "text" : "password"} value={confirm} onChange={(e) => setConfirm(e.target.value)} aria-label="Repetí la contraseña" autoComplete="new-password" className={inputCls} />
+          <EyeButton shown={showPassword} onToggle={() => setShowPassword((v) => !v)} />
         </Field>
 
         <Field label="WhatsApp o contacto (opcional)" hint="Solo lo ve el administrador, por si hay que avisarte algo de tu suscripción.">

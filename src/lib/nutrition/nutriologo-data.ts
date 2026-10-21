@@ -51,21 +51,41 @@ export interface FoodNutrientRanking {
    * registraría, no un valor normalizado que después no coincide con lo que ve al buscarlo. */
   valorPorPorcion: number;
   unidad: string;
+  /** Gramos de esa porción por defecto (lo que `valorPorPorcion` ya incluye). */
+  gramosPorcion: number;
+  /** Solo si se pidió cubrir una brecha (`falta`): gramos de este alimento que la cubren y cuántas porciones son. */
+  gramosParaCubrir?: number;
+  porcionesParaCubrir?: number;
 }
+
+/** Más que esto de UN solo alimento en un día no es una cantidad real de comer: se descarta como sugerencia. */
+const MAX_GRAMOS_REALES_POR_ALIMENTO = 400;
 
 /** Los `limit` alimentos de la base (`allFoods`, ya configurados — `configurado !== false`) con más de
  * un micronutriente dado por porción por defecto. Para sugerir "qué alimentos de tu propia base subirían
- * este nutriente" (Fase 1/4) sin inventar ningún valor: solo alimentos que ya tienen el dato cargado. */
-export function topFoodsForNutrient(allFoods: Food[], nutrientId: string, limit = 5): FoodNutrientRanking[] {
-  return allFoods
+ * este nutriente" (Fase 1/4) sin inventar ningún valor: solo alimentos que ya tienen el dato cargado.
+ *
+ * Si se pasa `falta` (lo que le falta al día en la unidad del nutriente), cada sugerencia trae los GRAMOS REALES que cubren esa
+ * brecha, calculados con la porción del alimento — no con 100 g: nadie come 100 g de chía, y la tabla por 100 g exagera.
+ * Los alimentos que necesitarían más de `MAX_GRAMOS_REALES_POR_ALIMENTO` se descartan. */
+export function topFoodsForNutrient(allFoods: Food[], nutrientId: string, limit = 5, falta?: number): FoodNutrientRanking[] {
+  const ranked = allFoods
     .filter((f) => f.configurado !== false)
-    .map((f) => {
+    .map((f): FoodNutrientRanking | null => {
       const gramos = parsePorcionGramos(f);
       const micro = scaleMicronutrients(f, gramos) as Record<string, number> | undefined;
       const valor = micro?.[nutrientId];
-      return valor !== undefined ? { foodId: f.id, nombre: f.nombre, valorPorPorcion: valor, unidad: "" } : null;
+      if (valor === undefined) return null;
+      const base: FoodNutrientRanking = { foodId: f.id, nombre: f.nombre, valorPorPorcion: valor, unidad: "", gramosPorcion: gramos };
+      if (falta === undefined || falta <= 0) return base;
+      if (valor <= 0 || gramos <= 0) return null;
+      const gramosParaCubrir = Math.max(1, Math.round((falta / valor) * gramos));
+      if (gramosParaCubrir > MAX_GRAMOS_REALES_POR_ALIMENTO) return null;
+      return { ...base, gramosParaCubrir, porcionesParaCubrir: Math.round((falta / valor) * 10) / 10 };
     })
-    .filter((x): x is FoodNutrientRanking => x !== null)
-    .sort((a, b) => b.valorPorPorcion - a.valorPorPorcion)
-    .slice(0, limit);
+    .filter((x): x is FoodNutrientRanking => x !== null);
+
+  // Siempre por lo que aporta UNA porción real (no por gramos: ordenar por "menos gramos" subiría especias de 1 g).
+  ranked.sort((a, b) => b.valorPorPorcion - a.valorPorPorcion);
+  return ranked.slice(0, limit);
 }

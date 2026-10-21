@@ -48,6 +48,7 @@ import type {
   WorkoutSession,
 } from "@/lib/types";
 import type { DrinkOverride } from "@/lib/data/drinks";
+import type { GymProfile } from "@/lib/store/gymStore";
 import { foodToRow, patchToRow, rowToFood, writeWithColumnFallback, type CustomFoodRow, type ExtrasState } from "./food-sync-map";
 
 // ============================================================================
@@ -150,10 +151,21 @@ export interface GymSettingsRow {
   water_goal_ml: number;
   tracked_nutrients: TrackableNutrient[];
   show_remaining: boolean;
-  dashboard_prefs: { showOtherNutrients: boolean; showWeekStrip: boolean; showFinishDayButton: boolean };
+  /** Además de las preferencias de pantalla, acá viaja `gymProfile` (la ficha de salud de Calorías/Entrenamiento): así se
+   * sincroniza entre dispositivos sin una columna nueva. Ver `splitDashboardPrefs`. */
+  dashboard_prefs: { showOtherNutrients: boolean; showWeekStrip: boolean; showFinishDayButton: boolean; gymProfile?: GymProfile | null };
   day_finished_date: string | null;
   drink_overrides: Record<string, DrinkOverride>;
   hidden_drink_ids: string[];
+}
+
+/** Separa `dashboard_prefs` del servidor en las preferencias de pantalla y la ficha de salud que viaja dentro. */
+function splitDashboardPrefs(raw: GymSettingsRow["dashboard_prefs"]): {
+  dashboardPrefs: GymSettingsPatch["dashboardPrefs"];
+  gymProfile: GymProfile | null;
+} {
+  const { gymProfile, ...prefs } = raw ?? ({} as GymSettingsRow["dashboard_prefs"]);
+  return { dashboardPrefs: prefs as GymSettingsPatch["dashboardPrefs"], gymProfile: gymProfile ?? null };
 }
 
 export interface GymSettingsPatch {
@@ -168,6 +180,9 @@ export interface GymSettingsPatch {
   dayFinishedDate: string | null;
   drinkOverrides: Record<string, DrinkOverride>;
   hiddenDrinkIds: string[];
+  /** Ficha de salud (peso, altura, objetivo, experiencia…). Antes vivía SOLO en el navegador: en otro dispositivo o navegador
+   * la cuenta parecía no haberla llenado nunca y volvía a mostrar los formularios de primera vez. */
+  gymProfile?: GymProfile | null;
 }
 
 export async function upsertGymSettings(userId: string, s: GymSettingsPatch): Promise<void> {
@@ -180,7 +195,7 @@ export async function upsertGymSettings(userId: string, s: GymSettingsPatch): Pr
     water_goal_ml: s.waterGoalMl,
     tracked_nutrients: s.trackedNutrients,
     show_remaining: s.showRemaining,
-    dashboard_prefs: s.dashboardPrefs,
+    dashboard_prefs: { ...s.dashboardPrefs, gymProfile: s.gymProfile ?? null },
     day_finished_date: dateStringToDateOnly(s.dayFinishedDate),
     drink_overrides: s.drinkOverrides,
     hidden_drink_ids: s.hiddenDrinkIds,
@@ -195,6 +210,7 @@ async function fetchGymSettings(userId: string): Promise<Partial<GymSettingsPatc
     createClient().from("gym_settings").select("*").eq("user_id", userId).maybeSingle(),
   );
   if (!row) return {};
+  const { dashboardPrefs, gymProfile } = splitDashboardPrefs(row.dashboard_prefs);
   return {
     calorieGoal: row.calorie_goal,
     proteinGoal: row.protein_goal,
@@ -203,7 +219,9 @@ async function fetchGymSettings(userId: string): Promise<Partial<GymSettingsPatc
     waterGoalMl: row.water_goal_ml,
     trackedNutrients: row.tracked_nutrients,
     showRemaining: row.show_remaining,
-    dashboardPrefs: row.dashboard_prefs,
+    dashboardPrefs,
+    // Solo se pisa la ficha local si el servidor TIENE una: si no, se conserva la local (y `hydrateGymStore` la sube).
+    ...(gymProfile ? { gymProfile } : {}),
     dayFinishedDate: dateOnlyToDateString(row.day_finished_date),
     drinkOverrides: row.drink_overrides ?? {},
     hiddenDrinkIds: row.hidden_drink_ids ?? [],

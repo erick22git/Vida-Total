@@ -157,13 +157,22 @@ export default function ResetPasswordPage() {
                     <div className={cardStyles.inputWrap}>
                       <Lock size={15} className={cardStyles.inputIcon} />
                       <input
-                        className={cardStyles.input}
-                        type="password"
+                        className={`${cardStyles.input} ${cardStyles.inputWithToggle}`}
+                        type={showPass ? "text" : "password"}
                         value={confirmar}
                         onChange={(e) => setConfirmar(e.target.value)}
                         placeholder="repetir"
                         autoComplete="new-password"
                       />
+                      <button
+                        type="button"
+                        className={cardStyles.toggleBtn}
+                        onClick={() => setShowPass((v) => !v)}
+                        tabIndex={-1}
+                        aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                      >
+                        {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
                     </div>
                   </div>
                   <button type="submit" className={cardStyles.submitBtn} disabled={cargando || !ready}>

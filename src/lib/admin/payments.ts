@@ -179,12 +179,16 @@ export async function grantAccess(
   return { ok: true, accessUntil };
 }
 
-/** Vuelve a exigir el pago a una cuenta (revoca el acceso actual sin borrar nada): ve la pantalla de pago hasta que se confirme otro pago. */
+/**
+ * Quita la prueba gratuita / el acceso actual y vuelve a exigir el pago (sin borrar ningún dato): la cuenta ve la pantalla de pago
+ * hasta que se confirme otro pago. También limpia el vencimiento, así el próximo pago cuenta desde ese día y no suma sobre una
+ * prueba que ya no existe.
+ */
 export async function requirePaymentAgain(
   supabase: SupabaseClient,
   p: { adminId: string; userId: string; email: string | null },
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const { error } = await supabase.from("profiles").update({ payment_required: true, is_blocked: false }).eq("id", p.userId);
+  const { error } = await supabase.from("profiles").update({ payment_required: true, is_blocked: false, access_until: null }).eq("id", p.userId);
   if (error) return { ok: false, error: /payment_required/i.test(error.message) ? "Falta aplicar la migración 0021 en Supabase." : error.message };
   await logAdminAction(supabase, { adminId: p.adminId, targetUserId: p.userId, action: AUDIT_ACTIONS.REQUIRED_PAYMENT, details: { email: p.email } });
   return { ok: true };
