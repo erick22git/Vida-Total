@@ -2504,7 +2504,8 @@
     "proteina": 30,
     "carbos": 55,
     "grasas": 26,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/tallarines-verdes.jpg"
   },
   {
     "id": "arroz-con-pollo",
@@ -2541,7 +2542,8 @@
       "selenio": 10.5,
       "cobre": 0.09
     },
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/arroz-con-pollo.jpg"
   },
   {
     "id": "pollo-a-la-brasa",
@@ -2574,7 +2576,8 @@
       "cobre": 0.15,
       "manganeso": 0.05
     },
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/pollo-a-la-brasa.jpg"
   },
   {
     "id": "jugo-naranja",
@@ -2622,7 +2625,8 @@
     },
     "fdcIdCrudo": 169098,
     "unSoloEstado": true,
-    "fuente": "Match directo: 'Orange juice, raw' (SR Legacy)."
+    "fuente": "Match directo: 'Orange juice, raw' (SR Legacy).",
+    "photoUrl": "/foods/jugo-naranja.jpg"
   },
   {
     "id": "gaseosa",
@@ -2633,7 +2637,8 @@
     "proteina": 0,
     "carbos": 39,
     "grasas": 0,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/gaseosa.jpg"
   },
   {
     "id": "cerveza",
@@ -2644,7 +2649,8 @@
     "proteina": 1.6,
     "carbos": 13,
     "grasas": 0,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/cerveza.jpg"
   },
   {
     "id": "cafe-negro",
@@ -2655,7 +2661,8 @@
     "proteina": 0.3,
     "carbos": 0,
     "grasas": 0,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/cafe-negro.jpg"
   },
   {
     "id": "cafe-leche",
@@ -2703,7 +2710,8 @@
       "manganeso": 0.02
     },
     "unSoloEstado": true,
-    "fuente": "DERIVADO: partes iguales (100ml+100ml, 1ml=1g) de 'coffee, brewed, prepared with tap water' (SR Legacy #171890) + 'Milk, whole, 3.25% milkfat' (SR Legacy #171265) para los 200ml declarados - sin azucar contada."
+    "fuente": "DERIVADO: partes iguales (100ml+100ml, 1ml=1g) de 'coffee, brewed, prepared with tap water' (SR Legacy #171890) + 'Milk, whole, 3.25% milkfat' (SR Legacy #171265) para los 200ml declarados - sin azucar contada.",
+    "photoUrl": "/foods/cafe-leche.jpg"
   },
   {
     "id": "pan-con-palta",
