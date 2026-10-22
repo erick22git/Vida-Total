@@ -1,0 +1,168 @@
+[
+  {
+    "id": "platano",
+    "nombre": "Plátano",
+    "fdcIdCrudo": 173944,
+    "fdcIdCocido": null,
+    "kcalCrudo": 105,
+    "kcalCocido": null,
+    "porcionGramos": 118,
+    "faltanCrudo": [
+      "omega-3 (ALA)",
+      "omega-6 (linoleico)"
+    ],
+    "faltanCocido": [],
+    "nota": "Fruta cruda por naturaleza — no hay un 'plátano cocido' genérico en FDC (distinto del plátano/plantain para freír, que es OTRO alimento). Queda como un solo estado."
+  },
+  {
+    "id": "avena",
+    "nombre": "Avena",
+    "fdcIdCrudo": 173904,
+    "fdcIdCocido": 173905,
+    "kcalCrudo": 152,
+    "kcalCocido": 28,
+    "porcionGramos": 40,
+    "faltanCrudo": [
+      "grasas trans",
+      "omega-3 (ALA)",
+      "omega-6 (linoleico)"
+    ],
+    "faltanCocido": [],
+    "nota": ""
+  },
+  {
+    "id": "cebolla-caramelizada",
+    "nombre": "Cebolla caramelizada",
+    "fdcIdCrudo": null,
+    "fdcIdCocido": null,
+    "kcalCrudo": null,
+    "kcalCocido": null,
+    "porcionGramos": 100,
+    "faltanCrudo": [],
+    "faltanCocido": [],
+    "nota": "SIN MATCH en USDA Foundation/SR Legacy: solo hay cebolla cruda, en aros fritos de marca (Denny's), deshidratada o variedades crudas (roja, dulce, welsh) — ninguna es 'cebolla caramelizada/salteada'. No se aproximó (a diferencia de la manzana fuji, acá no hay una variante genérica razonable: caramelizar cambia radicalmente los azúcares por la reducción de agua + Maillard, no es solo 'cebolla cocida'). Queda SIN datos nutricionales hasta que decidas cómo seguir (¿aproximar con 'Onions, cooked, boiled' + ajuste manual? ¿otra fuente?)."
+  },
+  {
+    "id": "huevo",
+    "nombre": "Huevo entero",
+    "fdcIdCrudo": 171287,
+    "fdcIdCocido": 173424,
+    "kcalCrudo": 72,
+    "kcalCocido": 78,
+    "porcionGramos": 50,
+    "faltanCrudo": [],
+    "faltanCocido": [
+      "grasas trans",
+      "omega-3 (ALA)",
+      "omega-6 (linoleico)"
+    ],
+    "nota": ""
+  },
+  {
+    "id": "pollo-apanado",
+    "nombre": "Pollo apanado",
+    "fdcIdCrudo": 170718,
+    "fdcIdCocido": null,
+    "kcalCrudo": 307,
+    "kcalCocido": null,
+    "porcionGramos": 100,
+    "faltanCrudo": [],
+    "faltanCocido": [],
+    "nota": "No existe un 'pollo apanado crudo' (no se come así) ni una entrada casera genérica en Foundation/SR Legacy — el match usado es 'Fast foods, chicken, breaded and fried, boneless pieces, plain', la opción NO de marca (se descartaron KFC/Popeye's) más parecida. Puede diferir algo de una receta casera."
+  },
+  {
+    "id": "pechuga-pollo",
+    "nombre": "Pechuga de pollo",
+    "fdcIdCrudo": 2646170,
+    "fdcIdCocido": 171534,
+    "kcalCrudo": 106,
+    "kcalCocido": 151,
+    "porcionGramos": 100,
+    "faltanCrudo": [
+      "omega-3 (ALA)",
+      "omega-6 (linoleico)",
+      "fibra",
+      "azúcares",
+      "vitaminaA",
+      "vitaminaC",
+      "vitaminaD",
+      "vitaminaE",
+      "vitaminaK",
+      "vitaminaB1",
+      "vitaminaB2",
+      "vitaminaB3",
+      "vitaminaB5",
+      "vitaminaB6",
+      "vitaminaB12",
+      "folato",
+      "colina",
+      "selenio"
+    ],
+    "faltanCocido": [
+      "folato"
+    ],
+    "nota": "Ya existía en la base SOLO como cocido ('a la plancha', dato aproximado viejo) — se reemplaza por el dato real de FDC y se agrega el crudo. El nombre pasa de 'Pechuga de pollo a la plancha' a 'Pechuga de pollo' porque ahora cubre los dos estados."
+  },
+  {
+    "id": "pan-blanco",
+    "nombre": "Pan blanco",
+    "fdcIdCrudo": 174924,
+    "fdcIdCocido": null,
+    "kcalCrudo": 67,
+    "kcalCocido": null,
+    "porcionGramos": 25,
+    "faltanCrudo": [
+      "omega-6 (linoleico)"
+    ],
+    "faltanCocido": [],
+    "nota": "Ya horneado — no hay un estado 'crudo' (masa cruda) en FDC para pan comercial. Dato sin cambios respecto al ya verificado en el Bloque 8."
+  },
+  {
+    "id": "pan-integral",
+    "nombre": "Pan de trigo integral",
+    "fdcIdCrudo": 172688,
+    "fdcIdCocido": null,
+    "kcalCrudo": 71,
+    "kcalCocido": null,
+    "porcionGramos": 28,
+    "faltanCrudo": [],
+    "faltanCocido": [],
+    "nota": "Mismo caso que pan blanco — un solo estado (horneado)."
+  },
+  {
+    "id": "pan-marraqueta",
+    "nombre": "Pan Marraqueta",
+    "fdcIdCrudo": 172795,
+    "fdcIdCocido": null,
+    "kcalCrudo": 277,
+    "kcalCocido": null,
+    "porcionGramos": 100,
+    "faltanCrudo": [
+      "grasas trans",
+      "omega-3 (ALA)",
+      "omega-6 (linoleico)"
+    ],
+    "faltanCocido": [],
+    "nota": "SIN match exacto: la marraqueta es un pan boliviano regional, FDC no la tiene. Se aproxima con 'Rolls, french' (pan francés crocante, el analogo más cercano en forma/miga), mismo criterio que la manzana fuji del Bloque 8 (variante genérica más parecida, documentada como aproximación, no un dato exacto)."
+  },
+  {
+    "id": "arroz-blanco",
+    "nombre": "Arroz blanco",
+    "fdcIdCrudo": 168877,
+    "fdcIdCocido": 169753,
+    "kcalCrudo": 365,
+    "kcalCocido": 130,
+    "porcionGramos": 100,
+    "faltanCrudo": [
+      "grasas trans",
+      "omega-3 (ALA)",
+      "omega-6 (linoleico)"
+    ],
+    "faltanCocido": [
+      "grasas trans",
+      "omega-3 (ALA)",
+      "omega-6 (linoleico)"
+    ],
+    "nota": "Ya existía en la base definido como el estado COCIDO (130kcal/100g, en los campos de nivel superior). Con el modelo nuevo, ese dato pasa a vivir en 'cocido' (se confirma igual, mismo fdcId 169753) y se agrega el CRUDO real (~365kcal/100g) en los campos de nivel superior. `estadoDefault: 'cocido'` hace que un registro nuevo siga abriendo en el mismo valor de siempre — los LoggedFood ya guardados no cambian (cada uno tiene su propia foto de cuando se registró)."
+  }
+]

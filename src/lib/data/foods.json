@@ -72,7 +72,7 @@
     },
     "unSoloEstado": false,
     "estadoDefault": "cocido",
-    "photoUrl": "/foods/pechuga-pollo.jpg"
+    "photoUrl": "/foods/pechuga-pollo.png"
   },
   {
     "id": "arroz-blanco",
@@ -160,7 +160,7 @@
     },
     "unSoloEstado": false,
     "estadoDefault": "cocido",
-    "photoUrl": "/foods/arroz-blanco.jpg"
+    "photoUrl": "/foods/arroz-blanco.png"
   },
   {
     "id": "arroz-integral",
@@ -194,7 +194,7 @@
       "manganeso": 1.14
     },
     "verificado": false,
-    "photoUrl": "/foods/arroz-integral.jpg"
+    "photoUrl": "/foods/arroz-integral.png"
   },
   {
     "id": "crema-arroz",
@@ -284,7 +284,7 @@
     },
     "estadoDefault": "cocido",
     "fuente": "Seco (base de comparación): \"Cereals, CREAM OF RICE, dry\" (SR Legacy #173900). Cocido real: \"Cereals, CREAM OF RICE, cooked with water, with salt\" (SR Legacy #173914).",
-    "photoUrl": "/foods/crema-arroz.jpg"
+    "photoUrl": "/foods/crema-arroz.png"
   },
   {
     "id": "huevo",
@@ -375,7 +375,7 @@
     },
     "unSoloEstado": false,
     "estadoDefault": "cocido",
-    "photoUrl": "/foods/huevo.jpg"
+    "photoUrl": "/foods/huevo.png"
   },
   {
     "id": "clara-huevo",
@@ -387,7 +387,7 @@
     "carbos": 0.2,
     "grasas": 0.1,
     "verificado": false,
-    "photoUrl": "/foods/clara-huevo.jpg"
+    "photoUrl": "/foods/clara-huevo.png"
   },
   {
     "id": "avena",
@@ -478,7 +478,7 @@
     },
     "unSoloEstado": false,
     "estadoDefault": "cocido",
-    "photoUrl": "/foods/avena.jpg"
+    "photoUrl": "/foods/avena.png"
   },
   {
     "id": "platano",
@@ -526,7 +526,7 @@
     },
     "fdcIdCrudo": 173944,
     "unSoloEstado": true,
-    "photoUrl": "/foods/platano.jpg"
+    "photoUrl": "/foods/platano.png"
   },
   {
     "id": "manzana",
@@ -2504,8 +2504,7 @@
     "proteina": 30,
     "carbos": 55,
     "grasas": 26,
-    "verificado": false,
-    "photoUrl": "/foods/tallarines-verdes.jpg"
+    "verificado": false
   },
   {
     "id": "arroz-con-pollo",
@@ -2542,8 +2541,7 @@
       "selenio": 10.5,
       "cobre": 0.09
     },
-    "verificado": false,
-    "photoUrl": "/foods/arroz-con-pollo.jpg"
+    "verificado": false
   },
   {
     "id": "pollo-a-la-brasa",
@@ -2576,8 +2574,7 @@
       "cobre": 0.15,
       "manganeso": 0.05
     },
-    "verificado": false,
-    "photoUrl": "/foods/pollo-a-la-brasa.jpg"
+    "verificado": false
   },
   {
     "id": "jugo-naranja",
@@ -2625,8 +2622,7 @@
     },
     "fdcIdCrudo": 169098,
     "unSoloEstado": true,
-    "fuente": "Match directo: 'Orange juice, raw' (SR Legacy).",
-    "photoUrl": "/foods/jugo-naranja.jpg"
+    "fuente": "Match directo: 'Orange juice, raw' (SR Legacy)."
   },
   {
     "id": "gaseosa",
@@ -2637,8 +2633,7 @@
     "proteina": 0,
     "carbos": 39,
     "grasas": 0,
-    "verificado": false,
-    "photoUrl": "/foods/gaseosa.jpg"
+    "verificado": false
   },
   {
     "id": "cerveza",
@@ -2649,8 +2644,7 @@
     "proteina": 1.6,
     "carbos": 13,
     "grasas": 0,
-    "verificado": false,
-    "photoUrl": "/foods/cerveza.jpg"
+    "verificado": false
   },
   {
     "id": "cafe-negro",
@@ -2661,8 +2655,7 @@
     "proteina": 0.3,
     "carbos": 0,
     "grasas": 0,
-    "verificado": false,
-    "photoUrl": "/foods/cafe-negro.jpg"
+    "verificado": false
   },
   {
     "id": "cafe-leche",
@@ -2710,8 +2703,7 @@
       "manganeso": 0.02
     },
     "unSoloEstado": true,
-    "fuente": "DERIVADO: partes iguales (100ml+100ml, 1ml=1g) de 'coffee, brewed, prepared with tap water' (SR Legacy #171890) + 'Milk, whole, 3.25% milkfat' (SR Legacy #171265) para los 200ml declarados - sin azucar contada.",
-    "photoUrl": "/foods/cafe-leche.jpg"
+    "fuente": "DERIVADO: partes iguales (100ml+100ml, 1ml=1g) de 'coffee, brewed, prepared with tap water' (SR Legacy #171890) + 'Milk, whole, 3.25% milkfat' (SR Legacy #171265) para los 200ml declarados - sin azucar contada."
   },
   {
     "id": "pan-con-palta",
@@ -2759,8 +2751,7 @@
       "manganeso": 0.14
     },
     "unSoloEstado": true,
-    "fuente": "DERIVADO: 40g de nuestro 'pan-blanco' (fdcId 174924) + 60g de 'Avocados, raw, all commercial varieties' (SR Legacy #171705) para los 100g declarados.",
-    "photoUrl": "/foods/pan-con-palta.jpg"
+    "fuente": "DERIVADO: 40g de nuestro 'pan-blanco' (fdcId 174924) + 60g de 'Avocados, raw, all commercial varieties' (SR Legacy #171705) para los 100g declarados."
   },
   {
     "id": "pan-con-huevo",
@@ -2808,8 +2799,7 @@
       "manganeso": 0.09
     },
     "unSoloEstado": true,
-    "fuente": "DERIVADO: 60g de nuestro 'pan-blanco' (fdcId 174924) + 50g de 'Egg, whole, cooked, fried' (SR Legacy #173423) para los 110g declarados.",
-    "photoUrl": "/foods/pan-con-huevo.jpg"
+    "fuente": "DERIVADO: 60g de nuestro 'pan-blanco' (fdcId 174924) + 50g de 'Egg, whole, cooked, fried' (SR Legacy #173423) para los 110g declarados."
   },
   {
     "id": "tostadas-francesas",
@@ -2844,8 +2834,7 @@
       "cobre": 0.12,
       "manganeso": 0.55
     },
-    "verificado": false,
-    "photoUrl": "/foods/tostadas-francesas.jpg"
+    "verificado": false
   },
   {
     "id": "panqueques",
@@ -2856,8 +2845,7 @@
     "proteina": 8,
     "carbos": 62,
     "grasas": 11,
-    "verificado": false,
-    "photoUrl": "/foods/panqueques.jpg"
+    "verificado": false
   },
   {
     "id": "omelette",
@@ -2868,8 +2856,7 @@
     "proteina": 18,
     "carbos": 2,
     "grasas": 20,
-    "verificado": false,
-    "photoUrl": "/foods/omelette.jpg"
+    "verificado": false
   },
   {
     "id": "smoothie-frutas",
@@ -2907,8 +2894,7 @@
       "cobre": 0.12,
       "manganeso": 0.23
     },
-    "verificado": false,
-    "photoUrl": "/foods/smoothie-frutas.jpg"
+    "verificado": false
   },
   {
     "id": "ensalada-frutas",
@@ -2919,8 +2905,7 @@
     "proteina": 1.5,
     "carbos": 27,
     "grasas": 0.4,
-    "verificado": false,
-    "photoUrl": "/foods/ensalada-frutas.jpg"
+    "verificado": false
   },
   {
     "id": "palomitas",
@@ -2931,8 +2916,7 @@
     "proteina": 3.3,
     "carbos": 22,
     "grasas": 1.3,
-    "verificado": false,
-    "photoUrl": "/foods/palomitas.jpg"
+    "verificado": false
   },
   {
     "id": "galletas-integrales",
@@ -2943,8 +2927,7 @@
     "proteina": 2.5,
     "carbos": 21,
     "grasas": 4,
-    "verificado": false,
-    "photoUrl": "/foods/galletas-integrales.jpg"
+    "verificado": false
   },
   {
     "id": "yogur-frutas",
@@ -2955,8 +2938,7 @@
     "proteina": 5,
     "carbos": 22,
     "grasas": 3.5,
-    "verificado": false,
-    "photoUrl": "/foods/yogur-frutas.jpg"
+    "verificado": false
   },
   {
     "id": "quinua-ensalada",
@@ -2967,8 +2949,7 @@
     "proteina": 9,
     "carbos": 40,
     "grasas": 9,
-    "verificado": false,
-    "photoUrl": "/foods/quinua-ensalada.jpg"
+    "verificado": false
   },
   {
     "id": "wrap-pollo",
@@ -3012,8 +2993,7 @@
     },
     "fdcIdCrudo": 2707017,
     "unSoloEstado": true,
-    "fuente": "Match directo: Survey/FNDDS 'Chicken fillet wrap sandwich, grilled, from fast food'.",
-    "photoUrl": "/foods/wrap-pollo.jpg"
+    "fuente": "Match directo: Survey/FNDDS 'Chicken fillet wrap sandwich, grilled, from fast food'."
   },
   {
     "id": "sopa-verduras",
@@ -3051,8 +3031,7 @@
       "cobre": 0.12,
       "manganeso": 0.26
     },
-    "verificado": false,
-    "photoUrl": "/foods/sopa-verduras.jpg"
+    "verificado": false
   },
   {
     "id": "pescado-frito",
@@ -3063,8 +3042,7 @@
     "proteina": 30,
     "carbos": 10,
     "grasas": 18,
-    "verificado": false,
-    "photoUrl": "/foods/pescado-frito.jpg"
+    "verificado": false
   },
   {
     "id": "anticuchos",
@@ -3078,8 +3056,7 @@
     "verificado": false,
     "fibra": 0.3,
     "azucares": 0.7,
-    "fuente": "NutriScan, ficha pública Anticuchos",
-    "photoUrl": "/foods/anticuchos.jpg"
+    "fuente": "NutriScan, ficha pública Anticuchos"
   },
   {
     "id": "tamal",
@@ -3129,8 +3106,7 @@
     },
     "fdcIdCrudo": 167664,
     "unSoloEstado": true,
-    "fuente": "APROXIMACION: 'Restaurant, Latino, tamale, corn' (SR Legacy) - tamal mexicano de maiz, no especificamente boliviano/andino (humita), pero es el analogo mas cercano en FDC.",
-    "photoUrl": "/foods/tamal.jpg"
+    "fuente": "APROXIMACION: 'Restaurant, Latino, tamale, corn' (SR Legacy) - tamal mexicano de maiz, no especificamente boliviano/andino (humita), pero es el analogo mas cercano en FDC."
   },
   {
     "id": "empanada",
@@ -3168,8 +3144,7 @@
       "cobre": 0.1,
       "manganeso": 0.27
     },
-    "verificado": false,
-    "photoUrl": "/foods/empanada.jpg"
+    "verificado": false
   },
   {
     "id": "causa-rellena",
@@ -3181,8 +3156,7 @@
     "carbos": 13.8,
     "grasas": 10,
     "verificado": false,
-    "fuente": "FatSecret Chile, ficha pública Causa de Pollo, cruzado con dato derivado de MINSA Perú",
-    "photoUrl": "/foods/causa-rellena.jpg"
+    "fuente": "FatSecret Chile, ficha pública Causa de Pollo, cruzado con dato derivado de MINSA Perú"
   },
   {
     "id": "papa-a-la-huancaina",
@@ -3195,8 +3169,7 @@
     "grasas": 4.1,
     "verificado": false,
     "fibra": 1.3,
-    "fuente": "INS Perú, Tablas Peruanas de Composición de Alimentos (tablasperuanas.ins.gob.pe/node/2057)",
-    "photoUrl": "/foods/papa-a-la-huancaina.jpg"
+    "fuente": "INS Perú, Tablas Peruanas de Composición de Alimentos (tablasperuanas.ins.gob.pe/node/2057)"
   },
   {
     "id": "choclo-con-queso",
@@ -3245,8 +3218,7 @@
       "manganeso": 0.18
     },
     "unSoloEstado": true,
-    "fuente": "DERIVADO: 100g de 'Corn, sweet, yellow, cooked, boiled, drained, without salt' (SR Legacy #169999) + 50g de 'Cheese, fresh, queso fresco' (SR Legacy #172223) para los 150g declarados.",
-    "photoUrl": "/foods/choclo-con-queso.jpg"
+    "fuente": "DERIVADO: 100g de 'Corn, sweet, yellow, cooked, boiled, drained, without salt' (SR Legacy #169999) + 50g de 'Cheese, fresh, queso fresco' (SR Legacy #172223) para los 150g declarados."
   },
   {
     "id": "helado",
@@ -3257,8 +3229,7 @@
     "proteina": 3.5,
     "carbos": 24,
     "grasas": 11,
-    "verificado": false,
-    "photoUrl": "/foods/helado.jpg"
+    "verificado": false
   },
   {
     "id": "torta-chocolate",
@@ -3269,8 +3240,7 @@
     "proteina": 5,
     "carbos": 50,
     "grasas": 17,
-    "verificado": false,
-    "photoUrl": "/foods/torta-chocolate.jpg"
+    "verificado": false
   },
   {
     "id": "gelatina",
@@ -3281,8 +3251,7 @@
     "proteina": 1.5,
     "carbos": 14,
     "grasas": 0,
-    "verificado": false,
-    "photoUrl": "/foods/gelatina.jpg"
+    "verificado": false
   },
   {
     "id": "miel",
@@ -3293,8 +3262,7 @@
     "proteina": 0.1,
     "carbos": 17.3,
     "grasas": 0,
-    "verificado": false,
-    "photoUrl": "/foods/miel.jpg"
+    "verificado": false
   },
   {
     "id": "mermelada",
@@ -3305,8 +3273,7 @@
     "proteina": 0.1,
     "carbos": 14,
     "grasas": 0,
-    "verificado": false,
-    "photoUrl": "/foods/mermelada.jpg"
+    "verificado": false
   },
   {
     "id": "leche-almendras",
