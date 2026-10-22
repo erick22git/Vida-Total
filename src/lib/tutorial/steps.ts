@@ -63,20 +63,12 @@ export const TOUR_STEPS: TourStep[] = [
     text: "Hacia arriba hay más vistas del día: primero el detalle de nutrientes (tus calorías y las 4 categorías de nutrientes, ahí viven los macros); después el calendario del año, donde cada día se pinta según tu racha: dorado si fue un día suelto, rojo en rachas de 2 a 6 días y verde desde 7. Más abajo está el Nutriólogo.",
   },
   {
-    id: "cal-tiempos",
-    module: "calorias",
-    href: "/gym/calorias",
-    find: q('[aria-label="Tiempos de comida"]'),
-    title: "Tiempos de comida",
-    text: "Con el reloj eliges a qué hora empieza cada comida (desayuno, almuerzo, colaciones y cena). El título de arriba cambia solo según tu horario.",
-  },
-  {
     id: "cal-ajustes",
     module: "calorias",
     href: "/gym/calorias",
     find: q('[aria-label="Ajustes de calorías"]'),
     title: "Tus metas",
-    text: "Desde acá cambias tu meta de calorías y de macros, y cómo se muestra el gráfico del día.",
+    text: "Desde acá cambias tu meta de calorías y de macros, cómo se muestra el gráfico del día y, más abajo, a qué hora empieza cada comida (Tiempos de comida).",
     next: "Terminar",
   },
   {

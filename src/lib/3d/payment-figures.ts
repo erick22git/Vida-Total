@@ -9,7 +9,7 @@ export interface PaymentFigureDef {
   label: string;
   url: string;
   /** Hojas sueltas (`leaf_0..2`) que la app instancia sobre un punto por módulo oscuro de la matriz del QR: ESA es la copa. */
-  leavesUrl: string;
+  leavesUrl?: string;
   /** Matas de pasto (variantes `tuft_*`) que se instancian en los bordes del piso. */
   grassUrl: string;
   /** Ancho de la figura (informativo: el tronco va a escala real de la escena, no se reescala). */
@@ -24,12 +24,11 @@ export const PAYMENT_FIGURES: Record<string, PaymentFigureDef> = {
   tree: {
     id: "tree",
     label: "Árbol",
-    url: "/models/trunk_payment_001_meshopt.glb",
-    leavesUrl: "/models/leaves_payment_001_meshopt.glb",
-    grassUrl: "/models/grass_tuft_payment_001_meshopt.glb",
-    width: 6.4,
-    height: 6.4,
-    license: "Obra propia: generado con Blender 5.2 por tools/3d/blender/46_payment_trunk.py, 47_payment_leaves.py y 43_payment_grass.py",
+    url: "/models/bonsai_tree_payment_001_meshopt.glb",
+    grassUrl: "/models/grass_tuft_payment_002_meshopt.glb",
+    width: 6.5,
+    height: 5.8,
+    license: "Obra propia: árbol del Bonsai.blend (tools/3d/blender qr) por tools/3d/blender/49_payment_bonsai_tree.py y pasto por 48_payment_grass_from_bonsai.py",
   },
 };
 

@@ -10,7 +10,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, TrendingUp, Check } from "lucide-react";
+import { ChevronLeft, TrendingUp, Check, Clock } from "lucide-react";
+import { MealTimesSheet } from "@/components/gym/meal-times-sheet";
 import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
@@ -49,6 +50,7 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
   const adaptiveDismissed = useGymStore((s) => s.adaptiveDismissed);
   const dismissAdaptiveSuggestion = useGymStore((s) => s.dismissAdaptiveSuggestion);
   const [chartKind, setChartKind] = useCalorieChartPref();
+  const [mealTimesOpen, setMealTimesOpen] = useState(false);
 
   // Ajuste adaptativo (Fase 3): solo se puede evaluar si ya se configuró la meta con la
   // calculadora (necesitamos el TDEE calculado por fórmula para comparar contra el real).
@@ -244,7 +246,21 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
               })}
               <p className="w-full text-left px-3.5 py-3 text-sm text-white/35 cursor-default">Historial (próximamente)</p>
             </div>
+
+            <div className="flex flex-col gap-1">
+              <p className="text-[10px] uppercase tracking-[0.1em] text-white/40 px-1 mb-1" style={MONO_FONT}>
+                Tiempos de comida
+              </p>
+              <button
+                onClick={() => setMealTimesOpen(true)}
+                className="w-full flex items-center gap-2 text-left px-3.5 py-3 rounded-xl text-sm text-white/85 hover:bg-white/[0.06] cursor-pointer"
+              >
+                <Clock size={15} /> Horario de cada comida
+              </button>
+            </div>
           </div>
+
+          <MealTimesSheet open={mealTimesOpen} onClose={() => setMealTimesOpen(false)} />
 
           <ExpandSheet open={goalModalOpen} onClose={() => setGoalModalOpen(false)} title="Configuración de calorías">
             <div className="flex flex-col gap-3">

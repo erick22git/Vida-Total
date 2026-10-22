@@ -127,8 +127,8 @@ interface LeafInst {
 }
 
 /** Copa = elipsoide: centro a CANOPY_YC de alto y semi-altura CANOPY_RY (unidades de la escena; el tablero mide BOARD). */
-const CANOPY_YC = 4.2;
-const CANOPY_RY = 2.25;
+const CANOPY_YC = 4.45;
+const CANOPY_RY = 2.9;
 const CANOPY_LAYERS = 5;
 const LEAF_PALETTE = [0x56a83a, 0x78c244, 0xa2dc5c].map((c) => new THREE.Color(c));
 
@@ -144,6 +144,7 @@ export class PaymentScene {
   private treeRoot: THREE.Object3D | null = null;
   private canopyGroup = new THREE.Group();
   private canopy: { mesh: THREE.InstancedMesh; inst: LeafInst[] }[] = [];
+  private twigMesh: THREE.InstancedMesh | null = null;
   private leafGeos: THREE.BufferGeometry[] = [];
   /** Largo (en Z) de cada hoja, para escalarla al tamaño de un módulo: así el racimo no se sale de su celda. */
   private leafLen: number[] = [];
@@ -247,7 +248,7 @@ export class PaymentScene {
       this.sun = sun;
 
       this.buildBoard();
-      await Promise.all([this.loadTree(), this.loadGrass(), this.loadLeaves()]);
+      await Promise.all([this.loadTree(), this.loadGrass(), this.def.leavesUrl ? this.loadLeaves() : Promise.resolve()]);
       if (this.disposed) return;
       this.resize();
       this.ro = new ResizeObserver(() => this.resize());
@@ -392,8 +393,13 @@ export class PaymentScene {
           if (std.map) std.map.anisotropy = 4;
         }
       });
-      // El tronco viene a escala real de la escena (no se reescala por su ancho: la copa se arma aparte, sobre la matriz).
-      this.treeBaseScale = 1;
+      // Con copa propia del GLB (bonsái) se escala por su ancho al tablero; con copa armada desde la matriz (`leavesUrl`) el tronco va a escala real.
+      if (this.def.leavesUrl) this.treeBaseScale = 1;
+      else {
+        const box = new THREE.Box3().setFromObject(root);
+        const size = box.getSize(new THREE.Vector3());
+        this.treeBaseScale = (BOARD * 0.9) / Math.max(size.x, size.z, 0.001);
+      }
       root.scale.setScalar(this.treeBaseScale);
       root.position.set(0, this.hLight, 0);
       this.treeRoot = root;
@@ -452,7 +458,7 @@ export class PaymentScene {
 
   private async loadLeaves() {
     try {
-      const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(this.def.leavesUrl);
+      const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(this.def.leavesUrl!);
       gltf.scene.updateMatrixWorld(true);
       const found: THREE.Mesh[] = [];
       gltf.scene.traverse((o) => {
@@ -490,24 +496,71 @@ export class PaymentScene {
       c.mesh.dispose();
     }
     this.canopy = [];
+    const hubs = this.makeHubs();
+    const anchors: { x: number; z: number; yTop: number; hub: THREE.Vector3 }[] = [];
+    const knotList: { pos: THREE.Vector3; parent: THREE.Vector3 }[] = [];
     let seed = 1234;
     const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
     const c = this.cellSize;
-    const R = BOARD * 0.5;
+    const R = BOARD * 0.46;
     const per = this.leafGeos.map(() => [] as { leaf: LeafInst; color: THREE.Color }[]);
     const col = new THREE.Color();
     let n = 0;
+    const NN = this.matrix.size + QUIET * 2;
+    const BLOCK = 5; // módulos por lado de cada "nudo" de ramitas
+    const heightOf = (cd: { x: number; z: number }) => {
+      // Cúpula sobre la posición EXACTA del módulo: solo cambia la altura, nunca el X/Z. Los módulos de las esquinas (fuera del
+      // círculo) cuelgan hacia afuera y abajo como el borde del follaje: silueta redonda, no cuadrada.
+      const rRaw = Math.hypot(cd.x, cd.z) / R;
+      const r = Math.min(0.96, rRaw);
+      const half = Math.pow(Math.sqrt(1 - r * r), 0.85);
+      return CANOPY_YC + CANOPY_RY * half - Math.max(0, rRaw - 0.96) * 2.4;
+    };
+    const blockKey = (cd: { x: number; z: number }) => {
+      const ix = Math.round(cd.x / c + NN / 2 - 0.5);
+      const iz = Math.round(cd.z / c + NN / 2 - 0.5);
+      return Math.floor(ix / BLOCK) * 1000 + Math.floor(iz / BLOCK);
+    };
+    const acc = new Map<number, { sx: number; sz: number; sy: number; n: number }>();
     for (const cd of this.cellData) {
       if (!cd.dark) continue;
-      // Cúpula sobre la posición EXACTA del módulo: solo cambia la altura, nunca el X/Z. Los módulos de las esquinas (fuera del
-      // círculo) se quedan en el borde de la copa en vez de colgar.
-      const r = Math.min(0.97, Math.hypot(cd.x, cd.z) / R);
-      const half = Math.sqrt(1 - r * r);
-      const yTop = CANOPY_YC + CANOPY_RY * half;
-      const yBot = CANOPY_YC - CANOPY_RY * half * 0.7;
+      const k = blockKey(cd);
+      const a = acc.get(k) ?? { sx: 0, sz: 0, sy: 0, n: 0 };
+      a.sx += cd.x;
+      a.sz += cd.z;
+      a.sy += heightOf(cd);
+      a.n++;
+      acc.set(k, a);
+    }
+    // Nudo de cada bloque: un poco por DEBAJO de las puntas y colgado de la rama principal más cercana.
+    const knots = new Map<number, THREE.Vector3>();
+    for (const [k, a] of acc) {
+      const pos = new THREE.Vector3(a.sx / a.n, a.sy / a.n - 0.95, a.sz / a.n);
+      let parent = hubs[0];
+      let bd = Infinity;
+      for (const h of hubs) {
+        const dd = (h.x - pos.x) ** 2 + (h.z - pos.z) ** 2;
+        if (dd < bd) {
+          bd = dd;
+          parent = h;
+        }
+      }
+      knots.set(k, pos);
+      knotList.push({ pos, parent });
+    }
+    for (const cd of this.cellData) {
+      if (!cd.dark) continue;
+      const yTop = heightOf(cd);
+      const hub = knots.get(blockKey(cd))!; // rama (nudo) a la que se pega este racimo
+      anchors.push({ x: cd.x, z: cd.z, yTop, hub });
       for (let layer = 0; layer < CANOPY_LAYERS; layer++) {
         const t = layer / (CANOPY_LAYERS - 1); // 0 = capa de arriba, 1 = la de abajo (por dentro)
-        const yBase = yTop + (yBot - yTop) * t;
+        // Capa 0 = la punta de la rama, EXACTAMENTE sobre el módulo. Las de abajo se corren hacia atrás POR LA MISMA RAMA (hacia su
+        // nudo), así las hojas crecen a lo largo de la rama y no flotan; desde arriba solo se ve la capa de la punta.
+        const along = t * 0.72;
+        const px = cd.x + (hub.x - cd.x) * along;
+        const pz = cd.z + (hub.z - cd.z) * along;
+        const yBase = yTop + (hub.y - yTop) * along;
         const shade = 1 - 0.42 * t; // las capas de adentro quedan más oscuras (sombra dentro de la copa)
         const hRel = THREE.MathUtils.clamp((yBase - (CANOPY_YC - CANOPY_RY)) / (CANOPY_RY * 2), 0, 1);
         for (let j = 0; j < 3; j++) {
@@ -516,9 +569,9 @@ export class PaymentScene {
           per[v].push({
             color: col.clone(),
             leaf: {
-              x: cd.x + (rand() - 0.5) * c * 0.22,
+              x: px + (rand() - 0.5) * c * 0.22,
               y: yBase + (rand() - 0.5) * 0.06,
-              z: cd.z + (rand() - 0.5) * c * 0.22,
+              z: pz + (rand() - 0.5) * c * 0.22,
               yaw: rand() * Math.PI * 2,
               tilt: -0.15 + rand() * 0.95,
               roll: (rand() - 0.5) * 0.9,
@@ -541,9 +594,71 @@ export class PaymentScene {
       this.canopyGroup.add(mesh);
       return { mesh, inst: per[i].map((p) => p.leaf) };
     });
+    this.placeTwigs(anchors, knotList);
   }
 
-  /** Pasto SOLO en los módulos oscuros del QR (dos matas por módulo, repartidas entre las variantes): las líneas negras son pasto. */
+  /**
+   * Ramas de la copa: del tope del tronco salen ramas gruesas a unos "nudos" repartidos bajo la copa, de cada nudo salen ramitas finas
+   * hasta el punto ancla de cada módulo; las hojas se reparten a lo largo de esa ramita. Así cada racimo está PEGADO a una rama: las
+   * hojas crecen donde llega una rama y no quedan flotando. Las ramitas terminan exactamente en el ancla (X/Z del módulo).
+   */
+  /** Nudos de la copa (bajo ella, repartidos en espiral): de ahí salen las ramas hacia las puntas. */
+  private makeHubs(): THREE.Vector3[] {
+    const R = BOARD * 0.46;
+    const N = 16;
+    const hubs: THREE.Vector3[] = [];
+    for (let i = 0; i < N; i++) {
+      const ang = i * 2.39996;
+      const rad = R * (0.12 + 0.62 * Math.sqrt((i + 0.5) / N));
+      hubs.push(new THREE.Vector3(Math.cos(ang) * rad, CANOPY_YC - CANOPY_RY * 0.5 + 0.3 * Math.sin(i * 1.7), Math.sin(ang) * rad));
+    }
+    return hubs;
+  }
+
+  private placeTwigs(anchors: { x: number; z: number; yTop: number; hub: THREE.Vector3 }[], knotList: { pos: THREE.Vector3; parent: THREE.Vector3 }[]) {
+    if (this.twigMesh) {
+      this.canopyGroup.remove(this.twigMesh);
+      this.twigMesh.geometry.dispose();
+      (this.twigMesh.material as THREE.Material).dispose();
+      this.twigMesh.dispose();
+      this.twigMesh = null;
+    }
+    if (anchors.length === 0) return;
+    const hubs = this.makeHubs();
+    const top = new THREE.Vector3(0, 3.0, 0);
+    const segs: { a: THREE.Vector3; b: THREE.Vector3; r: number }[] = [];
+    // Las ramas se arquean (suben a la mitad y bajan hacia la punta) en vez de ser varillas rectas.
+    const arch = (from: THREE.Vector3, to: THREE.Vector3, r0: number, r1: number, lift: number) => {
+      const mid = from.clone().lerp(to, 0.5);
+      mid.y += from.distanceTo(to) * lift;
+      segs.push({ a: from, b: mid, r: r0 }, { a: mid, b: to, r: r1 });
+    };
+    for (const h of hubs) arch(top, h, 0.085, 0.06, 0.22);
+    for (const k of knotList) arch(k.parent, k.pos, 0.045, 0.03, 0.26);
+    for (const an of anchors) segs.push({ a: an.hub, b: new THREE.Vector3(an.x, an.yTop, an.z), r: 0.017 });
+    const geo = new THREE.CylinderGeometry(1, 1, 1, 5, 1, false);
+    geo.translate(0, 0.5, 0);
+    const mesh = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 0.9 }), segs.length);
+    const d = this.tmpObj;
+    const dir = new THREE.Vector3();
+    const up = new THREE.Vector3(0, 1, 0);
+    segs.forEach((sg, i) => {
+      dir.subVectors(sg.b, sg.a);
+      const len = dir.length();
+      d.position.copy(sg.a);
+      d.quaternion.setFromUnitVectors(up, dir.normalize());
+      d.scale.set(sg.r, len, sg.r);
+      d.updateMatrix();
+      mesh.setMatrixAt(i, d.matrix);
+    });
+    d.quaternion.identity();
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    this.twigMesh = mesh;
+    this.canopyGroup.add(mesh);
+  }
+
+  /** Pasto SOLO en los módulos oscuros del QR (varias matas por módulo (denso), repartidas entre las variantes): las líneas negras son pasto. */
   private placeGrass() {
     if (this.grassMeshes.length === 0) return;
     let seed = 91;
@@ -553,8 +668,8 @@ export class PaymentScene {
     let n = 0;
     for (const cd of this.cellData) {
       if (!cd.dark) continue;
-      for (let j = 0; j < 2; j++) {
-        const s0 = c * (5.6 + rand() * 1.6);
+      for (let j = 0; j < 10; j++) {
+        const s0 = c * (5.2 + rand() * 1.8);
         per[n++ % per.length].push({
           x: cd.x + (rand() - 0.5) * c * 0.4,
           z: cd.z + (rand() - 0.5) * c * 0.4,
@@ -574,7 +689,7 @@ export class PaymentScene {
       fresh.count = per[i].length;
       const tint = new THREE.Color();
       per[i].forEach((p, k) => {
-        tint.setHSL(0.27 + p.tone * 0.07, 0.62, 0.42 + p.tone * 0.16);
+        tint.setHSL(0.26 + p.tone * 0.07, 0.75, 0.50 + p.tone * 0.16);
         fresh.setColorAt(k, tint);
       });
       if (fresh.instanceColor) fresh.instanceColor.needsUpdate = true;
