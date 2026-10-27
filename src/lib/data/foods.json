@@ -526,7 +526,7 @@
     },
     "fdcIdCrudo": 173944,
     "unSoloEstado": true,
-    "photoUrl": "/foods/platano.png"
+    "photoUrl": "/foods/platano.jpg"
   },
   {
     "id": "manzana",
@@ -2759,7 +2759,8 @@
       "manganeso": 0.14
     },
     "unSoloEstado": true,
-    "fuente": "DERIVADO: 40g de nuestro 'pan-blanco' (fdcId 174924) + 60g de 'Avocados, raw, all commercial varieties' (SR Legacy #171705) para los 100g declarados."
+    "fuente": "DERIVADO: 40g de nuestro 'pan-blanco' (fdcId 174924) + 60g de 'Avocados, raw, all commercial varieties' (SR Legacy #171705) para los 100g declarados.",
+    "photoUrl": "/foods/pan-con-palta.jpg"
   },
   {
     "id": "pan-con-huevo",
@@ -2807,7 +2808,8 @@
       "manganeso": 0.09
     },
     "unSoloEstado": true,
-    "fuente": "DERIVADO: 60g de nuestro 'pan-blanco' (fdcId 174924) + 50g de 'Egg, whole, cooked, fried' (SR Legacy #173423) para los 110g declarados."
+    "fuente": "DERIVADO: 60g de nuestro 'pan-blanco' (fdcId 174924) + 50g de 'Egg, whole, cooked, fried' (SR Legacy #173423) para los 110g declarados.",
+    "photoUrl": "/foods/pan-con-huevo.jpg"
   },
   {
     "id": "tostadas-francesas",
@@ -2842,7 +2844,8 @@
       "cobre": 0.12,
       "manganeso": 0.55
     },
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/tostadas-francesas.jpg"
   },
   {
     "id": "panqueques",
@@ -2853,7 +2856,8 @@
     "proteina": 8,
     "carbos": 62,
     "grasas": 11,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/panqueques.jpg"
   },
   {
     "id": "omelette",
@@ -2864,7 +2868,8 @@
     "proteina": 18,
     "carbos": 2,
     "grasas": 20,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/omelette.jpg"
   },
   {
     "id": "smoothie-frutas",
@@ -2902,7 +2907,8 @@
       "cobre": 0.12,
       "manganeso": 0.23
     },
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/smoothie-frutas.jpg"
   },
   {
     "id": "ensalada-frutas",
@@ -2913,7 +2919,8 @@
     "proteina": 1.5,
     "carbos": 27,
     "grasas": 0.4,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/ensalada-frutas.jpg"
   },
   {
     "id": "palomitas",
@@ -2924,7 +2931,8 @@
     "proteina": 3.3,
     "carbos": 22,
     "grasas": 1.3,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/palomitas.jpg"
   },
   {
     "id": "galletas-integrales",
@@ -2935,7 +2943,8 @@
     "proteina": 2.5,
     "carbos": 21,
     "grasas": 4,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/galletas-integrales.jpg"
   },
   {
     "id": "yogur-frutas",
@@ -2946,7 +2955,8 @@
     "proteina": 5,
     "carbos": 22,
     "grasas": 3.5,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/yogur-frutas.jpg"
   },
   {
     "id": "quinua-ensalada",
@@ -2957,7 +2967,8 @@
     "proteina": 9,
     "carbos": 40,
     "grasas": 9,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/quinua-ensalada.jpg"
   },
   {
     "id": "wrap-pollo",
@@ -3001,7 +3012,8 @@
     },
     "fdcIdCrudo": 2707017,
     "unSoloEstado": true,
-    "fuente": "Match directo: Survey/FNDDS 'Chicken fillet wrap sandwich, grilled, from fast food'."
+    "fuente": "Match directo: Survey/FNDDS 'Chicken fillet wrap sandwich, grilled, from fast food'.",
+    "photoUrl": "/foods/wrap-pollo.jpg"
   },
   {
     "id": "sopa-verduras",
@@ -3039,7 +3051,8 @@
       "cobre": 0.12,
       "manganeso": 0.26
     },
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/sopa-verduras.jpg"
   },
   {
     "id": "pescado-frito",
@@ -3050,7 +3063,8 @@
     "proteina": 30,
     "carbos": 10,
     "grasas": 18,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/pescado-frito.jpg"
   },
   {
     "id": "anticuchos",
@@ -3064,7 +3078,8 @@
     "verificado": false,
     "fibra": 0.3,
     "azucares": 0.7,
-    "fuente": "NutriScan, ficha pública Anticuchos"
+    "fuente": "NutriScan, ficha pública Anticuchos",
+    "photoUrl": "/foods/anticuchos.jpg"
   },
   {
     "id": "tamal",
@@ -3114,7 +3129,8 @@
     },
     "fdcIdCrudo": 167664,
     "unSoloEstado": true,
-    "fuente": "APROXIMACION: 'Restaurant, Latino, tamale, corn' (SR Legacy) - tamal mexicano de maiz, no especificamente boliviano/andino (humita), pero es el analogo mas cercano en FDC."
+    "fuente": "APROXIMACION: 'Restaurant, Latino, tamale, corn' (SR Legacy) - tamal mexicano de maiz, no especificamente boliviano/andino (humita), pero es el analogo mas cercano en FDC.",
+    "photoUrl": "/foods/tamal.jpg"
   },
   {
     "id": "empanada",
@@ -3152,7 +3168,8 @@
       "cobre": 0.1,
       "manganeso": 0.27
     },
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/empanada.jpg"
   },
   {
     "id": "causa-rellena",
@@ -3164,7 +3181,8 @@
     "carbos": 13.8,
     "grasas": 10,
     "verificado": false,
-    "fuente": "FatSecret Chile, ficha pública Causa de Pollo, cruzado con dato derivado de MINSA Perú"
+    "fuente": "FatSecret Chile, ficha pública Causa de Pollo, cruzado con dato derivado de MINSA Perú",
+    "photoUrl": "/foods/causa-rellena.jpg"
   },
   {
     "id": "papa-a-la-huancaina",
@@ -3177,7 +3195,8 @@
     "grasas": 4.1,
     "verificado": false,
     "fibra": 1.3,
-    "fuente": "INS Perú, Tablas Peruanas de Composición de Alimentos (tablasperuanas.ins.gob.pe/node/2057)"
+    "fuente": "INS Perú, Tablas Peruanas de Composición de Alimentos (tablasperuanas.ins.gob.pe/node/2057)",
+    "photoUrl": "/foods/papa-a-la-huancaina.jpg"
   },
   {
     "id": "choclo-con-queso",
@@ -3226,7 +3245,8 @@
       "manganeso": 0.18
     },
     "unSoloEstado": true,
-    "fuente": "DERIVADO: 100g de 'Corn, sweet, yellow, cooked, boiled, drained, without salt' (SR Legacy #169999) + 50g de 'Cheese, fresh, queso fresco' (SR Legacy #172223) para los 150g declarados."
+    "fuente": "DERIVADO: 100g de 'Corn, sweet, yellow, cooked, boiled, drained, without salt' (SR Legacy #169999) + 50g de 'Cheese, fresh, queso fresco' (SR Legacy #172223) para los 150g declarados.",
+    "photoUrl": "/foods/choclo-con-queso.jpg"
   },
   {
     "id": "helado",
@@ -3237,7 +3257,8 @@
     "proteina": 3.5,
     "carbos": 24,
     "grasas": 11,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/helado.jpg"
   },
   {
     "id": "torta-chocolate",
@@ -3248,7 +3269,8 @@
     "proteina": 5,
     "carbos": 50,
     "grasas": 17,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/torta-chocolate.jpg"
   },
   {
     "id": "gelatina",
@@ -3259,7 +3281,8 @@
     "proteina": 1.5,
     "carbos": 14,
     "grasas": 0,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/gelatina.jpg"
   },
   {
     "id": "miel",
@@ -3270,7 +3293,8 @@
     "proteina": 0.1,
     "carbos": 17.3,
     "grasas": 0,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/miel.jpg"
   },
   {
     "id": "mermelada",
@@ -3281,7 +3305,8 @@
     "proteina": 0.1,
     "carbos": 14,
     "grasas": 0,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/mermelada.jpg"
   },
   {
     "id": "leche-almendras",
@@ -3312,7 +3337,8 @@
       "cobre": 0.07,
       "manganeso": 0.14
     },
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/leche-almendras.jpg"
   },
   {
     "id": "leche-avena",
@@ -3323,7 +3349,8 @@
     "proteina": 3,
     "carbos": 16,
     "grasas": 5,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/leche-avena.jpg"
   },
   {
     "id": "edamame",
@@ -3334,7 +3361,8 @@
     "proteina": 11,
     "carbos": 8.9,
     "grasas": 5.2,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/edamame.jpg"
   },
   {
     "id": "hummus",
@@ -3368,7 +3396,8 @@
       "cobre": 0.1,
       "manganeso": 0.32
     },
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/hummus.jpg"
   },
   {
     "id": "aceitunas",
@@ -3416,7 +3445,8 @@
     },
     "fdcIdCrudo": 169094,
     "unSoloEstado": true,
-    "fuente": "Match directo: 'Olives, ripe, canned (small-extra large)' (SR Legacy) - aceituna negra/madura."
+    "fuente": "Match directo: 'Olives, ripe, canned (small-extra large)' (SR Legacy) - aceituna negra/madura.",
+    "photoUrl": "/foods/aceitunas.jpg"
   },
   {
     "id": "pepinillo",
@@ -3427,7 +3457,8 @@
     "proteina": 0.3,
     "carbos": 1.4,
     "grasas": 0.1,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/pepinillo.jpg"
   },
   {
     "id": "champinones",
@@ -3438,7 +3469,8 @@
     "proteina": 3.1,
     "carbos": 3.3,
     "grasas": 0.5,
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/champinones.jpg"
   },
   {
     "id": "berenjena",
@@ -3476,7 +3508,8 @@
       "cobre": 0.06,
       "manganeso": 0.11
     },
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/berenjena.jpg"
   },
   {
     "id": "calabaza",
@@ -3511,7 +3544,8 @@
       "cobre": 0.09,
       "manganeso": 0.24
     },
-    "verificado": false
+    "verificado": false,
+    "photoUrl": "/foods/calabaza.jpg"
   },
   {
     "id": "muslo-pollo-asado",
@@ -3549,7 +3583,8 @@
       "manganeso": 0.02
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/muslo-pollo-asado.jpg"
   },
   {
     "id": "bife-lomo-parrilla",
@@ -3585,7 +3620,8 @@
       "cobre": 0.16
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/bife-lomo-parrilla.jpg"
   },
   {
     "id": "pierna-cordero-horneada",
@@ -3619,7 +3655,8 @@
       "manganeso": 0.03
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/pierna-cordero-horneada.jpg"
   },
   {
     "id": "pavo-molido-cocido",
@@ -3656,7 +3693,8 @@
       "manganeso": 0.01
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/pavo-molido-cocido.jpg"
   },
   {
     "id": "queso-mozzarella",
@@ -3694,7 +3732,8 @@
       "manganeso": 0.03
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/queso-mozzarella.jpg"
   },
   {
     "id": "queso-parmesano",
@@ -3732,7 +3771,8 @@
       "manganeso": 0.07
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/queso-parmesano.jpg"
   },
   {
     "id": "frijoles-rojos",
@@ -3823,7 +3863,8 @@
     },
     "unSoloEstado": false,
     "estadoDefault": "cocido",
-    "fuente": "Ya existia definido como el estado COCIDO (127 kcal/100g) - se confirma con fdcId real (SR Legacy #175194) y se agrega el CRUDO (frijol seco, #173744, 337 kcal/100g)."
+    "fuente": "Ya existia definido como el estado COCIDO (127 kcal/100g) - se confirma con fdcId real (SR Legacy #175194) y se agrega el CRUDO (frijol seco, #173744, 337 kcal/100g).",
+    "photoUrl": "/foods/frijoles-rojos.jpg"
   },
   {
     "id": "uvas-verdes",
@@ -3847,7 +3888,8 @@
       "manganeso": 0.08
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/uvas-verdes.jpg"
   },
   {
     "id": "sandia",
@@ -3884,7 +3926,8 @@
       "manganeso": 0.04
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/sandia.jpg"
   },
   {
     "id": "mango",
@@ -3921,7 +3964,8 @@
       "manganeso": 0.06
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/mango.jpg"
   },
   {
     "id": "pina",
@@ -3949,7 +3993,8 @@
       "manganeso": 0.87
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/pina.jpg"
   },
   {
     "id": "pera",
@@ -3986,7 +4031,8 @@
       "manganeso": 0.05
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/pera.jpg"
   },
   {
     "id": "vainitas-cocidas",
@@ -4023,7 +4069,8 @@
       "manganeso": 0.29
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/vainitas-cocidas.jpg"
   },
   {
     "id": "coliflor-cocida",
@@ -4060,7 +4107,8 @@
       "manganeso": 0.13
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/coliflor-cocida.jpg"
   },
   {
     "id": "huevo-revuelto",
@@ -4098,7 +4146,8 @@
       "manganeso": 0.02
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/huevo-revuelto.jpg"
   },
   {
     "id": "huevo-frito",
@@ -4136,7 +4185,8 @@
       "manganeso": 0.03
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/huevo-frito.jpg"
   },
   {
     "id": "huevo-duro",
@@ -4174,7 +4224,8 @@
       "manganeso": 0.03
     },
     "verificado": false,
-    "configurado": true
+    "configurado": true,
+    "photoUrl": "/foods/huevo-duro.jpg"
   },
   {
     "id": "cebolla-caramelizada",
@@ -4202,7 +4253,8 @@
       "cobre": 0.06,
       "manganeso": 0.27
     },
-    "fuente": "DERIVADO, no un fdcId único de FDC. Macros (97 kcal, 1.1g prot, 6.5g grasa, 9.3g carbos, 1.7g fibra, 4.2g azúcares por 100g) = receta típica de 1 cda aceite/mantequilla por 2 cebollas medianas, con pérdida de agua ~45% al caramelizar (185g de cebolla cruda -> 100g de resultado). Vitaminas/minerales = los de cebolla cruda amarilla (USDA FDC fdcId 790646, \"Onions, yellow, raw\", Foundation) escalados x1.85 (solubles en agua/estables al calor en su mayoría, no cambian por la cocción como sí cambian los macros). Sodio se deja vacío (depende de la sal añadida en la receta). Nota: el fdcId 790652 dado originalmente resultó ser \"Bananas, overripe\" (verificado contra la API) — se usó 790646 en su lugar."
+    "fuente": "DERIVADO, no un fdcId único de FDC. Macros (97 kcal, 1.1g prot, 6.5g grasa, 9.3g carbos, 1.7g fibra, 4.2g azúcares por 100g) = receta típica de 1 cda aceite/mantequilla por 2 cebollas medianas, con pérdida de agua ~45% al caramelizar (185g de cebolla cruda -> 100g de resultado). Vitaminas/minerales = los de cebolla cruda amarilla (USDA FDC fdcId 790646, \"Onions, yellow, raw\", Foundation) escalados x1.85 (solubles en agua/estables al calor en su mayoría, no cambian por la cocción como sí cambian los macros). Sodio se deja vacío (depende de la sal añadida en la receta). Nota: el fdcId 790652 dado originalmente resultó ser \"Bananas, overripe\" (verificado contra la API) — se usó 790646 en su lugar.",
+    "photoUrl": "/foods/cebolla-caramelizada.jpg"
   },
   {
     "id": "pollo-apanado",
@@ -4251,7 +4303,8 @@
       "manganeso": 0.15
     },
     "fdcIdCrudo": 170718,
-    "unSoloEstado": true
+    "unSoloEstado": true,
+    "photoUrl": "/foods/pollo-apanado.jpg"
   },
   {
     "id": "milanesa-pollo",
@@ -4296,7 +4349,8 @@
     "fdcIdCrudo": 2706089,
     "unSoloEstado": true,
     "configurado": true,
-    "fuente": "Match directo: 'Chicken fillet, breaded' (Survey/FNDDS #2706089) — filete entero empanizado, no trozos/tenders/nuggets (eso ya está cubierto por 'pollo-apanado', fdcId 170718, que es otra preparación). Ya viene frito — un solo estado. Porción asumida: 1 filete mediano = 150 g."
+    "fuente": "Match directo: 'Chicken fillet, breaded' (Survey/FNDDS #2706089) — filete entero empanizado, no trozos/tenders/nuggets (eso ya está cubierto por 'pollo-apanado', fdcId 170718, que es otra preparación). Ya viene frito — un solo estado. Porción asumida: 1 filete mediano = 150 g.",
+    "photoUrl": "/foods/milanesa-pollo.jpg"
   },
   {
     "id": "chuno",
@@ -4309,7 +4363,8 @@
     "carbos": 0,
     "grasas": 0,
     "configurado": false,
-    "fuente": "PENDIENTE: sin match en USDA FoodData Central (búsqueda 'chuño'/'papa deshidratada/freeze dried' no trajo nada relevante). Falta un dato de humedad/ficha nutricional real del chuño para derivarlo (mismo criterio que la cebolla caramelizada) — no se inventa nada hasta tenerlo. No se registra en una comida hasta completarlo."
+    "fuente": "PENDIENTE: sin match en USDA FoodData Central (búsqueda 'chuño'/'papa deshidratada/freeze dried' no trajo nada relevante). Falta un dato de humedad/ficha nutricional real del chuño para derivarlo (mismo criterio que la cebolla caramelizada) — no se inventa nada hasta tenerlo. No se registra en una comida hasta completarlo.",
+    "photoUrl": "/foods/chuno.jpg"
   },
   {
     "id": "jamon",
@@ -4345,7 +4400,8 @@
     "fdcIdCrudo": 746952,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match: \"Ham, sliced, restaurant\" (Foundation #746952)"
+    "fuente": "Match: \"Ham, sliced, restaurant\" (Foundation #746952)",
+    "photoUrl": "/foods/jamon.jpg"
   },
   {
     "id": "tocino",
@@ -4425,7 +4481,8 @@
     "azucares": 0.35,
     "alcohol": 0,
     "epa": 4,
-    "dha": 5
+    "dha": 5,
+    "photoUrl": "/foods/tocino.jpg"
   },
   {
     "id": "salchicha",
@@ -4517,7 +4574,8 @@
     "verificado": false,
     "fdcIdCrudo": 746781,
     "unSoloEstado": true,
-    "fuente": "Match: \"Sausage, pork, chorizo, link or ground, cooked, pan-fried\" (Foundation #746781)"
+    "fuente": "Match: \"Sausage, pork, chorizo, link or ground, cooked, pan-fried\" (Foundation #746781)",
+    "photoUrl": "/foods/chorizo.jpg"
   },
   {
     "id": "mortadela",
@@ -4567,7 +4625,8 @@
     "verificado": false,
     "fdcIdCrudo": 174573,
     "unSoloEstado": true,
-    "fuente": "Match: \"Mortadella, beef, pork\" (SR Legacy #174573)"
+    "fuente": "Match: \"Mortadella, beef, pork\" (SR Legacy #174573)",
+    "photoUrl": "/foods/mortadela.jpg"
   },
   {
     "id": "chuleta-cerdo",
@@ -4640,7 +4699,8 @@
       },
       "fdcId": 168380
     },
-    "fuente": "Match: \"Pork, chop, center cut, raw\" (Foundation #2727575) · cocido: \"Pork, fresh, blade, (chops), boneless, separable lean and fat, cooked, broiled\" (SR Legacy #168380)"
+    "fuente": "Match: \"Pork, chop, center cut, raw\" (Foundation #2727575) · cocido: \"Pork, fresh, blade, (chops), boneless, separable lean and fat, cooked, broiled\" (SR Legacy #168380)",
+    "photoUrl": "/foods/chuleta-cerdo.jpg"
   },
   {
     "id": "costilla-cerdo",
@@ -4735,7 +4795,8 @@
     "azucares": 0,
     "alcohol": 0,
     "epa": 0,
-    "dha": 0
+    "dha": 0,
+    "photoUrl": "/foods/costilla-cerdo.jpg"
   },
   {
     "id": "bistec-res",
@@ -4809,7 +4870,8 @@
       },
       "fdcId": 172129
     },
-    "fuente": "Match: \"Beef, round, top round, boneless, choice, raw\" (Foundation #2646173) · cocido: \"Beef, round, outside round, bottom round, steak, separable lean and fat, trimmed to 0\" fat, choice, cooked, grilled\" (SR Legacy #172129)"
+    "fuente": "Match: \"Beef, round, top round, boneless, choice, raw\" (Foundation #2646173) · cocido: \"Beef, round, outside round, bottom round, steak, separable lean and fat, trimmed to 0\" fat, choice, cooked, grilled\" (SR Legacy #172129)",
+    "photoUrl": "/foods/bistec-res.jpg"
   },
   {
     "id": "higado-res",
