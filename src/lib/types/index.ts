@@ -528,6 +528,8 @@ export interface WalkSession {
   distanceKm?: number;
   durationSeconds?: number;
   kcal?: number;
+  /** Por qué terminó: a mano, por quedarse quieto, o porque se perdió la señal/se cerró la app. */
+  endReason?: "manual" | "inactividad" | "sin_senal";
 }
 
 // ---------- Rank / SP per exercise ----------

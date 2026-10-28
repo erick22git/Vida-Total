@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { localDayKey } from "@/lib/gym/kegel-dates";
 import { DEFAULT_VESSELS, type WaterVessel } from "@/lib/gym/water-vessels";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { userScopedLocalStorage } from "./scoped-storage";
@@ -145,6 +146,9 @@ export interface GymProfile {
 export interface GymState {
   // ---------- Nutrition ----------
   calorieGoal: number;
+  /** Cuándo cambió la meta calórica (fecha local + kcal) — para medir el cumplimiento desde que empezó el plan
+   * vigente (ver lib/nutrition/plan-adherence.ts). Solo local. */
+  calorieGoalHistory: { date: string; kcal: number }[];
   proteinGoal: number;
   carbsGoal: number;
   fatGoal: number;
@@ -371,7 +375,7 @@ export interface GymState {
   addWalkPoint: (point: { lat: number; lng: number; timestampMs: number }) => void;
   /** Cierra la caminata en curso con su resumen ya calculado (distancia/duración/kcal) y la agrega al
    * historial. Sin caminata activa, no hace nada. */
-  finishWalkSession: (summary: { distanceKm: number; durationSeconds: number; kcal: number }) => void;
+  finishWalkSession: (summary: { distanceKm: number; durationSeconds: number; kcal: number; endReason?: WalkSession["endReason"] }) => void;
   discardActiveWalk: () => void;
   removeWalkSession: (id: string) => void;
 
@@ -408,6 +412,7 @@ export const useGymStore = create<GymState>()(
     (set, get) => ({
       // Nutrition
       calorieGoal: 2000,
+      calorieGoalHistory: [],
       proteinGoal: 140,
       carbsGoal: 220,
       fatGoal: 60,
@@ -1513,6 +1518,15 @@ let settingsDebounce: ReturnType<typeof setTimeout> | null = null;
 let workoutStateDebounce: ReturnType<typeof setTimeout> | null = null;
 
 if (typeof window !== "undefined") {
+  // Registra cada cambio de meta calórica (no la primera carga) para saber desde cuándo rige el plan actual.
+  useGymStore.subscribe((state, prevState) => {
+    if (state.calorieGoal === prevState.calorieGoal || isHydratingFromRemote) return;
+    const date = localDayKey(new Date());
+    const hist = state.calorieGoalHistory ?? [];
+    const withoutToday = hist.filter((h) => h.date !== date);
+    useGymStore.setState({ calorieGoalHistory: [...withoutToday, { date, kcal: state.calorieGoal }].slice(-30) });
+  });
+
   useGymStore.subscribe((state, prevState) => {
     if (isHydratingFromRemote) return;
     const uidUser = getCurrentUserId();

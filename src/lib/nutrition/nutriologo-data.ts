@@ -5,10 +5,11 @@
  * contador de Calorías — día por día, en vez de reimplementar el escalado de nutrientes por alimento.
  */
 import type { LoggedFood, Food } from "@/lib/types";
+import { localDayKey } from "@/lib/gym/kegel-dates";
 import { activeLoggedFoods, nutrientDayReport, parsePorcionGramos, scaleMicronutrients } from "@/lib/food-utils";
 
 function dayKey(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return localDayKey(d);
 }
 
 /** Un array por nutriente con el total de cada día de la ventana QUE TUVO dato para ese nutriente — un
@@ -20,8 +21,8 @@ export function dailyMicronutrientTotals(
   windowDays: number,
   today: Date = new Date(),
 ): Record<string, number[]> {
-  const windowStart = new Date(today);
-  windowStart.setDate(windowStart.getDate() - (windowDays - 1));
+  // Inicio de la ventana a medianoche local: con la hora actual se perdían los registros madrugadores del día más viejo.
+  const windowStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (windowDays - 1));
 
   const byDay = new Map<string, LoggedFood[]>();
   for (const f of activeLoggedFoods(loggedFoods)) {

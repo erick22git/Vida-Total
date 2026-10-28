@@ -95,3 +95,28 @@ export function summarizeWalk(points: GeoPoint[], pesoCorporalKg: number): WalkS
     kcal: Math.round(kcal),
   };
 }
+
+// ─────────────────────────────────────────────────────────
+// Quedarse quieto y puntos poco fiables
+// ─────────────────────────────────────────────────────────
+
+/** Si en los últimos `STILL_MS` no te moviste más de `STILL_RADIUS_M` (o ya no llegan puntos), la caminata se cierra sola. */
+export const STILL_MS = 5 * 60 * 1000;
+export const STILL_RADIUS_M = 30;
+/** Un punto con precisión peor que esto (metros) se descarta: el GPS "salta" y suma distancia falsa. */
+export const MAX_ACCURACY_M = 60;
+
+/**
+ * ¿Lleva quieto todo el tiempo de `STILL_MS`? Solo se evalúa cuando la caminata ya duró al menos eso.
+ * Sin puntos recientes (se perdió la señal o se cerró la app) también cuenta como quieto: lo guardado hasta
+ * el último punto se conserva igual al cerrar la caminata.
+ */
+export function isStationary(points: GeoPoint[], nowMs: number): boolean {
+  if (points.length === 0) return false;
+  const startedMs = points[0].timestampMs;
+  if (nowMs - startedMs < STILL_MS) return false;
+  const recent = points.filter((p) => nowMs - p.timestampMs <= STILL_MS);
+  if (recent.length === 0) return true;
+  const anchor = recent[recent.length - 1];
+  return recent.every((p) => haversineDistanceKm(p, anchor) * 1000 <= STILL_RADIUS_M);
+}

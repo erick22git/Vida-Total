@@ -9,6 +9,7 @@
  */
 import type { LoggedFood, WeightEntry } from "@/lib/types";
 import { activeLoggedFoods } from "@/lib/food-utils";
+import { localDayKey } from "@/lib/gym/kegel-dates";
 import { getNutrientTargets, type TargetProfile } from "./nutrient-targets";
 import { MICRO_REFS } from "./nutrient-reference-data";
 import type { AdaptiveCalorieResult } from "@/lib/gym/calorie-adaptive";
@@ -20,22 +21,17 @@ const MIN_LOGGED_DAYS_FRACTION = 0.7;
 /** Días bajo la RDA/AI (o sobre el UL) dentro de la ventana para marcar el patrón como sostenido, no ruido de un día. */
 const SUSTAINED_FRACTION = 0.6;
 
-function dayKey(ts: number): string {
-  return new Date(ts).toISOString().slice(0, 10);
+/** Día en hora LOCAL del dispositivo: con UTC, lo registrado de noche (después de ~20:00 en UTC-4) caía en el día
+ * siguiente y la ventana perdía/duplicaba días. Las fechas "yyyy-MM-dd" (pesos) se usan tal cual. */
+function dayKey(ts: number | string): string {
+  if (typeof ts === "string" && /^\d{4}-\d{2}-\d{2}$/.test(ts)) return ts;
+  return localDayKey(new Date(ts));
 }
 
-/** "yyyy-MM-dd" (UTC) que es `n` días antes de `from` — aritmética en UTC (`setUTCDate`), nunca en hora
- * local: usar `setDate` local y comparar contra objetos `Date` en milisegundos (como hacía antes esta
- * función) dejaba el día MÁS VIEJO de la ventana afuera por una carrera de milisegundos entre el
- * momento en que se arma el dato de prueba y el momento en que `evaluate()` llama a `new Date()` — un
- * registro de exactamente "hace `windowDays-1` días" podía quedar excluido por unos pocos ms, de forma
- * no determinística (detectado con una prueba real, no mockeada: `tools/nutrition/window_real_dates_test.ts`).
- * Con comparación de STRINGS "yyyy-MM-dd" el orden lexicográfico ES el orden cronológico, sin esa
- * ambigüedad de milisegundos ni de huso horario — mismo criterio ya usado en `hypertrophy-engine.ts`. */
+/** "yyyy-MM-dd" local que es `n` días antes de `from` (comparación de strings: el orden lexicográfico es el cronológico). */
 function dayKeyNDaysBefore(from: Date, n: number): string {
-  const d = new Date(from);
-  d.setUTCDate(d.getUTCDate() - n);
-  return dayKey(d.getTime());
+  const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() - n);
+  return localDayKey(d);
 }
 
 // ============================================================================
@@ -112,7 +108,7 @@ export function evaluate(input: EvaluationInput): EvaluationResult {
 
   function nutrientEval(id: string, nombre: string, unidad: string, pick: (f: LoggedFood) => number | undefined): NutrientEvaluation {
     const values = avgOf(pick);
-    const promedioDiario = values.length > 0 ? values.reduce((a, b) => a + b.value, 0) / windowDays : 0;
+    const promedioDiario = values.length > 0 ? values.reduce((a, b) => a + b.value, 0) / values.length : 0;
     return { id, nombre, unidad, promedioDiario, diasConDato: values.length, diasEnVentana: windowDays };
   }
 
@@ -125,7 +121,7 @@ export function evaluate(input: EvaluationInput): EvaluationResult {
 
   const weightByDay = new Map<string, number[]>();
   for (const w of input.weightEntries) {
-    const k = dayKey(new Date(w.date).getTime());
+    const k = dayKey(w.date);
     if (k < windowStartKey || k > todayKey) continue;
     if (!weightByDay.has(k)) weightByDay.set(k, []);
     weightByDay.get(k)!.push(w.kg);

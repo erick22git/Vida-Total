@@ -15,20 +15,28 @@
  */
 import type { LoggedFood, WeightEntry } from "@/lib/types";
 import { activeLoggedFoods } from "@/lib/food-utils";
+import { localDayKey } from "@/lib/gym/kegel-dates";
 
 /** 1 kg de tejido corporal equivale aproximadamente a esta cantidad de kcal
  * (valor estándar usado por la mayoría de calculadoras de este tipo). */
 export const KCAL_PER_KG = 7700;
 
 export const WINDOW_DAYS = 14;
-export const MIN_WEIGH_INS_PER_WEEK = 4;
+/** 3 pesajes por semana alcanzan para un promedio semanal fiable (Steinberg et al. 2015; Helms). */
+export const MIN_WEIGH_INS_PER_WEEK = 3;
 export const MIN_LOG_DAYS_PER_WEEK = 5;
 /** Umbral de desviación entre el TDEE calculado (fórmula) y el TDEE
  * implícito (observado) para recién ahí sugerir un cambio. */
 export const DEVIATION_THRESHOLD_PCT = 0.1;
 
+/** Día en hora LOCAL (no UTC): lo registrado de noche no debe caer en el día siguiente. */
 export function dayKey(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return localDayKey(d);
+}
+
+/** Clave de día de una fecha de peso: "yyyy-MM-dd" tal cual (parsearla con `new Date` la corre un día en husos negativos). */
+export function dateStrKey(date: string): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : localDayKey(new Date(date));
 }
 
 /** "yyyy-MM-dd" (UTC) que es `n` días antes de `from` — aritmética en UTC (`setUTCDate`), nunca en hora
@@ -40,16 +48,14 @@ export function dayKey(d: Date): string {
  * comparación de STRINGS "yyyy-MM-dd" el orden lexicográfico ES el orden cronológico, sin ambigüedad —
  * mismo criterio ya usado en `hypertrophy-engine.ts` y `nutrition-care-engine.ts`. */
 export function dayKeyNDaysBefore(from: Date, n: number): string {
-  const d = new Date(from);
-  d.setUTCDate(d.getUTCDate() - n);
-  return dayKey(d);
+  return dayKey(new Date(from.getFullYear(), from.getMonth(), from.getDate() - n));
 }
 
 /** Promedio de peso por día (si hubo más de una pesada el mismo día). */
 export function dailyWeightAverages(entries: WeightEntry[]): Map<string, number> {
   const byDay = new Map<string, number[]>();
   for (const e of entries) {
-    const key = dayKey(new Date(e.date));
+    const key = dateStrKey(e.date);
     if (!byDay.has(key)) byDay.set(key, []);
     byDay.get(key)!.push(e.kg);
   }
@@ -83,7 +89,7 @@ export function weightTrendRate(weightEntries: WeightEntry[], today = new Date()
   const windowStartKey = dayKeyNDaysBefore(today, WINDOW_DAYS - 1);
   const weightByDay = dailyWeightAverages(
     weightEntries.filter((w) => {
-      const k = dayKey(new Date(w.date));
+      const k = dateStrKey(w.date);
       return k >= windowStartKey && k <= todayKey;
     }),
   );
@@ -157,7 +163,7 @@ export function evaluateAdaptiveCalories(input: AdaptiveCalorieInput): AdaptiveC
 
   const weightByDay = dailyWeightAverages(
     input.weightEntries.filter((w) => {
-      const k = dayKey(new Date(w.date));
+      const k = dateStrKey(w.date);
       return k >= windowStartKey && k <= todayKey;
     }),
   );
@@ -206,7 +212,9 @@ export function evaluateAdaptiveCalories(input: AdaptiveCalorieInput): AdaptiveC
   const totalDaysBetweenTrends = 7; // punto medio semana1 vs punto medio semana2, ~7 días de diferencia
   const dailyWeightChangeKg = (trendEnd - trendStart) / totalDaysBetweenTrends;
 
-  const avgDailyIntake = activeFoods.reduce((sum, f) => sum + (f.calorias || 0), 0) / WINDOW_DAYS;
+  // Promedio sobre los días CON registro: dividir entre los 14 días de la ventana subestimaba la ingesta (y el TDEE real)
+  // cuando faltaban días, aunque se hubiera pasado el mínimo de días registrados.
+  const avgDailyIntake = activeFoods.reduce((sum, f) => sum + (f.calorias || 0), 0) / Math.max(1, logDaysSet.size);
   const impliedTDEE = avgDailyIntake - dailyWeightChangeKg * KCAL_PER_KG;
   const deviationPct = (impliedTDEE - input.calculatedTDEE) / input.calculatedTDEE;
 

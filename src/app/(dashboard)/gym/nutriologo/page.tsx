@@ -34,6 +34,7 @@ import { suggestMealPlan, formatMealPlanAsText } from "@/lib/nutrition/meal-plan
 import { correlateAllSymptoms, MIN_SYMPTOM_OCCURRENCES } from "@/lib/nutrition/symptom-correlation";
 import { estimateSessionCalories } from "@/lib/gym/exercise-calorie-burn";
 import { dailyActivityTotals, weeklyActivityTotals, monthlyActivityTotals } from "@/lib/gym/activity-aggregation";
+import { evaluatePlanAdherence, type DayStatus } from "@/lib/nutrition/plan-adherence";
 import { WalkTracker } from "@/components/gym/walk-tracker";
 import { Mascot } from "@/components/agente/mascot";
 import { useSwipeCarousel, SwipeCarouselStage, SwipeCarouselDots } from "@/components/shared/swipe-carousel";
@@ -67,7 +68,7 @@ const VOLVER_A_CALORIAS = "/gym/calorias?view=2";
 export default function NutriologoPage() {
   const router = useRouter();
   const [card, setCard] = useState(0);
-  const CARD_COUNT = 7;
+  const CARD_COUNT = 8;
   const { direction, goTo, onDragEnd } = useSwipeCarousel({ index: card, length: CARD_COUNT, onIndexChange: setCard });
 
   // Última pantalla de la cadena de Calorías: solo se vuelve hacia abajo (a la racha/año), no hay nada
@@ -119,12 +120,13 @@ export default function NutriologoPage() {
       <main className="relative flex-1 min-h-0">
         <SwipeCarouselStage itemKey={card} direction={direction} length={CARD_COUNT} onDragEnd={onDragEnd} className="absolute inset-0 overflow-y-auto no-scrollbar px-5 pb-8 pt-2">
           {card === 0 && <ResumenCard />}
-          {card === 1 && <DiagnosticosCard />}
-          {card === 2 && <IntervencionesCard />}
-          {card === 3 && <SintomasCard />}
-          {card === 4 && <AgenteCard />}
-          {card === 5 && <ActividadCard />}
-          {card === 6 && <PlanComidasCard />}
+          {card === 1 && <CumplimientoCard />}
+          {card === 2 && <DiagnosticosCard />}
+          {card === 3 && <IntervencionesCard />}
+          {card === 4 && <SintomasCard />}
+          {card === 5 && <AgenteCard />}
+          {card === 6 && <ActividadCard />}
+          {card === 7 && <PlanComidasCard />}
         </SwipeCarouselStage>
       </main>
 
@@ -167,6 +169,10 @@ function useEvaluation() {
 // ---------------------------------------------------------------------------
 function ResumenCard() {
   const { evaluation } = useEvaluation();
+  const calorieGoal = useGymStore((s) => s.calorieGoal);
+  const proteinGoal = useGymStore((s) => s.proteinGoal);
+  const carbsGoal = useGymStore((s) => s.carbsGoal);
+  const fatGoal = useGymStore((s) => s.fatGoal);
   const pct = Math.round(evaluation.adherenciaRegistro * 100);
 
   return (
@@ -189,6 +195,29 @@ function ResumenCard() {
             <span className="text-sm font-semibold tabular-nums">{evaluation.pesoTendenciaKg.toFixed(1)} kg</span>
           </div>
         )}
+        {evaluation.loggedDays > 0 && (
+          <div className="flex flex-col gap-1.5 pt-1 border-t border-white/10">
+            <span className="text-[11px] uppercase tracking-wide text-white/40 pt-2">Promedio por día registrado</span>
+            {([["calorias", "Calorías", calorieGoal], ["proteina", "Proteína", proteinGoal], ["carbos", "Carbohidratos", carbsGoal], ["grasas", "Grasas", fatGoal]] as const).map(([id, label, goal]) => {
+              const n = evaluation.nutrientes[id];
+              const avg = Math.round(n.promedioDiario);
+              return (
+                <div key={id} className="flex items-center justify-between text-sm">
+                  <span className="text-white/60">{label}</span>
+                  <span className="font-semibold tabular-nums">
+                    {avg} {n.unidad}
+                    {goal > 0 && <span className="text-white/45 font-normal"> / {goal} ({Math.round((avg / goal) * 100)} %)</span>}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {evaluation.datosSuficientes && evaluation.loggedDays > 0 && (
+          <p className="text-xs text-emerald-200/80">
+            Datos suficientes: {evaluation.loggedDays} de {evaluation.windowDays} días con registro. Los diagnósticos y el cumplimiento del plan ya se calculan con ellos.
+          </p>
+        )}
         {!evaluation.datosSuficientes && (
           <p className="text-xs text-amber-200/80">
             Todavía no hay suficientes días de registro consistente para diagnosticar patrones — seguí registrando
@@ -197,6 +226,94 @@ function ResumenCard() {
         )}
       </div>
       <p className="text-xs text-white/35">{DISCLAIMER_MEDICO}</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tarjeta: Cumplimiento del plan calórico (desde que rige la meta actual)
+// ---------------------------------------------------------------------------
+const STATUS_COLOR: Record<DayStatus, string> = { cumple: "#22c55e", cerca: "#eab308", sobre: "#ef4444", bajo: "#60a5fa" };
+const STATUS_LABEL: Record<DayStatus, string> = { cumple: "En meta (±10 %)", cerca: "Cerca (±20 %)", sobre: "Te pasaste", bajo: "Muy por debajo" };
+
+function CumplimientoCard() {
+  const loggedFoods = useGymStore((s) => s.loggedFoods);
+  const calorieGoal = useGymStore((s) => s.calorieGoal);
+  const calorieGoalHistory = useGymStore((s) => s.calorieGoalHistory);
+  const weightEntries = useGymStore((s) => s.weightEntries);
+  const measurements = useGymStore((s) => s.bodyMeasurementHistory);
+  const objetivo = useGymStore((s) => s.gymProfile?.objetivoCalorico);
+
+  const r = useMemo(
+    () => evaluatePlanAdherence({ loggedFoods, calorieGoal, goalHistory: calorieGoalHistory ?? [], weightEntries, measurements, objetivo }),
+    [loggedFoods, calorieGoal, calorieGoalHistory, weightEntries, measurements, objetivo],
+  );
+  const maxPct = Math.max(1.3, ...r.days.map((d) => d.pct));
+
+  return (
+    <div className="flex flex-col gap-4 pt-2">
+      <SectionTitle>Cumplimiento del plan</SectionTitle>
+      <div className="rounded-3xl p-4 flex flex-col gap-3 bg-white/[0.05] border border-white/10">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-white/60">Meta vigente</span>
+          <span className="font-semibold tabular-nums">{r.goalKcal} kcal</span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-white/60">Desde</span>
+          <span className="font-semibold tabular-nums">
+            {r.planStartKey} ({r.daysSincePlan} d){r.startIsEstimated ? " · aprox." : ""}
+          </span>
+        </div>
+        <p className="text-sm font-semibold leading-snug">{r.verdictText}</p>
+
+        {r.days.length > 0 && (
+          <>
+            <div className="flex items-end gap-[3px] h-20 pt-1" aria-label="Calorías por día frente a la meta">
+              {r.days.map((d) => (
+                <div key={d.dateKey} className="flex-1 min-w-[4px] rounded-t-sm" title={`${d.dateKey}: ${d.kcal} kcal`} style={{ height: `${Math.max(6, (d.pct / maxPct) * 100)}%`, background: STATUS_COLOR[d.status] }} />
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {(Object.keys(STATUS_LABEL) as DayStatus[]).map((k) => (
+                <span key={k} className="flex items-center gap-1.5 text-[11px] text-white/60">
+                  <span className="w-2 h-2 rounded-full" style={{ background: STATUS_COLOR[k] }} />
+                  {STATUS_LABEL[k]}: {r.counts[k]}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="rounded-3xl p-4 flex flex-col gap-2 bg-white/[0.05] border border-white/10">
+        <span className="text-[11px] uppercase tracking-wide text-white/40">¿Responde tu peso?</span>
+        {r.weight.deltaKg !== null ? (
+          <p className="text-sm">
+            Primera semana del plan {r.weight.startKg} kg → última semana {r.weight.nowKg} kg ({r.weight.deltaKg > 0 ? "+" : ""}
+            {r.weight.deltaKg} kg).
+            {r.weight.movedAsExpected === true && " Va en la dirección de tu objetivo."}
+            {r.weight.movedAsExpected === false && " Todavía no se mueve como se espera para tu objetivo."}
+          </p>
+        ) : (
+          <p className="text-sm text-white/55">Hacen falta al menos 8 días de plan y 2 pesajes para ver la tendencia.</p>
+        )}
+        {r.adjustment ? (
+          <p className="text-sm text-amber-200/90">{r.adjustment.text}</p>
+        ) : (
+          r.weight.movedAsExpected === false && <p className="text-xs text-white/50">Primero hay que cumplir la meta la mayoría de los días antes de tocarla.</p>
+        )}
+      </div>
+
+      <div className="rounded-3xl p-4 flex flex-col gap-2 bg-white/[0.05] border border-white/10">
+        <span className="text-[11px] uppercase tracking-wide text-white/40">Cuándo volver a pesarte y medirte</span>
+        {r.schedule.lines.map((l) => (
+          <p key={l} className="text-sm text-white/80 leading-snug">• {l}</p>
+        ))}
+        <p className="text-[10px] text-white/35 pt-1">
+          Basado en prácticas de seguimiento (Steinberg 2015; Helms 2014; Hall 2011): el peso diario fluctúa por agua y
+          sodio, la tendencia semanal es la que vale y un cambio de calorías tarda ~2 semanas en reflejarse.
+        </p>
+      </div>
     </div>
   );
 }
