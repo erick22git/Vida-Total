@@ -56,6 +56,32 @@ export function seriesDurationSec(s: KegelSeriesStep): number {
   return (s.squeezeSeconds + s.relaxSeconds) * s.reps;
 }
 
+/**
+ * Curva de una serie (una sola fuente para la gráfica, la pelotita y el nombre que se muestra):
+ *  - CONTRAE: la curva sube (los primeros SQUEEZE_RISE_SEC de la contracción; en un apretón corto, toda).
+ *  - SOSTÉN: se queda arriba el resto de la contracción (solo existe si la contracción es larga).
+ *  - RELAJA: la curva baja durante `relaxSeconds`.
+ */
+export type CurveStage = "contrae" | "sosten" | "relaja";
+export const SQUEEZE_RISE_SEC = 2;
+
+export function squeezeRiseSec(s: KegelSeriesStep): number {
+  return s.squeezeSeconds >= 4 ? SQUEEZE_RISE_SEC : s.squeezeSeconds;
+}
+
+const smoothstep01 = (x: number) => x * x * (3 - 2 * x);
+
+/** `t` = segundos desde el inicio de la serie (0 … duración de la serie). Nivel 0 = relajado, 1 = contraído al máximo. */
+export function curveAt(s: KegelSeriesStep, t: number): { level: number; stage: CurveStage } {
+  const cycle = s.squeezeSeconds + s.relaxSeconds;
+  const tm = Math.min(Math.max(t, 0), cycle * s.reps);
+  const m = tm >= cycle * s.reps ? cycle : tm % cycle;
+  const rise = squeezeRiseSec(s);
+  if (m < rise) return { level: smoothstep01(m / rise), stage: "contrae" };
+  if (m < s.squeezeSeconds) return { level: 1, stage: "sosten" };
+  return { level: 1 - smoothstep01(Math.min(1, (m - s.squeezeSeconds) / s.relaxSeconds)), stage: "relaja" };
+}
+
 function sessionDurationSec(series: KegelSeriesStep[]): number {
   const active = series.reduce((sum, s) => sum + seriesDurationSec(s), 0);
   return active + REST_BETWEEN_SERIES_SEC * Math.max(0, series.length - 1);

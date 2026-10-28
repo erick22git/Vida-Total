@@ -16,24 +16,28 @@
  *  - Volumen (de los tonos de esta sesión) y vibración — ambos editables acá mismo.
  *  - Tocar el anillo también pausa/reanuda (atajo, además del botón).
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ChevronLeft, Pause, Play, Volume2 } from "lucide-react";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { localDayKey } from "@/lib/gym/kegel-dates";
-import { SERIES_LABEL, type KegelSeriesKind, type KegelSessionDef } from "@/lib/gym/kegel-plan";
+import { SERIES_LABEL, curveAt, type CurveStage, type KegelSessionDef } from "@/lib/gym/kegel-plan";
 import { useKegelPlanStore } from "@/lib/store/kegelPlanStore";
 import { useKegelSettingsStore } from "@/lib/store/kegelSettingsStore";
 import { useGymStore } from "@/lib/store/gymStore";
 import { emitProgressEvent } from "@/lib/progress/event-bus";
-import { useKegelEngine, useWakeLock, PHASE_LABEL, PHASE_AMP, type EnginePhase } from "@/lib/gym/kegel-engine";
+import { useKegelEngine, useWakeLock, PHASE_AMP } from "@/lib/gym/kegel-engine";
 import { playSound, unlockAudio } from "@/lib/sound/sound-engine";
 import { vibrate, HAPTIC_PATTERNS } from "@/lib/haptics/haptics";
 
 const SEGMENTS = 28;
-const GRAPH_W = 300;
-const GRAPH_H = 84;
+const GRAPH_W = 320;
+const GRAPH_H = 112;
+/** Franja de arriba de la gráfica reservada al nombre que acompaña a la pelotita (la curva nunca llega ahí). */
+const GRAPH_LABEL_H = 30;
+const GRAPH_PAD = 8;
+const STAGE_LABEL: Record<CurveStage, string> = { contrae: "CONTRAE", sosten: "SOSTÉN", relaja: "RELAJA" };
 
 function SostenIcon({ active }: { active: boolean }) {
   return (
@@ -48,13 +52,6 @@ function RelajaIcon({ active }: { active: boolean }) {
       <path d="M1 7 Q 4 1 7 7 T 13 7 T 19 7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
-}
-
-/** Reemplaza el "CONTRAE/SUELTA" genérico: el sostén se nombra distinto del apretón rápido. */
-function phaseDisplayLabel(phase: EnginePhase, kind: KegelSeriesKind): string {
-  if (phase === "squeeze") return kind === "sosten" ? "SOSTÉN" : "CONTRAE";
-  if (phase === "relax") return "RELAJA";
-  return PHASE_LABEL[phase];
 }
 
 export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
@@ -128,7 +125,28 @@ export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
   }, [state.phase]);
 
   const currentSeries = def.series[state.seriesIndex] ?? def.series[0];
-  const phaseLabel = state.paused ? "PAUSA" : phaseDisplayLabel(state.phase, currentSeries.kind);
+  // Durante el descanso la gráfica ya muestra la serie que viene (la pelotita espera abajo, al inicio).
+  const graphSeriesIndex = state.phase === "rest" ? Math.min(def.series.length - 1, state.seriesIndex + 1) : state.seriesIndex;
+  const graphSeries = def.series[graphSeriesIndex] ?? def.series[0];
+  // Segundos desde el inicio de la serie que dibuja la gráfica (solo avanza en contrae/relaja; si no, la pelotita está al inicio).
+  const cycleSec = graphSeries.squeezeSeconds + graphSeries.relaxSeconds;
+  const inSeries = state.phase === "squeeze" || state.phase === "relax";
+  const seriesT = !inSeries
+    ? state.phase === "done"
+      ? cycleSec * graphSeries.reps
+      : 0
+    : state.repIndex * cycleSec + (state.phase === "squeeze" ? 0 : graphSeries.squeezeSeconds) + Math.min(state.phaseElapsed, state.phaseDuration);
+  const curve = curveAt(graphSeries, seriesT);
+  // Un solo nombre para la pastilla y para la pelotita: sale de la misma curva, así nunca se contradicen.
+  const phaseLabel = state.paused
+    ? "PAUSA"
+    : inSeries
+      ? STAGE_LABEL[curve.stage]
+      : state.phase === "rest"
+        ? "DESCANSA"
+        : state.phase === "prepare"
+          ? "PREPARA"
+          : "TERMINADO";
   const contracted = PHASE_AMP[state.phase] > 0.5;
 
   // Progreso 0–1 de la FASE actual (no de toda la sesión) — es lo que llena el anillo.
@@ -144,23 +162,22 @@ export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
     el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [state.seriesIndex]);
 
-  // Onda de la serie ACTUAL: para "sostén" es un solo arco (8 s apretar + 6 s relajar); para "relaja"
-  // son sus 15 pulsos rápidos (1 s + 1 s) uno tras otro — la forma cambia con la serie, no es fija.
-  const graphPath = useMemo(() => {
-    const { reps, squeezeSeconds: sq, relaxSeconds: rl } = currentSeries;
-    const cycle = sq + rl;
-    const totalT = cycle * reps;
-    const n = Math.max(60, reps * 14);
+  // Curva de la serie que se ve en la gráfica: suave, sin picos. Sostén = subir, quedarse arriba y bajar; relaja = pulsos rápidos.
+  const totalT = cycleSec * graphSeries.reps;
+  const xOf = (t: number) => GRAPH_PAD + (t / totalT) * (GRAPH_W - GRAPH_PAD * 2);
+  const yOf = (level: number) => GRAPH_H - GRAPH_PAD - level * (GRAPH_H - GRAPH_PAD * 2 - GRAPH_LABEL_H);
+  const curvePath = (upTo: number) => {
+    const n = Math.max(2, Math.ceil((upTo / totalT) * Math.max(90, graphSeries.reps * 24)));
     const pts: string[] = [];
     for (let i = 0; i <= n; i++) {
-      const t = (i / n) * totalT;
-      const tMod = t % cycle;
-      const f = tMod < sq ? tMod / sq : 1 - (tMod - sq) / rl;
-      const y = GRAPH_H - 6 - (0.12 + 0.82 * f) * (GRAPH_H - 18);
-      pts.push(`${i === 0 ? "M" : "L"}${((i / n) * GRAPH_W).toFixed(1)} ${y.toFixed(1)}`);
+      const t = (i / n) * upTo;
+      pts.push(`${i === 0 ? "M" : "L"}${xOf(t).toFixed(1)} ${yOf(curveAt(graphSeries, t).level).toFixed(1)}`);
     }
     return pts.join(" ");
-  }, [currentSeries]);
+  };
+  const ballX = xOf(seriesT);
+  const ballY = yOf(curve.level);
+  const labelX = Math.min(GRAPH_W - 34, Math.max(34, ballX));
 
   function togglePause() {
     if (state.paused) engine.resume();
@@ -286,14 +303,35 @@ export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
           )}
         </button>
 
-        {/* Gráfica del ciclo de la serie actual — sin números de eje. */}
-        <div className="relative w-full mt-1" style={{ maxWidth: 320 }}>
-          <div className="flex justify-between text-[10px] uppercase tracking-wide px-1 pb-1" style={{ ...MONO_FONT, color: "#aab4c8" }}>
-            <span>{currentSeries.kind === "sosten" ? "SOSTÉN" : "CONTRAE"}</span>
-            <span>RELAJA</span>
-          </div>
-          <svg viewBox={`0 0 ${GRAPH_W} ${GRAPH_H}`} className="w-full overflow-visible">
-            <path d={graphPath} stroke="#fff" strokeWidth="2" fill="none" strokeLinejoin="round" />
+        {/* Gráfica de la serie actual: la pelotita recorre la curva y su nombre (CONTRAE / SOSTÉN / RELAJA) la acompaña
+            en la franja de arriba, sin tapar la curva. */}
+        <div className="relative w-full mt-1" style={{ maxWidth: 340 }}>
+          <svg viewBox={`0 0 ${GRAPH_W} ${GRAPH_H}`} className="w-full overflow-visible" role="img" aria-label={`Gráfica: ${phaseLabel}`}>
+            <line x1={GRAPH_PAD} y1={GRAPH_H - GRAPH_PAD} x2={GRAPH_W - GRAPH_PAD} y2={GRAPH_H - GRAPH_PAD} stroke="rgba(255,255,255,0.14)" strokeWidth="1" />
+            <path d={curvePath(totalT)} stroke="rgba(255,255,255,0.28)" strokeWidth="2" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+            {seriesT > 0 && <path d={curvePath(seriesT)} stroke="#fff" strokeWidth="2.6" fill="none" strokeLinejoin="round" strokeLinecap="round" />}
+            <g key={graphSeriesIndex}>
+              <line x1={ballX} y1={GRAPH_LABEL_H - 4} x2={ballX} y2={ballY - 8} stroke="rgba(255,255,255,0.25)" strokeWidth="1" strokeDasharray="2 3" />
+              <circle
+                cx={ballX}
+                cy={ballY}
+                r="6.5"
+                fill={curve.stage === "relaja" && inSeries ? "#34d399" : "#fff"}
+                style={{ transition: state.paused ? "none" : "cx 0.11s linear, cy 0.11s linear" }}
+              />
+              <text
+                x={labelX}
+                y={14}
+                textAnchor="middle"
+                fontSize="12"
+                fontWeight="700"
+                letterSpacing="1"
+                fill="#fff"
+                style={{ ...MONO_FONT, transition: "x 0.11s linear" }}
+              >
+                {phaseLabel}
+              </text>
+            </g>
           </svg>
         </div>
 
@@ -312,23 +350,24 @@ export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
           />
         </div>
 
-        {/* Vibración */}
-        <div className="w-full flex items-center justify-between py-1">
-          <span className="text-[13px] tracking-wide text-white/70" style={MONO_FONT}>
-            VIBRACIÓN
-          </span>
+        {/* Vibración: interruptor + nombre, centrados (como la referencia). */}
+        <div className="w-full flex items-center justify-center gap-5 pt-2 pb-1">
           <button
             role="switch"
             aria-checked={vibrationEnabled}
+            aria-label="Vibración"
             onClick={() => setVibrationEnabled(!vibrationEnabled)}
-            className="relative w-[46px] h-[26px] rounded-full transition-colors cursor-pointer"
-            style={{ background: vibrationEnabled ? "#fff" : "#3a3a3d" }}
+            className="relative w-[64px] h-[36px] rounded-full cursor-pointer active:scale-95 transition-transform"
+            style={{ background: "#3a3a3d" }}
           >
             <span
-              className="absolute top-[3px] w-[20px] h-[20px] rounded-full transition-transform"
-              style={{ background: vibrationEnabled ? "#000" : "#888", transform: vibrationEnabled ? "translateX(23px)" : "translateX(3px)" }}
+              className="absolute top-[4px] left-[4px] w-[28px] h-[28px] rounded-full transition-transform duration-200"
+              style={{ background: vibrationEnabled ? "#fff" : "#8a8a8f", transform: vibrationEnabled ? "translateX(28px)" : "translateX(0)" }}
             />
           </button>
+          <span className="text-[14px] tracking-wide text-white/70" style={MONO_FONT}>
+            VIBRACIÓN
+          </span>
         </div>
 
         {!wakeLock.supported && (
