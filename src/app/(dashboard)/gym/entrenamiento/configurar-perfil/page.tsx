@@ -150,6 +150,7 @@ function PerfilEntrenamientoContent() {
   const [sexo, setSexo] = useState<Sexo | null>(gymProfile?.sexo ?? null);
   const [edad, setEdad] = useState(gymProfile?.edad ? String(gymProfile.edad) : "");
   const [pesoKg, setPesoKg] = useState(gymProfile?.pesoKg ? String(gymProfile.pesoKg) : "");
+  const [pesoObjetivo, setPesoObjetivo] = useState(gymProfile?.pesoObjetivoKg ? String(gymProfile.pesoObjetivoKg) : "");
   const [alturaCm, setAlturaCm] = useState(gymProfile?.alturaCm ? String(gymProfile.alturaCm) : "");
   const [experiencia, setExperiencia] = useState<Experiencia | null>(gymProfile?.experiencia ?? null);
   const [objetivo, setObjetivo] = useState<string | null>(gymProfile?.objetivo ?? null);
@@ -188,6 +189,8 @@ function PerfilEntrenamientoContent() {
     // ya estaba guardado desde Calorías o el onboarding.
     const e = parseFloat(edad);
     if (e > 0) patch.edad = e;
+    const meta = parseFloat(pesoObjetivo);
+    if (meta > 0) patch.pesoObjetivoKg = meta;
     const a = parseFloat(alturaCm);
     if (a > 0) patch.alturaCm = a;
     if (experiencia) patch.experiencia = experiencia;
@@ -246,6 +249,8 @@ function PerfilEntrenamientoContent() {
             <Title>Peso actual</Title>
             <p className="text-xs text-white/45">Tu rango se calcula con cuánto levantas respecto a tu peso corporal.</p>
             <PlainNumberField label="Peso" value={pesoKg} onChange={setPesoKg} unit="kg" placeholder="80" />
+            <p className="text-xs text-white/45">Meta de peso (opcional): aparece en tu gráfica de Peso y en tu perfil.</p>
+            <PlainNumberField label="Meta de peso" value={pesoObjetivo} onChange={setPesoObjetivo} unit="kg" placeholder="75" />
           </div>
         )}
 
@@ -373,6 +378,7 @@ function PerfilEntrenamientoContent() {
             <div className="rounded-3xl p-4 flex flex-col gap-2" style={{ background: "#0d0d0d" }}>
               <Row label="Sexo" value={sexo ? (sexo === "hombre" ? "Hombre" : "Mujer") : "— (falta)"} />
               <Row label="Peso" value={parseFloat(pesoKg) > 0 ? `${pesoKg} kg` : "— (falta)"} />
+              <Row label="Meta de peso" value={parseFloat(pesoObjetivo) > 0 ? `${pesoObjetivo} kg` : "—"} />
               <Row label="Edad" value={parseFloat(edad) > 0 ? `${edad} años` : "—"} />
               <Row label="Altura" value={parseFloat(alturaCm) > 0 ? `${alturaCm} cm` : "—"} />
               <Row label="Experiencia" value={labelOf(EXPERIENCIA_OPTIONS, experiencia)} />

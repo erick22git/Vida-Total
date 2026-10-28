@@ -1,5 +1,6 @@
 "use client";
 
+import { trainingHome } from "@/lib/gym/training-nav";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -55,7 +56,7 @@ export default function PlanificacionesPage() {
     <div className="flex flex-col gap-7 pb-8">
       <header className="flex items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-3">
-          <Link href="/gym/entrenamiento" className="text-white/50 hover:text-white transition-colors">
+          <Link href="/gym/entrenamiento" onClick={(e) => { e.preventDefault(); router.push(trainingHome()); }} className="text-white/50 hover:text-white transition-colors">
             <ArrowLeft size={20} />
           </Link>
           <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Planificaciones</h1>

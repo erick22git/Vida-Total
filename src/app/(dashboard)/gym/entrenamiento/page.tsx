@@ -29,6 +29,7 @@ import { todayDayIndex } from "@/lib/data/weekly-plan";
 import { muscleParticipation } from "@/lib/gym/muscle-participation";
 import { trainingStreakInfo } from "@/lib/gym/training-streak";
 import { MONO_FONT } from "@/lib/ui/mono-font";
+import { clearFromConfig, isFromConfig } from "@/lib/gym/training-nav";
 import type { MuscleGroup, RoutineExercise } from "@/lib/types";
 
 const VIEW_COUNT = 3;
@@ -95,6 +96,14 @@ function EntrenamientoContent() {
   const staleSession = !!activeSession && !sessionIsFromToday;
 
   const [configOpen, setConfigOpen] = useState(false);
+  // Venías del panel de configuración (Rutinas, Perfil, Formulario...): vuelve a abrirlo en vez de dejarte en el inicio.
+  useEffect(() => {
+    if (searchParams.get("config") === "1" || isFromConfig()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- lectura única del origen al montar
+      setConfigOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [view, setView] = useState(searchParams.get("view") === "1" ? 1 : 0);
   const [dir, setDir] = useState(1);
   const start = useRef<{ x: number; y: number; ignore: boolean } | null>(null);
@@ -296,6 +305,7 @@ function EntrenamientoContent() {
                     <div className="flex justify-center">
                       <Link
                         href={editHref}
+                        onClick={clearFromConfig}
                         className="flex items-center gap-2 rounded-full px-6 py-2 text-[11px] tracking-wide"
                         style={{ ...MONO_FONT, border: "1px solid var(--t-ring)", background: "var(--t-card)" }}
                       >
@@ -330,7 +340,14 @@ function EntrenamientoContent() {
         </AnimatePresence>
       </main>
 
-      <TrainingConfigSheet open={configOpen} onClose={() => setConfigOpen(false)} todayIndex={todayIndex} />
+      <TrainingConfigSheet
+        open={configOpen}
+        onClose={() => {
+          clearFromConfig();
+          setConfigOpen(false);
+        }}
+        todayIndex={todayIndex}
+      />
     </div>
   );
 }

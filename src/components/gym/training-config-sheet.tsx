@@ -10,13 +10,15 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarRange, ChevronLeft, ChevronRight, Dumbbell, Flame, ListPlus, Plus, Shield, User } from "lucide-react";
+import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight, Dumbbell, ListPlus, Plus, User } from "lucide-react";
+import { useState } from "react";
 import { useGymStore } from "@/lib/store/gymStore";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { MUSCLE_COLOR } from "@/lib/data/gym-meta";
 import { estimateRoutineDurationMinutes, getMuscleDistribution } from "@/lib/gym-utils";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { markFromConfig } from "@/lib/gym/training-nav";
 
 const DAY_NAMES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const CARD_BG = { background: "var(--t-card)" } as const;
@@ -37,6 +39,8 @@ export function TrainingConfigSheet({ open, onClose, todayIndex }: { open: boole
   const activePlanId = useGymStore((s) => s.activePlanId);
   const activePlan = activePlanId ? plans.find((p) => p.id === activePlanId) : undefined;
   const allExercises = useAllExercises();
+  const [plantillasOpen, setPlantillasOpen] = useState(false);
+  const [historialOpen, setHistorialOpen] = useState(false);
 
   return (
     <AnimatePresence>
@@ -64,14 +68,12 @@ export function TrainingConfigSheet({ open, onClose, todayIndex }: { open: boole
               </h1>
             </header>
 
-            <section className="grid grid-cols-4 gap-2">
+            <section className="grid grid-cols-2 gap-2">
               {[
-                { href: "/gym/entrenamiento/planificaciones", label: "Planes", icon: CalendarRange },
-                { href: "/gym/entrenamiento/rango", label: "Rango", icon: Shield },
+                { href: "/gym/entrenamiento/planificaciones", label: "Rutinas", icon: CalendarRange },
                 { href: "/gym/entrenamiento/perfil", label: "Perfil", icon: User },
-                { href: "/gym/entrenamiento/rachas", label: "Racha", icon: Flame },
               ].map(({ href, label, icon: Icon }) => (
-                <Link key={href} href={href}>
+                <Link key={href} href={href} onClick={markFromConfig}>
                   <div className="rounded-2xl py-3 flex flex-col items-center gap-1.5" style={CARD_BG}>
                     <Icon size={18} />
                     <span className="text-[11px] text-[color:var(--t-fg-dim)]">{label}</span>
@@ -80,10 +82,10 @@ export function TrainingConfigSheet({ open, onClose, todayIndex }: { open: boole
               ))}
             </section>
 
-            <Link href="/gym/entrenamiento/configurar-perfil">
+            <Link href="/gym/entrenamiento/configurar-perfil" onClick={markFromConfig}>
               <div className="rounded-2xl px-4 py-3.5 flex items-center justify-between" style={CARD_BG}>
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold">Perfil de entrenamiento</span>
+                  <span className="text-sm font-semibold">Formulario</span>
                   <span className="text-[11px] text-[color:var(--t-fg-dim)]">
                     Sexo, peso, experiencia, objetivo y equipo — lo usa tu rango
                   </span>
@@ -106,6 +108,7 @@ export function TrainingConfigSheet({ open, onClose, todayIndex }: { open: boole
                 <div className="flex items-center gap-2 shrink-0">
                   <Link
                     href="/gym/entrenamiento/planificaciones/manual"
+                    onClick={markFromConfig}
                     className="rounded-full px-3 py-1.5 text-xs font-semibold flex items-center gap-1"
                     style={{ background: "var(--t-line)", color: "var(--t-fg-dim)" }}
                   >
@@ -113,6 +116,7 @@ export function TrainingConfigSheet({ open, onClose, todayIndex }: { open: boole
                   </Link>
                   <Link
                     href={activePlan ? `/gym/entrenamiento/planificaciones/${activePlan.id}` : "/gym/entrenamiento/planificaciones"}
+                    onClick={markFromConfig}
                     className="rounded-full px-3 py-1.5 text-xs font-semibold flex items-center gap-1"
                     style={{ background: "var(--t-accent)", color: "var(--t-on-accent)" }}
                   >
@@ -137,7 +141,7 @@ export function TrainingConfigSheet({ open, onClose, todayIndex }: { open: boole
                       ? `/gym/entrenamiento/rutinas/${routine.id}`
                       : "/gym/entrenamiento/rutinas/nueva";
                   return (
-                    <Link key={d.day + i} href={isRest ? "#" : href} className={isRest ? "pointer-events-none shrink-0" : "shrink-0"}>
+                    <Link key={d.day + i} href={isRest ? "#" : href} onClick={markFromConfig} className={isRest ? "pointer-events-none shrink-0" : "shrink-0"}>
                       <div
                         data-keep-colors
                         className="w-64 h-52 rounded-3xl overflow-hidden relative flex flex-col justify-end p-4"
@@ -195,47 +199,63 @@ export function TrainingConfigSheet({ open, onClose, todayIndex }: { open: boole
 
             <section className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <SectionTitle>Tus plantillas</SectionTitle>
-                <Link href="/gym/entrenamiento/rutinas/nueva" className="flex items-center gap-1 text-xs font-medium text-[color:var(--t-fg-dim)]">
+                <button
+                  onClick={() => setPlantillasOpen((v) => !v)}
+                  aria-expanded={plantillasOpen}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <SectionTitle>Tus plantillas ({routines.length})</SectionTitle>
+                  <ChevronDown size={15} className={`text-[color:var(--t-fg-dim)] transition-transform ${plantillasOpen ? "rotate-180" : ""}`} />
+                </button>
+                <Link href="/gym/entrenamiento/rutinas/nueva" onClick={markFromConfig} className="flex items-center gap-1 text-xs font-medium text-[color:var(--t-fg-dim)]">
                   <ListPlus size={14} /> Nueva
                 </Link>
               </div>
-              {routines.length === 0 ? (
-                <p className="text-sm text-[color:var(--t-fg-faint)] px-1">Aún no tienes rutinas guardadas.</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {routines.map((r) => (
-                    <Link key={r.id} href={`/gym/entrenamiento/rutinas/${r.id}`}>
-                      <div className="rounded-2xl px-4 py-3 flex items-center justify-between" style={CARD_BG}>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{r.nombre}</p>
-                          <p className="text-xs text-[color:var(--t-fg-faint)]">{r.ejercicios.length} ejercicios</p>
+              {plantillasOpen &&
+                (routines.length === 0 ? (
+                  <p className="text-sm text-[color:var(--t-fg-faint)] px-1">Aún no tienes rutinas guardadas.</p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {routines.map((r) => (
+                      <Link key={r.id} href={`/gym/entrenamiento/rutinas/${r.id}`} onClick={markFromConfig}>
+                        <div className="rounded-2xl px-4 py-3 flex items-center justify-between" style={CARD_BG}>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{r.nombre}</p>
+                            <p className="text-xs text-[color:var(--t-fg-faint)]">{r.ejercicios.length} ejercicios</p>
+                          </div>
+                          <ChevronRight size={16} className="text-[color:var(--t-fg-faint)] shrink-0" />
                         </div>
-                        <ChevronRight size={16} className="text-[color:var(--t-fg-faint)] shrink-0" />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
+                      </Link>
+                    ))}
+                  </div>
+                ))}
             </section>
 
             <section className="flex flex-col gap-3">
-              <SectionTitle>Historial reciente</SectionTitle>
-              {sessions.length === 0 ? (
-                <p className="text-sm text-[color:var(--t-fg-faint)] px-1">Aún no hay entrenamientos registrados.</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {sessions.slice(0, 8).map((s) => (
-                    <div key={s.id} className="rounded-2xl px-4 py-3 flex items-center justify-between" style={CARD_BG}>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{s.nombre ?? s.grupoMuscular}</p>
-                        <p className="text-xs text-[color:var(--t-fg-faint)]">{format(new Date(s.date), "EEEE d MMM, HH:mm", { locale: es })}</p>
+              <button
+                onClick={() => setHistorialOpen((v) => !v)}
+                aria-expanded={historialOpen}
+                className="flex items-center gap-2 cursor-pointer self-start"
+              >
+                <SectionTitle>Historial reciente ({sessions.length})</SectionTitle>
+                <ChevronDown size={15} className={`text-[color:var(--t-fg-dim)] transition-transform ${historialOpen ? "rotate-180" : ""}`} />
+              </button>
+              {historialOpen &&
+                (sessions.length === 0 ? (
+                  <p className="text-sm text-[color:var(--t-fg-faint)] px-1">Aún no hay entrenamientos registrados.</p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {sessions.slice(0, 8).map((s) => (
+                      <div key={s.id} className="rounded-2xl px-4 py-3 flex items-center justify-between" style={CARD_BG}>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{s.nombre ?? s.grupoMuscular}</p>
+                          <p className="text-xs text-[color:var(--t-fg-faint)]">{format(new Date(s.date), "EEEE d MMM, HH:mm", { locale: es })}</p>
+                        </div>
+                        <span className="text-xs text-[color:var(--t-fg-faint)] shrink-0">{s.ejercicios.length} ejercicios</span>
                       </div>
-                      <span className="text-xs text-[color:var(--t-fg-faint)] shrink-0">{s.ejercicios.length} ejercicios</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                ))}
             </section>
           </div>
         </motion.div>

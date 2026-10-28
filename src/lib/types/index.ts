@@ -454,6 +454,10 @@ export interface WorkoutSession {
   nombre?: string;
   durationSeconds?: number;
   routineId?: string;
+  /** Motivo si se terminó sin completar todo (o tras mucho tiempo): "tiempo", "dolor", "cansancio", "olvide"... */
+  endReason?: string;
+  /** Cuántas series planeadas quedaron sin hacer. */
+  incompleteSets?: number;
 }
 
 

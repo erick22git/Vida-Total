@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Camera, Dumbbell, Trash2 } from "lucide-react";
+import { ArrowLeft, Camera, Dumbbell, Star, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { GlassCard } from "@/components/glass/glass-card";
+import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { useGymStore } from "@/lib/store/gymStore";
+import { resizeImage } from "@/lib/gym/water-vessels";
 
 /** Bloque 13: una foto de progreso por mes calendario, asociada
  * automáticamente al plan que estaba activo cuando se subió (ver
@@ -22,6 +24,9 @@ export default function ProgressPhotosPage() {
   const plans = useGymStore((s) => s.plans);
   const setProgressPhoto = useGymStore((s) => s.setProgressPhoto);
   const removeProgressPhoto = useGymStore((s) => s.removeProgressPhoto);
+  const featured = useGymStore((s) => s.featuredPhotoMonths);
+  const toggleFeaturedPhoto = useGymStore((s) => s.toggleFeaturedPhoto);
+  const [toDelete, setToDelete] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const thisMonth = currentMonthKey();
@@ -40,9 +45,11 @@ export default function ProgressPhotosPage() {
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setProgressPhoto(thisMonth, reader.result as string);
-    reader.readAsDataURL(file);
+    // Se reduce antes de guardar: una foto de teléfono pesa varios MB y llenaba el almacenamiento del dispositivo,
+    // por eso a veces "no se guardaba".
+    void resizeImage(file, 1080, 0.82)
+      .then((url) => setProgressPhoto(thisMonth, url))
+      .catch(() => {});
     e.target.value = "";
   }
 
@@ -99,8 +106,15 @@ export default function ProgressPhotosPage() {
                 </p>
               </div>
               <button
-                onClick={() => removeProgressPhoto(photo.id)}
-                className="text-white/30 hover:text-red-400 cursor-pointer shrink-0"
+                onClick={() => toggleFeaturedPhoto(photo.monthKey)}
+                className={featured.includes(photo.monthKey) ? "text-white cursor-pointer shrink-0" : "text-white/30 hover:text-white cursor-pointer shrink-0"}
+                aria-label={featured.includes(photo.monthKey) ? "Quitar de destacadas" : "Destacar foto"}
+              >
+                <Star size={16} fill={featured.includes(photo.monthKey) ? "currentColor" : "none"} />
+              </button>
+              <button
+                onClick={() => setToDelete(photo.id)}
+                className="text-white/30 hover:text-white cursor-pointer shrink-0"
                 aria-label="Eliminar foto"
               >
                 <Trash2 size={15} />
@@ -109,6 +123,25 @@ export default function ProgressPhotosPage() {
           ))
         )}
       </div>
+      <ExpandSheet open={!!toDelete} onClose={() => setToDelete(null)} title="¿Borrar esta foto?">
+        <div className="flex flex-col gap-4 pb-2">
+          <p className="text-sm text-white/65">Se borra tu foto de progreso. Esto no se puede deshacer.</p>
+          <div className="flex gap-2">
+            <button onClick={() => setToDelete(null)} className="flex-1 rounded-full py-3 text-sm font-semibold text-white/80 bg-white/[0.08] cursor-pointer">
+              Cancelar
+            </button>
+            <button
+              onClick={() => {
+                if (toDelete) removeProgressPhoto(toDelete);
+                setToDelete(null);
+              }}
+              className="flex-1 rounded-full py-3 text-sm font-semibold text-black bg-white cursor-pointer"
+            >
+              Sí, borrar
+            </button>
+          </div>
+        </div>
+      </ExpandSheet>
     </div>
   );
 }

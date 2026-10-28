@@ -28,7 +28,8 @@ import { SessionTimer } from "@/components/gym/session-timer";
 import { ExercisePicker, useAllExercises } from "@/components/gym/exercise-picker";
 import { SetTypeModal, MALA_TECNICA } from "@/components/gym/set-type-modal";
 import { useGymStore } from "@/lib/store/gymStore";
-import { blockRoundCount, dropsOf, initialDropsetPatch, nextAfterSet, previaLabelFor, withFixed } from "@/lib/gym-utils";
+import { blockRoundCount, dropsOf, initialDropsetPatch, lastPerformanceOf, nextAfterSet, previaLabelFor, withFixed } from "@/lib/gym-utils";
+import { suggestProgression } from "@/lib/gym/progression";
 import { unlockAudio } from "@/lib/sound/sound-engine";
 import { RankIcon } from "@/components/gym/rank-icon";
 import { useRankProfile } from "@/lib/gym/use-rank";
@@ -64,7 +65,6 @@ function ActiveWorkoutContent() {
   const setExerciseRest = useGymStore((s) => s.setExerciseRest);
   const startRest = useGymStore((s) => s.startRest);
   const startTransition = useGymStore((s) => s.startTransition);
-  const cancelWorkout = useGymStore((s) => s.cancelWorkout);
   const addExercisesToSession = useGymStore((s) => s.addExercisesToSession);
   const removeExerciseFromSession = useGymStore((s) => s.removeExerciseFromSession);
 
@@ -73,7 +73,7 @@ function ActiveWorkoutContent() {
   const [notesOpen, setNotesOpen] = useState(false);
   const [restConfigOpen, setRestConfigOpen] = useState(false);
   const [dropsetTypeOpen, setDropsetTypeOpen] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<"remove" | "discard" | null>(null);
+  const [confirmAction, setConfirmAction] = useState<"remove" | null>(null);
 
   // Al completar la última serie pendiente de todo el entrenamiento, pasa solo a la pantalla de
   // confirmar/terminar — antes había que acordarse de tocar "Terminar" a mano. El ref evita que se
@@ -159,14 +159,12 @@ function ActiveWorkoutContent() {
     : [];
   const soloReps = currentLog.sets[0]?.soloReps;
   const restSeconds = currentLog.restSeconds ?? 90;
-  // "Previa": con cuánto peso x reps hiciste cada serie la última vez que
-  // entrenaste este ejercicio (sessions viene ordenado del más reciente al
-  // más viejo, así que el primer match ya es el último entrenamiento).
-  const lastLogOf = (exerciseId: string) =>
-    sessions.find((sess) => sess.ejercicios.some((e) => e.exerciseId === exerciseId))?.ejercicios.find(
-      (e) => e.exerciseId === exerciseId,
-    );
+  // "Antes": con cuánto peso x reps hiciste cada serie la última vez que ENTRENASTE este ejercicio (solo series
+  // completadas de sesiones terminadas — una sesión donde lo agregaste y no hiciste nada ya no lo tapa).
+  const lastLogOf = (exerciseId: string) => lastPerformanceOf(exerciseId, sessions);
   const lastLog = lastLogOf(currentLog.exerciseId);
+  const beforeLastLog = lastLog ? lastPerformanceOf(currentLog.exerciseId, sessions.filter((x) => x.date < lastLog.date)) : null;
+  const progression = suggestProgression({ last: lastLog?.sets ?? null, beforeLast: beforeLastLog?.sets ?? null, soloReps });
 
   const totalSetsAll = activeSession.ejercicios.reduce(
     (sum, e) => sum + e.sets.filter((s) => s.tipo !== "calentamiento").length,
@@ -314,6 +312,7 @@ function ActiveWorkoutContent() {
                 : `${completedSets}/${workingSets.length} series completadas`}
               {currentLog.agregadoEnSesion && " · agregado en esta sesión"}
             </p>
+            <ProgressionHint suggestion={progression} />
             {groupPartners.length > 0 && (
               <p className="text-xs mt-0.5" style={{ color: "var(--gym-2)" }}>
                 {isCompound ? "Serie compuesta con" : "Superserie con"}: {groupPartners.map((ex) => allExercises.find((e) => e.id === ex.exerciseId)?.nombre ?? "?").join(", ")}
@@ -363,7 +362,7 @@ function ActiveWorkoutContent() {
       <div className="flex flex-col gap-2">
         <div className="grid grid-cols-[auto_auto_1fr_1fr_auto_auto] gap-2 px-1 text-[11px] font-semibold text-white/40 uppercase tracking-wide">
           <span className="w-8 text-center">Serie</span>
-          <span className="w-12 text-center">Previa</span>
+          <span className="w-12 text-center">Antes</span>
           <span className="text-center">{soloReps ? "" : "Kg"}</span>
           <span className="text-center">Reps</span>
           <span className="w-9 text-center">Desc.</span>
@@ -499,13 +498,11 @@ function ActiveWorkoutContent() {
       <ExpandSheet
         open={confirmAction !== null}
         onClose={() => setConfirmAction(null)}
-        title={confirmAction === "discard" ? "Descartar entrenamiento" : "Sacar ejercicio de hoy"}
+        title="Sacar ejercicio de hoy"
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm text-white/65">
-            {confirmAction === "discard"
-              ? "Se pierde lo que anotaste en este entrenamiento. Esto no se puede deshacer."
-              : `"${exercise?.nombre ?? "Este ejercicio"}" se saca solo del entrenamiento de hoy; tu rutina no cambia.`}
+            {`"${exercise?.nombre ?? "Este ejercicio"}" se saca solo del entrenamiento de hoy; tu rutina no cambia.`}
           </p>
           <div className="flex gap-2">
             <button
@@ -516,17 +513,12 @@ function ActiveWorkoutContent() {
             </button>
             <button
               onClick={() => {
-                if (confirmAction === "discard") {
-                  cancelWorkout();
-                  router.push("/gym/entrenamiento");
-                } else {
-                  removeExerciseFromSession(currentLog.exerciseId);
-                }
+                removeExerciseFromSession(currentLog.exerciseId);
                 setConfirmAction(null);
               }}
               className="flex-1 rounded-full py-3 text-sm font-semibold text-white bg-red-500 cursor-pointer"
             >
-              {confirmAction === "discard" ? "Descartar" : "Sacar"}
+              Sacar
             </button>
           </div>
         </div>
@@ -553,12 +545,19 @@ function ActiveWorkoutContent() {
         onConfirm={(sec) => setExerciseRest(currentLog.exerciseId, sec)}
       />
 
-      <button
-        onClick={() => setConfirmAction("discard")}
-        className="text-center text-xs text-white/30 hover:text-white/50 transition-colors cursor-pointer"
-      >
-        Descartar entrenamiento
+    </div>
+  );
+}
+
+function ProgressionHint({ suggestion }: { suggestion: ReturnType<typeof suggestProgression> }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-2 rounded-xl bg-white/[0.06] px-3 py-2">
+      <button onClick={() => setOpen((v) => !v)} className="flex w-full items-start justify-between gap-2 text-left cursor-pointer">
+        <span className="text-[13px] font-medium text-white leading-snug">{suggestion.headline}</span>
+        <span className="text-[11px] text-white/45 shrink-0 pt-0.5">{open ? "ocultar" : "¿por qué?"}</span>
       </button>
+      {open && <p className="mt-1.5 text-[11px] text-white/55 leading-relaxed">{suggestion.why}</p>}
     </div>
   );
 }

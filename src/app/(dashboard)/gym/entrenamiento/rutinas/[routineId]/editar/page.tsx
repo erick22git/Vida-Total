@@ -1,5 +1,6 @@
 "use client";
 
+import { trainingHome } from "@/lib/gym/training-nav";
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -29,7 +30,7 @@ export default function EditRoutinePage({
     return (
       <div className="flex flex-col gap-6 items-center text-center py-16">
         <p className="text-white/60">Rutina no encontrada.</p>
-        <GlassButton accentColor="var(--gym-2)" onClick={() => router.push("/gym/entrenamiento")}>
+        <GlassButton accentColor="var(--gym-2)" onClick={() => router.push(trainingHome())}>
           Ir a Entrenamiento
         </GlassButton>
       </div>

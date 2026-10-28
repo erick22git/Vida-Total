@@ -116,6 +116,8 @@ export type IntensidadEntrenamiento = "ligera" | "moderada" | "alta";
 
 export interface GymProfile {
   pesoKg?: number;
+  /** Meta de peso (kg) — se muestra en la gráfica de Peso y en el perfil. */
+  pesoObjetivoKg?: number;
   alturaCm?: number;
   lesiones?: string;
   objetivo?: string;
@@ -301,7 +303,15 @@ export interface GymState {
   startRest: (exerciseId: string, seconds: number) => void;
   adjustRest: (deltaSeconds: number) => void;
   clearRest: () => void;
-  finishWorkout: (opts?: { nombre?: string }) => void;
+  finishWorkout: (opts?: {
+    nombre?: string;
+    /** Por qué se terminó antes de completar todo (ver pantalla de resumen). */
+    endReason?: string;
+    /** Duración real (s) si el usuario la corrigió (p. ej. olvidó terminar el entrenamiento). */
+    durationSeconds?: number;
+    /** Guardar solo lo completado: las series sin tildar y los ejercicios sin series hechas no se guardan. */
+    dropIncomplete?: boolean;
+  }) => void;
   cancelWorkout: () => void;
 
   // ---------- Routines ----------
@@ -352,6 +362,9 @@ export interface GymState {
    * indicado, asociándola al plan activo en este momento. */
   setProgressPhoto: (monthKey: string, photoUrl: string) => void;
   removeProgressPhoto: (id: string) => void;
+  /** Meses (yyyy-MM) cuya foto de progreso está en "Destacadas" del perfil. Solo local. */
+  featuredPhotoMonths: string[];
+  toggleFeaturedPhoto: (monthKey: string) => void;
 
   // ---------- Perfil avanzado (composición corporal y perímetros, con historial por fecha) ----------
   bodyCompositionHistory: BodyCompositionEntry[];
@@ -797,9 +810,20 @@ export const useGymStore = create<GymState>()(
       restEndsAt: null,
       gymProfile: null,
       onboardingCompleted: false,
-      saveGymProfile: (profile) => set({ gymProfile: profile, onboardingCompleted: true }),
-      updateGymProfileFields: (patch) =>
-        set((state) => ({ gymProfile: { ...state.gymProfile, ...patch } })),
+      saveGymProfile: (profile) => {
+        const prevKg = get().gymProfile?.pesoKg;
+        set({ gymProfile: profile, onboardingCompleted: true });
+        // El peso que se pide en el formulario también es un registro de peso (antes solo quedaba en el perfil y la
+        // pantalla de Peso salía vacía). Solo si cambió o si todavía no hay ninguno.
+        if (profile.pesoKg && profile.pesoKg > 0 && (profile.pesoKg !== prevKg || get().weightEntries.length === 0)) {
+          get().addWeightEntry(profile.pesoKg);
+        }
+      },
+      updateGymProfileFields: (patch) => {
+        const prevKg = get().gymProfile?.pesoKg;
+        set((state) => ({ gymProfile: { ...state.gymProfile, ...patch } }));
+        if (patch.pesoKg && patch.pesoKg > 0 && (patch.pesoKg !== prevKg || get().weightEntries.length === 0)) get().addWeightEntry(patch.pesoKg);
+      },
       adaptiveDismissed: null,
       dismissAdaptiveSuggestion: (goal) => set({ adaptiveDismissed: { goal, at: Date.now() } }),
       transitionStartedAt: null,
@@ -1103,14 +1127,25 @@ export const useGymStore = create<GymState>()(
         let finished: WorkoutSession | null = null;
         set((state) => {
           if (!state.activeSession) return state;
-          const durationSeconds = state.sessionStartedAt
-            ? Math.round((Date.now() - state.sessionStartedAt) / 1000)
-            : undefined;
+          const durationSeconds =
+            opts?.durationSeconds ??
+            (state.sessionStartedAt ? Math.round((Date.now() - state.sessionStartedAt) / 1000) : undefined);
+          const all = state.activeSession.ejercicios;
+          const planned = all.reduce((n, e) => n + e.sets.filter((x) => x.tipo !== "calentamiento").length, 0);
+          const done = all.reduce((n, e) => n + e.sets.filter((x) => x.tipo !== "calentamiento" && x.completado).length, 0);
+          const ejercicios = opts?.dropIncomplete
+            ? all
+                .map((e) => ({ ...e, sets: e.sets.filter((x) => x.completado) }))
+                .filter((e) => e.sets.length > 0)
+            : all;
           finished = {
             ...state.activeSession,
+            ejercicios,
             nombre: opts?.nombre ?? state.activeSession.nombre,
             completado: true,
             durationSeconds,
+            ...(opts?.endReason ? { endReason: opts.endReason } : {}),
+            ...(planned > done ? { incompleteSets: planned - done } : {}),
           };
           const today = new Date();
           let streak = state.streak;
@@ -1288,18 +1323,29 @@ export const useGymStore = create<GymState>()(
       weightEntries: [],
       addWeightEntry: (kg, date) => {
         const created: WeightEntry = { id: uid(), kg, date: date ?? new Date().toISOString() };
-        set((state) => ({
-          weightEntries: [created, ...state.weightEntries].sort(
+        set((state) => {
+          const weightEntries = [created, ...state.weightEntries].sort(
             (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-          ),
-        }));
+          );
+          // El rango, las calorías y el perfil leen `gymProfile.pesoKg`: tiene que ser el peso MÁS RECIENTE
+          // (antes quedaba el del formulario inicial y los rangos se calculaban con un peso viejo).
+          const newest = weightEntries[0];
+          return {
+            weightEntries,
+            gymProfile: newest ? { ...state.gymProfile, pesoKg: newest.kg } : state.gymProfile,
+          };
+        });
         const uidUser = getCurrentUserId();
         if (uidUser) syncInsertWeightEntry(created, uidUser);
       },
       removeWeightEntry: (id) => {
-        set((state) => ({
-          weightEntries: state.weightEntries.filter((w) => w.id !== id),
-        }));
+        set((state) => {
+          const weightEntries = state.weightEntries.filter((w) => w.id !== id);
+          return {
+            weightEntries,
+            gymProfile: weightEntries[0] ? { ...state.gymProfile, pesoKg: weightEntries[0].kg } : state.gymProfile,
+          };
+        });
         const uidUser = getCurrentUserId();
         if (uidUser) syncDeleteWeightEntry(id, uidUser);
       },
@@ -1329,6 +1375,13 @@ export const useGymStore = create<GymState>()(
         const uidUser = getCurrentUserId();
         if (uidUser && saved) syncUpsertProgressPhoto(saved, uidUser);
       },
+      featuredPhotoMonths: [],
+      toggleFeaturedPhoto: (monthKey) =>
+        set((state) => ({
+          featuredPhotoMonths: state.featuredPhotoMonths.includes(monthKey)
+            ? state.featuredPhotoMonths.filter((m) => m !== monthKey)
+            : [...state.featuredPhotoMonths, monthKey],
+        })),
       removeProgressPhoto: (id) => {
         set((state) => ({ progressPhotos: state.progressPhotos.filter((p) => p.id !== id) }));
         const uidUser = getCurrentUserId();

@@ -85,7 +85,7 @@ export function RoutineSetTable({
     <div className="flex flex-col gap-1.5">
       <div className="grid grid-cols-[auto_auto_1fr_1fr_auto_auto] gap-2 px-1 text-[11px] font-semibold text-white/40 uppercase tracking-wide">
         <span className="w-8 text-center">Serie</span>
-        <span className="w-12 text-center">Previa</span>
+        <span className="w-12 text-center">Antes</span>
         <span className="text-center">{soloReps ? "" : "Kg"}</span>
         <span className="text-center">Reps</span>
         <span className="w-7" />

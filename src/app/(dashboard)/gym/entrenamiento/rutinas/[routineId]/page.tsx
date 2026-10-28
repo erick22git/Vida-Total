@@ -1,5 +1,6 @@
 "use client";
 
+import { trainingHome } from "@/lib/gym/training-nav";
 import { use, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -65,7 +66,7 @@ export default function RoutineDetailPage({
     return (
       <div className="flex flex-col gap-6 items-center text-center py-16">
         <p className="text-white/60">Rutina no encontrada.</p>
-        <GlassButton accentColor="var(--gym-2)" onClick={() => router.push("/gym/entrenamiento")}>
+        <GlassButton accentColor="var(--gym-2)" onClick={() => router.push(trainingHome())}>
           Ir a Entrenamiento
         </GlassButton>
       </div>
@@ -76,7 +77,7 @@ export default function RoutineDetailPage({
     <div className="flex flex-col gap-6 pb-8">
       <header className="flex items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/gym/entrenamiento" className="text-white/50 hover:text-white transition-colors shrink-0">
+          <Link href="/gym/entrenamiento" onClick={(e) => { e.preventDefault(); router.push(trainingHome()); }} className="text-white/50 hover:text-white transition-colors shrink-0">
             <ArrowLeft size={20} />
           </Link>
           <h1 className="text-xl md:text-2xl font-semibold tracking-tight truncate">{routine.nombre}</h1>
@@ -108,7 +109,7 @@ export default function RoutineDetailPage({
                 icon={Trash2}
                 label="Eliminar rutina"
                 danger
-                onClick={() => { setMenuOpen(false); deleteRoutine(routine.id); router.push("/gym/entrenamiento"); }}
+                onClick={() => { setMenuOpen(false); deleteRoutine(routine.id); router.push(trainingHome()); }}
               />
             </div>
           )}

@@ -26,7 +26,9 @@ export function useBodyInfo(): { body: BodyInfo | null; missing: ("sexo" | "peso
   const weightEntries = useGymStore((s) => s.weightEntries);
   return useMemo(() => {
     const latest = weightEntries.length ? [...weightEntries].sort((a, b) => b.date.localeCompare(a.date))[0]?.kg : undefined;
-    const pesoKg = gymProfile?.pesoKg && gymProfile.pesoKg > 0 ? gymProfile.pesoKg : latest;
+    // El peso MÁS RECIENTE manda: los estándares de rango son relativos al peso corporal, y el del formulario inicial
+    // queda viejo apenas te pesas de nuevo (era la causa de rangos calculados con un peso equivocado).
+    const pesoKg = latest ?? (gymProfile?.pesoKg && gymProfile.pesoKg > 0 ? gymProfile.pesoKg : undefined);
     const missing = missingBodyInfo({ sexo: gymProfile?.sexo, pesoKg });
     return {
       body: missing.length === 0 ? { sexo: gymProfile!.sexo!, pesoKg: pesoKg! } : null,

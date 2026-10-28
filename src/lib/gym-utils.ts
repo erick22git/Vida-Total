@@ -128,26 +128,50 @@ export function dropRefsFor(
  * incluye ejercicios agregados en la sesión (`agregadoEnSesion`) y cualquier cambio de tipo, peso,
  * reps o dropset hecho durante el entrenamiento, así la próxima vez que se arranque desde esa rutina
  * ya viene con esa configuración. */
-export function routineExercisesFromSession(session: WorkoutSession): RoutineExercise[] {
-  return session.ejercicios.map((ex) => ({
-    exerciseId: ex.exerciseId,
-    nota: ex.nota,
-    soloReps: ex.sets[0]?.soloReps,
-    restSeconds: ex.restSeconds,
-    grupo: ex.grupo,
-    soloInicio: ex.soloInicio,
-    serieUnica: ex.serieUnica,
-    sets: ex.sets.map((s) => ({
-      peso: s.peso,
-      reps: s.reps,
-      tipo: s.tipo ?? "normal",
-      pesosDescendentes: s.pesosDescendentes,
-      repsDescendentes: s.repsDescendentes,
-    })),
-  }));
+export function routineExercisesFromSession(session: WorkoutSession, previous: RoutineExercise[] = []): RoutineExercise[] {
+  const toPlan = (s: WorkoutSession["ejercicios"][number]["sets"][number]) => ({
+    peso: s.peso,
+    reps: s.reps,
+    tipo: s.tipo ?? "normal",
+    pesosDescendentes: s.pesosDescendentes,
+    repsDescendentes: s.repsDescendentes,
+  });
+  const prevById = new Map(previous.map((r) => [r.exerciseId, r]));
+  const fromSession = session.ejercicios.map((ex): RoutineExercise => {
+    // Solo cuenta lo que realmente hiciste (series tildadas). Un ejercicio sin ninguna serie hecha conserva lo que
+    // tenía la rutina: antes se guardaban series sin completar con 0 kg x 0 reps y se pisaba la rutina con ceros.
+    const done = ex.sets.filter((s) => s.completado && (s.reps > 0 || s.peso > 0));
+    const kept = prevById.get(ex.exerciseId)?.sets;
+    return {
+      exerciseId: ex.exerciseId,
+      nota: ex.nota,
+      soloReps: ex.sets[0]?.soloReps,
+      restSeconds: ex.restSeconds,
+      grupo: ex.grupo,
+      soloInicio: ex.soloInicio,
+      serieUnica: ex.serieUnica,
+      sets: done.length > 0 ? done.map(toPlan) : kept && kept.length > 0 ? kept : ex.sets.map(toPlan),
+    };
+  });
+  // Ejercicios de la rutina que hoy no se hicieron siguen en la rutina (sacar uno hoy no lo borra de la rutina).
+  const inSession = new Set(session.ejercicios.map((e) => e.exerciseId));
+  return [...fromSession, ...previous.filter((r) => !inSession.has(r.exerciseId))];
 }
 
-/** Texto "Previa" (peso x reps, o la secuencia de bajadas si era dropset)
+/** Última vez que hiciste este ejercicio: solo series COMPLETADAS y de sesiones terminadas (el más reciente primero).
+ * Antes se tomaba la última sesión que lo mencionara, aunque ahí no hubieras hecho ninguna serie, y "Antes" salía vacío. */
+export function lastPerformanceOf(exerciseId: string, sessions: WorkoutSession[]): { date: string; sets: WorkoutSession["ejercicios"][number]["sets"] } | null {
+  const ordered = [...sessions].sort((a, b) => b.date.localeCompare(a.date));
+  for (const sess of ordered) {
+    const log = sess.ejercicios.find((e) => e.exerciseId === exerciseId);
+    if (!log) continue;
+    const sets = log.sets.filter((s) => s.completado && s.tipo !== "calentamiento" && (s.reps > 0 || s.peso > 0));
+    if (sets.length > 0) return { date: sess.date, sets };
+  }
+  return null;
+}
+
+/** Texto "Antes" (peso x reps, o la secuencia de bajadas si era dropset)
  * para mostrar al lado de una serie: con cuánto la hiciste la última vez.
  * Compartido entre RoutineSetTable (planificando) y SessionSetRow (sesión
  * en vivo) para que el formato sea idéntico en los dos lugares. */

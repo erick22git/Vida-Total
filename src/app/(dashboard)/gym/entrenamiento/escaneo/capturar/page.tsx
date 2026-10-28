@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Camera, RotateCw, FlipHorizontal2, Crop, RotateCcw as ResetIcon } from "lucide-react";
 import { GlassButton } from "@/components/glass/glass-button";
+import { resizeImage } from "@/lib/gym/water-vessels";
 
 export default function CaptureBodyScanPage() {
   const router = useRouter();
@@ -11,11 +12,13 @@ export default function CaptureBodyScanPage() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [rotation, setRotation] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
+    setFile(file);
     setPhoto(url);
   }
 
@@ -38,7 +41,7 @@ export default function CaptureBodyScanPage() {
           <p className="text-sm text-white/50 max-w-xs">
             Sube o toma una foto de cuerpo completo, de frente, con buena luz.
           </p>
-          <GlassButton accentColor="var(--gym-2)" onClick={() => fileRef.current?.click()}>
+          <GlassButton accentColor="rgba(255,255,255,0.9)" className="!text-black" onClick={() => fileRef.current?.click()}>
             Elegir foto
           </GlassButton>
           <input ref={fileRef} type="file" accept="image/*" capture="user" onChange={handleFile} className="hidden" />
@@ -77,7 +80,20 @@ export default function CaptureBodyScanPage() {
         <ToolButton icon={ResetIcon} label="Restablecer" onClick={reset} />
       </div>
 
-      <GlassButton accentColor="var(--gym-2)" size="lg" onClick={() => router.push("/gym/entrenamiento/escaneo/resultado")}>
+      <GlassButton
+        accentColor="rgba(255,255,255,0.9)"
+        size="lg"
+        className="!text-black"
+        onClick={async () => {
+          // La foto se reduce y se pasa a la pantalla de guardado (un blob: no sobrevive a la navegación).
+          try {
+            if (file) sessionStorage.setItem("vt-scan-photo", await resizeImage(file, 1080, 0.82));
+          } catch {
+            /* sin sessionStorage o foto ilegible: la pantalla siguiente avisa que no hay foto */
+          }
+          router.push("/gym/entrenamiento/escaneo/resultado");
+        }}
+      >
         Continuar
       </GlassButton>
     </div>
