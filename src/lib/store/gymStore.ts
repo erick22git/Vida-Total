@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { DEFAULT_VESSELS, type WaterVessel } from "@/lib/gym/water-vessels";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { userScopedLocalStorage } from "./scoped-storage";
 import { useMemo } from "react";
@@ -208,6 +209,12 @@ export interface GymState {
   waterEntries: WaterEntry[];
   addWater: (ml: number, drink?: { id: string; nombre: string; emoji: string }) => void;
   removeWaterEntry: (id: string) => void;
+  /** Vasos propios (botones rápidos de Agua) — ver lib/gym/water-vessels.ts. */
+  waterVessels: WaterVessel[];
+  setWaterVessels: (vessels: WaterVessel[]) => void;
+  /** Autochequeo para la meta adaptativa de agua (ver lib/gym/water-goal.ts). */
+  waterCheck: { date: string; orina?: "clara" | "amarilla" | "oscura"; calor?: boolean } | null;
+  setWaterCheck: (patch: { orina?: "clara" | "amarilla" | "oscura"; calor?: boolean }) => void;
 
   // ---------- Bebidas (catálogo editable, ver lib/data/drinks.ts) ----------
   /** Cambios del usuario sobre una bebida del catálogo (nombre/ícono/color/
@@ -739,6 +746,15 @@ export const useGymStore = create<GymState>()(
         const uidUser = getCurrentUserId();
         if (uidUser) syncInsertWaterEntry(created, uidUser);
       },
+      waterVessels: DEFAULT_VESSELS,
+      setWaterVessels: (vessels) => set({ waterVessels: vessels }),
+      waterCheck: null,
+      setWaterCheck: (patch) =>
+        set((state) => {
+          const today = new Date().toISOString().slice(0, 10);
+          const prev = state.waterCheck && state.waterCheck.date === today ? state.waterCheck : { date: today };
+          return { waterCheck: { ...prev, ...patch } };
+        }),
       removeWaterEntry: (id) => {
         set((state) => ({
           waterEntries: state.waterEntries.filter((w) => w.id !== id),

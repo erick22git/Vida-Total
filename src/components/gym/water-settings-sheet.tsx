@@ -8,13 +8,15 @@
  * también accesibles desde acá directamente).
  */
 import { useMemo, useState } from "react";
+import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Check, Droplets } from "lucide-react";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
 import { useGymStore } from "@/lib/store/gymStore";
 import { useTargetProfile } from "@/lib/nutrition/use-targets";
-import { suggestWaterGoal } from "@/lib/gym/water-goal";
+import { suggestAdaptiveWaterGoal, type OrinaColor } from "@/lib/gym/water-goal";
+import { WaterVesselsSheet } from "@/components/gym/water-vessels-sheet";
 import { DrinkSettingsModal } from "@/components/gym/drink-settings-modal";
 import { DrinkEditModal } from "@/components/gym/drink-edit-modal";
 import type { DrinkOption } from "@/lib/data/drinks";
@@ -31,6 +33,7 @@ export function WaterSettingsSheet({ open, onClose }: { open: boolean; onClose: 
 
   const [goalInput, setGoalInput] = useState(String(waterGoalMl));
   const [drinksOpen, setDrinksOpen] = useState(false);
+  const [vesselsOpen, setVesselsOpen] = useState(false);
   const [editingDrink, setEditingDrink] = useState<DrinkOption | null>(null);
 
   const exerciseMinutesToday = useMemo(() => {
@@ -40,9 +43,35 @@ export function WaterSettingsSheet({ open, onClose }: { open: boolean; onClose: 
       .reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0) / 60;
   }, [sessions]);
 
+  const waterEntries = useGymStore((s) => s.waterEntries);
+  const waterCheck = useGymStore((s) => s.waterCheck);
+  const setWaterCheck = useGymStore((s) => s.setWaterCheck);
+  const checkHoy = waterCheck && waterCheck.date === todayKey() ? waterCheck : null;
+
+  // ml por día de los 7 días anteriores a hoy (días sin registro cuentan 0).
+  const last7DaysMl = useMemo(() => {
+    const out: number[] = [];
+    for (let d = 1; d <= 7; d++) {
+      const day = new Date();
+      day.setDate(day.getDate() - d);
+      const key = format(day, "yyyy-MM-dd");
+      out.push(waterEntries.filter((e) => format(new Date(e.timestamp), "yyyy-MM-dd") === key).reduce((a, e) => a + e.ml, 0));
+    }
+    return out;
+  }, [waterEntries]);
+
   const sugerencia = useMemo(
-    () => suggestWaterGoal(perfilMetas.sexo, perfilMetas.edad, exerciseMinutesToday),
-    [perfilMetas.sexo, perfilMetas.edad, exerciseMinutesToday],
+    () =>
+      suggestAdaptiveWaterGoal({
+        sexo: perfilMetas.sexo,
+        edad: perfilMetas.edad,
+        exerciseMinutesToday,
+        calor: !!checkHoy?.calor,
+        orina: checkHoy?.orina,
+        currentGoalMl: waterGoalMl,
+        last7DaysMl,
+      }),
+    [perfilMetas.sexo, perfilMetas.edad, exerciseMinutesToday, checkHoy?.calor, checkHoy?.orina, waterGoalMl, last7DaysMl],
   );
 
   return (
@@ -102,6 +131,26 @@ export function WaterSettingsSheet({ open, onClose }: { open: boolean; onClose: 
                 <Droplets size={12} /> Sugerencia con base científica
               </span>
               <p className="text-xs text-white/70 leading-relaxed">{sugerencia.mensaje}</p>
+              <div className="flex flex-col gap-1.5 pt-1">
+                <span className="text-[11px] text-white/50">¿Cómo está tu orina hoy?</span>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {([["clara", "Clara"], ["amarilla", "Amarilla"], ["oscura", "Oscura"]] as [OrinaColor, string][]).map(([k, label]) => (
+                    <button
+                      key={k}
+                      onClick={() => setWaterCheck({ orina: k })}
+                      className={`rounded-lg py-2 text-xs cursor-pointer border ${checkHoy?.orina === k ? "border-white/70 bg-white/[0.14] text-white" : "border-white/10 bg-white/[0.04] text-white/70"}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setWaterCheck({ calor: !checkHoy?.calor })}
+                  className={`rounded-lg py-2 text-xs cursor-pointer border ${checkHoy?.calor ? "border-white/70 bg-white/[0.14] text-white" : "border-white/10 bg-white/[0.04] text-white/70"}`}
+                >
+                  {checkHoy?.calor ? "Hoy hace calor (+500 ml)" : "Hoy hace calor / sudo mucho"}
+                </button>
+              </div>
               {sugerencia.genericoBase && (
                 <p className="text-[11px] text-amber-200/70">
                   Completá tu sexo y edad en el perfil de Entrenamiento para que esta base deje de ser genérica.
@@ -118,9 +167,10 @@ export function WaterSettingsSheet({ open, onClose }: { open: boolean; onClose: 
                 <Check size={13} /> Usar {sugerencia.totalMl} ml como meta
               </button>
               <p className="text-[10px] text-white/35">
-                Base: AI de agua del Institute of Medicine (National Academies) según sexo/edad. Extra por ejercicio:
-                estimado general (Mayo Clinic/ACSM, 120-230 ml cada 15-20 min) — no individualizado, no reemplaza
-                pesarte antes/después de entrenar si querés precisión real.
+                Base: AI de agua del Institute of Medicine según sexo/edad. Ejercicio: Mayo Clinic/ACSM (120-230 ml cada
+                15-20 min). Color de orina: marcador de hidratación de Armstrong. Son estimados generales: la meta sube
+                de a 250 ml si aún no cumples la actual, con tope de 4500 ml. Con enfermedad renal o cardíaca, o si tu
+                médico limita líquidos, sigue su indicación.
               </p>
             </div>
 
@@ -131,8 +181,17 @@ export function WaterSettingsSheet({ open, onClose }: { open: boolean; onClose: 
             >
               Bebidas (editar, ocultar o ajustar hidratación)
             </button>
+
+            <button
+              onClick={() => setVesselsOpen(true)}
+              className="w-full text-left px-3.5 py-3 rounded-xl text-sm text-white/85 hover:bg-white/[0.06] cursor-pointer"
+              style={{ background: "#0d0d0d" }}
+            >
+              Mis vasos (nombre, ml, foto o cámara)
+            </button>
           </div>
 
+          <WaterVesselsSheet open={vesselsOpen} onClose={() => setVesselsOpen(false)} />
           <DrinkSettingsModal open={drinksOpen} onClose={() => setDrinksOpen(false)} onEditDrink={setEditingDrink} />
           <DrinkEditModal open={!!editingDrink} onClose={() => setEditingDrink(null)} drink={editingDrink} />
         </motion.div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Plus } from "lucide-react";
+import { Camera, ChevronLeft, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { WaterBottle } from "@/components/gym/water-bottle";
 import { WaterGlass3D, type WaterGlassHandle } from "@/components/gym/water-glass-3d";
@@ -10,6 +10,7 @@ import { WeekStrip } from "@/components/shared/week-strip";
 import { SettingsGlyph } from "@/components/shared/settings-glyph";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { AddDrinkModal } from "@/components/gym/add-drink-modal";
+import { VesselCameraSheet } from "@/components/gym/vessel-camera-sheet";
 import { WaterSettingsSheet } from "@/components/gym/water-settings-sheet";
 import { totalsByDrink } from "@/lib/gym/water-stats";
 import { waterState } from "@/lib/gym/water-state";
@@ -27,7 +28,6 @@ function pourSoundFor(ml: number) {
   return { durationMs, volumeScale };
 }
 
-const QUICK_ADDS = [150, 250, 500];
 const SWIPE_Y = 60;
 // Stack vertical: vaso (acá) → Fecha (año, % por día) → Por bebida/Tendencia.
 const NEXT_HREF = "/gym/agua/fecha";
@@ -52,6 +52,9 @@ export default function AguaPage() {
   const waterEntries = useGymStore((s) => s.waterEntries);
   const drinkOverrides = useGymStore((s) => s.drinkOverrides);
   const addWater = useGymStore((s) => s.addWater);
+  const waterVessels = useGymStore((s) => s.waterVessels);
+  const setWaterVessels = useGymStore((s) => s.setWaterVessels);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const todayEntries = useTodayWaterEntries();
   const [addDrinkOpen, setAddDrinkOpen] = useState(false);
   // Cada toque en un botón rápido llama directo a `pour()`: el vaso suelta el chorro con salpicón (sin esperar un re-render).
@@ -97,6 +100,20 @@ export default function AguaPage() {
     notify({ type: "goal", priority: "low", title: "Meta de agua cumplida", message: `${totalMl} / ${waterGoalMl} ml hoy. ¡Buen trabajo!` });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [water.reached, todayISO]);
+
+  function addMl(ml: number) {
+    addWater(ml);
+    glassRef.current?.pour();
+    void playEvent("button-tap");
+    const { durationMs, volumeScale } = pourSoundFor(ml);
+    void playEvent("water-pour", { durationMs, volumeScale });
+    setTimeout(() => void playEvent("water-splash", { volumeScale }), 140);
+  }
+
+  const BTN_STYLE = {
+    background: "radial-gradient(circle at 50% 30%, rgb(30,30,30) 0%, rgb(13,13,13) 55%, rgb(5,5,5) 100%)",
+    boxShadow: "inset 0 2px 5px rgba(255,255,255,0.1), inset 0 -14px 26px rgba(0,0,0,0.85), 0 10px 26px rgba(0,0,0,0.55)",
+  } as const;
 
   return (
     // Pantalla fija (sin scroll propio): deslizar hacia arriba / rueda hacia abajo lleva a Estadísticas.
@@ -154,29 +171,35 @@ export default function AguaPage() {
         <p className="text-sm text-white/60">
           {totalMl} / {waterGoalMl} ml · {Math.round(water.fraction * 100)} %
         </p>
-        <div className="flex gap-4">
-          {QUICK_ADDS.map((ml) => (
+        <div className="flex flex-wrap justify-center gap-3 max-w-sm">
+          {waterVessels.map((v) => (
             <button
-              key={ml}
-              onClick={() => {
-                addWater(ml);
-                glassRef.current?.pour();
-                void playEvent("button-tap");
-                const { durationMs, volumeScale } = pourSoundFor(ml);
-                void playEvent("water-pour", { durationMs, volumeScale });
-                setTimeout(() => void playEvent("water-splash", { volumeScale }), 140);
-              }}
-              aria-label={`Agregar ${ml} ml`}
-              className="relative rounded-2xl flex flex-col items-center justify-center w-16 h-16 cursor-pointer transition-transform hover:scale-105 active:scale-95"
-              style={{
-                background: "radial-gradient(circle at 50% 30%, rgb(30,30,30) 0%, rgb(13,13,13) 55%, rgb(5,5,5) 100%)",
-                boxShadow: "inset 0 2px 5px rgba(255,255,255,0.1), inset 0 -14px 26px rgba(0,0,0,0.85), 0 10px 26px rgba(0,0,0,0.55)",
-              }}
+              key={v.id}
+              onClick={() => addMl(v.ml)}
+              aria-label={`Agregar ${v.nombre}, ${v.ml} ml`}
+              className="relative rounded-2xl flex flex-col items-center justify-center w-16 h-16 overflow-hidden cursor-pointer transition-transform hover:scale-105 active:scale-95"
+              style={BTN_STYLE}
             >
-              <span className="text-base font-bold leading-none text-white/85">{ml}</span>
-              <span className="text-[9px] leading-none text-white/40 mt-1">ml</span>
+              {v.foto && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={v.foto} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+              )}
+              <span className="relative text-base font-bold leading-none text-white/90">{v.ml}</span>
+              <span className="relative text-[9px] leading-none text-white/55 mt-1 max-w-[3.6rem] truncate">{v.nombre}</span>
             </button>
           ))}
+          <button
+            onClick={() => {
+              setCameraOpen(true);
+              void playEvent("button-tap");
+            }}
+            aria-label="Medir un vaso con la cámara"
+            className="relative rounded-2xl flex flex-col items-center justify-center w-16 h-16 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+            style={BTN_STYLE}
+          >
+            <Camera size={20} className="text-white/85" />
+            <span className="text-[9px] leading-none text-white/55 mt-1.5">cámara</span>
+          </button>
         </div>
         <button
           onClick={() => {
@@ -196,6 +219,16 @@ export default function AguaPage() {
       <div className="pb-[max(env(safe-area-inset-bottom),28px)] min-h-[104px] shrink-0">
         <WeekStrip doneKeys={goalDays} todayISO={todayISO} viewIndex={0} viewCount={3} />
       </div>
+
+      <VesselCameraSheet
+        open={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+        onAddOnce={(d) => addMl(d.ml)}
+        onSave={(d) => {
+          if (waterVessels.length < 8) setWaterVessels([...waterVessels, { id: `v-${Date.now().toString(36)}`, nombre: d.nombre, ml: d.ml, foto: d.foto }]);
+          addMl(d.ml);
+        }}
+      />
 
       <WaterSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 

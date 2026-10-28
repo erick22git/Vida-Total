@@ -60,6 +60,8 @@ const PROMPT = `Eres un experto en nutrición. Analiza la imagen y encuentra TOD
 
 Para cada alimento que identifiques, estima su porción comparando con referencias visuales comunes en la imagen (tamaño del plato, tamaño de una mano o cubierto, envases reconocibles, etc.) y calcula valores nutricionales realistas para esa porción estimada.
 
+Si el alimento es una BEBIDA (agua, jugo, leche, café, gaseosa, batido, té...), estima el volumen visible o el tamaño del envase y pon en "estimatedGrams" esos mililitros (1 ml ≈ 1 g), usando un nombre simple y común en español (ej. "Agua", "Jugo de naranja", "Café", "Leche"). Esos ml también se suman a la hidratación del día.
+
 Responde EXCLUSIVAMENTE con un JSON válido (sin bloques de código markdown, sin texto adicional antes o después) con exactamente este formato:
 
 {
