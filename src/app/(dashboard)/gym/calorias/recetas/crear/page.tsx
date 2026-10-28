@@ -7,6 +7,7 @@
  * "cómo crear" (manual/foto/enlace) y el picker de ingredientes quedan como hojas oscuras propias en
  * vez de `GlassModal`.
  */
+import { useMealOrder } from "@/lib/gym/meal-time";
 import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, X, Plus, Minus, Trash2, Camera, Link2, FileEdit, MoreVertical, ShieldCheck } from "lucide-react";
@@ -18,7 +19,6 @@ import { MEAL_LABELS, type Food, type MealType, type RecipeIngredient } from "@/
 import { MONO_FONT } from "@/lib/ui/mono-font";
 
 type CreationMode = "manual" | "foto" | "enlace" | null;
-const MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 
 /** Al tocar "Agregar" en Ingredientes, en vez de sumar el alimento directo
  * con una porción default, se navega a la pantalla de detalle de ese
@@ -63,6 +63,7 @@ export default function CrearRecetaPage() {
 }
 
 function CrearRecetaForm() {
+  const MEALS = useMealOrder();
   const router = useRouter();
   const searchParams = useSearchParams();
   const recipeId = searchParams.get("recipeId");

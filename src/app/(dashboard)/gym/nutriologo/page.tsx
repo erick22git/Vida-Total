@@ -747,7 +747,7 @@ function PlanComidasCard() {
           {plan.entries.map((entry) => (
             <div key={entry.meal} className="rounded-3xl p-4 flex flex-col gap-2 bg-white/[0.05] border border-white/10">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold capitalize">{entry.meal === "snack1" ? "Colación 1" : entry.meal === "snack2" ? "Colación 2" : entry.meal}</p>
+                <p className="text-sm font-semibold capitalize">{/^snack(\d)$/.test(entry.meal) ? `Colación ${entry.meal.slice(5)}` : entry.meal}</p>
                 <span className="text-xs text-white/45 tabular-nums">{Math.round(entry.totales.calorias)} kcal</span>
               </div>
               {entry.items.map((item) => (

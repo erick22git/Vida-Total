@@ -19,7 +19,6 @@ import { useGymStore, type Experiencia } from "@/lib/store/gymStore";
 import { useAllExercises } from "@/components/gym/exercise-picker";
 import { Mascot } from "@/components/agente/mascot";
 import { todayDayIndex } from "@/lib/data/weekly-plan";
-import { trainingStreakInfo } from "@/lib/gym/training-streak";
 import {
   estimated1RM,
   experienceLevelFrom,
@@ -36,6 +35,12 @@ import {
   type VolumeStatus,
 } from "@/lib/training/hypertrophy-engine";
 import { suggestNextWeight, type ProgressionSuggestion } from "@/lib/training/progressive-overload";
+import { adviseImprovements, type Priority } from "@/lib/training/improvement-advice";
+import { diagnoseAcrossModules, type Area } from "@/lib/gym/cross-diagnosis";
+import { evaluatePlanAdherence } from "@/lib/nutrition/plan-adherence";
+import { useTargetProfile } from "@/lib/nutrition/use-targets";
+import { activeLoggedFoods } from "@/lib/food-utils";
+import { localDayKey } from "@/lib/gym/kegel-dates";
 import { phaseFromObjetivo, type CaloriePhase } from "@/lib/gym/calorie-periodization";
 import { useSwipeCarousel, SwipeCarouselStage } from "@/components/shared/swipe-carousel";
 import { ChainDots } from "@/components/gym/chain-dots";
@@ -63,12 +68,26 @@ const STATUS_LABEL: Record<VolumeStatus, string> = {
   excedido: "Excedido",
 };
 
-const CARD_LABELS = ["Coach por voz", "Rutina de hoy", "Gráficas", "Progreso general"] as const;
+const CARD_LABELS = ["Coach por voz", "Rutina de hoy", "Gráficas", "Progreso general", "Diagnóstico"] as const;
+
+/** Sesiones para el Coach: fecha en día LOCAL (antes se comparaba la fecha UTC, que corre el día de lo que
+ * entrenas de noche) y, si hay un entrenamiento en curso con series ya tildadas, también cuenta: antes el Coach
+ * decía "no registraste series esta semana" mientras tenías el entrenamiento abierto sin terminar. */
+function useCoachSessions(): WorkoutSession[] {
+  const sessions = useGymStore((s) => s.sessions);
+  const active = useGymStore((s) => s.activeSession);
+  return useMemo(() => {
+    const local = (s: WorkoutSession): WorkoutSession => ({ ...s, date: `${localDayKey(new Date(s.date))}T12:00:00` });
+    const list = sessions.map(local);
+    if (active && active.ejercicios.some((e) => e.sets.some((x) => x.completado))) list.push(local(active));
+    return list;
+  }, [sessions, active]);
+}
 
 export default function CoachPage() {
   const router = useRouter();
   const [card, setCard] = useState(0);
-  const CARD_COUNT = 4;
+  const CARD_COUNT = 5;
   const { direction, goTo, onDragEnd } = useSwipeCarousel({ index: card, length: CARD_COUNT, onIndexChange: setCard });
 
   const startY = useRef<number | null>(null);
@@ -130,6 +149,7 @@ export default function CoachPage() {
           {card === 1 && <RutinaCard />}
           {card === 2 && <GraficasCard />}
           {card === 3 && <ProgresoCard />}
+          {card === 4 && <DiagnosticoCard />}
         </SwipeCarouselStage>
       </main>
 
@@ -175,7 +195,7 @@ const PHASE_LABEL: Record<CaloriePhase, string> = { deficit: "Déficit calórico
 
 function CoachVozCard() {
   const gymProfile = useGymStore((s) => s.gymProfile);
-  const sessions = useGymStore((s) => s.sessions);
+  const sessions = useCoachSessions();
   const allExercises = useAllExercises();
   const phase = phaseFromObjetivo(gymProfile?.objetivoCalorico);
 
@@ -271,7 +291,7 @@ function weightProgressionFor(sessions: WorkoutSession[], exerciseId: string): P
 function RutinaCard() {
   const weeklyPlan = useGymStore((s) => s.weeklyPlan);
   const routines = useGymStore((s) => s.routines);
-  const sessions = useGymStore((s) => s.sessions);
+  const sessions = useCoachSessions();
   const allExercises = useAllExercises();
   const [dismissed, setDismissed] = useState(false);
 
@@ -363,7 +383,7 @@ function RutinaCard() {
 // Tarjeta 3: Gráficas
 // ---------------------------------------------------------------------------
 function GraficasCard() {
-  const sessions = useGymStore((s) => s.sessions);
+  const sessions = useCoachSessions();
   const gymProfile = useGymStore((s) => s.gymProfile);
   const weightEntries = useGymStore((s) => s.weightEntries);
   const allExercises = useAllExercises();
@@ -510,75 +530,216 @@ function RirTrend({ sessions }: { sessions: WorkoutSession[] }) {
 }
 
 // ---------------------------------------------------------------------------
-// Tarjeta 4: Progreso general
+// Tarjeta 4: Progreso general — qué mejorar, con números concretos
 // ---------------------------------------------------------------------------
-function ProgresoCard() {
-  const weeklyPlan = useGymStore((s) => s.weeklyPlan);
-  const sessions = useGymStore((s) => s.sessions);
-  const gymProfile = useGymStore((s) => s.gymProfile);
-  const allExercises = useAllExercises();
+const PRIORITY_STYLE: Record<Priority, { label: string; bg: string; fg: string }> = {
+  alta: { label: "Prioridad alta", bg: "rgba(255,255,255,0.14)", fg: "#ffffff" },
+  media: { label: "Prioridad media", bg: "rgba(255,255,255,0.08)", fg: "rgba(255,255,255,0.8)" },
+  baja: { label: "Prioridad baja", bg: "rgba(255,255,255,0.05)", fg: "rgba(255,255,255,0.55)" },
+};
 
-  const todayISO = new Date().toISOString().slice(0, 10);
-  const trainedKeys = new Set(sessions.filter((s) => s.completado).map((s) => s.date.slice(0, 10)));
-  const { streak } = trainingStreakInfo(trainedKeys, weeklyPlan, todayISO);
-
+function weekCounts(sessions: WorkoutSession[], weeklyPlan: ReturnType<typeof useGymStore.getState>["weeklyPlan"]) {
   const weekStart = mondayOf(new Date());
   const endDate = new Date(weekStart + "T00:00:00Z");
   endDate.setUTCDate(endDate.getUTCDate() + 7);
   const endISO = endDate.toISOString().slice(0, 10);
-  const completedThisWeek = sessions.filter((s) => s.completado && s.date.slice(0, 10) >= weekStart && s.date.slice(0, 10) < endISO).length;
-  const plannedThisWeek = weeklyPlan.filter((d) => d.grupoMuscular !== "Descanso").length;
+  const completed = sessions.filter((s) => s.completado && s.date.slice(0, 10) >= weekStart && s.date.slice(0, 10) < endISO).length;
+  const planned = weeklyPlan.filter((d) => d.grupoMuscular !== "Descanso").length;
+  const daysLeft = 7 - todayDayIndex();
+  return { weekStart, completed, planned, daysLeft };
+}
 
+function ProgresoCard() {
+  const weeklyPlan = useGymStore((s) => s.weeklyPlan);
+  const gymProfile = useGymStore((s) => s.gymProfile);
+  const sessions = useCoachSessions();
+  const inProgress = useGymStore((s) => !!s.activeSession && s.activeSession.ejercicios.some((e) => e.sets.some((x) => x.completado)));
+  const allExercises = useAllExercises();
   const level = experienceLevelFrom(gymProfile?.experiencia);
-  const volume = weeklyMuscleVolume(sessions, allExercises, weekStart);
-  const bajo = (Object.keys(volume) as MuscleGroup[])
-    .filter((g) => {
-      const l = volumeLandmarksFor(g, level);
-      return l && volumeStatus(volume[g] ?? 0, l) === "bajo";
-    });
-  // Grupos con landmarks que todavía no se entrenaron nada esta semana también cuentan como "bajo"
-  // (0 series < MEV siempre, salvo que el MEV sea 0).
-  const allGroupKeys: MuscleGroup[] = ["Pecho", "Espalda", "Hombros", "Biceps", "Triceps", "Antebrazo", "Cuadriceps", "Femoral", "Pantorrilla", "Abdomen", "Gluteos"];
-  const untrainedLow = allGroupKeys.filter((g) => {
-    if (volume[g] !== undefined) return false;
-    const l = volumeLandmarksFor(g, level);
-    return l && l.mev > 0;
-  });
-  const priorities = Array.from(new Set([...bajo, ...untrainedLow]));
+  const { weekStart, completed, planned, daysLeft } = weekCounts(sessions, weeklyPlan);
+
+  const items = useMemo(
+    () => adviseImprovements({ sessions, exercises: allExercises, level, weekStart, planned, completed, daysLeft }),
+    [sessions, allExercises, level, weekStart, planned, completed, daysLeft],
+  );
 
   return (
     <div className="flex flex-col gap-5 pt-2">
-      <section className="rounded-3xl p-4 flex items-center justify-between bg-white/[0.05] border border-white/10">
-        <div>
-          <SectionTitle>Racha</SectionTitle>
-          <p className="text-2xl font-black tabular-nums pt-1">{streak} días</p>
-        </div>
-        <ChevronRight size={16} className="text-white/30" />
-      </section>
-
       <section className="flex flex-col gap-2">
         <SectionTitle>Adherencia esta semana</SectionTitle>
         <p className="text-sm text-white/70">
-          {completedThisWeek} de {plannedThisWeek} sesiones planeadas
+          {completed} de {planned} sesiones planeadas
+          {inProgress ? " · tienes un entrenamiento en curso con series ya anotadas" : ""}
         </p>
         <div className="h-2.5 rounded-full bg-white/[0.08] overflow-hidden">
-          <div
-            className="h-full rounded-full"
-            style={{ width: `${plannedThisWeek > 0 ? Math.min(100, (completedThisWeek / plannedThisWeek) * 100) : 0}%`, background: ENTRENAMIENTO_ACCENT }}
-          />
+          <div className="h-full rounded-full bg-white" style={{ width: `${planned > 0 ? Math.min(100, (completed / planned) * 100) : 0}%` }} />
         </div>
       </section>
 
-      <section className="flex flex-col gap-2">
-        <SectionTitle>Próximos hitos</SectionTitle>
-        {priorities.length === 0 ? (
-          <p className="text-sm text-white/50">Ningún grupo está por debajo de su mínimo esta semana.</p>
-        ) : (
-          <p className="text-sm text-white/70">
-            Priorizá: <b>{priorities.join(", ")}</b> — están por debajo del mínimo para progresar esta semana.
+      <section className="flex flex-col gap-2.5">
+        <SectionTitle>En qué mejorar</SectionTitle>
+        {items.length === 0 ? (
+          <p className="text-sm text-white/55">
+            {sessions.some((s) => s.date.slice(0, 10) >= weekStart)
+              ? "Esta semana no hay nada que corregir: volumen, frecuencia y fatiga están en orden."
+              : "Todavía no hay series esta semana. Cuando entrenes te digo qué grupos subir o bajar y con qué ejercicios."}
           </p>
+        ) : (
+          items.map((it) => {
+            const st = PRIORITY_STYLE[it.priority];
+            return (
+              <div key={it.id} className="rounded-2xl p-3.5 flex flex-col gap-1 bg-white/[0.05] border border-white/10">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] uppercase tracking-wide text-white/40">{it.area}</span>
+                  <span className="text-[10px] rounded-full px-2 py-0.5" style={{ background: st.bg, color: st.fg }}>
+                    {st.label}
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-white leading-snug">{it.title}</p>
+                <p className="text-xs text-white/60 leading-relaxed">{it.detail}</p>
+              </div>
+            );
+          })
         )}
       </section>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tarjeta 5: Diagnóstico — cruza calorías, agua, entrenamiento y peso
+// ---------------------------------------------------------------------------
+const AREA_LABEL: Record<Area, string> = {
+  registro: "Registro",
+  calorias: "Calorías",
+  proteina: "Proteína",
+  peso: "Peso",
+  entrenamiento: "Entrenamiento",
+  agua: "Agua",
+};
+
+function DiagnosticoCard() {
+  const loggedFoods = useGymStore((s) => s.loggedFoods);
+  const calorieGoal = useGymStore((s) => s.calorieGoal);
+  const proteinGoal = useGymStore((s) => s.proteinGoal);
+  const calorieGoalHistory = useGymStore((s) => s.calorieGoalHistory);
+  const weightEntries = useGymStore((s) => s.weightEntries);
+  const measurements = useGymStore((s) => s.bodyMeasurementHistory);
+  const gymProfile = useGymStore((s) => s.gymProfile);
+  const waterEntries = useGymStore((s) => s.waterEntries);
+  const waterGoalMl = useGymStore((s) => s.waterGoalMl);
+  const weeklyPlan = useGymStore((s) => s.weeklyPlan);
+  const sessions = useCoachSessions();
+  const allExercises = useAllExercises();
+  const perfil = useTargetProfile();
+  const [applied, setApplied] = useState<string | null>(null);
+
+  const result = useMemo(() => {
+    const today = new Date();
+    const dayKeys = Array.from({ length: 7 }, (_, k) => localDayKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() - k)));
+    const foods = activeLoggedFoods(loggedFoods);
+    const protByDay = new Map<string, number>();
+    for (const f of foods) {
+      const k = localDayKey(new Date(f.timestamp));
+      if (dayKeys.includes(k)) protByDay.set(k, (protByDay.get(k) ?? 0) + (f.proteina || 0));
+    }
+    const loggedDaysLast7 = protByDay.size;
+    const proteinAvgG = loggedDaysLast7 ? [...protByDay.values()].reduce((a, b) => a + b, 0) / loggedDaysLast7 : null;
+
+    // Agua: los 7 días ANTERIORES a hoy (hoy todavía está en curso).
+    const prev7 = dayKeys.slice(1);
+    const waterByDay = new Map<string, number>();
+    for (const e of waterEntries) {
+      const k = localDayKey(new Date(e.timestamp));
+      waterByDay.set(k, (waterByDay.get(k) ?? 0) + e.ml);
+    }
+    const last7Ml = prev7.map((k) => waterByDay.get(k) ?? 0);
+    const trainedKeys = new Set(sessions.filter((s) => s.completado).map((s) => s.date.slice(0, 10)));
+    const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+    const trainingDaysAvgMl = trainedKeys.size ? avg(prev7.filter((k) => trainedKeys.has(k)).map((k) => waterByDay.get(k) ?? 0)) : null;
+    const restDaysAvgMl = avg(prev7.filter((k) => !trainedKeys.has(k)).map((k) => waterByDay.get(k) ?? 0));
+
+    const plan = evaluatePlanAdherence({
+      loggedFoods,
+      calorieGoal,
+      goalHistory: calorieGoalHistory ?? [],
+      weightEntries,
+      measurements,
+      objetivo: gymProfile?.objetivoCalorico,
+    });
+
+    const level = experienceLevelFrom(gymProfile?.experiencia);
+    const { weekStart, completed, planned, daysLeft } = weekCounts(sessions, weeklyPlan);
+    const volume = weeklyMuscleVolume(sessions, allExercises, weekStart);
+    const groups: MuscleGroup[] = ["Pecho", "Espalda", "Hombros", "Biceps", "Triceps", "Cuadriceps", "Femoral", "Gluteos"];
+    const lowGroups = groups.filter((g) => {
+      const lm = volumeLandmarksFor(g, level);
+      return lm && volumeStatus(volume[g] ?? 0, lm) === "bajo";
+    });
+    const anySetsThisWeek = Object.keys(volume).length > 0;
+
+    return diagnoseAcrossModules({
+      objetivo: gymProfile?.objetivoCalorico,
+      entrena: !!perfil.entrena,
+      pesoKg: perfil.pesoKg,
+      calorieGoal,
+      proteinGoal,
+      plan,
+      loggedDaysLast7,
+      proteinAvgG,
+      water: { goalMl: waterGoalMl, last7Ml, trainingDaysAvgMl, restDaysAvgMl },
+      training: { planned, completed, daysLeft, lowGroups, anySetsThisWeek },
+    });
+  }, [loggedFoods, calorieGoal, proteinGoal, calorieGoalHistory, weightEntries, measurements, gymProfile, waterEntries, waterGoalMl, weeklyPlan, sessions, allExercises, perfil]);
+
+  const SEV = {
+    alta: { dot: "#ffffff", label: "Falla" },
+    media: { dot: "rgba(255,255,255,0.6)", label: "Mejorar" },
+    ok: { dot: "rgba(255,255,255,0.25)", label: "Bien" },
+  } as const;
+
+  return (
+    <div className="flex flex-col gap-4 pt-2">
+      <SectionTitle>Dónde estás fallando</SectionTitle>
+      <div className="rounded-3xl p-4 bg-white/[0.07] border border-white/15">
+        <p className="text-sm font-semibold leading-relaxed">{result.headline}</p>
+      </div>
+
+      {result.findings.map((f) => (
+        <div key={f.id} className="rounded-2xl p-3.5 flex flex-col gap-1.5 bg-white/[0.05] border border-white/10">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] uppercase tracking-wide text-white/40">{AREA_LABEL[f.area]}</span>
+            <span className="flex items-center gap-1.5 text-[10px] text-white/55">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: SEV[f.severity].dot }} />
+              {SEV[f.severity].label}
+            </span>
+          </div>
+          <p className="text-sm font-semibold leading-snug">{f.title}</p>
+          <p className="text-xs text-white/60 leading-relaxed">{f.detail}</p>
+          {f.action &&
+            (f.action.kind === "link" ? (
+              <Link href={f.action.href!} className="self-start mt-1 rounded-full px-3.5 py-1.5 text-xs font-semibold bg-white text-black">
+                {f.action.label}
+              </Link>
+            ) : applied === f.id ? (
+              <span className="self-start mt-1 text-xs text-white/60">Meta de agua actualizada a {f.action.ml} ml.</span>
+            ) : (
+              <button
+                onClick={() => {
+                  useGymStore.setState({ waterGoalMl: f.action!.ml });
+                  setApplied(f.id);
+                }}
+                className="self-start mt-1 rounded-full px-3.5 py-1.5 text-xs font-semibold bg-white text-black cursor-pointer"
+              >
+                {f.action.label}
+              </button>
+            ))}
+        </div>
+      ))}
+      <p className="text-[10px] text-white/35 leading-relaxed">
+        Cruza lo que anotas en Calorías, Agua, Entrenamiento y Peso. Es una guía basada en tus propios datos, no un diagnóstico médico: cuantos más
+        días anotes, más confiable es.
+      </p>
     </div>
   );
 }

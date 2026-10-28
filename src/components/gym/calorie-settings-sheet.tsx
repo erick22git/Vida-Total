@@ -10,8 +10,9 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, TrendingUp, Check, Clock } from "lucide-react";
+import { ChevronLeft, TrendingUp, Check, Clock, Apple } from "lucide-react";
 import { MealTimesSheet } from "@/components/gym/meal-times-sheet";
+import { SnackAdviceSheet } from "@/components/gym/snack-advice-sheet";
 import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
 import { GlassButton } from "@/components/glass/glass-button";
@@ -51,6 +52,7 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
   const dismissAdaptiveSuggestion = useGymStore((s) => s.dismissAdaptiveSuggestion);
   const [chartKind, setChartKind] = useCalorieChartPref();
   const [mealTimesOpen, setMealTimesOpen] = useState(false);
+  const [snackAdviceOpen, setSnackAdviceOpen] = useState(false);
 
   // Ajuste adaptativo (Fase 3): solo se puede evaluar si ya se configuró la meta con la
   // calculadora (necesitamos el TDEE calculado por fórmula para comparar contra el real).
@@ -257,10 +259,17 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
               >
                 <Clock size={15} /> Horario de cada comida
               </button>
+              <button
+                onClick={() => setSnackAdviceOpen(true)}
+                className="w-full flex items-center gap-2 text-left px-3.5 py-3 rounded-xl text-sm text-white/85 hover:bg-white/[0.06] cursor-pointer"
+              >
+                <Apple size={15} /> Snacks según tus objetivos
+              </button>
             </div>
           </div>
 
           <MealTimesSheet open={mealTimesOpen} onClose={() => setMealTimesOpen(false)} />
+          <SnackAdviceSheet open={snackAdviceOpen} onClose={() => setSnackAdviceOpen(false)} />
 
           <ExpandSheet open={goalModalOpen} onClose={() => setGoalModalOpen(false)} title="Configuración de calorías">
             <div className="flex flex-col gap-3">

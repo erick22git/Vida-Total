@@ -3,15 +3,17 @@
 import { useState } from "react";
 import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { DEFAULT_MEAL_START_TIMES, usePreferencesStore } from "@/lib/store/preferencesStore";
-import { MEAL_ORDER } from "@/lib/gym/meal-time";
+import { sortedMeals } from "@/lib/gym/meal-time";
 import { MEAL_LABELS, type MealType } from "@/lib/types";
 
 /**
- * "Tiempos de comida": la hora a la que EMPIEZA cada comida. El título de Calorías cambia solo según esta hora y cada comida
- * dura hasta que empieza la siguiente. Las horas tienen que ir en orden a lo largo del día.
+ * "Tiempos de comida": la hora a la que EMPIEZA cada comida (Desayuno, Almuerzo, Cena y los Snack 1, 2, 3… que tengas
+ * activos). El título de Calorías cambia solo según esta hora y cada comida dura hasta que empieza la siguiente. Se
+ * listan por hora; dos comidas no pueden empezar a la misma hora.
  */
 export function MealTimesSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const saved = usePreferencesStore((s) => s.mealStartTimes);
+  const snackCount = usePreferencesStore((s) => s.snackCount);
   const setMealStartTimes = usePreferencesStore((s) => s.setMealStartTimes);
   const [draft, setDraft] = useState<Record<MealType, string>>(() => ({ ...DEFAULT_MEAL_START_TIMES, ...saved }));
   const [error, setError] = useState<string | null>(null);
@@ -26,12 +28,21 @@ export function MealTimesSheet({ open, onClose }: { open: boolean; onClose: () =
     }
   }
 
+  const meals = sortedMeals(draft, snackCount);
+
   function save() {
-    for (let i = 1; i < MEAL_ORDER.length; i++) {
-      if (!draft[MEAL_ORDER[i]] || draft[MEAL_ORDER[i]] <= draft[MEAL_ORDER[i - 1]]) {
-        setError(`${MEAL_LABELS[MEAL_ORDER[i]]} tiene que empezar después de ${MEAL_LABELS[MEAL_ORDER[i - 1]]}.`);
+    const seen = new Map<string, MealType>();
+    for (const m of meals) {
+      if (!draft[m]) {
+        setError(`Pon la hora de ${MEAL_LABELS[m]}.`);
         return;
       }
+      const clash = seen.get(draft[m]);
+      if (clash) {
+        setError(`${MEAL_LABELS[m]} y ${MEAL_LABELS[clash]} empiezan a la misma hora.`);
+        return;
+      }
+      seen.set(draft[m], m);
     }
     setMealStartTimes(draft);
     onClose();
@@ -40,8 +51,11 @@ export function MealTimesSheet({ open, onClose }: { open: boolean; onClose: () =
   return (
     <ExpandSheet open={open} onClose={onClose} title="Tiempos de comida">
       <div className="flex flex-col gap-3 pb-2">
-        <p className="text-sm text-white/55">Elige a qué hora empieza cada comida. Cada una dura hasta que empieza la siguiente.</p>
-        {MEAL_ORDER.map((meal) => (
+        <p className="text-sm text-white/55">
+          Elige a qué hora empieza cada comida y cada snack. Cada una dura hasta que empieza la siguiente. Para tener más snacks usa
+          &ldquo;Snacks según tus objetivos&rdquo;.
+        </p>
+        {meals.map((meal) => (
           <label key={meal} className="flex items-center justify-between gap-3 rounded-2xl bg-white/[0.06] border border-white/10 px-4 py-2.5">
             <span className="text-sm font-semibold text-white">{MEAL_LABELS[meal]}</span>
             <input
@@ -53,7 +67,7 @@ export function MealTimesSheet({ open, onClose }: { open: boolean; onClose: () =
           </label>
         ))}
         {error && (
-          <p className="text-xs text-[#ff9a9d]" role="alert">
+          <p className="text-xs text-white/80" role="alert">
             {error}
           </p>
         )}

@@ -1,16 +1,44 @@
+import { useMemo } from "react";
 import type { MealType } from "@/lib/types";
 import { DEFAULT_MEAL_START_TIMES, usePreferencesStore } from "@/lib/store/preferencesStore";
 
 /**
  * Qué comida corresponde según la hora del día — usado por la pantalla principal de Calorías para que el título de
  * arriba (Desayuno/Almuerzo/Cena/Snack) cambie solo a medida que pasan las horas, sin que el usuario tenga que elegir.
- * Orden real del día: desayuno → almuerzo → snack1 → snack2 → cena (los snacks van ENTRE almuerzo y cena, no
- * después de la cena).
+ * El orden es el de las horas configuradas (Snack 1..N pueden ir antes o después del almuerzo, según su hora).
  *
  * La hora de inicio de cada comida es configurable (Calorías → Tiempos de comida, `preferencesStore.mealStartTimes`); cada
  * comida dura hasta que empieza la siguiente.
  */
-export const MEAL_ORDER: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
+export const ALL_MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "snack3", "snack4", "cena"];
+export const MAX_SNACKS = 4;
+
+/** Comidas activas: desayuno, almuerzo y cena, más `snackCount` snacks (Snack 1..N). Sin ordenar. */
+export function activeMeals(snackCount: number): MealType[] {
+  const n = Math.max(0, Math.min(MAX_SNACKS, snackCount));
+  return ["desayuno", "almuerzo", ...(["snack1", "snack2", "snack3", "snack4"] as MealType[]).slice(0, n), "cena"];
+}
+
+/** Comidas activas ordenadas por su hora de inicio (la que empieza más temprano primero). */
+export function sortedMeals(times: Partial<Record<MealType, string>> | undefined, snackCount: number): MealType[] {
+  return activeMeals(snackCount)
+    .map((meal) => ({ meal, fromMin: toMinutes(times?.[meal], DEFAULT_MEAL_START_TIMES[meal]) }))
+    .sort((a, b) => a.fromMin - b.fromMin)
+    .map((x) => x.meal);
+}
+
+/** Orden actual de las comidas del día (por hora), leído de las preferencias — para código fuera de React. */
+export function getMealOrder(): MealType[] {
+  const { mealStartTimes, snackCount } = usePreferencesStore.getState();
+  return sortedMeals(mealStartTimes, snackCount);
+}
+
+/** Igual que `getMealOrder`, pero reactivo: se actualiza solo al cambiar horarios o la cantidad de snacks. */
+export function useMealOrder(): MealType[] {
+  const times = usePreferencesStore((s) => s.mealStartTimes);
+  const count = usePreferencesStore((s) => s.snackCount);
+  return useMemo(() => sortedMeals(times, count), [times, count]);
+}
 
 function toMinutes(hhmm: string | undefined, fallback: string): number {
   const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm ?? "") ?? /^(\d{1,2}):(\d{2})$/.exec(fallback)!;
@@ -20,7 +48,8 @@ function toMinutes(hhmm: string | undefined, fallback: string): number {
 /** Rangos ordenados por hora de inicio, tomando lo configurado (o el valor por defecto si falta). */
 function ranges(): { fromMin: number; meal: MealType }[] {
   const t = usePreferencesStore.getState().mealStartTimes;
-  return MEAL_ORDER.map((meal) => ({ meal, fromMin: toMinutes(t?.[meal], DEFAULT_MEAL_START_TIMES[meal]) })).sort((a, b) => a.fromMin - b.fromMin);
+  const count = usePreferencesStore.getState().snackCount;
+  return activeMeals(count).map((meal) => ({ meal, fromMin: toMinutes(t?.[meal], DEFAULT_MEAL_START_TIMES[meal]) })).sort((a, b) => a.fromMin - b.fromMin);
 }
 
 function minutesOfDay(date: Date): number {

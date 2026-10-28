@@ -5,6 +5,7 @@
  * interfaz vieja de tarjetas de vidrio). Misma lógica de siempre (filtros, favoritos, crear con IA) —
  * esto solo cambia cómo se ve.
  */
+import { useMealOrder } from "@/lib/gym/meal-time";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Sparkles, Plus, Heart, Clock, Users, X } from "lucide-react";
@@ -18,11 +19,11 @@ import { commitDraftItems, uid, type DraftItem } from "@/lib/nutrition/draft-ite
 import { getResolverIndex, resolveRecipe } from "@/lib/nutrition/food-resolver";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 
-const MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 
 type FilterChip = "mejor" | MealType | "favoritos";
 
 export default function RecetasPage() {
+  const MEALS = useMealOrder();
   const router = useRouter();
   const recipes = useGymStore((s) => s.recipes);
   const addRecipe = useGymStore((s) => s.addRecipe);

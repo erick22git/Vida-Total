@@ -15,6 +15,7 @@
  * verdura + grasa en cada comida principal — ver docs/ciencia-nutricion.md).
  */
 import type { Food, MealType } from "@/lib/types";
+import { getMealOrder } from "@/lib/gym/meal-time";
 import { parsePorcionGramos, scaleNutrition, type ScaledNutrition } from "@/lib/food-utils";
 
 /** % de la meta diaria que se asigna a cada comida. Suma 1. Convención del proyecto (ver cabecera). */
@@ -23,6 +24,8 @@ export const MEAL_CALORIE_SPLIT: Record<MealType, number> = {
   almuerzo: 0.3,
   snack1: 0.1,
   snack2: 0.1,
+  snack3: 0.1,
+  snack4: 0.1,
   cena: 0.25,
 };
 
@@ -55,6 +58,14 @@ const MEAL_TEMPLATES: Record<MealType, RoleSpec[]> = {
     { role: "carbo", categorias: ["Fruta", "Cereal"], gramosMin: 30, gramosMax: 150 },
   ],
   snack2: [
+    { role: "proteina", categorias: ["Lácteo", "Fruto seco", "Proteína"], gramosMin: 20, gramosMax: 150 },
+    { role: "carbo", categorias: ["Fruta", "Cereal"], gramosMin: 30, gramosMax: 150 },
+  ],
+  snack3: [
+    { role: "proteina", categorias: ["Lácteo", "Fruto seco", "Proteína"], gramosMin: 20, gramosMax: 150 },
+    { role: "carbo", categorias: ["Fruta", "Cereal"], gramosMin: 30, gramosMax: 150 },
+  ],
+  snack4: [
     { role: "proteina", categorias: ["Lácteo", "Fruto seco", "Proteína"], gramosMin: 20, gramosMax: 150 },
     { role: "carbo", categorias: ["Fruta", "Cereal"], gramosMin: 30, gramosMax: 150 },
   ],
@@ -180,12 +191,13 @@ export function suggestMealPlan(params: {
   meals?: MealType[];
 }): MealPlanSuggestion {
   const dia = params.dia ?? new Date().toISOString().slice(0, 10);
-  const meals = params.meals ?? (Object.keys(MEAL_CALORIE_SPLIT) as MealType[]);
+  const meals = params.meals ?? getMealOrder();
+  const splitTotal = meals.reduce((a, m) => a + MEAL_CALORIE_SPLIT[m], 0) || 1;
   const seedBase = dayOfYear(new Date(`${dia}T00:00:00`));
   const avisos: string[] = [];
 
   const entries = meals.map((meal, mi) => {
-    const pct = MEAL_CALORIE_SPLIT[meal];
+    const pct = MEAL_CALORIE_SPLIT[meal] / splitTotal;
     const entry = buildMeal(
       meal,
       params.foods,
@@ -216,6 +228,8 @@ const MEAL_LABELS_PLAN: Record<MealType, string> = {
   almuerzo: "Almuerzo",
   snack1: "Colación 1",
   snack2: "Colación 2",
+  snack3: "Colación 3",
+  snack4: "Colación 4",
   cena: "Cena",
 };
 const ROLE_LABELS: Record<Role, string> = { proteina: "Proteína", carbo: "Carbohidrato", verdura: "Verdura", grasa: "Grasa" };

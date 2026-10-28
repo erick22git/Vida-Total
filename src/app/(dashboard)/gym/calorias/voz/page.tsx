@@ -1,5 +1,6 @@
 "use client";
 
+import { ALL_MEALS } from "@/lib/gym/meal-time";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mic, Square, Check, X, Keyboard } from "lucide-react";
@@ -14,7 +15,6 @@ import { useGymStore } from "@/lib/store/gymStore";
 import type { MealType } from "@/lib/types";
 import type { AnalyzedFoodItem } from "@/app/api/food/analyze/route";
 
-const VALID_MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 
 // Rediseño Calorías, etapa 7 (visual, sin tocar la lógica de reconocimiento de voz): mismo fondo
 // oscuro con grano que el resto de las pantallas rediseñadas.
@@ -80,7 +80,7 @@ function VozContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const mealParam = searchParams.get("meal") as MealType | null;
-  const meal: MealType = mealParam && VALID_MEALS.includes(mealParam) ? mealParam : "snack1";
+  const meal: MealType = mealParam && ALL_MEALS.includes(mealParam) ? mealParam : "snack1";
 
   const [supported, setSupported] = useState(true);
   const [recording, setRecording] = useState(false);

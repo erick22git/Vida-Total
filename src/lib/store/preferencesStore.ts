@@ -20,6 +20,9 @@ interface PreferencesState {
    * empieza la siguiente; así el título de Calorías y el círculo de "ya pasó" siguen el horario real de la persona. */
   mealStartTimes: Record<MealType, string>;
   setMealStartTimes: (t: Record<MealType, string>) => void;
+  /** Cuántos snacks usa la persona (0-4). Desayuno, almuerzo y cena siempre existen. */
+  snackCount: number;
+  setSnackCount: (n: number) => void;
   setSoundEnabled: (v: boolean) => void;
   setReduceMotion: (v: "system" | "on" | "off") => void;
 }
@@ -29,6 +32,8 @@ export const DEFAULT_MEAL_START_TIMES: Record<MealType, string> = {
   almuerzo: "11:00",
   snack1: "14:30",
   snack2: "16:30",
+  snack3: "08:30",
+  snack4: "21:30",
   cena: "19:00",
 };
 
@@ -41,6 +46,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       reduceMotion: "system",
       mealStartTimes: DEFAULT_MEAL_START_TIMES,
       setMealStartTimes: (t) => set({ mealStartTimes: t }),
+      snackCount: 2,
+      setSnackCount: (n) => set({ snackCount: Math.max(0, Math.min(4, Math.round(n))) }),
       setSoundEnabled: (v) => set({ soundEnabled: v }),
       setReduceMotion: (v) => set({ reduceMotion: v }),
     }),

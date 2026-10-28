@@ -1,5 +1,6 @@
 "use client";
 
+import { useMealOrder } from "@/lib/gym/meal-time";
 import { useState } from "react";
 import { ExpandSheet } from "@/components/shared/expand-sheet";
 import { GlassInput } from "@/components/glass/glass-input";
@@ -7,7 +8,6 @@ import { GlassButton } from "@/components/glass/glass-button";
 import { useGymStore } from "@/lib/store/gymStore";
 import { MEAL_LABELS, type MealType } from "@/lib/types";
 
-const MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 
 export function ManualEntryModal({
   open,
@@ -23,6 +23,7 @@ export function ManualEntryModal({
   onSaved?: (meal: MealType) => void;
   defaultMeal?: MealType;
 }) {
+  const MEALS = useMealOrder();
   const addLoggedFood = useGymStore((s) => s.addLoggedFood);
   const [nombre, setNombre] = useState("");
   const [calorias, setCalorias] = useState("");

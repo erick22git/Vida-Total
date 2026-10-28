@@ -21,6 +21,7 @@
  * Esto ES la pantalla principal de `/gym/calorias` (reemplaza a la vieja, basada en arco+grilla de
  * comidas). El botón de arriba a la izquierda vuelve a `/gym`.
  */
+import { useMealOrder } from "@/lib/gym/meal-time";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
@@ -42,7 +43,6 @@ import { MEAL_LABELS, type MealType, type TrackableNutrient } from "@/lib/types"
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { SwipeCarouselDots, SwipeCarouselStage, swipeSlide, useSwipeCarousel } from "@/components/shared/swipe-carousel";
 
-const MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 const VIEW_COUNT = 3; // 0 = comida, 1 = nutrientes, 2 = racha (año) — vistas DENTRO de esta página.
 /** Total de pantallas de la cadena de swipe vertical, para los puntos (comida/nutrientes/año/Nutriólogo)
  * — mismo criterio que `TOTAL_SCREENS` de Entrenamiento: `VIEW_COUNT` sigue siendo 3 a propósito (son
@@ -59,6 +59,7 @@ const slideY = {
 
 // Mismo grano de fondo que Hábitos — la referencia visual (Not Boring) es la misma para las dos pantallas.
 export function MealHomeScreen() {
+  const MEALS = useMealOrder();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
@@ -174,7 +175,7 @@ export function MealHomeScreen() {
       setIndex((cur) => (cur === i ? cur : i));
     }, 60_000);
     return () => clearInterval(id);
-  }, [followClock, viendoHoy]);
+  }, [followClock, viendoHoy, MEALS]);
 
   // Swipe VERTICAL = cambia de vista (comida / nutrientes / racha) — igual mecánica que
   // `/habitos/habito` (el horizontal es entre comidas, drag="x" con dragDirectionLock, así que no

@@ -187,7 +187,7 @@ export interface Food extends NutritionProfile {
   actualizadoEn?: number;
 }
 
-export type MealType = "desayuno" | "almuerzo" | "cena" | "snack1" | "snack2";
+export type MealType = "desayuno" | "almuerzo" | "cena" | "snack1" | "snack2" | "snack3" | "snack4";
 
 export const MEAL_LABELS: Record<MealType, string> = {
   desayuno: "Desayuno",
@@ -195,6 +195,8 @@ export const MEAL_LABELS: Record<MealType, string> = {
   cena: "Cena",
   snack1: "Snack 1",
   snack2: "Snack 2",
+  snack3: "Snack 3",
+  snack4: "Snack 4",
 };
 
 export type CookedState = "cocido" | "crudo";

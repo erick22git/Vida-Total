@@ -1,5 +1,6 @@
 "use client";
 
+import { ALL_MEALS } from "@/lib/gym/meal-time";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Camera as CameraIcon, Images, Minus, Plus, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
@@ -13,7 +14,6 @@ import type { AnalyzedFoodItem } from "@/app/api/food/analyze/route";
 
 type Mode = "foto" | "codigo";
 
-const VALID_MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 
 interface OpenFoodFactsProduct {
   product_name?: string;
@@ -46,7 +46,7 @@ function EscanerContent() {
   // Qué comida está eligiendo (viene de deslizar desde otra sección, o de la home) — se propaga a
   // dónde termine cada camino (resultados de foto/voz, alimento por código de barras, buscador).
   const mealParam = searchParams.get("meal") as MealType | null;
-  const meal: MealType = mealParam && VALID_MEALS.includes(mealParam) ? mealParam : "desayuno";
+  const meal: MealType = mealParam && ALL_MEALS.includes(mealParam) ? mealParam : "desayuno";
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);

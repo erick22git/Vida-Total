@@ -1,5 +1,6 @@
 "use client";
 
+import { useMealOrder } from "@/lib/gym/meal-time";
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, BookOpen, Check, Clock, Plus, X } from "lucide-react";
@@ -30,13 +31,13 @@ import {
 import { MEAL_LABELS, type Food, type MealType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const MEALS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 
 /** Flujo rápido de dos pasos (à la Fitia): 1) captura en texto libre por comida con el resolvedor de alimentos
  * (`lib/nutrition/food-resolver.ts`), 2) revisar/editar y guardar todo junto. Nada toca el store hasta "Añadir al plan".
  * Regla: NUNCA se crea un alimento nuevo por defecto — solo si el usuario toca "Crear nuevo" o si no hay ningún
  * candidato razonable (ahí se usa el flujo "sin configurar" de siempre, y recién al confirmar). */
 export default function ListaPage() {
+  const MEALS = useMealOrder();
   const router = useRouter();
   const addLoggedFood = useGymStore((s) => s.addLoggedFood);
   const addCustomFood = useGymStore((s) => s.addCustomFood);

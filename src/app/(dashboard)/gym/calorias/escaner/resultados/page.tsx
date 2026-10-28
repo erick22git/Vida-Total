@@ -12,6 +12,7 @@
  * Al confirmar se guarda con la MISMA acción que el resto (`addLoggedFood`) y se vuelve a la home: si todo fue a una
  * sola comida, se abre ahí mismo con `?justAdded=`.
  */
+import { useMealOrder } from "@/lib/gym/meal-time";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Minus, Plus, Sparkles, Check, X } from "lucide-react";
@@ -38,7 +39,6 @@ import { notify } from "@/lib/notify/use-notify";
 
 const RESULTS_KEY = "vt-scan-results";
 
-const MEAL_OPTIONS: MealType[] = ["desayuno", "almuerzo", "snack1", "snack2", "cena"];
 
 interface ScanItem {
   draft: DraftItem;
@@ -83,6 +83,7 @@ export default function EscanerResultadosPage() {
 }
 
 function EscanerResultadosContent() {
+  const MEAL_OPTIONS = useMealOrder();
   const router = useRouter();
   const searchParams = useSearchParams();
   const addLoggedFood = useGymStore((s) => s.addLoggedFood);

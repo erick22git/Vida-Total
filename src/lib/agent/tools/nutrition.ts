@@ -12,7 +12,7 @@ import {
 } from "./meta";
 
 const fail = (error: string): Validation => ({ ok: false, error });
-export const MEALS = ["desayuno", "almuerzo", "cena", "snack1", "snack2"] as const;
+export const MEALS = ["desayuno", "almuerzo", "cena", "snack1", "snack2", "snack3", "snack4"] as const;
 export const MAX_FOOD_ITEMS = 8;
 
 export const NUTRITION_TOOLS: ToolMeta[] = [
