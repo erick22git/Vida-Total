@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { localDayKey } from "@/lib/gym/kegel-dates";
 import { DEFAULT_VESSELS, type WaterVessel } from "@/lib/gym/water-vessels";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { userScopedLocalStorage } from "./scoped-storage";
