@@ -366,7 +366,7 @@ function PerfilEntrenamientoContent() {
               onChange={(e) => setLesiones(e.target.value)}
               placeholder="Ej: dolor de rodilla, lumbar delicada..."
               rows={4}
-              className="w-full rounded-2xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none resize-none"
+              className="w-full rounded-2xl px-4 py-3 text-base text-white placeholder:text-white/30 outline-none resize-none"
               style={{ background: "#0d0d0d" }}
             />
           </div>

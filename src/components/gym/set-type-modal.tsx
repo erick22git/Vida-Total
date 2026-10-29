@@ -113,7 +113,7 @@ export function SetTypeModal({
             onChange={(e) => onNotasChange(e.target.value)}
             placeholder="Más detalle (opcional)"
             rows={2}
-            className="w-full rounded-2xl bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder:text-white/35 outline-none resize-none"
+            className="w-full rounded-2xl bg-white/[0.06] px-3.5 py-2.5 text-base text-white placeholder:text-white/35 outline-none resize-none"
           />
         </div>
       )}

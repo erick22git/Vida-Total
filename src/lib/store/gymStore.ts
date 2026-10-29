@@ -160,6 +160,8 @@ export interface GymState {
   removeLoggedFood: (id: string) => void;
   updateLoggedFood: (id: string, patch: Partial<LoggedFood>) => void;
   reorderMealFoods: (meal: MealType, orderedIds: string[], date?: Date) => void;
+  /** Interno — ver la nota junto a su implementación. */
+  _linkWaterForLoggedFoods: (foods: LoggedFood[]) => void;
 
   // ---------- Meal actions (menu "···") ----------
   // Todas aceptan un `date` opcional (default: hoy) para poder operar sobre
@@ -440,14 +442,22 @@ export const useGymStore = create<GymState>()(
           return { loggedFoods: [...state.loggedFoods, created] };
         });
         if (uidUser) syncInsertLoggedFood(created, orden, uidUser);
-        // Si lo registrado matchea una bebida del catálogo de Agua por nombre (agua, jugo, batido,
-        // cerveza...), se suma sola a la meta de agua del día — pedido explícito: "si pongo agua ahí
-        // o algún líquido se registre en gym/agua automáticamente". Nunca inventa: sin match, no hace nada.
-        const link = waterLinkForLoggedFood(created.nombre, created.gramos, buildDrinkNameIndex(get().drinkOverrides));
-        if (link) {
-          get().addWater(link.aguaMl, { id: link.drink.id, nombre: link.drink.nombre, emoji: link.drink.emoji });
-        }
+        get()._linkWaterForLoggedFoods([created]);
         return created;
+      },
+      // Si lo registrado matchea una bebida del catálogo de Agua por nombre (agua, jugo, batido,
+      // cerveza...), se suma sola a la meta de agua del día — pedido explícito: "si pongo agua ahí o
+      // algún líquido se registre en gym/agua automáticamente". Nunca inventa: sin match, no hace nada.
+      // Usado por cualquier acción que agregue comidas SIN pasar por `addLoggedFood` (Pegar, Repetir,
+      // Plantilla): antes esas tres se armaban el array a mano y se saltaban este vínculo — bug real,
+      // "repetir comida no registró el agua".
+      _linkWaterForLoggedFoods: (foods) => {
+        if (foods.length === 0) return;
+        const idx = buildDrinkNameIndex(get().drinkOverrides);
+        for (const f of foods) {
+          const link = waterLinkForLoggedFood(f.nombre, f.gramos, idx);
+          if (link) get().addWater(link.aguaMl, { id: link.drink.id, nombre: link.drink.nombre, emoji: link.drink.emoji });
+        }
       },
       removeLoggedFood: (id) => {
         set((state) => ({
@@ -511,6 +521,7 @@ export const useGymStore = create<GymState>()(
             uidUser,
           );
         }
+        get()._linkWaterForLoggedFoods(pasted);
       },
       repeatMeal: (meal, date) => {
         const state = get();
@@ -536,6 +547,7 @@ export const useGymStore = create<GymState>()(
             uidUser,
           );
         }
+        get()._linkWaterForLoggedFoods(repeated);
         return true;
       },
       clearMeal: (meal, date) => {
@@ -633,6 +645,7 @@ export const useGymStore = create<GymState>()(
             uidUser,
           );
         }
+        get()._linkWaterForLoggedFoods(created);
       },
 
       // Nutrient tracking preferences

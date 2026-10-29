@@ -11,6 +11,7 @@ import { SettingsGlyph } from "@/components/shared/settings-glyph";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { AddDrinkModal } from "@/components/gym/add-drink-modal";
 import { VesselCameraSheet } from "@/components/gym/vessel-camera-sheet";
+import { MAX_VESSELS } from "@/lib/gym/water-vessels";
 import { WaterSettingsSheet } from "@/components/gym/water-settings-sheet";
 import { totalsByDrink } from "@/lib/gym/water-stats";
 import { waterState } from "@/lib/gym/water-state";
@@ -224,10 +225,16 @@ export default function AguaPage() {
         open={cameraOpen}
         onClose={() => setCameraOpen(false)}
         onAddOnce={(d) => addMl(d.ml)}
-        onSave={(d) => {
-          if (waterVessels.length < 8) setWaterVessels([...waterVessels, { id: `v-${Date.now().toString(36)}`, nombre: d.nombre, ml: d.ml, foto: d.foto }]);
-          addMl(d.ml);
-        }}
+        // Con los 5 vasos ya ocupados, la cámara solo calcula los ml de hoy — sin "Guardar" no se puede
+        // crear uno más (habría que borrar alguno primero en "Mis vasos").
+        onSave={
+          waterVessels.length < MAX_VESSELS
+            ? (d) => {
+                setWaterVessels([...waterVessels, { id: `v-${Date.now().toString(36)}`, nombre: d.nombre, ml: d.ml, foto: d.foto }]);
+                addMl(d.ml);
+              }
+            : undefined
+        }
       />
 
       <WaterSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />

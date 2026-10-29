@@ -508,7 +508,7 @@ function PlainInput({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       className={`w-full bg-transparent outline-none text-white placeholder:text-white/25 border-b border-white/15 focus:border-white/45 transition-colors py-1.5 ${
-        big ? "text-base" : "text-sm"
+        big ? "text-base" : "text-base"
       }`}
     />
   );

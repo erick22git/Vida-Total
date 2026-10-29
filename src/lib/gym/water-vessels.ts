@@ -12,7 +12,8 @@ export interface WaterVessel {
 }
 
 export const MAX_VESSEL_ML = 5000;
-export const MAX_VESSELS = 8;
+/** Tope de vasos guardados — la pantalla de Agua muestra uno de estos + la cámara = 6 botones como mucho. */
+export const MAX_VESSELS = 5;
 
 export const DEFAULT_VESSELS: WaterVessel[] = [
   { id: "v-150", nombre: "Vaso chico", ml: 150 },

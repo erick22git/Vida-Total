@@ -324,17 +324,17 @@ function WorkoutsTab({ sessions }: { sessions: WorkoutSession[] }) {
         <div className="grid grid-cols-2 gap-2">
           <label className={cn(CARD, "flex flex-col gap-0.5 px-3 py-2 text-[11px] text-white/45")}>
             Desde
-            <input type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} className="bg-transparent text-sm text-white outline-none [color-scheme:dark]" />
+            <input type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} className="bg-transparent text-base text-white outline-none [color-scheme:dark]" />
           </label>
           <label className={cn(CARD, "flex flex-col gap-0.5 px-3 py-2 text-[11px] text-white/45")}>
             Hasta
-            <input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} className="bg-transparent text-sm text-white outline-none [color-scheme:dark]" />
+            <input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} className="bg-transparent text-base text-white outline-none [color-scheme:dark]" />
           </label>
         </div>
       )}
       <label className={cn(CARD, "flex items-center gap-2 px-3 py-2")}>
         <Search size={15} className="text-white/40" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre" className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/30" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre" className="flex-1 bg-transparent text-base text-white outline-none placeholder:text-white/30" />
       </label>
 
       <p className="text-xs text-white/40">

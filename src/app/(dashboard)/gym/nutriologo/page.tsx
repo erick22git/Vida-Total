@@ -532,7 +532,7 @@ function SintomasCard() {
             value={notaLibre}
             onChange={(e) => setNotaLibre(e.target.value)}
             placeholder="Describí cómo te sentiste"
-            className="rounded-xl bg-white/10 text-sm px-3 py-2 text-white placeholder:text-white/30"
+            className="rounded-xl bg-white/10 text-base px-3 py-2 text-white placeholder:text-white/30"
           />
         )}
         <button

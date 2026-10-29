@@ -119,7 +119,7 @@ export default function RecetasPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar recetas"
-            className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-white/30"
+            className="flex-1 bg-transparent outline-none text-base text-white placeholder:text-white/30"
           />
         </div>
 
@@ -243,7 +243,7 @@ export default function RecetasPage() {
               onChange={(e) => setAiIngredients(e.target.value)}
               placeholder="Ej: pollo, arroz, brócoli, aceite de oliva"
               rows={4}
-              className="w-full rounded-2xl bg-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none resize-none"
+              className="w-full rounded-2xl bg-white/[0.06] px-4 py-3 text-base text-white placeholder:text-white/30 outline-none resize-none"
             />
             <button
               onClick={handleGenerateAi}

@@ -146,7 +146,7 @@ export default function CalculadoraRangoPage() {
             </Title>
             <div className="flex items-center gap-2 rounded-2xl px-3.5 py-2.5" style={{ background: "#0d0d0d" }}>
               <Search size={16} className="text-white/40" />
-              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar ejercicio…" className="flex-1 bg-transparent outline-none text-sm placeholder:text-white/30" />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar ejercicio…" className="flex-1 bg-transparent outline-none text-base placeholder:text-white/30" />
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar flex flex-col gap-1.5">
               {filtered.map((e) => {

@@ -146,6 +146,16 @@ textarea,
   user-select: text;
 }
 
+/* Safari/Chrome en el teléfono hacen zoom automático al enfocar un campo de texto con tipografía por
+   debajo de 16px — mismo criterio ya documentado en GlassInput, llevado a TODOS los campos de la app
+   (algunos usan <input> suelto con text-sm/text-xs, no GlassInput) para que ninguno dispare ese zoom.
+   `max()` respeta un tamaño mayor si el propio componente ya pide uno (p. ej. text-5xl del peso). */
+input,
+textarea,
+select {
+  font-size: max(16px, 1em);
+}
+
 body {
   background: transparent;
   color: var(--foreground);

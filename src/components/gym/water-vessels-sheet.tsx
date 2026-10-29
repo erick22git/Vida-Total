@@ -8,7 +8,8 @@ import { VesselCameraSheet } from "@/components/gym/vessel-camera-sheet";
 import { useGymStore } from "@/lib/store/gymStore";
 import { MAX_VESSELS, clampVesselMl, resizeImage, type WaterVessel } from "@/lib/gym/water-vessels";
 
-const FIELD = "bg-white/[0.07] rounded-lg px-2.5 py-2 text-sm text-white outline-none focus:bg-white/[0.12] min-w-0";
+// text-base (16px), no text-sm: por debajo de 16px Safari/Chrome hacen zoom automático al enfocar el campo.
+const FIELD = "bg-white/[0.07] rounded-lg px-2.5 py-2 text-base text-white outline-none focus:bg-white/[0.12] min-w-0";
 
 function VesselRow({ v, onChange, onDelete }: { v: WaterVessel; onChange: (p: Partial<WaterVessel>) => void; onDelete: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -50,7 +51,7 @@ function VesselRow({ v, onChange, onDelete }: { v: WaterVessel; onChange: (p: Pa
             if (n > 0) onChange({ ml: clampVesselMl(n) });
           }}
           onBlur={() => setMlText(String(v.ml))}
-          className={`${FIELD} w-[4.5rem] text-right tabular-nums`}
+          className={`${FIELD} w-[5rem] text-right tabular-nums`}
           aria-label="Mililitros"
         />
         <span className="text-xs text-white/45">ml</span>

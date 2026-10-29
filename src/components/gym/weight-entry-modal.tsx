@@ -66,7 +66,7 @@ export function WeightEntryModal({
             value={day}
             max={today}
             onChange={(e) => e.target.value && setDay(e.target.value)}
-            className="bg-transparent text-sm text-white outline-none [color-scheme:dark]"
+            className="bg-transparent text-base text-white outline-none [color-scheme:dark]"
           />
         </label>
 

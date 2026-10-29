@@ -186,7 +186,7 @@ export function RoutineSetTable({
                         value={d.peso || ""}
                         placeholder={String(dropWeightRefs[k] || 0)}
                         onChange={(e) => writeDrops(i, drops.map((x, idx) => (idx === k ? { ...x, peso: parseFloat(e.target.value) || 0 } : x)))}
-                        className="w-full rounded-lg bg-white/[0.05] glass-specular-ring px-2 py-1 text-sm text-white text-center outline-none"
+                        className="w-full rounded-lg bg-white/[0.05] glass-specular-ring px-2 py-1 text-base text-white text-center outline-none"
                       />
                     ) : (
                       <span className="text-center text-xs text-white/25">—</span>
@@ -196,7 +196,7 @@ export function RoutineSetTable({
                       value={d.reps || ""}
                       placeholder={String(DROP_REPS_REF)}
                       onChange={(e) => writeDrops(i, drops.map((x, idx) => (idx === k ? { ...x, reps: parseInt(e.target.value) || 0 } : x)))}
-                      className="w-full rounded-lg bg-white/[0.05] glass-specular-ring px-2 py-1 text-sm text-white text-center outline-none"
+                      className="w-full rounded-lg bg-white/[0.05] glass-specular-ring px-2 py-1 text-base text-white text-center outline-none"
                     />
                     <button
                       onClick={() => writeDrops(i, drops.filter((_, idx) => idx !== k))}
