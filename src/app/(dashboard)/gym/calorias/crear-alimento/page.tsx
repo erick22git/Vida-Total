@@ -260,7 +260,10 @@ function CrearAlimentoWizard() {
   const [step, setStep] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const canSave = nombre.trim().length > 0 && porcionNombre.trim().length > 0 && crudoForm.fields.calorias.trim().length > 0;
+  // `parseFloat(...) > 0`, no solo "campo no vacío": guardar con 0 kcal (campo vacío, "0", o un valor no numérico)
+  // dejaba un alimento fantasma con todo en 0 que después tapaba al alimento base en toda la app (mergeFoods usa
+  // el id del override) — causa real de "arroz dice 0 kcal" reportada por el usuario.
+  const canSave = nombre.trim().length > 0 && porcionNombre.trim().length > 0 && (parseFloat(crudoForm.fields.calorias) || 0) > 0;
   const stepValid = step !== 0 || nombre.trim().length > 0;
   const cocidoFilled = !isNutFormEmpty(cocidoForm);
   const readyToVerify = canSave && (unSoloEstado || cocidoFilled);

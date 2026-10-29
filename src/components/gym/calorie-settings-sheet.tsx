@@ -10,7 +10,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, TrendingUp, Check, Clock, Apple } from "lucide-react";
+import { ChevronLeft, TrendingUp, Check, Clock, Apple, AlertTriangle } from "lucide-react";
 import { MealTimesSheet } from "@/components/gym/meal-times-sheet";
 import { SnackAdviceSheet } from "@/components/gym/snack-advice-sheet";
 import { ExpandSheet } from "@/components/shared/expand-sheet";
@@ -39,6 +39,8 @@ const PHASE_LABEL: Record<CaloriePhase, string> = { volumen: "Volumen", mantenim
 
 export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
+  const customFoods = useGymStore((s) => s.customFoods);
+  const brokenFoodsCount = useMemo(() => customFoods.filter((f) => !f.calorias && !f.proteina && !f.carbos && !f.grasas).length, [customFoods]);
   const calorieGoal = useGymStore((s) => s.calorieGoal);
   const proteinGoal = useGymStore((s) => s.proteinGoal);
   const carbsGoal = useGymStore((s) => s.carbsGoal);
@@ -265,6 +267,17 @@ export function CalorieSettingsSheet({ open, onClose }: { open: boolean; onClose
               >
                 <Apple size={15} /> Snacks según tus objetivos
               </button>
+              {brokenFoodsCount > 0 && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    router.push("/gym/calorias/revisar-alimentos");
+                  }}
+                  className="w-full flex items-center gap-2 text-left px-3.5 py-3 rounded-xl text-sm text-amber-200 hover:bg-white/[0.06] cursor-pointer"
+                >
+                  <AlertTriangle size={15} /> {brokenFoodsCount} {brokenFoodsCount === 1 ? "alimento tuyo está" : "alimentos tuyos están"} en 0 kcal
+                </button>
+              )}
             </div>
           </div>
 

@@ -564,6 +564,17 @@ export function syncUpdateCustomFood(id: string, patch: Partial<Food>, userId: s
   })();
 }
 
+export function syncDeleteCustomFood(id: string, userId: string): void {
+  void (async () => {
+    try {
+      const { error } = await createClient().from("custom_foods").delete().eq("id", id).eq("user_id", userId);
+      if (error) console.warn("[gym-sync] delete custom_foods falló:", error.message);
+    } catch (err) {
+      console.warn("[gym-sync] delete custom_foods lanzó una excepción:", err);
+    }
+  })();
+}
+
 // ============================================================================
 // favorite_foods
 // ============================================================================

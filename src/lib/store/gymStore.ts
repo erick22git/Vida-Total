@@ -50,6 +50,7 @@ import {
   syncInsertMealTemplate,
   syncInsertCustomFood,
   syncUpdateCustomFood,
+  syncDeleteCustomFood,
   syncAddFavoriteFood,
   syncRemoveFavoriteFood,
   syncInsertCustomPortion,
@@ -191,6 +192,10 @@ export interface GymState {
   customFoods: Food[];
   addCustomFood: (food: Omit<Food, "id" | "creadoPorUsuario">) => Food;
   updateCustomFood: (id: string, patch: Partial<Food>) => void;
+  /** Quita un alimento de `customFoods`. Si `id` es también el de un alimento BASE (override: editaste
+   * "Arroz" y quedó mal, p.ej. en 0 kcal), esto lo revierte al original — nunca borra el alimento base
+   * en sí. Si es un alimento 100% tuyo (sin base con ese id), lo borra de verdad, incluido en la nube. */
+  removeCustomFood: (id: string) => void;
   /** A diferencia de `updateCustomFood` (que solo actualiza un alimento que
    * el usuario ya creó), esta acción también permite editar/verificar un
    * alimento de la BASE (USDA/regional): si `id` no existe todavía en
@@ -673,6 +678,16 @@ export const useGymStore = create<GymState>()(
         const uidUser = getCurrentUserId();
         const full = get().customFoods.find((f) => f.id === id);
         if (uidUser) syncUpdateCustomFood(id, stamped, uidUser, full);
+      },
+      removeCustomFood: (id) => {
+        // Si existe un alimento base con este id, era un override (nunca se sincroniza como tal, ver nota en
+        // `upsertFoodOverride`) — quitarlo de `customFoods` ya basta para que `mergeFoods` vuelva a mostrar el
+        // original. Si no, es un alimento propio real (uuid), creado con `addCustomFood`, y sí hay que borrarlo
+        // de Supabase.
+        const isOverride = BASE_FOODS.some((f) => f.id === id);
+        set((state) => ({ customFoods: state.customFoods.filter((f) => f.id !== id) }));
+        const uidUser = getCurrentUserId();
+        if (uidUser && !isOverride) syncDeleteCustomFood(id, uidUser);
       },
       upsertFoodOverride: (id, patch) => {
         const alreadyCustom = get().customFoods.some((f) => f.id === id);
