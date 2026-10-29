@@ -34,11 +34,14 @@ function enabled(): boolean {
 /** Llamar desde un gesto del usuario para que el navegador permita audio. */
 export function unlockAudio(): void {
   try {
-    // iOS 17+: pide que el audio se trate como "reproducción" (no "ambiente"),
-    // así el interruptor de silencio del iPhone no lo calla. Donde la API no
-    // existe (otros navegadores, iOS antiguo) simplemente se ignora.
+    // iOS 17+: "ambient" se MEZCLA con lo que ya está sonando (música, un podcast) en vez de
+    // interrumpirlo — antes se usaba "playback" (categoría exclusiva, como un reproductor de video) para
+    // que el interruptor físico de silencio no callara los tonos, pero eso cortaba la música de fondo al
+    // abrir cualquier pantalla con sonido (bug real reportado: entrar a Kegel cortaba la música). Con
+    // "ambient" el interruptor de silencio sí puede callarlo, pero nunca se roba el audio de otra app —
+    // prioridad explícita del usuario. Donde la API no existe (otros navegadores, iOS antiguo) se ignora.
     const session = (navigator as unknown as { audioSession?: { type: string } }).audioSession;
-    if (session) session.type = "playback";
+    if (session) session.type = "ambient";
     const c = getContext();
     if (c && c.state === "suspended") c.resume().catch(() => {});
   } catch {

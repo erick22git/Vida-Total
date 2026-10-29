@@ -19,12 +19,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ChevronLeft, Pause, Play, Volume2 } from "lucide-react";
+import { ChevronLeft, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { MONO_FONT } from "@/lib/ui/mono-font";
 import { localDayKey } from "@/lib/gym/kegel-dates";
 import { SERIES_LABEL, curveAt, type CurveStage, type KegelSessionDef } from "@/lib/gym/kegel-plan";
 import { useKegelPlanStore } from "@/lib/store/kegelPlanStore";
 import { useKegelSettingsStore } from "@/lib/store/kegelSettingsStore";
+import { usePreferencesStore } from "@/lib/store/preferencesStore";
 import { useGymStore } from "@/lib/store/gymStore";
 import { emitProgressEvent } from "@/lib/progress/event-bus";
 import { useKegelEngine, useWakeLock, PHASE_AMP } from "@/lib/gym/kegel-engine";
@@ -62,6 +63,8 @@ export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
   const setVibrationEnabled = useKegelSettingsStore((s) => s.setVibrationEnabled);
   const kegelVolume = useKegelSettingsStore((s) => s.kegelVolume);
   const setKegelVolume = useKegelSettingsStore((s) => s.setKegelVolume);
+  const soundEnabled = usePreferencesStore((s) => s.soundEnabled);
+  const setSoundEnabled = usePreferencesStore((s) => s.setSoundEnabled);
 
   const engine = useKegelEngine(def);
   const { state, totalDuration, progress } = engine;
@@ -74,12 +77,26 @@ export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
   // Wake Lock mientras la sesión está activa
   const wakeLock = useWakeLock(state.phase !== "idle" && state.phase !== "done" && !state.paused);
 
+  // Solo desbloquea audio si el sonido YA está prendido (interruptor general, en Mascota o Ajustes de
+  // Kegel) — sin esto, cualquier toque en la pantalla creaba un AudioContext aunque el usuario nunca
+  // hubiera pedido sonido, y el simple hecho de crearlo podía cortar la música que estuviera sonando.
+  // Con el sonido apagado la pantalla queda 100% muda y no toca nada de audio.
   function handleFirstGesture() {
+    if (!soundEnabled) return;
     try {
       unlockAudio();
     } catch {
       setAudioWarning(true);
     }
+  }
+
+  // Mover la barra de volumen es la forma de "activar el sonido" DESDE esta pantalla (además del
+  // interruptor general de Mascota/Ajustes): ya no basta con mover el número si el sonido general
+  // seguía apagado, quedaba en silencio igual y parecía que la barra no hacía nada.
+  function handleVolumeChange(v: number) {
+    setKegelVolume(v);
+    if (!soundEnabled) setSoundEnabled(true);
+    unlockAudio();
   }
 
   // Señales al cambiar de fase
@@ -335,18 +352,24 @@ export function KegelSessionScreen({ def }: { def: KegelSessionDef }) {
           </svg>
         </div>
 
-        {/* Volumen de los tonos de esta sesión (además del interruptor general y el volumen físico). */}
+        {/* Volumen de los tonos de esta sesión. Si el sonido general está apagado, la barra se ve
+            atenuada y muda — moverla lo prende (y ya no corta música de fondo: ver sound-engine.ts). */}
         <div className="w-full mt-1 flex items-center gap-3">
-          <Volume2 size={16} className="text-white/50 shrink-0" aria-hidden />
+          {soundEnabled ? (
+            <Volume2 size={16} className="text-white/50 shrink-0" aria-hidden />
+          ) : (
+            <VolumeX size={16} className="text-white/30 shrink-0" aria-hidden />
+          )}
           <input
             type="range"
             min={0}
             max={1}
             step={0.05}
-            value={kegelVolume}
-            onChange={(e) => setKegelVolume(Number(e.target.value))}
+            value={soundEnabled ? kegelVolume : 0}
+            onChange={(e) => handleVolumeChange(Number(e.target.value))}
             className="flex-1 accent-white"
-            aria-label="Volumen de los tonos de Kegel"
+            style={{ opacity: soundEnabled ? 1 : 0.45 }}
+            aria-label={soundEnabled ? "Volumen de los tonos de Kegel" : "Sonido apagado — mové la barra para activarlo"}
           />
         </div>
 

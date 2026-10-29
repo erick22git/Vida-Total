@@ -82,7 +82,8 @@ function loadHowler() {
 /**
  * Llamar en el primer gesto del usuario tras prender el sonido (mismo rol que `unlockAudio` del
  * motor sintetizado). Precarga el manifiesto y resuelve el `AudioContext` compartido de Howler para
- * que iOS no lo bloquee, y lo marca como "playback" para que el interruptor de silencio no lo calle.
+ * que iOS no lo bloquee, y lo marca como "ambient" para que se MEZCLE con música/podcasts de fondo en
+ * vez de cortarlos (ver el mismo comentario, más largo, en `sound-engine.ts`: "playback" los cortaba).
  */
 export function unlockSoundManager(): void {
   if (!soundEnabled()) return;
@@ -90,7 +91,7 @@ export function unlockSoundManager(): void {
   void loadHowler().then(({ Howler }) => {
     try {
       const session = (navigator as unknown as { audioSession?: { type: string } }).audioSession;
-      if (session) session.type = "playback";
+      if (session) session.type = "ambient";
       Howler.ctx?.resume().catch(() => {});
     } catch {
       // sin audio disponible — no pasa nada
