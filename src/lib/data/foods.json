@@ -9642,7 +9642,8 @@
     "azucares": 2.5,
     "alcohol": 0,
     "epa": 0,
-    "dha": 0
+    "dha": 0,
+    "photoUrl": "/foods/rabanito-mix.jpg"
   },
   {
     "id": "chile-poblano",
@@ -11729,7 +11730,8 @@
     "verificado": false,
     "fdcIdCrudo": 170923,
     "unSoloEstado": true,
-    "fuente": "Match: \"Spices, cumin seed\" (SR Legacy #170923)"
+    "fuente": "Match: \"Spices, cumin seed\" (SR Legacy #170923)",
+    "photoUrl": "/foods/comino.jpg"
   },
   {
     "id": "oregano",
@@ -11781,7 +11783,8 @@
     "verificado": false,
     "fdcIdCrudo": 171328,
     "unSoloEstado": true,
-    "fuente": "Match: \"Spices, oregano, dried\" (SR Legacy #171328)"
+    "fuente": "Match: \"Spices, oregano, dried\" (SR Legacy #171328)",
+    "photoUrl": "/foods/oregano.jpg"
   },
   {
     "id": "canela",
@@ -11833,7 +11836,8 @@
     "verificado": false,
     "fdcIdCrudo": 171320,
     "unSoloEstado": true,
-    "fuente": "Match: \"Spices, cinnamon, ground\" (SR Legacy #171320)"
+    "fuente": "Match: \"Spices, cinnamon, ground\" (SR Legacy #171320)",
+    "photoUrl": "/foods/canela.jpg"
   },
   {
     "id": "pimenton",
@@ -11885,7 +11889,8 @@
     "verificado": false,
     "fdcIdCrudo": 171329,
     "unSoloEstado": true,
-    "fuente": "Match: \"Spices, paprika\" (SR Legacy #171329)"
+    "fuente": "Match: \"Spices, paprika\" (SR Legacy #171329)",
+    "photoUrl": "/foods/pimenton.jpg"
   },
   {
     "id": "ajo-polvo",
@@ -11937,7 +11942,8 @@
     "verificado": false,
     "fdcIdCrudo": 171325,
     "unSoloEstado": true,
-    "fuente": "Match: \"Spices, garlic powder\" (SR Legacy #171325)"
+    "fuente": "Match: \"Spices, garlic powder\" (SR Legacy #171325)",
+    "photoUrl": "/foods/ajo-polvo.jpg"
   },
   {
     "id": "cebolla-polvo",
@@ -11989,7 +11995,8 @@
     "verificado": false,
     "fdcIdCrudo": 171327,
     "unSoloEstado": true,
-    "fuente": "Match: \"Spices, onion powder\" (SR Legacy #171327)"
+    "fuente": "Match: \"Spices, onion powder\" (SR Legacy #171327)",
+    "photoUrl": "/foods/cebolla-polvo.jpg"
   },
   {
     "id": "vinagre-blanco",
@@ -12040,7 +12047,8 @@
     "verificado": false,
     "fdcIdCrudo": 172237,
     "unSoloEstado": true,
-    "fuente": "Match: \"Vinegar, distilled\" (SR Legacy #172237)"
+    "fuente": "Match: \"Vinegar, distilled\" (SR Legacy #172237)",
+    "photoUrl": "/foods/vinagre-blanco.jpg"
   },
   {
     "id": "salsa-soya",
@@ -12091,7 +12099,8 @@
     "verificado": false,
     "fdcIdCrudo": 174277,
     "unSoloEstado": true,
-    "fuente": "Match: \"Soy sauce made from soy and wheat (shoyu)\" (SR Legacy #174277)"
+    "fuente": "Match: \"Soy sauce made from soy and wheat (shoyu)\" (SR Legacy #174277)",
+    "photoUrl": "/foods/salsa-soya.jpg"
   },
   {
     "id": "ketchup",
@@ -12118,7 +12127,8 @@
     "verificado": false,
     "fdcIdCrudo": 747693,
     "unSoloEstado": true,
-    "fuente": "Match: \"Ketchup, restaurant\" (Foundation #747693)"
+    "fuente": "Match: \"Ketchup, restaurant\" (Foundation #747693)",
+    "photoUrl": "/foods/ketchup.jpg"
   },
   {
     "id": "mostaza",
@@ -12165,7 +12175,8 @@
     "verificado": false,
     "fdcIdCrudo": 326698,
     "unSoloEstado": true,
-    "fuente": "Match: \"Mustard, prepared, yellow\" (Foundation #326698)"
+    "fuente": "Match: \"Mustard, prepared, yellow\" (Foundation #326698)",
+    "photoUrl": "/foods/mostaza.jpg"
   },
   {
     "id": "salsa-picante",
@@ -12210,7 +12221,8 @@
     "verificado": false,
     "fdcIdCrudo": 174527,
     "unSoloEstado": true,
-    "fuente": "Match: \"Sauce, ready-to-serve, pepper or hot\" (SR Legacy #174527)"
+    "fuente": "Match: \"Sauce, ready-to-serve, pepper or hot\" (SR Legacy #174527)",
+    "photoUrl": "/foods/salsa-picante.jpg"
   },
   {
     "id": "laurel",
@@ -12256,7 +12268,8 @@
     "fibra": 26.3,
     "alcohol": 0,
     "epa": 0,
-    "dha": 0
+    "dha": 0,
+    "photoUrl": "/foods/laurel.jpg"
   },
   {
     "id": "curcuma",
@@ -12308,7 +12321,8 @@
     "verificado": false,
     "fdcIdCrudo": 172231,
     "unSoloEstado": true,
-    "fuente": "Match: \"Spices, turmeric, ground\" (SR Legacy #172231)"
+    "fuente": "Match: \"Spices, turmeric, ground\" (SR Legacy #172231)",
+    "photoUrl": "/foods/curcuma.jpg"
   },
   {
     "id": "jengibre-fresco",
@@ -12359,7 +12373,8 @@
     "azucares": 1.7,
     "alcohol": 0,
     "epa": 0,
-    "dha": 0
+    "dha": 0,
+    "photoUrl": "/foods/jengibre-fresco.jpg"
   },
   {
     "id": "perejil-fresco",
@@ -12410,7 +12425,8 @@
     "verificado": false,
     "fdcIdCrudo": 170416,
     "unSoloEstado": true,
-    "fuente": "Match: \"Parsley, fresh\" (SR Legacy #170416)"
+    "fuente": "Match: \"Parsley, fresh\" (SR Legacy #170416)",
+    "photoUrl": "/foods/perejil-fresco.jpg"
   },
   {
     "id": "cilantro-fresco",
@@ -12461,7 +12477,8 @@
     "verificado": false,
     "fdcIdCrudo": 169997,
     "unSoloEstado": true,
-    "fuente": "Match: \"Coriander (cilantro) leaves, raw\" (SR Legacy #169997)"
+    "fuente": "Match: \"Coriander (cilantro) leaves, raw\" (SR Legacy #169997)",
+    "photoUrl": "/foods/cilantro-fresco.jpg"
   },
   {
     "id": "albahaca-fresca",
@@ -12512,7 +12529,8 @@
     "verificado": false,
     "fdcIdCrudo": 172232,
     "unSoloEstado": true,
-    "fuente": "Match: \"Basil, fresh\" (SR Legacy #172232)"
+    "fuente": "Match: \"Basil, fresh\" (SR Legacy #172232)",
+    "photoUrl": "/foods/albahaca-fresca.jpg"
   },
   {
     "id": "nuez-moscada",
@@ -12561,7 +12579,8 @@
     "verificado": false,
     "fdcIdCrudo": 171326,
     "unSoloEstado": true,
-    "fuente": "Match: \"Spices, nutmeg, ground\" (SR Legacy #171326)"
+    "fuente": "Match: \"Spices, nutmeg, ground\" (SR Legacy #171326)",
+    "photoUrl": "/foods/nuez-moscada.jpg"
   },
   {
     "id": "vainilla-extracto",
@@ -12611,7 +12630,8 @@
     "verificado": false,
     "fdcIdCrudo": 173471,
     "unSoloEstado": true,
-    "fuente": "Match: \"Vanilla extract\" (SR Legacy #173471)"
+    "fuente": "Match: \"Vanilla extract\" (SR Legacy #173471)",
+    "photoUrl": "/foods/vainilla-extracto.jpg"
   },
   {
     "id": "caldo-cubo",
@@ -12659,7 +12679,8 @@
     "verificado": false,
     "fdcIdCrudo": 171613,
     "unSoloEstado": true,
-    "fuente": "Match: \"Soup, bouillon cubes and granules, low sodium, dry\" (SR Legacy #171613)"
+    "fuente": "Match: \"Soup, bouillon cubes and granules, low sodium, dry\" (SR Legacy #171613)",
+    "photoUrl": "/foods/caldo-cubo.jpg"
   },
   {
     "id": "aderezo-ranch",
@@ -12712,7 +12733,8 @@
     "verificado": false,
     "fdcIdCrudo": 173592,
     "unSoloEstado": true,
-    "fuente": "Match: \"Salad dressing, ranch dressing, regular\" (SR Legacy #173592)"
+    "fuente": "Match: \"Salad dressing, ranch dressing, regular\" (SR Legacy #173592)",
+    "photoUrl": "/foods/aderezo-ranch.jpg"
   },
   {
     "id": "salsa-bbq",
@@ -12765,7 +12787,8 @@
     "verificado": false,
     "fdcIdCrudo": 174523,
     "unSoloEstado": true,
-    "fuente": "Match: \"Sauce, barbecue\" (SR Legacy #174523)"
+    "fuente": "Match: \"Sauce, barbecue\" (SR Legacy #174523)",
+    "photoUrl": "/foods/salsa-bbq.jpg"
   },
   {
     "id": "vino-tinto",
@@ -12817,7 +12840,8 @@
     "verificado": false,
     "fdcIdCrudo": 173190,
     "unSoloEstado": true,
-    "fuente": "Match: \"Alcoholic beverage, wine, table, red\" (SR Legacy #173190)"
+    "fuente": "Match: \"Alcoholic beverage, wine, table, red\" (SR Legacy #173190)",
+    "photoUrl": "/foods/vino-tinto.jpg"
   },
   {
     "id": "cerveza-light",
@@ -12869,7 +12893,8 @@
     "verificado": false,
     "fdcIdCrudo": 168749,
     "unSoloEstado": true,
-    "fuente": "Match: \"Alcoholic beverage, beer, light\" (SR Legacy #168749)"
+    "fuente": "Match: \"Alcoholic beverage, beer, light\" (SR Legacy #168749)",
+    "photoUrl": "/foods/cerveza-light.jpg"
   },
   {
     "id": "gaseosa-light",
@@ -12920,7 +12945,8 @@
     "verificado": false,
     "fdcIdCrudo": 174853,
     "unSoloEstado": true,
-    "fuente": "Match: \"Beverages, carbonated, reduced sugar, cola, contains caffeine and sweeteners\" (SR Legacy #174853)"
+    "fuente": "Match: \"Beverages, carbonated, reduced sugar, cola, contains caffeine and sweeteners\" (SR Legacy #174853)",
+    "photoUrl": "/foods/gaseosa-light.jpg"
   },
   {
     "id": "agua-tonica",
@@ -12972,7 +12998,8 @@
     "verificado": false,
     "fdcIdCrudo": 171869,
     "unSoloEstado": true,
-    "fuente": "Match: \"Beverages, carbonated, tonic water\" (SR Legacy #171869)"
+    "fuente": "Match: \"Beverages, carbonated, tonic water\" (SR Legacy #171869)",
+    "photoUrl": "/foods/agua-tonica.jpg"
   },
   {
     "id": "te-negro",
@@ -13014,7 +13041,8 @@
     "verificado": false,
     "fdcIdCrudo": 174155,
     "unSoloEstado": true,
-    "fuente": "Match: \"Beverages, tea, black, brewed, prepared with distilled water\" (SR Legacy #174155)"
+    "fuente": "Match: \"Beverages, tea, black, brewed, prepared with distilled water\" (SR Legacy #174155)",
+    "photoUrl": "/foods/te-negro.jpg"
   },
   {
     "id": "te-verde",
@@ -13063,7 +13091,8 @@
     "verificado": false,
     "fdcIdCrudo": 171917,
     "unSoloEstado": true,
-    "fuente": "Match: \"Beverages, tea, green, brewed, regular\" (SR Legacy #171917)"
+    "fuente": "Match: \"Beverages, tea, green, brewed, regular\" (SR Legacy #171917)",
+    "photoUrl": "/foods/te-verde.jpg"
   },
   {
     "id": "jugo-manzana",
@@ -13115,7 +13144,8 @@
     "azucares": 9.62,
     "alcohol": 0,
     "epa": 0,
-    "dha": 0
+    "dha": 0,
+    "photoUrl": "/foods/jugo-manzana.jpg"
   },
   {
     "id": "energizante",
@@ -13167,7 +13197,8 @@
     "verificado": false,
     "fdcIdCrudo": 174108,
     "unSoloEstado": true,
-    "fuente": "Match: \"Beverages,  Energy drink, Citrus\" (SR Legacy #174108)"
+    "fuente": "Match: \"Beverages,  Energy drink, Citrus\" (SR Legacy #174108)",
+    "photoUrl": "/foods/energizante.jpg"
   },
   {
     "id": "jugo-uva",
@@ -13219,7 +13250,8 @@
     "azucares": 14.2,
     "alcohol": 0,
     "epa": 0,
-    "dha": 0
+    "dha": 0,
+    "photoUrl": "/foods/jugo-uva.jpg"
   },
   {
     "id": "limonada",
@@ -13269,7 +13301,8 @@
     "verificado": false,
     "fdcIdCrudo": 173217,
     "unSoloEstado": true,
-    "fuente": "Match: \"Lemonade, frozen concentrate, white, prepared with water\" (SR Legacy #173217)"
+    "fuente": "Match: \"Lemonade, frozen concentrate, white, prepared with water\" (SR Legacy #173217)",
+    "photoUrl": "/foods/limonada.jpg"
   },
   {
     "id": "horchata",
@@ -13306,7 +13339,8 @@
     "verificado": false,
     "fdcIdCrudo": 171941,
     "unSoloEstado": true,
-    "fuente": "Match: \"Beverages, Horchata, as served in restaurant\" (SR Legacy #171941)"
+    "fuente": "Match: \"Beverages, Horchata, as served in restaurant\" (SR Legacy #171941)",
+    "photoUrl": "/foods/horchata.jpg"
   },
   {
     "id": "cafe-capuchino",
@@ -13354,7 +13388,8 @@
     "verificado": false,
     "fdcIdCrudo": 2710472,
     "unSoloEstado": true,
-    "fuente": "CORREGIDO: \"Coffee, Cappuccino\" (Survey (FNDDS) #2710472)"
+    "fuente": "CORREGIDO: \"Coffee, Cappuccino\" (Survey (FNDDS) #2710472)",
+    "photoUrl": "/foods/cafe-capuchino.jpg"
   },
   {
     "id": "agua-coco",
@@ -13404,7 +13439,8 @@
     "azucares": 2.61,
     "alcohol": 0,
     "epa": 0,
-    "dha": 0
+    "dha": 0,
+    "photoUrl": "/foods/agua-coco.jpg"
   },
   {
     "id": "azucar-blanca",
@@ -13431,7 +13467,8 @@
     "verificado": false,
     "fdcIdCrudo": 746784,
     "unSoloEstado": true,
-    "fuente": "Match: \"Sugars, granulated\" (Foundation #746784)"
+    "fuente": "Match: \"Sugars, granulated\" (Foundation #746784)",
+    "photoUrl": "/foods/azucar-blanca.jpg"
   },
   {
     "id": "azucar-morena",
@@ -13481,7 +13518,8 @@
     "verificado": false,
     "fdcIdCrudo": 168833,
     "unSoloEstado": true,
-    "fuente": "Match: \"Sugars, brown\" (SR Legacy #168833)"
+    "fuente": "Match: \"Sugars, brown\" (SR Legacy #168833)",
+    "photoUrl": "/foods/azucar-morena.jpg"
   },
   {
     "id": "stevia",
@@ -13532,7 +13570,8 @@
     "azucares": 0,
     "alcohol": 0,
     "epa": 0,
-    "dha": 0
+    "dha": 0,
+    "photoUrl": "/foods/stevia.jpg"
   },
   {
     "id": "panela",
@@ -13569,7 +13608,8 @@
     "fdcIdCrudo": 170674,
     "unSoloEstado": true,
     "fuente": "CORREGIDO: \"Sugar, turbinado\" (SR Legacy #170674)",
-    "azucares": 99.19
+    "azucares": 99.19,
+    "photoUrl": "/foods/panela.jpg"
   },
   {
     "id": "jarabe-maple",
@@ -13619,7 +13659,8 @@
     "verificado": false,
     "fdcIdCrudo": 169661,
     "unSoloEstado": true,
-    "fuente": "Match: \"Syrups, maple\" (SR Legacy #169661)"
+    "fuente": "Match: \"Syrups, maple\" (SR Legacy #169661)",
+    "photoUrl": "/foods/jarabe-maple.jpg"
   },
   {
     "id": "edulcorante-sucralosa",
@@ -13669,7 +13710,8 @@
     "verificado": false,
     "fdcIdCrudo": 168210,
     "unSoloEstado": true,
-    "fuente": "Match: \"Guava nectar, with sucralose, canned\" (SR Legacy #168210)"
+    "fuente": "Match: \"Guava nectar, with sucralose, canned\" (SR Legacy #168210)",
+    "photoUrl": "/foods/edulcorante-sucralosa.jpg"
   },
   {
     "id": "jarabe-maiz",
@@ -13719,7 +13761,8 @@
     "verificado": false,
     "fdcIdCrudo": 169659,
     "unSoloEstado": true,
-    "fuente": "Match: \"Syrups, corn, high-fructose\" (SR Legacy #169659)"
+    "fuente": "Match: \"Syrups, corn, high-fructose\" (SR Legacy #169659)",
+    "photoUrl": "/foods/jarabe-maiz.jpg"
   },
   {
     "id": "carne-molida-res",
@@ -13795,7 +13838,8 @@
       },
       "fdcId": 171797
     },
-    "fuente": "Match: \"Beef, ground, 80% lean meat / 20% fat, raw\" (Foundation #2514744) · cocido: \"Beef, ground, 80% lean meat / 20% fat, patty, cooked, broiled\" (SR Legacy #171797)"
+    "fuente": "Match: \"Beef, ground, 80% lean meat / 20% fat, raw\" (Foundation #2514744) · cocido: \"Beef, ground, 80% lean meat / 20% fat, patty, cooked, broiled\" (SR Legacy #171797)",
+    "photoUrl": "/foods/carne-molida-res.jpg"
   },
   {
     "id": "mandarina",
@@ -13824,7 +13868,8 @@
     "verificado": false,
     "fdcIdCrudo": 2710832,
     "unSoloEstado": true,
-    "fuente": "Match: \"Mandarin, seedless, peeled, raw\" (Foundation #2710832)"
+    "fuente": "Match: \"Mandarin, seedless, peeled, raw\" (Foundation #2710832)",
+    "photoUrl": "/foods/mandarina.jpg"
   },
   {
     "id": "saltena",
@@ -13877,7 +13922,8 @@
     "verificado": false,
     "fdcIdCrudo": 167660,
     "unSoloEstado": true,
-    "fuente": "APROXIMACION: la salteña boliviana (empanada jugosa de caldo espesado con gelatina, carne/pollo+papa+arvejas+aceituna) no tiene entrada propia en USDA FDC — se usa \"Restaurant, Latino, empanadas, beef, prepared\" (SR Legacy #167660), la empanada latina genérica más cercana. El relleno jugoso real de la salteña puede diferir bastante según la receta/vendedor."
+    "fuente": "APROXIMACION: la salteña boliviana (empanada jugosa de caldo espesado con gelatina, carne/pollo+papa+arvejas+aceituna) no tiene entrada propia en USDA FDC — se usa \"Restaurant, Latino, empanadas, beef, prepared\" (SR Legacy #167660), la empanada latina genérica más cercana. El relleno jugoso real de la salteña puede diferir bastante según la receta/vendedor.",
+    "photoUrl": "/foods/saltena.jpg"
   },
   {
     "id": "charque",
@@ -13928,7 +13974,8 @@
     "verificado": false,
     "fdcIdCrudo": 170604,
     "unSoloEstado": true,
-    "fuente": "Match: \"Beef, cured, dried\" (SR Legacy #170604) — aproximación: es carne de res curada y secada en general, no específicamente el charque andino (seco al sol, menos procesado); el sodio real del charque casero puede ser bastante menor al de esta entrada (carne curada comercial)."
+    "fuente": "Match: \"Beef, cured, dried\" (SR Legacy #170604) — aproximación: es carne de res curada y secada en general, no específicamente el charque andino (seco al sol, menos procesado); el sodio real del charque casero puede ser bastante menor al de esta entrada (carne curada comercial).",
+    "photoUrl": "/foods/charque.jpg"
   },
   {
     "id": "plato-paceno",
@@ -13942,7 +13989,8 @@
     "verificado": false,
     "configurado": true,
     "unSoloEstado": true,
-    "fuente": "DERIVADO, no un fdcId único de FDC. Plato tradicional paceño = 100g papa cocida + 80g choclo + 60g habas cocidas + 40g queso fresco (porciones típicas de un plato casero, 280g totales), escalado a 100g del resultado. Cada ingrediente usa el dato YA VERIFICADO de su propia ficha en esta base (papa en estado cocido, habas en estado cocido, queso fresco escalado de su porción de 30g a 100g). NO incluye chuño: su ficha en esta base sigue pendiente de un dato nutricional real (ver \"Chuño\"), incluirlo en 0 habría subestimado las calorías del plato en vez de omitir honestamente ese componente."
+    "fuente": "DERIVADO, no un fdcId único de FDC. Plato tradicional paceño = 100g papa cocida + 80g choclo + 60g habas cocidas + 40g queso fresco (porciones típicas de un plato casero, 280g totales), escalado a 100g del resultado. Cada ingrediente usa el dato YA VERIFICADO de su propia ficha en esta base (papa en estado cocido, habas en estado cocido, queso fresco escalado de su porción de 30g a 100g). NO incluye chuño: su ficha en esta base sigue pendiente de un dato nutricional real (ver \"Chuño\"), incluirlo en 0 habría subestimado las calorías del plato en vez de omitir honestamente ese componente.",
+    "photoUrl": "/foods/plato-paceno.jpg"
   },
   {
     "id": "salchipapa",
@@ -13956,7 +14004,8 @@
     "verificado": false,
     "configurado": true,
     "unSoloEstado": true,
-    "fuente": "DERIVADO, no un fdcId único de FDC. Porción típica de una salchipapa de la calle/snack: 150g papas fritas + 80g salchicha + 10g mayonesa + 10g kétchup (250g totales), escalado a 100g del resultado. Cada ingrediente usa el dato ya cargado de su propia ficha en esta base. La proporción real varía mucho según el puesto/receta — si tenés una receta/porción específica, decímela y la ajusto."
+    "fuente": "DERIVADO, no un fdcId único de FDC. Porción típica de una salchipapa de la calle/snack: 150g papas fritas + 80g salchicha + 10g mayonesa + 10g kétchup (250g totales), escalado a 100g del resultado. Cada ingrediente usa el dato ya cargado de su propia ficha en esta base. La proporción real varía mucho según el puesto/receta — si tenés una receta/porción específica, decímela y la ajusto.",
+    "photoUrl": "/foods/salchipapa.jpg"
   },
   {
     "id": "pollo-hervido",
@@ -14006,7 +14055,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Chicken, broilers or fryers, breast, meat only, cooked, stewed\" (SR Legacy #171478). Variante por método de cocción distinta de la pechuga a la plancha/asada ya existente (fdcId cocido 171534)."
+    "fuente": "Match directo: \"Chicken, broilers or fryers, breast, meat only, cooked, stewed\" (SR Legacy #171478). Variante por método de cocción distinta de la pechuga a la plancha/asada ya existente (fdcId cocido 171534).",
+    "photoUrl": "/foods/pollo-hervido.jpg"
   },
   {
     "id": "pollo-horno",
@@ -14056,7 +14106,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Chicken, broilers or fryers, breast, meat only, cooked, roasted\" (SR Legacy #171477)."
+    "fuente": "Match directo: \"Chicken, broilers or fryers, breast, meat only, cooked, roasted\" (SR Legacy #171477).",
+    "photoUrl": "/foods/pollo-horno.jpg"
   },
   {
     "id": "res-horno",
@@ -14105,7 +14156,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Beef, round, bottom round, roast, separable lean and fat, trimmed to 0\\\" fat, choice, cooked, roasted\" (SR Legacy #170224)."
+    "fuente": "Match directo: \"Beef, round, bottom round, roast, separable lean and fat, trimmed to 0\\\" fat, choice, cooked, roasted\" (SR Legacy #170224).",
+    "photoUrl": "/foods/res-horno.jpg"
   },
   {
     "id": "res-frito",
@@ -14155,7 +14207,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Beef, round, top round, separable lean and fat, trimmed to 1/8\\\" fat, choice, cooked, pan-fried\" (SR Legacy #168711)."
+    "fuente": "Match directo: \"Beef, round, top round, separable lean and fat, trimmed to 1/8\\\" fat, choice, cooked, pan-fried\" (SR Legacy #168711).",
+    "photoUrl": "/foods/res-frito.jpg"
   },
   {
     "id": "huevo-escalfado",
@@ -14207,7 +14260,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Egg, whole, cooked, poached\" (SR Legacy #172186)."
+    "fuente": "Match directo: \"Egg, whole, cooked, poached\" (SR Legacy #172186).",
+    "photoUrl": "/foods/huevo-escalfado.jpg"
   },
   {
     "id": "papa-horno",
@@ -14256,7 +14310,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Potatoes, baked, flesh, with salt\" (SR Legacy #170112)."
+    "fuente": "Match directo: \"Potatoes, baked, flesh, with salt\" (SR Legacy #170112).",
+    "photoUrl": "/foods/papa-horno.jpg"
   },
   {
     "id": "agua",
@@ -14279,7 +14334,8 @@
     "agua": 250,
     "ceniza": 0,
     "unSoloEstado": true,
-    "fuente": "Agua potable corriente: 0 kcal y 0 de todo macronutriente (USDA FDC 'Water, tap'), 100% de la porción es agua — usada para vincular lo que se registra acá con la meta de agua (ver nombre \"Agua\" en el catálogo de bebidas de gym/agua)."
+    "fuente": "Agua potable corriente: 0 kcal y 0 de todo macronutriente (USDA FDC 'Water, tap'), 100% de la porción es agua — usada para vincular lo que se registra acá con la meta de agua (ver nombre \"Agua\" en el catálogo de bebidas de gym/agua).",
+    "photoUrl": "/foods/agua.jpg"
   },
   {
     "id": "yuca",
@@ -14330,7 +14386,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Cassava, raw\" (USDA FoodData Central SR Legacy #169985)."
+    "fuente": "Match directo: \"Cassava, raw\" (USDA FoodData Central SR Legacy #169985).",
+    "photoUrl": "/foods/yuca.jpg"
   },
   {
     "id": "name",
@@ -14381,7 +14438,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Yam, cooked, boiled, drained, or baked, without salt\" (USDA FoodData Central SR Legacy #170072)."
+    "fuente": "Match directo: \"Yam, cooked, boiled, drained, or baked, without salt\" (USDA FoodData Central SR Legacy #170072).",
+    "photoUrl": "/foods/name.jpg"
   },
   {
     "id": "taro",
@@ -14432,7 +14490,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Taro, cooked, without salt\" (USDA FoodData Central SR Legacy #168486)."
+    "fuente": "Match directo: \"Taro, cooked, without salt\" (USDA FoodData Central SR Legacy #168486).",
+    "photoUrl": "/foods/taro.jpg"
   },
   {
     "id": "frijoles-blancos",
@@ -14483,7 +14542,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Beans, white, mature seeds, cooked, boiled, without salt\" (USDA FoodData Central SR Legacy #175203)."
+    "fuente": "Match directo: \"Beans, white, mature seeds, cooked, boiled, without salt\" (USDA FoodData Central SR Legacy #175203).",
+    "photoUrl": "/foods/frijoles-blancos.jpg"
   },
   {
     "id": "frijoles-pintos",
@@ -14535,7 +14595,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Beans, pinto, mature seeds, cooked, boiled, without salt\" (USDA FoodData Central SR Legacy #175200)."
+    "fuente": "Match directo: \"Beans, pinto, mature seeds, cooked, boiled, without salt\" (USDA FoodData Central SR Legacy #175200).",
+    "photoUrl": "/foods/frijoles-pintos.jpg"
   },
   {
     "id": "arvejas-verdes",
@@ -14586,7 +14647,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Peas, green, cooked, boiled, drained, without salt\" (USDA FoodData Central SR Legacy #170420)."
+    "fuente": "Match directo: \"Peas, green, cooked, boiled, drained, without salt\" (USDA FoodData Central SR Legacy #170420).",
+    "photoUrl": "/foods/arvejas-verdes.jpg"
   },
   {
     "id": "amaranto",
@@ -14622,7 +14684,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Amaranth grain, cooked\" (USDA FoodData Central SR Legacy #170683)."
+    "fuente": "Match directo: \"Amaranth grain, cooked\" (USDA FoodData Central SR Legacy #170683).",
+    "photoUrl": "/foods/amaranto.jpg"
   },
   {
     "id": "trigo-sarraceno",
@@ -14672,7 +14735,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Buckwheat groats, roasted, cooked\" (USDA FoodData Central SR Legacy #170686)."
+    "fuente": "Match directo: \"Buckwheat groats, roasted, cooked\" (USDA FoodData Central SR Legacy #170686).",
+    "photoUrl": "/foods/trigo-sarraceno.jpg"
   },
   {
     "id": "sorgo",
@@ -14719,7 +14783,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Sorghum grain\" (USDA FoodData Central SR Legacy #169716)."
+    "fuente": "Match directo: \"Sorghum grain\" (USDA FoodData Central SR Legacy #169716).",
+    "photoUrl": "/foods/sorgo.jpg"
   },
   {
     "id": "tortilla-trigo",
@@ -14761,7 +14826,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Tortilla, wheat flour, shelf stable\" (USDA FoodData Central Foundation #2758996)."
+    "fuente": "Match directo: \"Tortilla, wheat flour, shelf stable\" (USDA FoodData Central Foundation #2758996).",
+    "photoUrl": "/foods/tortilla-trigo.jpg"
   },
   {
     "id": "bagel",
@@ -14814,7 +14880,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Bagels, plain, enriched, with calcium propionate (includes onion, poppy, sesame)\" (USDA FoodData Central SR Legacy #174899)."
+    "fuente": "Match directo: \"Bagels, plain, enriched, with calcium propionate (includes onion, poppy, sesame)\" (USDA FoodData Central SR Legacy #174899).",
+    "photoUrl": "/foods/bagel.jpg"
   },
   {
     "id": "melon",
@@ -14866,7 +14933,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Melons, cantaloupe, raw\" (USDA FoodData Central SR Legacy #169092)."
+    "fuente": "Match directo: \"Melons, cantaloupe, raw\" (USDA FoodData Central SR Legacy #169092).",
+    "photoUrl": "/foods/melon.jpg"
   },
   {
     "id": "frambuesas",
@@ -14917,7 +14985,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Raspberries, raw\" (USDA FoodData Central SR Legacy #167755)."
+    "fuente": "Match directo: \"Raspberries, raw\" (USDA FoodData Central SR Legacy #167755).",
+    "photoUrl": "/foods/frambuesas.jpg"
   },
   {
     "id": "lichi",
@@ -14967,7 +15036,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Litchis, raw\" (USDA FoodData Central SR Legacy #169086)."
+    "fuente": "Match directo: \"Litchis, raw\" (USDA FoodData Central SR Legacy #169086).",
+    "photoUrl": "/foods/lichi.jpg"
   },
   {
     "id": "caqui",
@@ -15017,7 +15087,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Persimmons, japanese, raw\" (USDA FoodData Central SR Legacy #169941)."
+    "fuente": "Match directo: \"Persimmons, japanese, raw\" (USDA FoodData Central SR Legacy #169941).",
+    "photoUrl": "/foods/caqui.jpg"
   },
   {
     "id": "guanabana",
@@ -15067,7 +15138,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Soursop, raw\" (USDA FoodData Central SR Legacy #167761)."
+    "fuente": "Match directo: \"Soursop, raw\" (USDA FoodData Central SR Legacy #167761).",
+    "photoUrl": "/foods/guanabana.jpg"
   },
   {
     "id": "tamarindo",
@@ -15117,7 +15189,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Tamarinds, raw\" (USDA FoodData Central SR Legacy #167763)."
+    "fuente": "Match directo: \"Tamarinds, raw\" (USDA FoodData Central SR Legacy #167763).",
+    "photoUrl": "/foods/tamarindo.jpg"
   },
   {
     "id": "aguaymanto",
@@ -15147,7 +15220,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Groundcherries, (cape-gooseberries or poha), raw\" (USDA FoodData Central SR Legacy #173043)."
+    "fuente": "Match directo: \"Groundcherries, (cape-gooseberries or poha), raw\" (USDA FoodData Central SR Legacy #173043).",
+    "photoUrl": "/foods/aguaymanto.jpg"
   },
   {
     "id": "chayote",
@@ -15198,7 +15272,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Chayote, fruit, cooked, boiled, drained, without salt\" (USDA FoodData Central SR Legacy #170403)."
+    "fuente": "Match directo: \"Chayote, fruit, cooked, boiled, drained, without salt\" (USDA FoodData Central SR Legacy #170403).",
+    "photoUrl": "/foods/chayote.jpg"
   },
   {
     "id": "nopal",
@@ -15249,7 +15324,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Nopales, raw\" (USDA FoodData Central SR Legacy #168571)."
+    "fuente": "Match directo: \"Nopales, raw\" (USDA FoodData Central SR Legacy #168571).",
+    "photoUrl": "/foods/nopal.jpg"
   },
   {
     "id": "coles-bruselas",
@@ -15300,7 +15376,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Brussels sprouts, raw\" (USDA FoodData Central SR Legacy #170383)."
+    "fuente": "Match directo: \"Brussels sprouts, raw\" (USDA FoodData Central SR Legacy #170383).",
+    "photoUrl": "/foods/coles-bruselas.jpg"
   },
   {
     "id": "bok-choy",
@@ -15351,7 +15428,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Cabbage, chinese (pak-choi), cooked, boiled, drained, without salt\" (USDA FoodData Central SR Legacy #170391)."
+    "fuente": "Match directo: \"Cabbage, chinese (pak-choi), cooked, boiled, drained, without salt\" (USDA FoodData Central SR Legacy #170391).",
+    "photoUrl": "/foods/bok-choy.jpg"
   },
   {
     "id": "rucula",
@@ -15402,7 +15480,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Arugula, raw\" (USDA FoodData Central SR Legacy #169387)."
+    "fuente": "Match directo: \"Arugula, raw\" (USDA FoodData Central SR Legacy #169387).",
+    "photoUrl": "/foods/rucula.jpg"
   },
   {
     "id": "shiitake",
@@ -15453,7 +15532,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Mushrooms, shiitake, cooked, without salt\" (USDA FoodData Central SR Legacy #168437)."
+    "fuente": "Match directo: \"Mushrooms, shiitake, cooked, without salt\" (USDA FoodData Central SR Legacy #168437).",
+    "photoUrl": "/foods/shiitake.jpg"
   },
   {
     "id": "flan",
@@ -15501,7 +15581,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Desserts, flan, caramel custard, prepared-from-recipe\" (USDA FoodData Central SR Legacy #167574)."
+    "fuente": "Match directo: \"Desserts, flan, caramel custard, prepared-from-recipe\" (USDA FoodData Central SR Legacy #167574).",
+    "photoUrl": "/foods/flan.jpg"
   },
   {
     "id": "brownie",
@@ -15551,7 +15632,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Cookies, brownies, commercially prepared\" (USDA FoodData Central SR Legacy #172713)."
+    "fuente": "Match directo: \"Cookies, brownies, commercially prepared\" (USDA FoodData Central SR Legacy #172713).",
+    "photoUrl": "/foods/brownie.jpg"
   },
   {
     "id": "arroz-con-leche",
@@ -15605,7 +15687,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Puddings, rice, ready-to-eat\" (USDA FoodData Central SR Legacy #168782)."
+    "fuente": "Match directo: \"Puddings, rice, ready-to-eat\" (USDA FoodData Central SR Legacy #168782).",
+    "photoUrl": "/foods/arroz-con-leche.jpg"
   },
   {
     "id": "cheesecake",
@@ -15655,7 +15738,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Cake, cheesecake, commercially prepared\" (USDA FoodData Central SR Legacy #172711)."
+    "fuente": "Match directo: \"Cake, cheesecake, commercially prepared\" (USDA FoodData Central SR Legacy #172711).",
+    "photoUrl": "/foods/cheesecake.jpg"
   },
   {
     "id": "dona",
@@ -15700,7 +15784,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Doughnuts, cake-type, plain, sugared or glazed\" (USDA FoodData Central SR Legacy #174992)."
+    "fuente": "Match directo: \"Doughnuts, cake-type, plain, sugared or glazed\" (USDA FoodData Central SR Legacy #174992).",
+    "photoUrl": "/foods/dona.jpg"
   },
   {
     "id": "waffles",
@@ -15744,7 +15829,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Waffles, plain, prepared from recipe\" (USDA FoodData Central SR Legacy #175039)."
+    "fuente": "Match directo: \"Waffles, plain, prepared from recipe\" (USDA FoodData Central SR Legacy #175039).",
+    "photoUrl": "/foods/waffles.jpg"
   },
   {
     "id": "croissant",
@@ -15794,7 +15880,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Croissants, butter\" (USDA FoodData Central SR Legacy #174987)."
+    "fuente": "Match directo: \"Croissants, butter\" (USDA FoodData Central SR Legacy #174987).",
+    "photoUrl": "/foods/croissant.jpg"
   },
   {
     "id": "nuggets-pollo",
@@ -15845,7 +15932,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Chicken, nuggets, white meat, precooked, frozen, not reheated\" (USDA FoodData Central SR Legacy #172112)."
+    "fuente": "Match directo: \"Chicken, nuggets, white meat, precooked, frozen, not reheated\" (USDA FoodData Central SR Legacy #172112).",
+    "photoUrl": "/foods/nuggets-pollo.jpg"
   },
   {
     "id": "hot-dog",
@@ -15893,7 +15981,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Frankfurter, beef, heated\" (USDA FoodData Central SR Legacy #174614)."
+    "fuente": "Match directo: \"Frankfurter, beef, heated\" (USDA FoodData Central SR Legacy #174614).",
+    "photoUrl": "/foods/hot-dog.jpg"
   },
   {
     "id": "taco-res",
@@ -15945,7 +16034,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Fast foods, taco with beef, cheese and lettuce, hard shell\" (USDA FoodData Central SR Legacy #170689)."
+    "fuente": "Match directo: \"Fast foods, taco with beef, cheese and lettuce, hard shell\" (USDA FoodData Central SR Legacy #170689).",
+    "photoUrl": "/foods/taco-res.jpg"
   },
   {
     "id": "burrito-frijoles",
@@ -15997,7 +16087,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Fast foods, burrito, with beans and cheese\" (USDA FoodData Central SR Legacy #172039)."
+    "fuente": "Match directo: \"Fast foods, burrito, with beans and cheese\" (USDA FoodData Central SR Legacy #172039).",
+    "photoUrl": "/foods/burrito-frijoles.jpg"
   },
   {
     "id": "papas-chips",
@@ -16051,7 +16142,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Snacks, potato chips, plain, salted\" (USDA FoodData Central SR Legacy #169677)."
+    "fuente": "Match directo: \"Snacks, potato chips, plain, salted\" (USDA FoodData Central SR Legacy #169677).",
+    "photoUrl": "/foods/papas-chips.jpg"
   },
   {
     "id": "pretzels",
@@ -16104,7 +16196,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Snacks, pretzels, hard, plain, salted\" (USDA FoodData Central SR Legacy #167555)."
+    "fuente": "Match directo: \"Snacks, pretzels, hard, plain, salted\" (USDA FoodData Central SR Legacy #167555).",
+    "photoUrl": "/foods/pretzels.jpg"
   },
   {
     "id": "tortilla-chips",
@@ -16158,7 +16251,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Snacks, tortilla chips, plain, white corn, salted\" (USDA FoodData Central SR Legacy #167558)."
+    "fuente": "Match directo: \"Snacks, tortilla chips, plain, white corn, salted\" (USDA FoodData Central SR Legacy #167558).",
+    "photoUrl": "/foods/tortilla-chips.jpg"
   },
   {
     "id": "yogur-soya",
@@ -16186,7 +16280,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"SILK Plain soy yogurt\" (USDA FoodData Central SR Legacy #175227)."
+    "fuente": "Match directo: \"SILK Plain soy yogurt\" (USDA FoodData Central SR Legacy #175227).",
+    "photoUrl": "/foods/yogur-soya.jpg"
   },
   {
     "id": "leche-arroz",
@@ -16237,7 +16332,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Beverages, rice milk, unsweetened\" (USDA FoodData Central SR Legacy #171942)."
+    "fuente": "Match directo: \"Beverages, rice milk, unsweetened\" (USDA FoodData Central SR Legacy #171942).",
+    "photoUrl": "/foods/leche-arroz.jpg"
   },
   {
     "id": "leche-coco",
@@ -16286,7 +16382,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Beverages, coconut milk, sweetened, fortified with calcium, vitamins A, B12, D2\" (USDA FoodData Central SR Legacy #174116)."
+    "fuente": "Match directo: \"Beverages, coconut milk, sweetened, fortified with calcium, vitamins A, B12, D2\" (USDA FoodData Central SR Legacy #174116).",
+    "photoUrl": "/foods/leche-coco.jpg"
   },
   {
     "id": "cerdo-molido",
@@ -16336,7 +16433,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Pork, fresh, ground, cooked\" (USDA FoodData Central SR Legacy #167903)."
+    "fuente": "Match directo: \"Pork, fresh, ground, cooked\" (USDA FoodData Central SR Legacy #167903).",
+    "photoUrl": "/foods/cerdo-molido.jpg"
   },
   {
     "id": "pavo-fiambre",
@@ -16389,7 +16487,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Turkey breast, sliced, prepackaged\" (USDA FoodData Central SR Legacy #172941)."
+    "fuente": "Match directo: \"Turkey breast, sliced, prepackaged\" (USDA FoodData Central SR Legacy #172941).",
+    "photoUrl": "/foods/pavo-fiambre.jpg"
   },
   {
     "id": "higado-pollo",
@@ -16442,7 +16541,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Chicken, liver, all classes, cooked, simmered\" (USDA FoodData Central SR Legacy #171061)."
+    "fuente": "Match directo: \"Chicken, liver, all classes, cooked, simmered\" (USDA FoodData Central SR Legacy #171061).",
+    "photoUrl": "/foods/higado-pollo.jpg"
   },
   {
     "id": "lentejas-rojas",
@@ -16493,7 +16593,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Lentils, mature seeds, cooked, boiled, without salt\" (USDA FoodData Central SR Legacy #172421)."
+    "fuente": "Match directo: \"Lentils, mature seeds, cooked, boiled, without salt\" (USDA FoodData Central SR Legacy #172421).",
+    "photoUrl": "/foods/lentejas-rojas.jpg"
   },
   {
     "id": "arvejas-partidas",
@@ -16544,7 +16645,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Peas, split, mature seeds, cooked, boiled, without salt\" (USDA FoodData Central SR Legacy #172429)."
+    "fuente": "Match directo: \"Peas, split, mature seeds, cooked, boiled, without salt\" (USDA FoodData Central SR Legacy #172429).",
+    "photoUrl": "/foods/arvejas-partidas.jpg"
   },
   {
     "id": "habas",
@@ -16595,7 +16697,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Broadbeans (fava beans), mature seeds, cooked, boiled, without salt\" (USDA FoodData Central SR Legacy #173753)."
+    "fuente": "Match directo: \"Broadbeans (fava beans), mature seeds, cooked, boiled, without salt\" (USDA FoodData Central SR Legacy #173753).",
+    "photoUrl": "/foods/habas.jpg"
   },
   {
     "id": "frijoles-lima",
@@ -16644,7 +16747,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Lima beans, large, mature seeds, cooked, boiled, with salt\" (USDA FoodData Central SR Legacy #173802)."
+    "fuente": "Match directo: \"Lima beans, large, mature seeds, cooked, boiled, with salt\" (USDA FoodData Central SR Legacy #173802).",
+    "photoUrl": "/foods/frijoles-lima.jpg"
   },
   {
     "id": "castañas-cajú",
@@ -16693,7 +16797,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Nuts, cashew nuts, raw\" (USDA FoodData Central SR Legacy #170162)."
+    "fuente": "Match directo: \"Nuts, cashew nuts, raw\" (USDA FoodData Central SR Legacy #170162).",
+    "photoUrl": "/foods/castañas-cajú.jpg"
   },
   {
     "id": "nuez-pecana",
@@ -16744,7 +16849,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Nuts, pecans\" (USDA FoodData Central SR Legacy #170182)."
+    "fuente": "Match directo: \"Nuts, pecans\" (USDA FoodData Central SR Legacy #170182).",
+    "photoUrl": "/foods/nuez-pecana.jpg"
   },
   {
     "id": "semillas-canamo",
@@ -16789,7 +16895,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Seeds, hemp seed, hulled\" (USDA FoodData Central SR Legacy #170148)."
+    "fuente": "Match directo: \"Seeds, hemp seed, hulled\" (USDA FoodData Central SR Legacy #170148).",
+    "photoUrl": "/foods/semillas-canamo.jpg"
   },
   {
     "id": "semillas-amapola",
@@ -16841,7 +16948,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Spices, poppy seed\" (USDA FoodData Central SR Legacy #171330)."
+    "fuente": "Match directo: \"Spices, poppy seed\" (USDA FoodData Central SR Legacy #171330).",
+    "photoUrl": "/foods/semillas-amapola.jpg"
   },
   {
     "id": "queso-ricotta",
@@ -16891,7 +16999,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Cheese, ricotta, part skim milk\" (USDA FoodData Central SR Legacy #171248)."
+    "fuente": "Match directo: \"Cheese, ricotta, part skim milk\" (USDA FoodData Central SR Legacy #171248).",
+    "photoUrl": "/foods/queso-ricotta.jpg"
   },
   {
     "id": "leche-avena-sin-azucar",
@@ -16931,7 +17040,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Oat milk, unsweetened, plain, refrigerated\" (USDA FoodData Central Foundation #2257046)."
+    "fuente": "Match directo: \"Oat milk, unsweetened, plain, refrigerated\" (USDA FoodData Central Foundation #2257046).",
+    "photoUrl": "/foods/leche-avena-sin-azucar.jpg"
   },
   {
     "id": "leche-almendras-sin-azucar",
@@ -16969,7 +17079,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Almond milk, unsweetened, plain, refrigerated\" (USDA FoodData Central Foundation #2257045)."
+    "fuente": "Match directo: \"Almond milk, unsweetened, plain, refrigerated\" (USDA FoodData Central Foundation #2257045).",
+    "photoUrl": "/foods/leche-almendras-sin-azucar.jpg"
   },
   {
     "id": "chirivia",
@@ -17018,7 +17129,8 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "cocido",
-    "fuente": "Match directo: \"Parsnips, cooked, boiled, drained, with salt\" (USDA FoodData Central SR Legacy #170508)."
+    "fuente": "Match directo: \"Parsnips, cooked, boiled, drained, with salt\" (USDA FoodData Central SR Legacy #170508).",
+    "photoUrl": "/foods/chirivia.jpg"
   },
   {
     "id": "topinambur",
@@ -17069,6 +17181,7 @@
     "verificado": false,
     "unSoloEstado": true,
     "estadoDefault": "crudo",
-    "fuente": "Match directo: \"Jerusalem-artichokes, raw\" (USDA FoodData Central SR Legacy #169236)."
+    "fuente": "Match directo: \"Jerusalem-artichokes, raw\" (USDA FoodData Central SR Legacy #169236).",
+    "photoUrl": "/foods/topinambur.jpg"
   }
 ]
