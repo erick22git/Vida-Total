@@ -369,4 +369,10 @@ export const EN = {
   "sopa-de-mani": "Bolivian peanut soup (sopa de mani) with beef, potato, carrot and rice in a creamy beige broth, served in a bowl",
   "silpancho": "Bolivian silpancho, a thin breaded fried beef cutlet over white rice, topped with a fried egg, tomato and onion",
   "majadito": "Bolivian majadito, a plate of rice cooked with shredded dried beef (charque), topped with a fried egg and fried plantain slices",
+  "picante-de-pollo": "Bolivian picante de pollo, a roasted chicken thigh in a spicy reddish chili sauce with potato, onion and tomato",
+  "sajta-de-pollo": "Bolivian sajta de pollo, fried chicken pieces in a spicy yellow chili sauce with fried potatoes and onion",
+  "chicharron-cerdo": "Bolivian chicharron, crispy fried pork ribs served with corn kernels (mote)",
+  "falso-conejo": "Bolivian falso conejo, a breaded fried pork cutlet in a thin tomato and onion sauce, served with rice and fried potatoes",
+  "humintas": "Bolivian humintas, baked sweet corn tamales wrapped in corn husks, one unwrapped showing the yellow corn dough",
+  "llajua": "Bolivian llajua, a chunky red hot sauce made of crushed tomato and chili pepper, in a small bowl",
 };
