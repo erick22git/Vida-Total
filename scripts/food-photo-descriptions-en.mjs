@@ -362,4 +362,11 @@ export const EN = {
   "leche-almendras-sin-azucar": "almond milk in a glass",
   "chirivia": "cooked parsnips, sliced",
   "topinambur": "raw jerusalem artichokes (sunchokes)",
+  "mondongo": "Bolivian mondongo, a pork and potato stew with onion and tomato in a reddish broth, served on a plate",
+  "parrillada": "a mixed grill plate with grilled beef steak, grilled chicken breast, chorizo and sausage",
+  "fricase": "Bolivian fricase, a spicy pork and potato soup in a reddish chili broth, served in a bowl",
+  "pique-macho": "Bolivian pique macho, a plate of fried beef chunks and sliced sausage over french fries, topped with a fried egg, onion and tomato",
+  "sopa-de-mani": "Bolivian peanut soup (sopa de mani) with beef, potato, carrot and rice in a creamy beige broth, served in a bowl",
+  "silpancho": "Bolivian silpancho, a thin breaded fried beef cutlet over white rice, topped with a fried egg, tomato and onion",
+  "majadito": "Bolivian majadito, a plate of rice cooked with shredded dried beef (charque), topped with a fried egg and fried plantain slices",
 };
